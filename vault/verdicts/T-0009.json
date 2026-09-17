@@ -1,0 +1,15 @@
+{
+  "task": "T-0009",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:11",
+  "criteria": [
+    {"text": "`.claude/agents/verifier.md` の「## 読むもの（これだけ）」に `bash scripts/rules.sh verifier` を含む行が1行ある。確認：`grep -c 'rules.sh verifier' .claude/agents/verifier.md` の出力が1以上", "ok": true, "note": "実行コマンド: `grep -c 'rules.sh verifier' .claude/agents/verifier.md` / 出力: 1（「読むもの」5項目目に `bash scripts/rules.sh verifier` が列挙するルールファイル、の行を確認）"},
+    {"text": "`.claude/agents/verifier.md` の「## 手順」に、受け入れ基準がルールを参照している行は該当ルールファイルを根拠に真偽を判定し、note に参照したルールファイルのパスを書く旨の記述がある。確認：`grep -c 'ルールファイルのパス' .claude/agents/verifier.md` の出力が1以上", "ok": true, "note": "実行コマンド: `grep -c 'ルールファイルのパス' .claude/agents/verifier.md` / 出力: 1（手順7に該当記述を確認：「該当ルールファイル（手順5で読んだもの）を根拠に真偽を判定し、note に参照したルールファイルのパスを書く」）"},
+    {"text": "`.claude/agents/verifier.md` の「## 禁止」に、受け入れ基準がルールを参照していない行をルールを理由に FAIL にすることを禁じる記述が1行追加されている。確認：`grep -c '参照していない' .claude/agents/verifier.md` の出力が1以上", "ok": true, "note": "実行コマンド: `grep -c '参照していない' .claude/agents/verifier.md` / 出力: 2（禁止節に「受け入れ基準がルールを参照していない行を、ルールを理由に FAIL にすること」を確認。手順7にも同旨1件あり計2件）"},
+    {"text": "`docs/vault-spec.md` の「## 7. verdict.json」節に、ルールを根拠に判定した場合は参照したルールファイルのパスを note に書く旨が1〜2行追記されている。確認：`grep -c 'ルールを根拠にした場合' docs/vault-spec.md` の出力が1以上", "ok": true, "note": "実行コマンド: `grep -c 'ルールを根拠にした場合' docs/vault-spec.md` / 出力: 1（「## 7. verdict.json」節の note 説明付近に該当文言を確認）"},
+    {"text": "`.claude/skills/run-queue/SKILL.md`・`.claude/agents/planner.md`・`.claude/hooks/`・`scripts/install.sh`・`README.md` に差分が無い。確認：`git diff --stat -- .claude/skills/run-queue/SKILL.md .claude/agents/planner.md .claude/hooks/ scripts/install.sh README.md` の出力が空", "ok": true, "note": "実行コマンド: `git diff --stat -- .claude/skills/run-queue/SKILL.md .claude/agents/planner.md .claude/hooks/ scripts/install.sh README.md` / 出力: （空）"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（既存の検証が壊れていない）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=37 fail=0"}
+  ],
+  "reasons": []
+}

@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# フックの動作検証。疑似 stdin を渡して stop_gate.py / agent_write_guard.py の判定を確かめる。
+# 使い方: bash scripts/smoke.sh   （install 先でも同じ。.claude/hooks/ が同階層にあればよい）
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+STOP_HOOK="$ROOT/.claude/hooks/stop_gate.py"
+GUARD_HOOK="$ROOT/.claude/hooks/agent_write_guard.py"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+PASS_N=0; FAIL_N=0
+
+make_todo() { # $1=id $2=status $3=attempt
+  mkdir -p "$TMP/vault/verdicts"
+  cat > "$TMP/vault/todo.md" <<EOT
+# キュー
+
+## タスク
+| id | status | attempt | after | title | question |
+|---|---|---|---|---|---|
+| $1 | $2 | $3 | - | テスト | |
+
+## 計画
+| id | status | title |
+|---|---|---|
+EOT
+}
+make_verdict() { # $1=id $2=attempt $3=result
+  printf '{"task":"%s","attempt":%s,"result":"%s","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}\n' "$1" "$2" "$3" > "$TMP/vault/verdicts/$1.json"
+}
+DEFAULT_STDIN='{"hook_event_name":"Stop","stop_hook_active":false}'
+run_stop() { # $1=stdin json（省略時は DEFAULT_STDIN）
+  printf '%s' "${1:-$DEFAULT_STDIN}" \
+    | CLAUDE_PROJECT_DIR="$TMP" HARNESS_MAX_ATTEMPTS="${HARNESS_MAX_ATTEMPTS:-3}" python3 "$STOP_HOOK"
+}
+expect() { # $1=name $2=block|allow $3=output $4=substring(optional)
+  local name="$1" want="$2" out="$3" sub="${4:-}"
+  local got="allow"
+  echo "$out" | grep -q '"decision": *"block"' && got="block"
+  if [ "$got" = "$want" ] && { [ -z "$sub" ] || echo "$out" | grep -q -- "$sub"; }; then
+    echo "  ok   $name"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $name (want=$want got=$got sub='$sub')"; echo "       out: $out"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+
+echo "== stop_gate.py =="
+make_todo T-0001 doing 1;                        expect "doing あり・verdict なし → ブロック" block "$(run_stop)" "verifier"
+make_todo T-0001 review 1; make_verdict T-0001 1 FAIL; expect "FAIL・attempt=1 → ブロック（doing に戻す）" block "$(run_stop)" "doing に戻し"
+make_todo T-0001 doing 3;  make_verdict T-0001 3 FAIL; expect "FAIL・attempt=3・doing → ブロック（blocked にする）" block "$(run_stop)" "blocked"
+make_todo T-0001 blocked 3; make_verdict T-0001 3 FAIL; expect "FAIL・attempt=3・blocked → 許可" allow "$(run_stop)"
+make_todo T-0001 review 1; make_verdict T-0001 1 PASS; expect "PASS・review → ブロック（done にする）" block "$(run_stop)" "done"
+make_todo T-0001 done 1;   make_verdict T-0001 1 PASS; expect "PASS・done → 許可" allow "$(run_stop)"
+make_todo T-0001 todo 0;   rm -f "$TMP/vault/verdicts/T-0001.json"; expect "doing/review なし → 許可" allow "$(run_stop)"
+make_todo T-0001 review 2; make_verdict T-0001 1 PASS; expect "PASS だが attempt 不一致（古い verdict）→ ブロック（verifier）" block "$(run_stop)" "古い"
+make_todo T-0001 review 1; rm -f "$TMP/vault/verdicts/T-0001.json"; expect "stop_hook_active=true → 許可（既定）" allow "$(run_stop '{"hook_event_name":"Stop","stop_hook_active":true}')"
+make_todo T-0001 review 1; expect "stop_hook_active=true + HARNESS_STRICT_STOP=1 → ブロック" block "$(printf '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$TMP" HARNESS_STRICT_STOP=1 python3 "$STOP_HOOK")" "verifier"
+make_todo T-0001 review 2; make_verdict T-0001 2 FAIL; expect "HARNESS_MAX_ATTEMPTS=2 で attempt=2 FAIL → blocked 指示" block "$(HARNESS_MAX_ATTEMPTS=2 run_stop)" "blocked"
+
+echo "== agent_write_guard.py =="
+run_guard() { printf '%s' "$1" | CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
+expect_guard() { # $1=name $2=deny|allow $3=output
+  local got="allow"; echo "$3" | grep -q '"permissionDecision": *"deny"' && got="deny"
+  if [ "$got" = "$2" ]; then echo "  ok   $1"; PASS_N=$((PASS_N+1)); else echo "  NG   $1 (want=$2 got=$got)"; echo "       out: $3"; FAIL_N=$((FAIL_N+1)); fi
+}
+expect_guard "verifier が vault/verdicts/ に Write → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/T-0001.json"}}')"
+expect_guard "verifier が README.md に Edit → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+expect_guard "verifier が Bash で git commit → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git commit -m x"}}')"
+expect_guard "verifier が Bash でテスト実行 → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"python3 -m pytest -q"}}')"
+expect_guard "planner が vault/tasks/ に Write → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/tasks/T-0002.md"}}')"
+expect_guard "planner が vault/todo.md に Edit → 拒否" deny \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/vault/todo.md"}}')"
+expect_guard "メインエージェントが README.md に Edit → 許可" allow \
+  "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+
+echo
+echo "smoke: pass=$PASS_N fail=$FAIL_N"
+[ "$FAIL_N" -eq 0 ]

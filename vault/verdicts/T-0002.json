@@ -1,0 +1,39 @@
+{
+  "task": "T-0002",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 16:55",
+  "criteria": [
+    {
+      "text": "docs/vault-spec.md 第7節に、note には確認に使ったコマンド（または確認方法）と出力の要点を書く旨、および実行できなかった場合はその旨と代替の確認方法を書く旨が明記されている。確認：`grep -A25 '^## 7\\. verdict.json' docs/vault-spec.md | grep -q '確認に使ったコマンド'` の終了コードが0",
+      "ok": true,
+      "note": "実行コマンド: `grep -A25 '^## 7\\. verdict.json' docs/vault-spec.md | grep -q '確認に使ったコマンド'` / 出力: 終了コード0（マッチあり）"
+    },
+    {
+      "text": "`.claude/agents/verifier.md` の手順にも同じ要件（note に確認コマンド・出力の要点、実行できなかった場合は理由と代替確認方法）が追記されている。確認：`grep -q '確認に使ったコマンド' .claude/agents/verifier.md` の終了コードが0",
+      "ok": true,
+      "note": "実行コマンド: `grep -q '確認に使ったコマンド' .claude/agents/verifier.md` / 出力: 終了コード0（マッチあり）"
+    },
+    {
+      "text": "verdict.json のトップレベルのキー構成（`task`/`attempt`/`result`/`checked_at`/`criteria`/`reasons`）を変えていない（note は引き続き文字列のまま、新規フィールドを追加しない）。確認：`docs/vault-spec.md` 内のJSON例から `python3 -c \"import re,json;s=open('docs/vault-spec.md').read();b=s.split('## 7. verdict.json')[1].split('```json')[1].split('```')[0];d=json.loads(b);assert set(d.keys())=={'task','attempt','result','checked_at','criteria','reasons'};assert set(d['criteria'][0].keys())=={'text','ok','note'}\"` が例外なく終了する",
+      "ok": true,
+      "note": "実行コマンド: 上記のpython3ワンライナーをdocs/vault-spec.mdに対して実行 / 出力: 例外なく終了（'OK'を出力）、キー構成は task/attempt/result/checked_at/criteria/reasons、criteriaの各要素はtext/ok/noteのみ"
+    },
+    {
+      "text": "`.claude/hooks/stop_gate.py` は変更していない。確認：`git diff --quiet -- .claude/hooks/stop_gate.py` の終了コードが0",
+      "ok": true,
+      "note": "実行コマンド: `git diff --quiet -- .claude/hooks/stop_gate.py` / 出力: 終了コード0（差分なし）"
+    },
+    {
+      "text": "`vault/todo.md` の見出し行と列構成を変えていない（status の遷移による行の変更は許容）。確認：`git diff -- vault/todo.md | grep -E '^[+-](## |\\| id )'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- vault/todo.md | grep -E '^[+-](## |\\| id )'` / 出力: 空（マッチなし、grep終了コード1）"
+    },
+    {
+      "text": "`.claude/agents/verifier.md` の frontmatter の `tools:` 行は変更していない。確認：`git diff -- .claude/agents/verifier.md | grep '^[+-]tools:'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- .claude/agents/verifier.md | grep '^[+-]tools:'` / 出力: 空（マッチなし、grep終了コード1）"
+    }
+  ],
+  "reasons": []
+}

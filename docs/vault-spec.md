@@ -73,7 +73,7 @@ frontmatter に `id` と `status`（`draft` / `approved`）。本文は `ゴー�
   "result": "PASS",
   "checked_at": "2026-09-16 10:00",
   "criteria": [
-    {"text": "受け入れ基準の1行目", "ok": true, "note": ""}
+    {"text": "受け入れ基準の1行目", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=18 fail=0"}
   ],
   "reasons": ["FAIL の理由。PASS なら空配列"]
 }
@@ -82,6 +82,9 @@ frontmatter に `id` と `status`（`draft` / `approved`）。本文は `ゴー�
 - `result` は `PASS` / `FAIL` の2値
 - `attempt` は todo.md の attempt と一致させる。一致しない verdict は「無い」ものとして扱う（古い verdict で done にしない）
 - `criteria` は受け入れ基準と同じ行数・同じ順序
+- `note` は必須（空にしない）。確認に使ったコマンド（または確認方法）と出力の要点を1〜3行で書く。人が verdict だけを読んで判定の根拠を追えるようにする
+  - 書式の例：`実行コマンド: \`<command>\` / 出力: <判定に使った部分の要点>`
+  - 確認コマンドが実行できなかった場合（権限拒否・ツール不足など）は、その旨と代替の確認方法、その結果をセットで書く。例：`\`awk ...\` は権限拒否で実行不可。代替として README.md を Read で確認し、使い方節に cron の行が1行あった`
 
 ## 8. ログ `vault/log/queue.md`
 

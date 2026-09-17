@@ -23,7 +23,9 @@ model: sonnet
 2. 基準にない観点で落とさない（コードの好み・追加要望は書かない）
 3. 基準が曖昧で判定できない行は `ok: false` にせず `ok: true` のまま `note` に「基準が判定不能：…」と書き、`reasons` にも同じ文を入れる。判定不能だけでは FAIL にしない
 4. 1行でも `ok: false` があれば `result` は `FAIL`、無ければ `PASS`
-5. `vault/verdicts/<id>.json` を以下の形式で書く（既存があれば上書き）
+5. 各行の `note` に、確認に使ったコマンド（または確認方法）と出力の要点を必ず書く（空にしない）。書式の例：`実行コマンド: \`git diff --numstat -- README.md\` / 出力: 1 0 README.md`。出力は判定に使った部分だけを1〜3行に要約する
+6. 確認コマンドが実行できなかった場合（権限拒否・ツール不足など）は、その旨と代替の確認方法、その結果をセットで `note` に書く。例：`\`awk ...\` は権限拒否で実行不可。代替として README.md を Read で確認し、使い方節に cron の行が1行あった`。黙って別の方法に置き換えない
+7. `vault/verdicts/<id>.json` を以下の形式で書く（既存があれば上書き）
 
 ```json
 {
@@ -32,7 +34,7 @@ model: sonnet
   "result": "PASS",
   "checked_at": "2026-09-16 10:00",
   "criteria": [
-    {"text": "受け入れ基準の1行目（原文のまま）", "ok": true, "note": ""}
+    {"text": "受け入れ基準の1行目（原文のまま）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=18 fail=0"}
   ],
   "reasons": []
 }
@@ -40,7 +42,7 @@ model: sonnet
 
 - `attempt` は todo.md の値をそのまま使う
 - `checked_at` は `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` の出力
-- `criteria` は受け入れ基準と同じ行数・同じ順序
+- `criteria` は受け入れ基準と同じ行数・同じ順序。`note` は全行で非空
 - `reasons` は FAIL の理由（`ok: false` の行ごとに1つ）。PASS なら空配列（判定不能の注記がある場合のみ、その文を入れる）
 
 ## 禁止

@@ -1,0 +1,34 @@
+{
+  "task": "T-0006",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 22:51",
+  "criteria": [
+    {
+      "text": "docs/vault-spec.md に vault/rules/ の新節があり、common / creator / verifier / planner の4語をすべて含む（確認：grep -c 'vault/rules/' docs/vault-spec.md が1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules/' docs/vault-spec.md` / 出力: 4（1以上）。加えて `grep -n '^## ' docs/vault-spec.md | tail -5` で「## 12. ルール（vault/rules/）」節の存在を確認し、`sed -n '/## 12/,$p' docs/vault-spec.md` でその節本文に common/creator/verifier/planner の4語がすべて含まれていることを確認した"
+    },
+    {
+      "text": "vault/rules/README.md が存在し20行以内（確認：wc -l < vault/rules/README.md が20以下）",
+      "ok": true,
+      "note": "実行コマンド: `wc -l < vault/rules/README.md` / 出力: 20（20以下）"
+    },
+    {
+      "text": "vault/rules/common/.gitkeep・vault/rules/creator/.gitkeep・vault/rules/verifier/.gitkeep・vault/rules/planner/.gitkeep の4ファイルが存在する（確認：ls vault/rules/common/.gitkeep vault/rules/creator/.gitkeep vault/rules/verifier/.gitkeep vault/rules/planner/.gitkeep）",
+      "ok": true,
+      "note": "実行コマンド: `ls vault/rules/common/.gitkeep vault/rules/creator/.gitkeep vault/rules/verifier/.gitkeep vault/rules/planner/.gitkeep` / 出力: 4ファイルとも存在し、エラーなくパスがそのまま列挙された"
+    },
+    {
+      "text": "vault/templates/rule.md が存在し、見出しが 目的 / ルール / 確認方法 の3つだけである（確認：grep -E '^## ' vault/templates/rule.md の出力が「目的」「ルール」「確認方法」の3行のみ）",
+      "ok": true,
+      "note": "実行コマンド: `grep -E '^## ' vault/templates/rule.md` / 出力: 「## 目的」「## ルール」「## 確認方法」の3行のみ"
+    },
+    {
+      "text": "bash scripts/smoke.sh | tail -1 が fail=0 を含む（既存の検証が壊れていない）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=31 fail=0"
+    }
+  ],
+  "reasons": []
+}

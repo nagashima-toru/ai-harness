@@ -14,6 +14,7 @@
 | T-0003 | done | 1 | - | planner に「run-queue で必ず変わるファイルの差分不変を受け入れ基準にしない」ルールを追記 | |
 | T-0004 | done | 1 | - | stop_gate.py に verdict 形式検証を追加し smoke.sh と vault-spec.md を更新 | |
 | T-0005 | done | 1 | - | todo_guard フックで todo.md の整合性を PostToolUse でチェックする | |
+| T-0006 | done | 1 | - | vault-spec.md に「ルール（vault/rules/）」節を追加し置き場を作る | |
 
 ## 計画
 | id | status | title |
@@ -23,3 +24,4 @@
 | P-003 | approved | planner が満たせない受け入れ基準を書かないようにする |
 | P-004 | approved | stop_gate で verdict の形式を検証する |
 | P-005 | approved | todo.md の整合性チェックをフック化する |
+| P-006 | approved | vault/rules/ の仕様と置き場を決める |

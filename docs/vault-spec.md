@@ -116,3 +116,27 @@ frontmatter に `id` と `status`（`draft` / `approved`）。本文は `ゴー�
 ## 11. todo_guard フックの判定
 
 `.claude/hooks/todo_guard.py` は PostToolUse（`Write|Edit|MultiEdit|Bash`）で `vault/todo.md` を検査し、doing が2件以上・blocked なのに question が空・status が5値以外・id の重複・データ行の列数が6でない、のいずれかならブロックして直し方を示す。todo.md が無い場合とデータ行が無い場合は何もしない。
+
+## 12. ルール（`vault/rules/`）
+
+インストール先ごとに用意する「ルール」（コーディングルール・開発標準・方式設計・テスト標準・テスト観点など）を、作成エージェント・verifier・planner に渡す拡張ポイント。ハーネス本体はルールを同梱しない。置き場と読み込み口だけを用意し、実ルールはインストール先で書く。
+
+### ディレクトリと振り分け
+```
+vault/rules/
+  README.md      # 書き方・振り分けの説明（install.sh が複製）
+  common/        # 作成エージェント・verifier・planner の全員に渡す
+  creator/       # 作成エージェントだけに渡す
+  verifier/      # verifier だけに渡す
+  planner/       # planner だけに渡す
+```
+- 「全員 / 作成のみ / 検証のみ / 計画のみ」の4パターンはディレクトリだけで振り分ける。frontmatter や索引ファイルは持たない
+- ファイルは `*.md`、小文字ケバブケース。読み込み順は `common/` → 役割ディレクトリ、各ディレクトリ内はファイル名順（決定的にする）
+- 1ファイルは100行以内を目安に、話題ごとに分ける（機械的な強制はしない）
+- 雛形は `vault/templates/rule.md`（見出し：目的 / ルール / 確認方法）
+
+### ルールと受け入れ基準の関係
+ルールは受け入れ基準を増やすものではなく、**基準の判定方法を与えるもの**。受け入れ基準が `vault/rules/` のルールを参照する時（例：「コーディングルールに従っている」）だけ、verifier はルールを根拠に真偽を判定する。受け入れ基準がルールに触れていなければ、ルールを理由に FAIL にしない。作成側だけに渡した `creator/` のルールは verifier から見えないため、それを根拠に落とすこともない。
+
+### 改ざん防止
+`doing` / `review` 中のタスクがある間は、`vault/rules/` への書き込みをフックで拒否する（実装は `.claude/hooks/agent_write_guard.py`）。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めることを防ぐ。

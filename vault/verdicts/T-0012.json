@@ -1,0 +1,29 @@
+{
+  "task": "T-0012",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:33",
+  "criteria": [
+    {
+      "text": "`scripts/install.sh` が `vault/rules/README.md`、`vault/rules/common/.gitkeep`、`vault/rules/creator/.gitkeep`、`vault/rules/verifier/.gitkeep`、`vault/rules/planner/.gitkeep`、`vault/templates/rule.md`、`scripts/rules.sh` を `copy_if_absent` で複製している（確認：`grep -c 'copy_if_absent' scripts/install.sh` が変更前より増えている、かつ `grep -c 'vault/rules' scripts/install.sh` ≥ 1）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'copy_if_absent' scripts/install.sh` / 出力: 7（変更前 `git show HEAD:scripts/install.sh | grep -c 'copy_if_absent'` は6で増加を確認）。`grep -c 'vault/rules' scripts/install.sh` / 出力: 1（≥1）"
+    },
+    {
+      "text": "空の一時ディレクトリへ `bash scripts/install.sh <tmp>` を実行すると、上記7ファイルすべてが `<tmp>` 配下に存在する（確認コマンド：`tmp=$(mktemp -d) && bash scripts/install.sh \"$tmp\" && ls \"$tmp/vault/rules/README.md\" \"$tmp/vault/rules/common/.gitkeep\" \"$tmp/vault/rules/creator/.gitkeep\" \"$tmp/vault/rules/verifier/.gitkeep\" \"$tmp/vault/rules/planner/.gitkeep\" \"$tmp/vault/templates/rule.md\" \"$tmp/scripts/rules.sh\"`）",
+      "ok": true,
+      "note": "実行コマンド: 上記のとおり（tmp=/var/folders/.../tmp.y5FrYNv3oF） / 出力: install.sh のログに7ファイルすべて `copy` 行あり、続く `ls` は7ファイルすべてのフルパスをエラーなく列挙（存在確認OK）"
+    },
+    {
+      "text": "同じ一時ディレクトリへ2回目の `bash scripts/install.sh \"$tmp\"` を実行すると、出力に上記7ファイルぶんの `skip` 行が含まれ `copy` 行は含まれない（確認コマンド：`bash scripts/install.sh \"$tmp\" | grep -E 'rules|rule.md'` の各行が `skip` で始まる）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/install.sh \"$tmp\" | grep -E 'rules|rule.md'` / 出力: 7行すべて `skip  (exists) ...`（vault/templates/rule.md, vault/rules/README.md, vault/rules/{common,creator,verifier,planner}/.gitkeep, scripts/rules.sh）で copy 行なし"
+    },
+    {
+      "text": "`git diff --stat -- scripts/smoke.sh` の出力が空である（`scripts/smoke.sh` を変更していない）",
+      "ok": true,
+      "note": "実行コマンド: `git diff --stat -- scripts/smoke.sh` / 出力: 空（終了コード0、出力なし）"
+    }
+  ],
+  "reasons": []
+}

@@ -1,0 +1,34 @@
+{
+  "task": "T-0013",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:35",
+  "criteria": [
+    {
+      "text": "`README.md` に `## 拡張ポイント（ルール）` の見出しが1つあり、その節（次の `## ` 見出しの直前まで）が25行以内で、`common`・`creator`・`verifier`・`planner` の4語すべてを含む（確認：`awk '/^## 拡張ポイント/,/^## [^拡]/' README.md` で節を切り出し、行数と4語の有無を確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '^## 拡張ポイント（ルール）' README.md` / 出力: 35行目に1件のみ。実行コマンド: `awk '/^## 拡張ポイント/,/^## [^拡]/' README.md | wc -l` / 出力: 15（見出し行と次見出し行を除いた本文は13行で25行以内）。実行コマンド: `awk '...' README.md | grep -o -E 'common|creator|verifier|planner' | sort -u` / 出力: common, creator, planner, verifier の4語すべて検出"
+    },
+    {
+      "text": "節に「受け入れ基準からルールを参照する書き方」の例が1つ含まれる（例：`vault/rules/common/xxx.md に従っている` のようにルールファイルを名指しする一文。確認：節の中に `vault/rules/` を含む例示行が1件以上ある）",
+      "ok": true,
+      "note": "実行コマンド: `awk '/^## 拡張ポイント/,/^## [^拡]/' README.md | grep -n 'vault/rules/'` / 出力: 12行目に「受け入れ基準からルールファイルを名指しして参照する（例：`vault/rules/common/naming.md` の命名規則に従っている）」の例示行を確認"
+    },
+    {
+      "text": "節に「doing/review 中は `vault/rules/` を編集できない（フックで拒否される）」旨の記述がある（確認：節の中に `doing` と `review` と `編集` を含む行がある）",
+      "ok": true,
+      "note": "実行コマンド: `awk '/^## 拡張ポイント/,/^## [^拡]/' README.md | grep -n 'doing'` を確認 / 出力: 13行目「`doing`/`review` 中のタスクがある間は `vault/rules/` を編集できない（`agent_write_guard.py` がフックで拒否する）」に doing・review・編集の3語すべてが含まれる"
+    },
+    {
+      "text": "`README.md` の「## 構成」ツリーに `vault/rules/` と `scripts/rules.sh` の記載が追加されている（確認：`grep -c 'vault/rules/' README.md` ≥ 2 かつ `grep -c 'rules.sh' README.md` ≥ 2、うち1件ずつが「## 構成」節内にある）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules/' README.md` / 出力: 7（≥2）。実行コマンド: `grep -c 'rules.sh' README.md` / 出力: 2（≥2）。実行コマンド: `awk '/^## 構成/,0' README.md | grep -c 'vault/rules/'` / 出力: 1。実行コマンド: `awk '/^## 構成/,0' README.md | grep -c 'rules.sh'` / 出力: 1（構成節内にそれぞれ1件以上）"
+    },
+    {
+      "text": "`docs/runbook.md` に「ルールを足す」手順が追加されており、本文（見出し行を除く）が5行以内（確認：`grep -n 'ルールを足す' docs/runbook.md`）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'ルールを足す' docs/runbook.md` / 出力: 41行目「## 6. ルールを足す」。Read で確認したところ、42〜45行目の4行（見出し行を除く本文）で「ファイルを置く→ディレクトリを決める→受け入れ基準から参照する」の3手順が書かれ、46行目で次見出し「## 困ったとき」に切り替わっており5行以内"
+    }
+  ],
+  "reasons": []
+}

@@ -38,6 +38,11 @@ git mv vault/verdicts/T-0001.json vault/archive/$(date +%Y-%m)/
 - `vault/todo.md` から該当行を削除する（ID は再利用しない。採番は archive も含めた最大値 +1）
 - `vault/log/queue.md` は消さない（追記専用）
 
+## 6. ルールを足す
+1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く
+2. 渡したい相手（全員／作成エージェント／verifier／planner）でディレクトリを決める
+3. 反映させたい受け入れ基準の行にルールファイルを名指しして参照する
+
 ## 困ったとき
 | 症状 | 見るところ |
 |---|---|

@@ -20,6 +20,8 @@
 | T-0009 | done | 1 | - | verifier にルール読み込みと参照時の判定手順を追加する | |
 | T-0010 | done | 1 | - | planner.md にルール読み込み手順を追加し vault-spec.md の粒度基準を更新する | |
 | T-0011 | done | 1 | - | agent_write_guard.py に doing/review 中の vault/rules/ 書き込み拒否を追加する | |
+| T-0012 | done | 1 | - | install.sh にルール拡張ポイントの複製対象を追加する | |
+| T-0013 | done | 1 | T-0012 | README.md に「拡張ポイント（ルール）」節を追加し runbook にルール追加手順を書く | |
 
 ## 計画
 | id | status | title |
@@ -35,3 +37,4 @@
 | P-009 | approved | verifier にルール読み込みを追加する |
 | P-010 | approved | planner にルール読み込みを追加する |
 | P-011 | approved | 改ざん防止フック（agent_write_guard.py 拡張） |
+| P-012 | approved | install.sh と README（拡張ポイントを配る・説明する） |

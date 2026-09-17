@@ -32,6 +32,20 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 - 人が日々やることは `docs/runbook.md`、Vault の仕様は `docs/vault-spec.md` を参照
 - 無人で回す場合は `claude -p "/run-queue"` を cron や CI から定期実行する
 
+## 拡張ポイント（ルール）
+インストール先ごとの「ルール」（コーディングルール・開発標準・方式設計・テスト標準・テスト観点など）を、作成エージェント・verifier・planner に渡せる。ハーネス本体はルールを同梱しない。書くのはインストール先の仕事。
+
+| ディレクトリ | 渡す相手 |
+|---|---|
+| `vault/rules/common/` | 全員（作成エージェント・verifier・planner） |
+| `vault/rules/creator/` | 作成エージェントのみ |
+| `vault/rules/verifier/` | verifier のみ |
+| `vault/rules/planner/` | planner のみ |
+
+- 読み込みは `bash scripts/rules.sh <creator|verifier|planner>` で一本化（`common/` → 役割ディレクトリの順、ファイル名順）
+- 受け入れ基準からルールファイルを名指しして参照する（例：「`vault/rules/common/naming.md` の命名規則に従っている」）と、verifier がそのファイルを根拠に判定する
+- `doing`/`review` 中のタスクがある間は `vault/rules/` を編集できない（`agent_write_guard.py` がフックで拒否する）
+
 ## 仕組み
 ```
  人                      作成エージェント（メイン）              verifier（別コンテキスト）
@@ -54,7 +68,7 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 ## 構成
 ```
 .claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（run-queue, plan）
-vault/     todo.md（正本）、tasks/、plans/、verdicts/、log/queue.md、templates/、archive/
+vault/     todo.md（正本）、tasks/、plans/、verdicts/、log/queue.md、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
 docs/      vault-spec.md（仕様の正本）、runbook.md、decisions.md
-scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）
+scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）、rules.sh（ルール解決）
 ```

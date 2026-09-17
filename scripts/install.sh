@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh <target-dir>
-# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/）、vault/（テンプレート・空の todo.md・空ディレクトリ）、scripts/smoke.sh
+# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/）、vault/（テンプレート・rules/ 雛形・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh
 # 既存ファイルは上書きしない（.claude/settings.json と vault/todo.md が既にあれば残す）。
 set -eu
 if [ $# -ne 1 ]; then echo "usage: bash scripts/install.sh <target-dir>" >&2; exit 2; fi
@@ -22,7 +22,9 @@ chmod +x "$DST"/.claude/hooks/*.py
 
 # vault/（状態ファイルは初期状態で複製する）
 for d in tasks plans verdicts log templates archive; do mkdir -p "$DST/vault/$d"; done
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep templates/task.md templates/plan.md; do
+# vault/rules/ 配下は README と各役割ディレクトリの .gitkeep（雛形）のみ複製する。
+# 人が書く実ルールは複製・上書きの対象にしない。
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep templates/task.md templates/plan.md templates/rule.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 if [ ! -e "$DST/vault/todo.md" ]; then
@@ -50,8 +52,9 @@ if [ ! -e "$DST/vault/log/queue.md" ]; then
   echo "copy  vault/log/queue.md"
 fi
 
-# scripts/smoke.sh、docs/vault-spec.md（エージェントが参照する正本）
+# scripts/smoke.sh、scripts/rules.sh、docs/vault-spec.md（エージェントが参照する正本）
 copy_if_absent "$SRC/scripts/smoke.sh" "$DST/scripts/smoke.sh"
+copy_if_absent "$SRC/scripts/rules.sh" "$DST/scripts/rules.sh"
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
 
 # CLAUDE.md（無ければ複製、あれば追記の案内）

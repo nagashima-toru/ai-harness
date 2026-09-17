@@ -33,6 +33,7 @@
 ## フック
 - Stop：`.claude/hooks/stop_gate.py` が todo.md と verdict を照合し、整合しない終了をブロックする（判定のみ、状態は書き換えない）
 - PreToolUse：`.claude/hooks/agent_write_guard.py` が verifier / planner の書き込み先を制限する
+- PostToolUse：`.claude/hooks/todo_guard.py` が todo.md の整合性（doing の重複・blocked の question 空・status 不正・id 重複・列数不正）を検査する
 
 ## 禁止
 - `done` のタスク票・verdict を編集すること

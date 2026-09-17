@@ -1,0 +1,15 @@
+{
+  "task": "T-0005",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 21:56",
+  "criteria": [
+    {"text": "`.claude/hooks/todo_guard.py` が存在し、以下の壊れたケースそれぞれでトップレベル `decision: \"block\"` と `reason`（何が壊れているか・直し方を含む）を返す：(a) doing が2件以上、(b) blocked なのに question が空、(c) status が5値以外、(d) 「## タスク」表の id 重複、(e) データ行の列数が6でない。確認：`bash scripts/smoke.sh` 内の該当ケースが `ok` になる", "ok": true, "note": "smoke.sh 内の (a)〜(e) の各ケース（doing/question/status/重複/列数）がいずれも ok"},
+    {"text": "`vault/todo.md` が存在しない場合、および「## タスク」表にデータ行が無い場合は何も出力せず exit 0 で終わる。確認：`printf '{}' | CLAUDE_PROJECT_DIR=<todo.mdが無い一時dir> python3 .claude/hooks/todo_guard.py; echo $?` の出力が空文字列＋`0`", "ok": true, "note": "一時ディレクトリで実行し出力なし・RC=0 を確認。smoke.sh 内のデータ行なしケースも ok"},
+    {"text": "`.claude/settings.json` の `hooks.PostToolUse` に matcher `Write|Edit|MultiEdit|Bash` で `todo_guard.py` が登録されている。確認：`python3 -c \"import json; d=json.load(open('.claude/settings.json')); print(any(g['matcher']=='Write|Edit|MultiEdit|Bash' and any('todo_guard.py' in h['command'] for h in g['hooks']) for g in d['hooks']['PostToolUse']))\"` が `True`", "ok": true, "note": "指定コマンドの出力が True"},
+    {"text": "`bash scripts/smoke.sh` が既存23件＋新規ケース全件を成功で終える。確認：`bash scripts/smoke.sh | tail -1` が `fail=0` を含み、かつ pass の件数が24以上（既存23件より増えている）", "ok": true, "note": "出力は `smoke: pass=31 fail=0`。fail=0 かつ pass=31（24以上）"},
+    {"text": "`docs/vault-spec.md` に `todo_guard.py` の説明が1〜2行追記されている。確認：`grep -c todo_guard.py docs/vault-spec.md` が1以上", "ok": true, "note": "grep -c の結果は 1"},
+    {"text": "`CLAUDE.md` の「## フック」節に `todo_guard.py` の説明が1行追加され、かつファイル全体が60行以内。確認：`grep -c todo_guard.py CLAUDE.md` が1以上、かつ `wc -l < CLAUDE.md` が60以下", "ok": true, "note": "grep -c の結果は 1、wc -l の結果は 41（60以下）"}
+  ],
+  "reasons": []
+}

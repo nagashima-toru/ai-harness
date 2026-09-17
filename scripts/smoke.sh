@@ -4,6 +4,7 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STOP_HOOK="$ROOT/.claude/hooks/stop_gate.py"
+TODO_HOOK="$ROOT/.claude/hooks/todo_guard.py"
 GUARD_HOOK="$ROOT/.claude/hooks/agent_write_guard.py"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -102,6 +103,41 @@ expect_guard "planner が vault/todo.md に Edit → 拒否" deny \
   "$(run_guard '{"agent_type":"planner","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/vault/todo.md"}}')"
 expect_guard "メインエージェントが README.md に Edit → 許可" allow \
   "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+
+echo "== todo_guard.py =="
+make_todo_rows() { # 各引数が「## タスク」表のデータ行1行
+  {
+    echo "# キュー"
+    echo
+    echo "## タスク"
+    echo "| id | status | attempt | after | title | question |"
+    echo "|---|---|---|---|---|---|"
+    for r in "$@"; do echo "$r"; done
+    echo
+    echo "## 計画"
+    echo "| id | status | title |"
+    echo "|---|---|---|"
+  } > "$TMP/vault/todo.md"
+}
+run_todo_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$TODO_HOOK"; }
+
+make_todo_rows "| T-0001 | doing | 1 | - | A | |" "| T-0002 | doing | 1 | - | B | |"
+expect "(a) doing が2件 → ブロック" block "$(run_todo_guard)" "doing"
+make_todo_rows "| T-0001 | blocked | 1 | - | A | |"
+expect "(b) blocked なのに question が空 → ブロック" block "$(run_todo_guard)" "question"
+make_todo_rows "| T-0001 | pending | 0 | - | A | |"
+expect "(c) status が5値以外 → ブロック" block "$(run_todo_guard)" "status"
+make_todo_rows "| T-0001 | todo | 0 | - | A | |" "| T-0001 | done | 1 | - | B | |"
+expect "(d) id が重複 → ブロック" block "$(run_todo_guard)" "重複"
+make_todo_rows "| T-0001 | todo | 0 | - | A |"
+expect "(e) データ行の列数が6でない → ブロック" block "$(run_todo_guard)" "列数"
+make_todo_rows "| T-0001 | done | 1 | - | A | |" "| T-0002 | doing | 2 | T-0001 | B | |" "| T-0003 | blocked | 1 | - | C | 方針を決めてほしい |"
+expect "正常な todo.md（doing 1件・blocked に question あり）→ 許可" allow "$(run_todo_guard)"
+make_todo_rows
+expect "データ行が無い → 許可" allow "$(run_todo_guard)"
+EMPTY_DIR="$(mktemp -d)"
+expect "todo.md が無い → 許可" allow "$(printf '{}' | CLAUDE_PROJECT_DIR="$EMPTY_DIR" python3 "$TODO_HOOK")"
+rm -rf "$EMPTY_DIR"
 
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"

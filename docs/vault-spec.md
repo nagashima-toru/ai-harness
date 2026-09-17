@@ -112,3 +112,7 @@ frontmatter に `id` と `status`（`draft` / `approved`）。本文は `ゴー�
 | FAIL かつ attempt ≥ 上限 | ブロック：blocked にし question を書く（既に blocked なら許可） |
 | PASS だが status が done でない | ブロック：done にし log に追記 |
 | PASS かつ done | 許可 |
+
+## 11. todo_guard フックの判定
+
+`.claude/hooks/todo_guard.py` は PostToolUse（`Write|Edit|MultiEdit|Bash`）で `vault/todo.md` を検査し、doing が2件以上・blocked なのに question が空・status が5値以外・id の重複・データ行の列数が6でない、のいずれかならブロックして直し方を示す。todo.md が無い場合とデータ行が無い場合は何もしない。

@@ -21,3 +21,7 @@
 - 2026-09-17 21:45 T-0004 todo→doing attempt=1
 - 2026-09-17 21:46 T-0004 doing→review attempt=1
 - 2026-09-17 21:47 T-0004 review→done attempt=1 verdict PASS、6件すべて note あり。新しい形式検証を通過
+- 2026-09-17 21:52 P-005 draft→approved tasks=T-0005
+- 2026-09-17 21:54 T-0005 todo→doing attempt=1
+- 2026-09-17 21:55 T-0005 doing→review attempt=1
+- 2026-09-17 21:56 T-0005 review→done attempt=1 verdict PASS、6件すべて note あり

@@ -1,0 +1,13 @@
+{
+  "task": "T-0001",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 16:23",
+  "criteria": [
+    {"text": "「## 使い方」節の箇条書きに、`claude -p \"/run-queue\"` を cron や CI から定期実行して無人で回す旨の行が1行ある。確認：`awk '/^## 使い方/{f=1;next} /^## /{f=0} f' README.md | grep -c 'cron'` の出力が `1`", "ok": true, "note": ""},
+    {"text": "README.md の変更は追加1行のみで、削除行は無い。確認：`git diff --numstat -- README.md` の出力が `1\t0\tREADME.md`", "ok": true, "note": ""},
+    {"text": "README.md 以外のファイルは変更していない（vault/ 配下を除く）。確認：`git status --porcelain | grep -v '^.. vault/' | grep -v 'README.md'` の出力が空", "ok": true, "note": ""},
+    {"text": "`bash scripts/smoke.sh` が通る。確認：`bash scripts/smoke.sh | tail -1` に `fail=0` が含まれる", "ok": true, "note": ""}
+  ],
+  "reasons": []
+}

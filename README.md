@@ -30,6 +30,7 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 | `claude -p "/run-queue"` | 同じことを無人（非対話）で行う |
 
 - 人が日々やることは `docs/runbook.md`、Vault の仕様は `docs/vault-spec.md` を参照
+- 無人で回す場合は `claude -p "/run-queue"` を cron や CI から定期実行する
 
 ## 仕組み
 ```

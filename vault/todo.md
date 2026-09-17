@@ -9,7 +9,7 @@
 ## タスク
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-0001 | todo | 0 | - | ハーネスの動作確認（README の使い方節に1行追記） | |
+| T-0001 | done | 1 | - | ハーネスの動作確認（README の使い方節に1行追記） | |
 
 ## 計画
 | id | status | title |

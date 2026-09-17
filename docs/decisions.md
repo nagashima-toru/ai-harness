@@ -20,3 +20,6 @@
 | 2026-09-17 | 許可リストに `awk`・`sed`・`sort` 等のテキスト処理コマンドを追加 | 通し検証で verifier の確認コマンド（awk）が拒否されたため |
 | 2026-09-17 | verifier の Bash 書き込み判定はリダイレクト・tee・rm/mv/cp・git 書き込み系・sed -i の簡易パターン | 通し検証で `/tmp` へのリダイレクトを正しく拒否した。厳密な OS レベル制限が要るなら sandbox を使う |
 | 2026-09-17 | `sed -i` は許可リストに入るが verifier / planner ではガードが拒否する | メインエージェントの通常編集は許可しつつ、サブエージェントの越境書き込みは止める |
+| 2026-09-17 | ルール拡張ポイント（`vault/rules/`）の通し検証：一時 install 先に `vault/rules/common/naming.md`・`vault/rules/verifier/check.md` を仮配置し `claude -p --model sonnet "/run-queue"` を実行したところ、タスク票の「進捗」に「読んだルール: naming.md」、`verdict.json` の該当 criteria の `note` に「参照ルール: vault/rules/common/naming.md」が記録され、意図どおり作成エージェント・verifier がルールを読んで反映した | ルール読み込み（③④）と verifier の参照時判定（④）が実運用で機能することを確認するため |
+| 2026-09-17 | `agent_write_guard.py` を doing 中の todo.md で単体呼び出しし、`vault/rules/` 配下への Write が `[agent_write_guard] doing/review 中は vault/rules/ を編集できません（対象タスク: T-0001）` で deny されることを確認 | 改ざん防止フック（⑥）が意図どおり動作することを確認するため |
+| 2026-09-17 | 初回の `claude -p` 実行は一時ディレクトリが未信頼のため `vault/todo.md` への書き込み権限が無く失敗した。`~/.claude.json` の該当 `projects["<tmpdir>"].hasTrustDialogAccepted` を `true` に設定して再実行し成功した（検証後に `false` へ戻した） | 無人実行（`claude -p`）は対象フォルダを事前に信頼させる必要があるという runbook の記載どおりの挙動を実地で確認。CI 等で使う場合はこの設定を自動化する必要がある |

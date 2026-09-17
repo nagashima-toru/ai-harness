@@ -1,0 +1,39 @@
+{
+  "task": "T-0014",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:43",
+  "criteria": [
+    {
+      "text": "`docs/decisions.md` に通し検証に関する行が追記されている：確認コマンド `git diff -- docs/decisions.md | grep -c '^+|'` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- docs/decisions.md | grep -c '^+|'` / 出力: 3（3行の追記あり、いずれも通し検証に関する内容）"
+    },
+    {
+      "text": "追記行のいずれかに `vault/rules/` という文字列が含まれる：確認コマンド `grep -c 'vault/rules' docs/decisions.md`（実行前より増えていること）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules' docs/decisions.md`（現状）→2、`git show HEAD:docs/decisions.md | grep -c 'vault/rules'`（実行前=直近コミット時点）→0。0→2 に増加を確認"
+    },
+    {
+      "text": "一時ディレクトリでの `claude -p --model sonnet \"/run-queue\"` 実行で、作成エージェント・verifier がルールを読んだ記録（タスク票「進捗」の「読んだルール」行、verdict.json の該当 criteria の `note` に含まれるルールファイルのパス）が得られたか、得られなかった場合はその旨と手順を `docs/decisions.md` に記録している",
+      "ok": true,
+      "note": "確認方法: docs/decisions.md の追記行（23行目）を Read で確認。内容: 「タスク票の『進捗』に『読んだルール: naming.md』、verdict.json の該当 criteria の note に『参照ルール: vault/rules/common/naming.md』が記録され…確認した」と記載されており、得られた記録の内容が具体的に書かれている。一時ディレクトリ自体は本タスクの成果物対象外（決定済み事項どおり削除可）のため、記録の有無・内容を根拠に判定"
+    },
+    {
+      "text": "`agent_write_guard.py` を doing 中の `vault/todo.md` を用意して単体呼び出しし、`vault/rules/` 配下への Write が deny されたことを確認し、その結果が `docs/decisions.md` に記録されている",
+      "ok": true,
+      "note": "確認方法: docs/decisions.md の追記行（24行目）を Read で確認。内容: 「agent_write_guard.py を doing 中の todo.md で単体呼び出しし、vault/rules/ 配下への Write が『[agent_write_guard] doing/review 中は vault/rules/ を編集できません（対象タスク: T-0001）』で deny されることを確認」と記載あり"
+    },
+    {
+      "text": "ハーネス本体（このリポジトリ）の `vault/rules/{common,creator,verifier,planner}/` に `.gitkeep` 以外のファイルが増えていない：確認コマンド `find vault/rules/common vault/rules/creator vault/rules/verifier vault/rules/planner -type f ! -name '.gitkeep'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `find vault/rules/common vault/rules/creator vault/rules/verifier vault/rules/planner -type f ! -name '.gitkeep'` / 出力: 空（.gitkeep 以外のファイルなし）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=40 fail=0"
+    }
+  ],
+  "reasons": []
+}

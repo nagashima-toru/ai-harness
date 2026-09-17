@@ -1,0 +1,15 @@
+{
+  "task": "T-0003",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 17:01",
+  "criteria": [
+    {"text": "`.claude/agents/planner.md` の「粒度の基準」節に、run-queue の手順で必ず変わるファイル（vault/todo.md を含む）の差分不変を受け入れ基準に書かない旨のルールが追加されている。確認：`grep -A15 '^## 粒度の基準' .claude/agents/planner.md | grep -q 'vault/todo.md'`", "ok": true, "note": ""},
+    {"text": "同じ追記箇所に、形式や特定行の不変を検査したい場合は見出し行・列構成など変わらない部分に限定した確認コマンドにする旨が含まれている。確認：`grep -A15 '^## 粒度の基準' .claude/agents/planner.md | grep -q '見出し行'`", "ok": true, "note": ""},
+    {"text": "`docs/vault-spec.md` 第9節に同趣旨が1〜2行で追記されている。確認：`grep -A10 '^## 9\\. 粒度の基準' docs/vault-spec.md | grep -q '差分'`", "ok": true, "note": ""},
+    {"text": "`.claude/agents/planner.md` の frontmatter（`tools:` 行を含む）は変更していない。確認：`git diff -- .claude/agents/planner.md | grep '^[+-]tools:'` の出力が空", "ok": true, "note": ""},
+    {"text": "`.claude/hooks/stop_gate.py` は変更していない。確認：`git diff --quiet -- .claude/hooks/stop_gate.py`", "ok": true, "note": ""},
+    {"text": "`vault/tasks/T-0001.md` と `vault/tasks/T-0002.md` は変更していない。確認：`git diff --quiet -- vault/tasks/T-0001.md vault/tasks/T-0002.md`", "ok": true, "note": ""}
+  ],
+  "reasons": []
+}

@@ -44,4 +44,5 @@ git mv vault/verdicts/T-0001.json vault/archive/$(date +%Y-%m)/
 | 終了できない（Stop フックがブロックする） | 表示された理由に従う。`vault/todo.md` の doing/review 行と `vault/verdicts/<id>.json` の整合 |
 | フックが動かない | `bash scripts/smoke.sh`。`python3` のパス。フォルダを信頼済みか |
 | verifier が書けない | `vault/verdicts/` 以外へ書こうとしていないか（`agent_write_guard.py` が拒否する） |
+| エージェント定義（`.claude/agents/*.md`）やスキルを変えたのに反映されない | 定義はセッション開始時に読み込まれる。編集後はセッションを再起動する（`claude -p` は起動ごとに読み直すので影響なし） |
 | 状態が壊れた | `vault/log/queue.md` を見て todo.md を手で直す。doing は1件だけにする |

@@ -1,0 +1,15 @@
+{
+  "task": "T-0017",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 00:07",
+  "criteria": [
+    {"text": "`.claude/agents/planner.md` の「## 粒度の基準」に「1計画は5〜7タスクまで。超える場合は次フェーズの候補を計画票の末尾に書くだけにし、票は起こさない」旨の1行がある。確認：`grep -c '5〜7タスク' .claude/agents/planner.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '5〜7タスク' .claude/agents/planner.md` / 出力: 1"},
+    {"text": "`scripts/install.sh` の複製対象に `vault/designs/.gitkeep` と `vault/templates/design.md` が追加されている。確認：`grep -c 'designs/.gitkeep' scripts/install.sh` と `grep -c 'templates/design.md' scripts/install.sh` がともに1以上", "ok": true, "note": "実行コマンド: `grep -c 'designs/.gitkeep' scripts/install.sh; grep -c 'templates/design.md' scripts/install.sh` / 出力: 1, 1"},
+    {"text": "`README.md` に `/design` の説明と使い分けの線引き（`/plan` との違い）が追記されている。確認：`grep -c '/design' README.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '/design' README.md` / 出力: 2"},
+    {"text": "`docs/runbook.md` に `/design` の使い方が追記されている。確認：`grep -c '/design' docs/runbook.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '/design' docs/runbook.md` / 出力: 2"},
+    {"text": "`CLAUDE.md` に `/design` の記述があり、全体が60行以内。確認：`grep -c '/design' CLAUDE.md` が1以上 かつ `wc -l < CLAUDE.md` が60以下", "ok": true, "note": "実行コマンド: `grep -c '/design' CLAUDE.md; wc -l < CLAUDE.md` / 出力: 1, 42"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（既存の検証が壊れていない）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=40 fail=0"}
+  ],
+  "reasons": []
+}

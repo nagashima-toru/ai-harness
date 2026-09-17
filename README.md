@@ -25,9 +25,12 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 ## 使い方
 | コマンド | 何をするか |
 |---|---|
+| `/design <ゴール>` | 大きなゴールを調査し、人に質問し、決定事項を固めた設計文書 `vault/designs/D-xxx.md` を作る |
 | `/plan <ゴール>` | planner がゴールをタスクに分割して draft を作る。`/plan approve P-001` で承認し todo.md に登録 |
 | `/run-queue` | todo.md の先頭タスクを1件処理する（作成 → verifier → done / 再試行 / blocked） |
 | `claude -p "/run-queue"` | 同じことを無人（非対話）で行う |
+
+`/design` と `/plan` の使い分け：受け入れ基準が7行に収まらない・成果物が複数ファイルにまたがる・人に聞くことがある、のいずれかに当てはまる大きなゴールは `/design` から始める。設計文書のフェーズを1つずつ `/plan` に渡す。小さい要求は `/plan` に直行する。
 
 - 人が日々やることは `docs/runbook.md`、Vault の仕様は `docs/vault-spec.md` を参照
 - 無人で回す場合は `claude -p "/run-queue"` を cron や CI から定期実行する
@@ -67,8 +70,8 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 
 ## 構成
 ```
-.claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（run-queue, plan）
-vault/     todo.md（正本）、tasks/、plans/、verdicts/、log/queue.md、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
+.claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（design, plan, run-queue）
+vault/     todo.md（正本）、tasks/、plans/、designs/（設計文書）、verdicts/、log/queue.md、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
 docs/      vault-spec.md（仕様の正本）、runbook.md、decisions.md
 scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）、rules.sh（ルール解決）
 ```

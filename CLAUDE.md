@@ -29,6 +29,7 @@
 ## スキル
 - `/run-queue`：キューを1件処理する（「続きから」「次のタスクをやって」）
 - `/plan <ゴール>`：計画を draft で作る。`/plan approve P-xxx` で承認して todo.md に登録する
+- `/design <ゴール>`：大きなゴールを調査・質問して設計文書 `vault/designs/D-xxx.md` にする。受け入れ基準7行超・複数ファイル・人に聞くことあり、のいずれかの時だけ使い、フェーズごとに `/plan` へ渡す
 
 ## フック
 - Stop：`.claude/hooks/stop_gate.py` が todo.md と verdict を照合し、整合しない終了をブロックする（判定のみ、状態は書き換えない）

@@ -24,7 +24,7 @@ chmod +x "$DST"/.claude/hooks/*.py
 for d in tasks plans verdicts log templates archive; do mkdir -p "$DST/vault/$d"; done
 # vault/rules/ 配下は README と各役割ディレクトリの .gitkeep（雛形）のみ複製する。
 # 人が書く実ルールは複製・上書きの対象にしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep templates/task.md templates/plan.md templates/rule.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 if [ ! -e "$DST/vault/todo.md" ]; then

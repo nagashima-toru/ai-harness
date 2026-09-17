@@ -1,0 +1,39 @@
+{
+  "task": "T-0015",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 00:04",
+  "criteria": [
+    {
+      "text": "`docs/vault-spec.md` に新節があり、ID 採番規則（`D-` + 3桁、既存最大値+1、再利用禁止）が書かれている。確認：`grep -c 'D-' docs/vault-spec.md` の出力が節追加前より増えている",
+      "ok": true,
+      "note": "実行コマンド: `git show HEAD:docs/vault-spec.md | grep -c 'D-'`（節追加前）→ 0 / `grep -c 'D-' docs/vault-spec.md`（現在）→ 4。増加を確認。節本文（159〜165行目）に「D- + 3桁」「既存ファイルの最大値+1」と明記。再利用禁止は明示の語はないが「最大値+1」により再利用されない採番方式が示されている"
+    },
+    {
+      "text": "節に、フェーズごとの4点セット（ゴール文／受け入れ基準の候補／決定済み／依存）の形式が書かれている",
+      "ok": true,
+      "note": "確認方法: Read で docs/vault-spec.md 167〜175行目を確認。「### 形式」節の表に「ゴール文」「受け入れ基準の候補」「決定済み」「依存」の4行が記載されている"
+    },
+    {
+      "text": "節に、`/design` の出力（`vault/designs/D-xxx.md`）を人が確認してから `/plan` に渡す、`/design` は planner サブエージェントを呼ばない、という plan との関係が明記されている",
+      "ok": true,
+      "note": "確認方法: Read で docs/vault-spec.md 177〜180行目「### `/plan` との関係」を確認。「`/design` は planner サブエージェントを呼ばない」「人が設計文書を確認してから、フェーズのゴール文を1つずつ `/plan` に渡す」と明記されている"
+    },
+    {
+      "text": "`vault/templates/design.md` が存在し、frontmatter に `id` を持ち、フェーズ単位で繰り返す4点セットの見出し構成になっている",
+      "ok": true,
+      "note": "確認方法: Read で vault/templates/design.md を確認。frontmatter（1〜3行目）に `id: D-001`、フェーズ1・フェーズ2それぞれに「### ゴール文」「### 受け入れ基準の候補」「### 決定済み」「### 依存」の4見出しが繰り返されている"
+    },
+    {
+      "text": "`vault/designs/.gitkeep` が存在する",
+      "ok": true,
+      "note": "実行コマンド: `test -f vault/designs/.gitkeep && echo \"gitkeep exists\"` / 出力: gitkeep exists"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（既存の検証が壊れていない）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=40 fail=0"
+    }
+  ],
+  "reasons": []
+}

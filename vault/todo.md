@@ -23,6 +23,9 @@
 | T-0012 | done | 1 | - | install.sh にルール拡張ポイントの複製対象を追加する | |
 | T-0013 | done | 1 | T-0012 | README.md に「拡張ポイント（ルール）」節を追加し runbook にルール追加手順を書く | |
 | T-0014 | done | 1 | - | ルール拡張ポイントの通し検証を行い docs/decisions.md に記録する | |
+| T-0015 | done | 1 | - | 設計文書の vault 仕様とテンプレート・置き場を作る | |
+| T-0016 | done | 1 | T-0015 | /design スキルを新規作成する | |
+| T-0017 | done | 1 | T-0016 | /design の配布と周知、planner のタスク数上限を追加する | |
 
 ## 計画
 | id | status | title |
@@ -40,3 +43,4 @@
 | P-011 | approved | 改ざん防止フック（agent_write_guard.py 拡張） |
 | P-012 | approved | install.sh と README（拡張ポイントを配る・説明する） |
 | P-013 | approved | ルール拡張ポイントの通し検証 |
+| P-014 | approved | /design スキルの追加と planner のタスク数上限 |

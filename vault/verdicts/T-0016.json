@@ -1,0 +1,34 @@
+{
+  "task": "T-0016",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 00:05",
+  "criteria": [
+    {
+      "text": "`.claude/skills/design/SKILL.md` が存在し、frontmatter に `name: design`・`description`・`argument-hint` を持つ。確認：`grep -c '^name: design' .claude/skills/design/SKILL.md` が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^name: design' .claude/skills/design/SKILL.md` / 出力: 1。ファイルを Read し、frontmatter（1-5行目）に name: design（2行目）、description（3行目）、argument-hint（4行目）が揃っていることも確認した"
+    },
+    {
+      "text": "手順に「リポジトリを調査 → 人が決めるべき選択肢を AskUserQuestion でまとめて聞く → 回答を決定事項に固定 → フェーズに分け4点セットで書く → 提示して止まる」の流れが書かれている。確認：`grep -c 'AskUserQuestion' .claude/skills/design/SKILL.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'AskUserQuestion' .claude/skills/design/SKILL.md` / 出力: 1。ファイルの「手順」節（17-27行目）を Read で確認し、1.調査する→2.人に聞く（AskUserQuestion でまとめて聞く）→3.決定事項を固める→4.フェーズに分ける（4点セット：ゴール文/受け入れ基準の候補/決定済み/依存）→5.書く→6.提示して止まる、の順で記載されていることを確認した"
+    },
+    {
+      "text": "planner サブエージェントを呼ばないことが明記されている。確認：`grep -c 'planner' .claude/skills/design/SKILL.md` が1以上（呼ばない旨の文言を含む）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'planner' .claude/skills/design/SKILL.md` / 出力: 3。該当箇所を Read で確認：3行目 description に「planner は呼ばない」、30行目「注意」節に「planner サブエージェントは呼ばない。このスキルの出力は設計文書だけで、計画票・タスク票は作らない」と明記されている"
+    },
+    {
+      "text": "使う条件の線引き（受け入れ基準が7行に収まらない／成果物が複数ファイルにまたがる／人に聞くことがある、のいずれかに当てはまる時だけ使い、それ以外は `/plan` に直行する）が書かれている",
+      "ok": true,
+      "note": "確認方法: SKILL.md を Read。11-15行目「使う条件（これ以外は /plan に直行する）」節に「次のいずれかに当てはまる時だけ使う」として『受け入れ基準が7行に収まらない』『成果物が複数ファイル・複数コンテキストにまたがる』『人に聞くこと（方式の選択・命名・置き場など）がある』の3項目が列挙されており、受け入れ基準の線引きと一致する"
+    },
+    {
+      "text": "`vault/designs/D-xxx.md` を `vault/templates/design.md` の構成でテンプレートの見出しに沿って書く手順が含まれている",
+      "ok": true,
+      "note": "確認方法: SKILL.md を Read。26行目「書く」の手順に『vault/designs/D-xxx.md に vault/templates/design.md の見出し構成で書く。ID は vault/designs/ の既存最大値+1（D- + 3桁）』と明記。あわせて `ls vault/templates/design.md` で参照先テンプレートが実在することを確認した（出力: vault/templates/design.md）"
+    }
+  ],
+  "reasons": []
+}

@@ -141,4 +141,16 @@ vault/rules/
 ルールは受け入れ基準を増やすものではなく、**基準の判定方法を与えるもの**。受け入れ基準が `vault/rules/` のルールを参照する時（例：「コーディングルールに従っている」）だけ、verifier はルールを根拠に真偽を判定する。受け入れ基準がルールに触れていなければ、ルールを理由に FAIL にしない。作成側だけに渡した `creator/` のルールは verifier から見えないため、それを根拠に落とすこともない。
 
 ### 改ざん防止
-`doing` / `review` 中のタスクがある間は、`vault/rules/` への書き込みをフックで拒否する（実装は `.claude/hooks/agent_write_guard.py`）。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めることを防ぐ。
+`doing` / `review` 中のタスクがある間は、`vault/rules/` への書き込みをフックで拒否する（実装は `.claude/hooks/agent_write_guard.py`）。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めることを防ぐ。詳細は「13. agent_write_guard フックの改ざん防止判定」。
+
+## 13. agent_write_guard フックの改ざん防止判定
+
+`.claude/hooks/agent_write_guard.py` は verifier / planner 向けの書き込み先制限（本節冒頭）とは別に、`agent_type` を問わず（メインエージェント含む）適用する判定を持つ。`vault/todo.md` の「## タスク」表を簡易的に解析し（`.claude/hooks/todo_guard.py` の `raw_rows` と同じ規則をこのファイル内にコピーして使う。import はしない）、以下のとおり判定する。
+
+| 状況 | 判定 |
+|---|---|
+| `doing` / `review` の行が無い | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
+| `doing` / `review` の行が1件以上あり、対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`doing/review 中は vault/rules/ を編集できません` と対象タスク ID を reason に含める |
+| 上記に該当しない（`vault/rules/` 以外への書き込み） | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
+
+この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、doing/review 中ならこの判定で先に拒否される。

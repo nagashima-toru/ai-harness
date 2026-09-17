@@ -1,0 +1,34 @@
+{
+  "task": "T-0011",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:24",
+  "criteria": [
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含み、pass 件数が拡張前より3以上増えている（新規ケース3件分。既存ケースは壊れていない）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=40 fail=0。拡張前との比較: `git diff -- scripts/smoke.sh` で確認すると追加は agent_write_guard.py 節の (a)(b)(c) 3ケースのみ（既存アサーションの削除・変更なし）で、40-37=3の増加と一致する"
+    },
+    {
+      "text": "doing 中に `agent_type` 無し（メインエージェント）で `vault/rules/` 配下へ Write すると deny になる（smoke 新規ケース(a)）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep -E '\\(a\\)'` / 出力: `ok   (a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否`"
+    },
+    {
+      "text": "doing/review の行が無い todo.md でメインエージェントが `vault/rules/` 配下へ Write すると allow になる（smoke 新規ケース(b)）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep -E '\\(b\\)'` / 出力: `ok   (b) doing/review 無し・メインエージェントが vault/rules/ へ Write → 許可`"
+    },
+    {
+      "text": "doing 中に verifier が `vault/verdicts/` へ Write すると従来どおり allow になる（smoke 新規ケース(c)。既存の verifier/planner 向け判定が壊れていないことの確認）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep '(c) doing 中に verifier'` / 出力: `ok   (c) doing 中に verifier が vault/verdicts/ へ Write → 許可（従来どおり）`"
+    },
+    {
+      "text": "`docs/vault-spec.md` に新判定の説明節がある（`grep -c 'agent_write_guard' docs/vault-spec.md` が既存の1件より増える）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'agent_write_guard' docs/vault-spec.md` / 出力: 3。比較コマンド: `git show HEAD:docs/vault-spec.md | grep -c 'agent_write_guard'` / 出力: 1（既存commit時点）。3>1のため基準を満たす。追加内容は「## 13. agent_write_guard フックの改ざん防止判定」節（表形式で判定内容を説明）"
+    }
+  ],
+  "reasons": []
+}

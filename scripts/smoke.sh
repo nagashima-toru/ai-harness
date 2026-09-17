@@ -105,6 +105,16 @@ expect_guard "planner が vault/todo.md に Edit → 拒否" deny \
 expect_guard "メインエージェントが README.md に Edit → 許可" allow \
   "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
 
+make_todo T-0001 doing 1
+expect_guard "(a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否" deny \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
+make_todo T-0001 todo 0
+expect_guard "(b) doing/review 無し・メインエージェントが vault/rules/ へ Write → 許可" allow \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
+make_todo T-0001 doing 1
+expect_guard "(c) doing 中に verifier が vault/verdicts/ へ Write → 許可（従来どおり）" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/T-0001.json"}}')"
+
 echo "== todo_guard.py =="
 make_todo_rows() { # 各引数が「## タスク」表のデータ行1行
   {

@@ -19,6 +19,7 @@
 | T-0008 | done | 1 | - | run-queue にルール読み込み手順を追加する | |
 | T-0009 | done | 1 | - | verifier にルール読み込みと参照時の判定手順を追加する | |
 | T-0010 | done | 1 | - | planner.md にルール読み込み手順を追加し vault-spec.md の粒度基準を更新する | |
+| T-0011 | done | 1 | - | agent_write_guard.py に doing/review 中の vault/rules/ 書き込み拒否を追加する | |
 
 ## 計画
 | id | status | title |
@@ -33,3 +34,4 @@
 | P-008 | approved | run-queue にルール読み込みを追加する |
 | P-009 | approved | verifier にルール読み込みを追加する |
 | P-010 | approved | planner にルール読み込みを追加する |
+| P-011 | approved | 改ざん防止フック（agent_write_guard.py 拡張） |

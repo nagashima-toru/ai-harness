@@ -5,6 +5,10 @@
 - planner  : vault/plans/ と vault/tasks/ 配下のみ
 対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（リダイレクトや破壊的コマンドの簡易判定）
 メインエージェントや他のサブエージェントには何もしない。
+
+改ざん防止：上記とは別に、vault/todo.md に doing/review 中のタスクが1件でもあれば、
+agent_type を問わず（メインエージェント含む）vault/rules/ 配下への書き込みを拒否する。
+作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めるのを防ぐ。
 """
 import json
 import os
@@ -43,19 +47,69 @@ def normalize(path, root):
     return rel.replace(os.sep, "/")
 
 
+def active_doing_review_task_ids(root):
+    """vault/todo.md の「## タスク」表から status が doing/review の id を返す（無ければ空リスト）。
+    .claude/hooks/todo_guard.py の raw_rows と同じ規則の簡易版をこのファイル内に持つ（import はしない）。"""
+    todo_path = os.path.join(root, "vault", "todo.md")
+    if not os.path.isfile(todo_path):
+        return []
+    try:
+        with open(todo_path, encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return []
+    ids = []
+    in_tasks = False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            in_tasks = line.strip() == "## タスク"
+            continue
+        stripped = line.strip()
+        if not in_tasks or not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if not cells or cells[0] == "id" or re.fullmatch(r"-*", cells[0]):
+            continue
+        if len(cells) >= 2 and cells[1] in ("doing", "review"):
+            ids.append(cells[0])
+    return ids
+
+
+def targets_vault_rules(tool, tool_input, root):
+    """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。"""
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        return normalize(path, root).startswith("vault/rules/")
+    if tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        if not any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
+            return False
+        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
+        path_like = re.findall(r"[^\s'\"]*vault/rules/[^\s'\"]*", cmd)
+        candidates = redirect_targets + path_like
+        return any(normalize(t, root).startswith("vault/rules/") for t in candidates)
+    return False
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
     except Exception:
         sys.exit(0)
 
+    root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd()
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input") or {}
+
+    # 改ざん防止：agent_type を問わず、doing/review 中は vault/rules/ への書き込みを拒否する
+    active_ids = active_doing_review_task_ids(root)
+    if active_ids and targets_vault_rules(tool, tool_input, root):
+        deny(f"[agent_write_guard] doing/review 中は vault/rules/ を編集できません（対象タスク: {', '.join(active_ids)}）")
+
     agent = payload.get("agent_type") or ""
     if agent not in ALLOWED:
         sys.exit(0)
 
-    root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd()
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input") or {}
     allowed = ALLOWED[agent]
     allowed_text = " / ".join(allowed)
 

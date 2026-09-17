@@ -1,0 +1,34 @@
+{
+  "task": "T-0010",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:16",
+  "criteria": [
+    {
+      "text": "`planner.md` の「## 読むもの」に `rules.sh planner` を含む行が1行ある（確認コマンド：`grep -c 'rules.sh planner' .claude/agents/planner.md` の出力が1）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'rules.sh planner' .claude/agents/planner.md` / 出力: 1"
+    },
+    {
+      "text": "`planner.md` の「## 手順」に、読んだルールの具体的な基準（命名規則・方式設計・テスト観点など）を受け入れ基準・決定済みへ反映すること、かつ受け入れ基準の行数上限（3〜7行）を超えないことの両方を述べた記述がある（確認コマンド：`grep -c '3〜7行' .claude/agents/planner.md` の出力が2以上。既存の「粒度の基準」の1箇所に加え「手順」にも1箇所増える）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '3〜7行' .claude/agents/planner.md` / 出力: 22行目「粒度の基準」節、33行目「手順」4番目に『具体的な基準…に反映する。ただし受け入れ基準の行数上限（3〜7行）は超えない。超えそうな場合はルールの反映を要約に留め、既存の粒度基準を優先する』とあり件数は2"
+    },
+    {
+      "text": "`planner.md` の「## 禁止」に、ルールに無い内容を基準へ追加することを禁止しない旨（ルールは参考情報でありゴールから外れない限り反映してよい旨）の一文がある（確認コマンド：`grep -c '禁止しない' .claude/agents/planner.md` の出力が1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '禁止しない' .claude/agents/planner.md` / 出力: 41行目『ルールに無い内容を基準へ追加することは禁止しない（ルールは参考情報であり、ゴールから外れない限り反映してよい）。』が禁止節（36〜39行）直後、出力節（43行目）より前に独立した1文として存在。件数1"
+    },
+    {
+      "text": "`docs/vault-spec.md` の「9. 粒度の基準」節に `vault/rules` への言及が新たに増えている（確認コマンド：`grep -c 'vault/rules' docs/vault-spec.md` の出力が6以上。編集前は5）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules' docs/vault-spec.md` / 出力: 6。101行目に『vault/rules/（common・planner）にルールがある場合は、その具体的な基準を受け入れ基準や決定済みに反映する。ただし受け入れ基準3〜7行の上限は優先し、超えそうな場合は要約に留める』が9節『粒度の基準』に追加されている"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` の出力が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=37 fail=0"
+    }
+  ],
+  "reasons": []
+}

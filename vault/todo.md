@@ -12,6 +12,7 @@
 | T-0001 | done | 1 | - | ハーネスの動作確認（README の使い方節に1行追記） | |
 | T-0002 | done | 1 | - | verdict.json の note 要件を仕様と verifier プロンプトに追記 | |
 | T-0003 | done | 1 | - | planner に「run-queue で必ず変わるファイルの差分不変を受け入れ基準にしない」ルールを追記 | |
+| T-0004 | done | 1 | - | stop_gate.py に verdict 形式検証を追加し smoke.sh と vault-spec.md を更新 | |
 
 ## 計画
 | id | status | title |
@@ -19,3 +20,4 @@
 | P-001 | approved | 初期構築 |
 | P-002 | approved | verdict.json に検証の根拠を残す |
 | P-003 | approved | planner が満たせない受け入れ基準を書かないようにする |
+| P-004 | approved | stop_gate で verdict の形式を検証する |

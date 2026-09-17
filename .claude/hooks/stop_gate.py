@@ -43,6 +43,53 @@ def parse_tasks(todo_text):
     return rows
 
 
+def count_acceptance_criteria(task_path):
+    """タスク票の「## 受け入れ基準」節にある行頭 `- ` の行数を返す（ネストは数えない）。"""
+    with open(task_path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    in_section = False
+    count = 0
+    for line in lines:
+        if line.startswith("## "):
+            in_section = line.strip() == "## 受け入れ基準"
+            continue
+        if in_section and line.startswith("- "):
+            count += 1
+    return count
+
+
+def validate_verdict(verdict, tid, root):
+    """verdict の形式を検査し、不正な点の説明リストを返す（空なら正常）。"""
+    problems = []
+    result = verdict.get("result")
+    if str(result).upper() not in ("PASS", "FAIL"):
+        problems.append(f"result が PASS/FAIL 以外です（{result!r}）")
+    criteria = verdict.get("criteria")
+    if not isinstance(criteria, list):
+        problems.append("criteria が配列ではありません")
+    else:
+        for i, c in enumerate(criteria):
+            if not isinstance(c, dict):
+                problems.append(f"criteria[{i}] が辞書ではありません")
+                continue
+            if not all(k in c for k in ("text", "ok", "note")):
+                problems.append(f"criteria[{i}] に text/ok/note のいずれかがありません")
+                continue
+            note = c.get("note")
+            if not isinstance(note, str) or not note.strip():
+                problems.append(f"criteria[{i}].note が空です")
+        task_path = os.path.join(root, "vault", "tasks", tid + ".md")
+        if os.path.isfile(task_path):
+            expected = count_acceptance_criteria(task_path)
+            if len(criteria) != expected:
+                problems.append(
+                    f"criteria の行数（{len(criteria)}）がタスク票の受け入れ基準の行数（{expected}）と一致しません"
+                )
+    if not isinstance(verdict.get("reasons"), list):
+        problems.append("reasons が配列ではありません")
+    return problems
+
+
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -98,6 +145,13 @@ def main():
             f"[stop_gate] {tid} は {status} ですが {why}。"
             f"verifier サブエージェントを実行して vault/verdicts/{tid}.json を書くこと"
             f"（attempt={attempt}）。"
+        )
+
+    problems = validate_verdict(verdict, tid, root)
+    if problems:
+        block(
+            f"[stop_gate] {tid} の verdict の形式が不正です: {'; '.join(problems)}。"
+            f"verifier サブエージェントを再実行して vault/verdicts/{tid}.json を書き直すこと（attempt={attempt}）。"
         )
 
     result = str(verdict.get("result", "")).upper()

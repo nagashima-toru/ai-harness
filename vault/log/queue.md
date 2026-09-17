@@ -17,3 +17,7 @@
 - 2026-09-17 17:00 T-0003 todo→doing attempt=1
 - 2026-09-17 17:00 T-0003 doing→review attempt=1
 - 2026-09-17 17:01 T-0003 review→done attempt=1 verdict PASS。ただし note が全件空（このセッションの verifier 定義が T-0002 更新前のまま読み込まれていたため）
+- 2026-09-17 21:44 P-004 draft→approved tasks=T-0004
+- 2026-09-17 21:45 T-0004 todo→doing attempt=1
+- 2026-09-17 21:46 T-0004 doing→review attempt=1
+- 2026-09-17 21:47 T-0004 review→done attempt=1 verdict PASS、6件すべて note あり。新しい形式検証を通過

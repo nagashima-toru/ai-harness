@@ -28,6 +28,20 @@ make_verdict() { # $1=id $2=attempt $3=result
   printf '{"task":"%s","attempt":%s,"result":"%s","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}\n' "$1" "$2" "$3" > "$TMP/vault/verdicts/$1.json"
 }
 DEFAULT_STDIN='{"hook_event_name":"Stop","stop_hook_active":false}'
+make_task() { # $1=id $2=受け入れ基準の箇条書き行数
+  mkdir -p "$TMP/vault/tasks"
+  {
+    echo "# $1 テスト"
+    echo
+    echo "## 受け入れ基準"
+    for i in $(seq 1 "$2"); do echo "- 基準$i"; done
+    echo
+    echo "## 決定済み"
+  } > "$TMP/vault/tasks/$1.md"
+}
+write_verdict() { # $1=id $2=json 文字列（形式検証のテスト用）
+  printf '%s' "$2" > "$TMP/vault/verdicts/$1.json"
+}
 run_stop() { # $1=stdin json（省略時は DEFAULT_STDIN）
   printf '%s' "${1:-$DEFAULT_STDIN}" \
     | CLAUDE_PROJECT_DIR="$TMP" HARNESS_MAX_ATTEMPTS="${HARNESS_MAX_ATTEMPTS:-3}" python3 "$STOP_HOOK"
@@ -56,6 +70,18 @@ make_todo T-0001 review 1; rm -f "$TMP/vault/verdicts/T-0001.json"; expect "stop
 make_todo T-0001 review 1; expect "stop_hook_active=true + HARNESS_STRICT_STOP=1 → ブロック" block "$(printf '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$TMP" HARNESS_STRICT_STOP=1 python3 "$STOP_HOOK")" "verifier"
 make_todo T-0001 review 2; make_verdict T-0001 2 FAIL; expect "HARNESS_MAX_ATTEMPTS=2 で attempt=2 FAIL → blocked 指示" block "$(HARNESS_MAX_ATTEMPTS=2 run_stop)" "blocked"
 
+OK_C='{"text":"基準","ok":true,"note":"実行コマンド: x / 出力: y"}'
+make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"FOO","checked_at":"","criteria":['"$OK_C"'],"reasons":[]}'
+expect "(a) result が PASS/FAIL 以外 → ブロック（不正）" block "$(run_stop)" "不正"
+make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":[{"text":"基準","ok":true}],"reasons":[]}'
+expect "(b) criteria の要素に note が無い → ブロック（不正）" block "$(run_stop)" "不正"
+make_todo T-0001 review 1; make_task T-0001 3; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"','"$OK_C"'],"reasons":[]}'
+expect "(c) criteria 2件 vs タスク票の基準 3行 → ブロック（不正）" block "$(run_stop)" "一致しません"
+rm -f "$TMP/vault/tasks/T-0001.md"
+make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":[{"text":"基準","ok":true,"note":"  "}],"reasons":[]}'
+expect "(d) note が空白のみ → ブロック（不正）" block "$(run_stop)" "不正"
+make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"'],"reasons":"none"}'
+expect "(e) reasons が配列でない → ブロック（不正）" block "$(run_stop)" "不正"
 echo "== agent_write_guard.py =="
 run_guard() { printf '%s' "$1" | CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
 expect_guard() { # $1=name $2=deny|allow $3=output

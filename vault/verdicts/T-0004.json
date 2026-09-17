@@ -1,0 +1,15 @@
+{
+  "task": "T-0004",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 21:46",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh | tail -1` の出力に `fail=0` が含まれる。確認：`bash scripts/smoke.sh | tail -1 | grep -q 'fail=0'` の終了コードが0", "ok": true, "note": "smoke.sh 実行結果は pass=23 fail=0"},
+    {"text": "`scripts/smoke.sh` の実行結果が `pass=23`（既存18件＋(a)〜(e)の新規5件）になる。確認：`bash scripts/smoke.sh | tail -1 | grep -q 'pass=23'` の終了コードが0", "ok": true, "note": "smoke.sh 実行結果は pass=23"},
+    {"text": "`scripts/smoke.sh` に (a)〜(e) それぞれ最低1件ずつ、ブロック理由に「不正」という語を含むテストケースが追加されている。確認：`grep -c '不正' scripts/smoke.sh` の出力が5以上", "ok": true, "note": "grep -c '不正' scripts/smoke.sh の出力は5"},
+    {"text": "`.claude/hooks/stop_gate.py` が構文的に妥当で、ブロック理由の文言に「不正」を含む分岐を持つ。確認：`python3 -c \"import ast; ast.parse(open('.claude/hooks/stop_gate.py').read())\"` の終了コードが0、かつ `grep -c '不正' .claude/hooks/stop_gate.py` の出力が1以上", "ok": true, "note": "ast.parse 終了コード0、grep -c '不正' の出力は2"},
+    {"text": "`docs/vault-spec.md` 第10節の表に「verdict が不正」の行が追加されている。確認：`grep -A20 '^## 10\\. Stop フックの判定' docs/vault-spec.md | grep -q '不正'` の終了コードが0", "ok": true, "note": "第10節の表に「verdict が不正（...）」の行を確認"},
+    {"text": "タスク票（`vault/tasks/<id>.md`）が存在しない場合は (c) の検査をスキップし、既存の smoke.sh ケース（タスク票を作らない）が壊れない。確認：上記 `bash scripts/smoke.sh` の実行結果に `NG` を含む行が無い。`bash scripts/smoke.sh | grep -c NG` の出力が0", "ok": true, "note": "smoke.sh 全23件が ok で、NG を含む行は無い"}
+  ],
+  "reasons": []
+}

@@ -107,6 +107,7 @@ frontmatter に `id` と `status`（`draft` / `approved`）。本文は `ゴー�
 | `stop_hook_active` が真 | 許可（`HARNESS_STRICT_STOP=1` なら無視して判定を続ける） |
 | doing / review のタスクが無い | 許可 |
 | verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く |
+| verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
 | FAIL かつ attempt < 上限 | ブロック：doing に戻し attempt を +1 して修正 |
 | FAIL かつ attempt ≥ 上限 | ブロック：blocked にし question を書く（既に blocked なら許可） |
 | PASS だが status が done でない | ブロック：done にし log に追記 |

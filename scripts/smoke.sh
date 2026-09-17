@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STOP_HOOK="$ROOT/.claude/hooks/stop_gate.py"
 TODO_HOOK="$ROOT/.claude/hooks/todo_guard.py"
 GUARD_HOOK="$ROOT/.claude/hooks/agent_write_guard.py"
+RULES_SH="$ROOT/scripts/rules.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS_N=0; FAIL_N=0
@@ -138,6 +139,47 @@ expect "データ行が無い → 許可" allow "$(run_todo_guard)"
 EMPTY_DIR="$(mktemp -d)"
 expect "todo.md が無い → 許可" allow "$(printf '{}' | CLAUDE_PROJECT_DIR="$EMPTY_DIR" python3 "$TODO_HOOK")"
 rm -rf "$EMPTY_DIR"
+
+echo "== rules.sh =="
+reset_rules() { rm -rf "$TMP/vault/rules"; }
+make_rules_file() { mkdir -p "$TMP/vault/rules/$1"; echo x > "$TMP/vault/rules/$1/$2"; } # $1=dir $2=filename
+run_rules() { CLAUDE_PROJECT_DIR="$TMP" bash "$RULES_SH" "$1" 2>/dev/null; } # $1=role
+expect_rules() { # $1=name $2=want_rc $3=want_out $4=got_rc $5=got_out
+  local name="$1" want_rc="$2" want_out="$3" got_rc="$4" got_out="$5"
+  if [ "$got_rc" = "$want_rc" ] && [ "$got_out" = "$want_out" ]; then
+    echo "  ok   $name"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $name (want_rc=$want_rc got_rc=$got_rc)"; echo "       want_out: $want_out"; echo "       got_out : $got_out"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+
+reset_rules
+make_rules_file common a-common.md
+make_rules_file common b-common.md
+make_rules_file creator c-creator.md
+make_rules_file verifier d-verifier.md
+make_rules_file planner e-planner.md
+
+out="$(run_rules creator)"; rc=$?
+expect_rules "(a) creator → common(a,b)→creator(c) の順で列挙" 0 \
+  "$(printf 'vault/rules/common/a-common.md\nvault/rules/common/b-common.md\nvault/rules/creator/c-creator.md')" "$rc" "$out"
+
+out="$(run_rules verifier)"; rc=$?
+expect_rules "(b) verifier → creator/ を含まず common+verifier のみ" 0 \
+  "$(printf 'vault/rules/common/a-common.md\nvault/rules/common/b-common.md\nvault/rules/verifier/d-verifier.md')" "$rc" "$out"
+
+out="$(run_rules planner)"; rc=$?
+expect_rules "(c) planner → common+planner のみ（creator/・verifier/ を含まない）" 0 \
+  "$(printf 'vault/rules/common/a-common.md\nvault/rules/common/b-common.md\nvault/rules/planner/e-planner.md')" "$rc" "$out"
+
+reset_rules
+out="$(run_rules creator)"; rc=$?
+expect_rules "(d) ルール未配置 → 無出力・exit 0" 0 "" "$rc" "$out"
+
+out="$(bash "$RULES_SH" foo 2>/dev/null)"; rc=$?
+expect_rules "(e) 不正な引数 → exit 2" 2 "" "$rc" "$out"
+out="$(bash "$RULES_SH" 2>/dev/null)"; rc=$?
+expect_rules "(e) 引数なし → exit 2" 2 "" "$rc" "$out"
 
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"

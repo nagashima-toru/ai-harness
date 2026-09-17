@@ -1,0 +1,39 @@
+{
+  "task": "T-0007",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 22:58",
+  "criteria": [
+    {
+      "text": "`vault/rules/` が無い（または common/役割ディレクトリに `*.md` が無い）状態で `bash scripts/rules.sh creator` が無出力・exit 0 になる（確認コマンド：`CLAUDE_PROJECT_DIR=<空のtmpdir> bash scripts/rules.sh creator; echo \"out=[$(CLAUDE_PROJECT_DIR=<空のtmpdir> bash scripts/rules.sh creator)] rc=$?\"` で出力が空・rc=0）",
+      "ok": true,
+      "note": "実行コマンド: `EMPTY=$(mktemp -d); CLAUDE_PROJECT_DIR=$EMPTY bash scripts/rules.sh creator; echo \"out=[$(CLAUDE_PROJECT_DIR=$EMPTY bash scripts/rules.sh creator)] rc=$?\"` / 出力: `out=[] rc=0`（無出力・rc=0）"
+    },
+    {
+      "text": "`common/` と `creator/` にそれぞれ2ファイルずつ置いた状態で `bash scripts/rules.sh creator` を呼ぶと `common/` のファイル（ファイル名順）→ `creator/` のファイル（ファイル名順）の順で列挙される（smoke.sh ケース (a) が ok）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `  ok   (a) creator → common(a,b)→creator(c) の順で列挙`"
+    },
+    {
+      "text": "同じ状態で `bash scripts/rules.sh verifier` を呼ぶと出力に `creator/` を含む行が無い（smoke.sh ケース (b) が ok）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `  ok   (b) verifier → creator/ を含まず common+verifier のみ`"
+    },
+    {
+      "text": "同じ状態で `bash scripts/rules.sh planner` を呼ぶと出力に `common/` を含む行はあるが `creator/`・`verifier/` を含む行は無い（smoke.sh ケース (c) が ok）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `  ok   (c) planner → common+planner のみ（creator/・verifier/ を含まない）`"
+    },
+    {
+      "text": "引数が無い、または `creator`/`verifier`/`planner` 以外（例：`bash scripts/rules.sh foo`）だと標準エラーに usage を出し exit 2 になる（smoke.sh ケース (e) が ok）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` の出力で `  ok   (e) 不正な引数 → exit 2` `  ok   (e) 引数なし → exit 2` を確認。加えて標準出力・標準エラーの分離を `python3 -c \"subprocess.run(['bash','scripts/rules.sh','foo'], capture_output=True, text=True)\"` で直接検証し `rc=2, stdout='', stderr='usage: bash scripts/rules.sh <creator|verifier|planner>\\n'` を確認"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含み、pass 件数が既存（31。`bash scripts/smoke.sh` 実行前の現行値）より増えている",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh`（末尾行を確認） / 出力: `smoke: pass=37 fail=0`（37 > 31 で fail=0 を含む）"
+    }
+  ],
+  "reasons": []
+}

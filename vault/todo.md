@@ -15,6 +15,7 @@
 | T-0004 | done | 1 | - | stop_gate.py に verdict 形式検証を追加し smoke.sh と vault-spec.md を更新 | |
 | T-0005 | done | 1 | - | todo_guard フックで todo.md の整合性を PostToolUse でチェックする | |
 | T-0006 | done | 1 | - | vault-spec.md に「ルール（vault/rules/）」節を追加し置き場を作る | |
+| T-0007 | done | 1 | - | scripts/rules.sh を新規作成し smoke.sh にケースを追加する | |
 
 ## 計画
 | id | status | title |
@@ -25,3 +26,4 @@
 | P-004 | approved | stop_gate で verdict の形式を検証する |
 | P-005 | approved | todo.md の整合性チェックをフック化する |
 | P-006 | approved | vault/rules/ の仕様と置き場を決める |
+| P-007 | approved | ルール解決スクリプト scripts/rules.sh を作る |

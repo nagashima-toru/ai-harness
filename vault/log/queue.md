@@ -33,3 +33,7 @@
 - 2026-09-17 22:56 T-0007 todo→doing attempt=1
 - 2026-09-17 22:57 T-0007 doing→review attempt=1
 - 2026-09-17 22:59 T-0007 review→done attempt=1
+- 2026-09-17 23:04 P-008 draft→approved tasks=T-0008
+- 2026-09-17 23:04 T-0008 todo→doing attempt=1
+- 2026-09-17 23:05 T-0008 doing→review attempt=1
+- 2026-09-17 23:06 T-0008 review→done attempt=1

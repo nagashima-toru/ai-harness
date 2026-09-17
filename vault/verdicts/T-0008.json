@@ -1,0 +1,39 @@
+{
+  "task": "T-0008",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-17 23:06",
+  "criteria": [
+    {
+      "text": ".claude/skills/run-queue/SKILL.md の「## 2. 作る」で、手順1の直後（新しい手順2）に `bash scripts/rules.sh creator` を実行して列挙ファイルを読み、以降の成果物作成でそれに従うこと・列挙が空なら何もしないことが書かれている（確認：`sed -n '/^## 2\\. 作る/,/^## 3\\./p' .claude/skills/run-queue/SKILL.md | sed -n '3p'` の出力に `rules.sh creator` と `空` の両方が含まれる）",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 2\\. 作る/,/^## 3\\./p' .claude/skills/run-queue/SKILL.md | sed -n '3p'` / 出力: `2. \\`bash scripts/rules.sh creator\\` を実行し、列挙されたファイルをすべて読み、以降の成果物作成でそれに従う（列挙が空なら何もしない）。読んだファイルがあれば「進捗」に「読んだルール: a.md, b.md」の形で1行記録する` — `rules.sh creator` と `空` の両方を含む"
+    },
+    {
+      "text": "「## 注意」に、タスク中は `vault/rules/` を編集しない旨（フックで拒否される旨を含む）の行がある（確認：`sed -n '/^## 注意/,$p' .claude/skills/run-queue/SKILL.md | grep -E 'vault/rules/' | grep -c '編集しない'` が1以上）",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 注意/,$p' .claude/skills/run-queue/SKILL.md | grep -E 'vault/rules/' | grep -c '編集しない'` / 出力: 1"
+    },
+    {
+      "text": "SKILL.md のどこかに、進捗へ読んだルールファイル名を書く手順がある（確認：`grep -c '読んだルール' .claude/skills/run-queue/SKILL.md` が1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '読んだルール' .claude/skills/run-queue/SKILL.md` / 出力: 1"
+    },
+    {
+      "text": "`CLAUDE.md` の「## 役割」の作成エージェントの行に `vault/rules/` を読む旨（common, creator を含む）が追記され、`CLAUDE.md` 全体が60行以内（確認：`awk '/^## 役割/{flag=1} flag && /^## / && !/^## 役割/{exit} flag' CLAUDE.md | grep -c 'vault/rules'` が1以上、かつ `wc -l < CLAUDE.md` が60以下）",
+      "ok": true,
+      "note": "実行コマンド: `awk '/^## 役割/{flag=1} flag && /^## / && !/^## 役割/{exit} flag' CLAUDE.md | grep -c 'vault/rules'` / 出力: 1。加えて `wc -l < CLAUDE.md` / 出力: 41（60以下）"
+    },
+    {
+      "text": "`.claude/agents/verifier.md`・`.claude/agents/planner.md`・`.claude/hooks/` 配下・`scripts/install.sh`・`README.md` が変更されていない（確認：`git diff --quiet -- .claude/agents/verifier.md .claude/agents/planner.md .claude/hooks/ scripts/install.sh README.md` の終了コードが0）",
+      "ok": true,
+      "note": "実行コマンド: `git diff --quiet -- .claude/agents/verifier.md .claude/agents/planner.md .claude/hooks/ scripts/install.sh README.md; echo rc=$?` / 出力: rc=0"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` の出力に `fail=0` が含まれる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=37 fail=0"
+    }
+  ],
+  "reasons": []
+}

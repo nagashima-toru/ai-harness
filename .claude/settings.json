@@ -40,7 +40,18 @@
       "Bash(mv *)",
       "Bash(pwd)",
       "Bash(which *)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(awk *)",
+      "Bash(sed *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(cut *)",
+      "Bash(tr *)",
+      "Bash(xargs *)",
+      "Bash(jq *)",
+      "Bash(basename *)",
+      "Bash(dirname *)",
+      "Bash(env *)"
     ],
     "deny": [
       "Bash(rm -rf *)",

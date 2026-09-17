@@ -16,3 +16,7 @@
 | 2026-09-17 | 通し検証で生成した verdict / log / todo.md の変更はそのままコミット | 動作した証拠を残す |
 | 2026-09-17 | フックの許可時は stdout に何も出さず exit 0 | 公式ドキュメント「decision を省略するか JSON 無しで exit 0」 |
 | 2026-09-17 | `attempt` は「現在の試行回数」。todo→doing で 1、再試行で +1 | todo.md の初期値 0 と verdict の attempt=1 を整合させる |
+| 2026-09-17 | `install.sh` は `.claude/` と `vault/` に加えて `scripts/smoke.sh`・`docs/vault-spec.md`・`CLAUDE.md` も複製する（既存ファイルは上書きしない） | 複製先で smoke.sh を通す必要があり、エージェントが vault-spec.md を参照するため |
+| 2026-09-17 | 許可リストに `awk`・`sed`・`sort` 等のテキスト処理コマンドを追加 | 通し検証で verifier の確認コマンド（awk）が拒否されたため |
+| 2026-09-17 | verifier の Bash 書き込み判定はリダイレクト・tee・rm/mv/cp・git 書き込み系・sed -i の簡易パターン | 通し検証で `/tmp` へのリダイレクトを正しく拒否した。厳密な OS レベル制限が要るなら sandbox を使う |
+| 2026-09-17 | `sed -i` は許可リストに入るが verifier / planner ではガードが拒否する | メインエージェントの通常編集は許可しつつ、サブエージェントの越境書き込みは止める |

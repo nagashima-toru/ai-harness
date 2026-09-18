@@ -122,7 +122,7 @@ frontmatter に `id` と `status`（`draft` / `approved`）。本文は `ゴー�
 
 ## 12. ルール（`vault/rules/`）
 
-インストール先ごとに用意する「ルール」（コーディングルール・開発標準・方式設計・テスト標準・テスト観点など）を、作成エージェント・verifier・planner に渡す拡張ポイント。ハーネス本体はルールを同梱しない。置き場と読み込み口だけを用意し、実ルールはインストール先で書く。
+「ルール」を作成エージェント・verifier・planner に渡す拡張ポイント。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`common/roles.md`・`creator/creator.md`・`verifier/verifier.md`・`planner/planner.md`）。コーディングルール・開発標準・方式設計・テスト標準・テスト観点などドメイン固有のルールは、置き場と読み込み口だけを用意し、インストール先で書く。
 
 ### ディレクトリと振り分け
 ```
@@ -152,9 +152,23 @@ vault/rules/
 |---|---|
 | `doing` / `review` の行が無い | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
 | `doing` / `review` の行が1件以上あり、対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`doing/review 中は vault/rules/ を編集できません` と対象タスク ID を reason に含める |
+| 上記に該当するが、環境変数 `HARNESS_ALLOW_RULES_WRITE` に `doing`/`review` の ID がすべて含まれる | 許可（明示解除。下記参照） |
 | 上記に該当しない（`vault/rules/` 以外への書き込み） | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
 
 この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、doing/review 中ならこの判定で先に拒否される。
+
+### 明示解除（ルール自体を変更するタスク用）
+
+ルールファイルそのものを成果物とするタスクは、この判定に阻まれて1行も書けない。その場合だけ、人が起動時に環境変数で解除する。
+
+```
+HARNESS_ALLOW_RULES_WRITE=T-0019 claude
+```
+
+- 値は解除を許すタスク ID の列（カンマまたは空白区切り）。`doing`/`review` の ID がすべて含まれる時だけ解除される
+- 未設定・空・不一致、および `1` / `true` のような ID でない値では解除しない
+- フックは Claude Code プロセスの環境を継承するため、作成エージェントが Bash 内で `export` しても届かない。実質的に人だけが解除できる
+- 解除しても verifier・planner は `vault/rules/` に書けない（後段の `ALLOWED` 判定で拒否される）
 
 ## 14. 設計文書（`vault/designs/`）
 

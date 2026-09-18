@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh <target-dir>
-# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/）、vault/（テンプレート・rules/ 雛形・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh
+# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh
 # 既存ファイルは上書きしない（.claude/settings.json と vault/todo.md が既にあれば残す）。
 set -eu
 if [ $# -ne 1 ]; then echo "usage: bash scripts/install.sh <target-dir>" >&2; exit 2; fi
@@ -22,9 +22,10 @@ chmod +x "$DST"/.claude/hooks/*.py
 
 # vault/（状態ファイルは初期状態で複製する）
 for d in tasks plans verdicts log templates archive; do mkdir -p "$DST/vault/$d"; done
-# vault/rules/ 配下は README と各役割ディレクトリの .gitkeep（雛形）のみ複製する。
-# 人が書く実ルールは複製・上書きの対象にしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
+# vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）と、役割定義の標準ルール4本を複製する。
+# ドメイン固有のルール（コーディングルール・方式設計・テスト観点など）は複製・上書きの対象にしない。
+# 標準ルールも copy_if_absent なので、インストール先で編集したものは上書きしない。
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep rules/common/roles.md rules/creator/creator.md rules/verifier/verifier.md rules/planner/planner.md; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 if [ ! -e "$DST/vault/todo.md" ]; then

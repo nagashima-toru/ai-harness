@@ -36,7 +36,7 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 - 無人で回す場合は `claude -p "/run-queue"` を cron や CI から定期実行する
 
 ## 拡張ポイント（ルール）
-インストール先ごとの「ルール」（コーディングルール・開発標準・方式設計・テスト標準・テスト観点など）を、作成エージェント・verifier・planner に渡せる。ハーネス本体はルールを同梱しない。書くのはインストール先の仕事。
+「ルール」を作成エージェント・verifier・planner に渡せる。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`vault/rules/common/roles.md`、`vault/rules/creator/creator.md`、`vault/rules/verifier/verifier.md`、`vault/rules/planner/planner.md`）。コーディングルール・開発標準・方式設計・テスト観点などドメイン固有のルールはインストール先で書く。
 
 | ディレクトリ | 渡す相手 |
 |---|---|

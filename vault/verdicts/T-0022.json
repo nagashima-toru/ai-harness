@@ -1,0 +1,39 @@
+{
+  "task": "T-0022",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 12:14",
+  "criteria": [
+    {
+      "text": "`vault/rules/verifier/verifier.md` が存在し、見出しが `## 目的` / `## ルール` / `## 確認方法` の3つだけ。確認：`grep -c '^## ' vault/rules/verifier/verifier.md` が3",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## ' vault/rules/verifier/verifier.md` / 出力: 3。Read で見出し行を確認：1行目 `## 目的`、5行目 `## ルール`、28行目 `## 確認方法` の3つのみ"
+    },
+    {
+      "text": "100行以内。確認：`grep -c '' vault/rules/verifier/verifier.md` が100以下",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '' vault/rules/verifier/verifier.md` / 出力: 33（100以下）"
+    },
+    {
+      "text": "「ルール」に (a) 受け入れ基準に無い観点で落とさない、(b) 判定不能な行は FAIL にせず `note` に「基準が判定不能：…」と書く、(c) `note` に確認コマンド（または確認方法）と出力の要点を必ず書く、(d) 受け入れ基準がルールを参照した行は参照したルールファイルのパスを `note` に書く、の4点が各1項目以上ある",
+      "ok": true,
+      "note": "Read で本文確認（4点いずれも1項目以上あり）: (a) 19行目「受け入れ基準に無い観点（コードの好み、あったらいい追加機能、命名の趣味）で `ok: false` にしない。」(b) 14行目「基準が曖昧で判定できない行は `ok: true` のままにし、`note` に `基準が判定不能：…` と書いて…」(c) 12行目「`note` は全行で非空。書式は… 出力は判定に使った部分だけを1〜3行に要約する。」(d) 13行目「受け入れ基準がルール…を参照している行は…参照したルールファイルのパスを `note` に書く。」"
+    },
+    {
+      "text": "「やらないこと」に、根拠にしてよい入力の限定（タスク票の「進捗」や作成側の説明文を根拠にしない）と、確認コマンドを黙って別の方法に置き換えない旨がある。確認：`grep -c '進捗' vault/rules/verifier/verifier.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '進捗' vault/rules/verifier/verifier.md` / 出力: 1。Read で内容確認：23行目「タスク票の「進捗」や作成側の説明文を根拠にしない。根拠にできるのは成果物のファイルと、自分で実行したコマンドの出力だけ。」、24行目「確認コマンドが実行できなかった時に、黙って別の方法に置き換えない。実行不可の理由・代替の確認方法・その結果をセットで `note` に書く。」"
+    },
+    {
+      "text": "`bash scripts/rules.sh verifier` の出力に `vault/rules/verifier/verifier.md` が含まれ、`bash scripts/rules.sh creator` と `bash scripts/rules.sh planner` の出力には含まれない",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/rules.sh verifier` / 出力: vault/rules/common/roles.md, vault/rules/verifier/verifier.md（含まれる）。`bash scripts/rules.sh creator` / 出力: common/roles.md, creator/creator.md（verifier.md 無し）。`bash scripts/rules.sh planner` / 出力: common/roles.md, planner/planner.md（verifier.md 無し）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=43 fail=0"
+    }
+  ],
+  "reasons": []
+}

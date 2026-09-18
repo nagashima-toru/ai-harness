@@ -1,0 +1,39 @@
+{
+  "task": "T-0018",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 09:06",
+  "criteria": [
+    {
+      "text": "`doing` が1件あり `HARNESS_ALLOW_RULES_WRITE` が未設定の時、`vault/rules/` 配下への Write が従来どおり deny になる（既存の smoke ケースが ok のまま）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -20` / 出力: `ok   (a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否`。`git diff HEAD -- scripts/smoke.sh` でこのケースが今回の変更に含まれない（既存のまま）ことも確認"
+    },
+    {
+      "text": "`doing` のタスク ID と `HARNESS_ALLOW_RULES_WRITE` の値が一致する時、同じ Write が allow になる（smoke に新ケース1件）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep '(d) HARNESS_ALLOW_RULES_WRITE'` / 出力: `ok   (d) HARNESS_ALLOW_RULES_WRITE が doing の ID と一致 → 許可`。`git diff HEAD -- scripts/smoke.sh` でこのケース(d)が新規追加であることを確認"
+    },
+    {
+      "text": "値が `doing` のタスク ID と一致しない時は deny になる（smoke に新ケース1件）。確認：`grep -c 'HARNESS_ALLOW_RULES_WRITE' scripts/smoke.sh` が2以上",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep '(e) HARNESS_ALLOW_RULES_WRITE'` / 出力: `ok   (e) HARNESS_ALLOW_RULES_WRITE が doing の ID と不一致 → 拒否`。`grep -c 'HARNESS_ALLOW_RULES_WRITE' scripts/smoke.sh` の出力: 6（2以上）"
+    },
+    {
+      "text": "`.claude/hooks/agent_write_guard.py` に解除判定がある。確認：`grep -c 'HARNESS_ALLOW_RULES_WRITE' .claude/hooks/agent_write_guard.py` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'HARNESS_ALLOW_RULES_WRITE' .claude/hooks/agent_write_guard.py` / 出力: 5（1以上）。Read で `rules_write_allowed()` 関数の実装（doing/review の ID が全て含まれる時だけ許可）を確認済み"
+    },
+    {
+      "text": "`docs/vault-spec.md` 第13節に解除条件（環境変数名と ID 一致の条件）が書かれている。確認：`grep -c 'HARNESS_ALLOW_RULES_WRITE' docs/vault-spec.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'HARNESS_ALLOW_RULES_WRITE' docs/vault-spec.md` / 出力: 2（1以上）。第13節「### 明示解除」小節に環境変数名と `doing`/`review` の ID がすべて含まれる時だけ解除される旨の記述をRead で確認"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=43 fail=0`"
+    }
+  ],
+  "reasons": []
+}

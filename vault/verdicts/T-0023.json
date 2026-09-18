@@ -1,0 +1,34 @@
+{
+  "task": "T-0023",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 12:23",
+  "criteria": [
+    {
+      "text": "`scripts/install.sh` の複製対象に標準ルール4本が入っている。確認：`grep -c 'rules/common/roles.md' scripts/install.sh`、`grep -c 'rules/planner/planner.md' scripts/install.sh`、`grep -c 'rules/creator/creator.md' scripts/install.sh`、`grep -c 'rules/verifier/verifier.md' scripts/install.sh` がいずれも1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'rules/common/roles.md' scripts/install.sh` / `grep -c 'rules/planner/planner.md' scripts/install.sh` / `grep -c 'rules/creator/creator.md' scripts/install.sh` / `grep -c 'rules/verifier/verifier.md' scripts/install.sh` / 出力: いずれも1"
+    },
+    {
+      "text": "一時ディレクトリへ `bash scripts/install.sh <tmpdir>` を実行すると上記4ファイルが複製され、同じ一時ディレクトリへの2回目の実行では4ファイルとも `skip` になる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/install.sh /tmp/ai-harness-verify-t0023` を2回実行し、出力を該当4行に絞って確認 / 1回目出力: `copy  vault/rules/common/roles.md` `copy  vault/rules/creator/creator.md` `copy  vault/rules/verifier/verifier.md` `copy  vault/rules/planner/planner.md` / 2回目出力: 同4行がいずれも `skip  (exists) ...`"
+    },
+    {
+      "text": "`README.md`・`docs/vault-spec.md`・`vault/rules/README.md` から「ルールを同梱しない」という記述が消えている。確認：`grep -c 'ルールを同梱しない' README.md docs/vault-spec.md vault/rules/README.md` がすべて0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'ルールを同梱しない' README.md docs/vault-spec.md vault/rules/README.md` / 出力: README.md:0 docs/vault-spec.md:0 vault/rules/README.md:0"
+    },
+    {
+      "text": "3ファイルそれぞれに、役割定義の標準ルールは同梱し、ドメイン固有のルールはインストール先で書く旨が1〜3行で書かれている。確認：`grep -c '同梱' README.md docs/vault-spec.md vault/rules/README.md` がいずれも1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '同梱' README.md docs/vault-spec.md vault/rules/README.md` / 出力: README.md:1 docs/vault-spec.md:1 vault/rules/README.md:1"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=43 fail=0`"
+    }
+  ],
+  "reasons": []
+}

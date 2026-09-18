@@ -26,6 +26,12 @@
 | T-0015 | done | 1 | - | 設計文書の vault 仕様とテンプレート・置き場を作る | |
 | T-0016 | done | 1 | T-0015 | /design スキルを新規作成する | |
 | T-0017 | done | 1 | T-0016 | /design の配布と周知、planner のタスク数上限を追加する | |
+| T-0018 | done | 1 | - | agent_write_guard に人だけが使えるルール編集の解除口を追加する | |
+| T-0019 | done | 1 | T-0018 | common に3役割の受け渡し（入出力のつながり）ルールを書く | |
+| T-0020 | done | 1 | T-0019 | planner の責務と「やらないこと」をルール化する | |
+| T-0021 | done | 1 | T-0019 | creator（run-queue メイン）の責務と「やらないこと」をルール化する | |
+| T-0022 | done | 1 | T-0019 | verifier の責務と「やらないこと」をルール化する | |
+| T-0023 | done | 1 | T-0020,T-0021,T-0022 | 標準ルールを install.sh で配り「同梱しない」の記述を直す | |
 
 ## 計画
 | id | status | title |
@@ -44,3 +50,4 @@
 | P-012 | approved | install.sh と README（拡張ポイントを配る・説明する） |
 | P-013 | approved | ルール拡張ポイントの通し検証 |
 | P-014 | approved | /design スキルの追加と planner のタスク数上限 |
+| P-015 | approved | planner / creator / verifier の責務を標準ルール化する |

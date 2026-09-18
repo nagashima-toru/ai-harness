@@ -1,0 +1,15 @@
+{
+  "task": "T-0020",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 09:17",
+  "criteria": [
+    {"text": "`vault/rules/planner/planner.md` が存在し、見出しが `## 目的` / `## ルール` / `## 確認方法` の3つだけ。確認：`grep -c '^## ' vault/rules/planner/planner.md` が3", "ok": true, "note": "実行コマンド: `grep -c '^## ' vault/rules/planner/planner.md` / 出力: 3。Read で内容確認し、見出しは1行目 `## 目的`、5行目 `## ルール`、29行目 `## 確認方法` の3つのみだった"},
+    {"text": "100行以内。確認：`grep -c '' vault/rules/planner/planner.md` が100以下", "ok": true, "note": "実行コマンド: `grep -c '' vault/rules/planner/planner.md` / 出力: 34（100以下）"},
+    {"text": "「ルール」に、実際の失敗から導いた「やらないこと」が3件以上あり、各件が根拠のタスク ID を明記している。確認：`grep -c 'T-00' vault/rules/planner/planner.md` が3以上", "ok": true, "note": "実行コマンド: `grep -c 'T-00' vault/rules/planner/planner.md` / 出力: 3。`grep -n 'T-00' ...` で内訳確認：19行目 T-0002、22行目 T-0016、25行目 T-0012・T-0013 の3件がそれぞれ根拠タスクIDを明記していた"},
+    {"text": "「やらないこと」に (a) run-queue で必ず変わるファイル（`vault/todo.md`・`vault/log/queue.md`・タスク票の「進捗」）の差分不変を受け入れ基準にしない、(b) 単語数を数えるだけの緩い確認コマンドにしない、(c) 成果物本文に無い文字列を grep する基準を書かない（基準で参照する文言はタスク票本文で明示的に要求する）、の3点がすべて含まれる", "ok": true, "note": "Read で planner.md の18〜27行目を確認：18〜20行目が(a)（vault/todo.md・vault/log/queue.md・タスク票の「進捗」の差分不変を基準にしないこと、T-0002を根拠に明記）、21〜23行目が(b)（語を数えるだけの緩い確認コマンドを書かない、T-0016を根拠に明記）、24〜26行目が(c)（成果物本文に無い文字列をgrepしない・タスク票で明示、T-0012/T-0013を根拠に明記）で、3点ともすべて含まれていた"},
+    {"text": "`bash scripts/rules.sh planner` の出力に `vault/rules/planner/planner.md` が含まれ、`bash scripts/rules.sh creator` と `bash scripts/rules.sh verifier` の出力には含まれない", "ok": true, "note": "実行コマンド: `bash scripts/rules.sh planner` / 出力: vault/rules/common/roles.md, vault/rules/planner/planner.md（含まれる）。`bash scripts/rules.sh creator` / 出力: vault/rules/common/roles.md（含まれない）。`bash scripts/rules.sh verifier` / 出力: vault/rules/common/roles.md（含まれない）"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=43 fail=0"}
+  ],
+  "reasons": []
+}

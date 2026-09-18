@@ -70,3 +70,27 @@
 - 2026-09-18 00:06 T-0017 todo→doing attempt=1
 - 2026-09-18 00:07 T-0017 doing→review attempt=1
 - 2026-09-18 00:08 T-0017 review→done attempt=1
+- 2026-09-18 09:01 P-015 draft→approved tasks=T-0018,T-0019,T-0020,T-0021,T-0022,T-0023
+- 2026-09-18 09:03 T-0018 todo→doing attempt=1
+- 2026-09-18 09:05 T-0018 doing→review attempt=1
+- 2026-09-18 09:06 T-0018 review→done attempt=1
+- 2026-09-18 09:09 T-0019 todo→doing attempt=1
+- 2026-09-18 09:12 T-0019 doing→review attempt=1
+- 2026-09-18 09:14 T-0019 review→done attempt=1
+- 2026-09-18 09:15 T-0020 todo→doing attempt=1
+- 2026-09-18 09:22 T-0020 doing→review attempt=1
+- 2026-09-18 09:23 T-0020 review→done attempt=1
+- 2026-09-18 09:23 T-0021 todo→doing attempt=1
+- 2026-09-18 09:24 T-0021 doing→review attempt=1
+- 2026-09-18 09:25 T-0021 review→done attempt=1 verdict PASS、6件すべて note あり
+- 2026-09-18 09:25 T-0022 todo→doing attempt=1
+- 2026-09-18 09:26 T-0022 doing→blocked attempt=1 vault/rules/verifier/verifier.md への Write を agent_write_guard が拒否（HARNESS_ALLOW_RULES_WRITE が T-0021 のままで T-0022 を含まない）
+- 2026-09-18 09:30 T-0022 blocked→doing attempt=1 人が todo に戻したため再開
+- 2026-09-18 12:12 T-0022 todo→doing attempt=1 再開
+- 2026-09-18 12:14 T-0022 doing→review attempt=1
+- 2026-09-18 12:15 T-0022 review→done attempt=1 verdict PASS、6件すべて note あり
+- 2026-09-18 12:15 T-0023 todo→doing attempt=1
+- 2026-09-18 12:21 T-0023 doing→blocked attempt=1 vault/rules/README.md への Edit を agent_write_guard が拒否（HARNESS_ALLOW_RULES_WRITE が T-0022 のままで T-0023 を含まない）。install.sh・README.md・docs/vault-spec.md は修正済み
+- 2026-09-18 12:22 T-0023 todo→doing attempt=1 人が HARNESS_ALLOW_RULES_WRITE=T-0023 を設定して再開
+- 2026-09-18 12:26 T-0023 doing→review attempt=1
+- 2026-09-18 12:27 T-0023 review→done attempt=1 verdict PASS、5件すべて note あり

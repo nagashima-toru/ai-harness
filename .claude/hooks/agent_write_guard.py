@@ -9,6 +9,9 @@
 改ざん防止：上記とは別に、vault/todo.md に doing/review 中のタスクが1件でもあれば、
 agent_type を問わず（メインエージェント含む）vault/rules/ 配下への書き込みを拒否する。
 作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めるのを防ぐ。
+解除は環境変数 HARNESS_ALLOW_RULES_WRITE=<doing/review のタスク ID> を人が起動時に
+与えた時だけ効く。フックは Claude Code プロセスの環境を継承するため、作成エージェントが
+Bash 内で export しても届かない（実質的に人しか解除できない）。
 """
 import json
 import os
@@ -75,6 +78,22 @@ def active_doing_review_task_ids(root):
     return ids
 
 
+def rules_write_allowed(active_ids):
+    """環境変数 HARNESS_ALLOW_RULES_WRITE による明示解除の判定。
+
+    値は解除を許すタスク ID の列（カンマまたは空白区切り）。doing/review の ID が
+    すべて含まれる時だけ True。未設定・空・不一致、および `1` / `true` のような
+    ID でない値では解除しない（必ず ID を書かせる）。
+    フックは Claude Code プロセスの環境を継承するため、作成エージェントが Bash 内で
+    export しても届かない。実質的に人だけが起動時に解除できる。
+    """
+    raw = os.environ.get("HARNESS_ALLOW_RULES_WRITE", "")
+    allowed = {v for v in re.split(r"[,\s]+", raw) if v}
+    if not allowed:
+        return False
+    return all(tid in allowed for tid in active_ids)
+
+
 def targets_vault_rules(tool, tool_input, root):
     """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。"""
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
@@ -102,9 +121,13 @@ def main():
     tool_input = payload.get("tool_input") or {}
 
     # 改ざん防止：agent_type を問わず、doing/review 中は vault/rules/ への書き込みを拒否する
+    # （HARNESS_ALLOW_RULES_WRITE に doing/review の ID が指定されている時だけ解除する）
     active_ids = active_doing_review_task_ids(root)
-    if active_ids and targets_vault_rules(tool, tool_input, root):
-        deny(f"[agent_write_guard] doing/review 中は vault/rules/ を編集できません（対象タスク: {', '.join(active_ids)}）")
+    if active_ids and targets_vault_rules(tool, tool_input, root) and not rules_write_allowed(active_ids):
+        deny(
+            f"[agent_write_guard] doing/review 中は vault/rules/ を編集できません（対象タスク: {', '.join(active_ids)}）。"
+            f"ルール自体を変更するタスクなら、人が HARNESS_ALLOW_RULES_WRITE={','.join(active_ids)} を付けて起動すること。"
+        )
 
     agent = payload.get("agent_type") or ""
     if agent not in ALLOWED:

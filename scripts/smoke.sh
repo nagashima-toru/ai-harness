@@ -114,6 +114,13 @@ expect_guard "(b) doing/review 無し・メインエージェントが vault/rul
 make_todo T-0001 doing 1
 expect_guard "(c) doing 中に verifier が vault/verdicts/ へ Write → 許可（従来どおり）" allow \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/T-0001.json"}}')"
+RULES_WRITE_JSON='{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/roles.md"}}'
+expect_guard "(d) HARNESS_ALLOW_RULES_WRITE が doing の ID と一致 → 許可" allow \
+  "$(printf '%s' "$RULES_WRITE_JSON" | CLAUDE_PROJECT_DIR="$TMP" HARNESS_ALLOW_RULES_WRITE=T-0001 python3 "$GUARD_HOOK")"
+expect_guard "(e) HARNESS_ALLOW_RULES_WRITE が doing の ID と不一致 → 拒否" deny \
+  "$(printf '%s' "$RULES_WRITE_JSON" | CLAUDE_PROJECT_DIR="$TMP" HARNESS_ALLOW_RULES_WRITE=T-9999 python3 "$GUARD_HOOK")"
+expect_guard "(f) HARNESS_ALLOW_RULES_WRITE=1（ID でない値）→ 拒否" deny \
+  "$(printf '%s' "$RULES_WRITE_JSON" | CLAUDE_PROJECT_DIR="$TMP" HARNESS_ALLOW_RULES_WRITE=1 python3 "$GUARD_HOOK")"
 
 echo "== todo_guard.py =="
 make_todo_rows() { # 各引数が「## タスク」表のデータ行1行

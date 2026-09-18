@@ -1,0 +1,39 @@
+{
+  "task": "T-0019",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 09:11",
+  "criteria": [
+    {
+      "text": "`vault/rules/common/roles.md` が存在し、見出しが `## 目的` / `## ルール` / `## 確認方法` の3つだけ。確認：`grep -c '^## ' vault/rules/common/roles.md` が3",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## ' vault/rules/common/roles.md` / 出力: 3。Read で内容確認、見出しは目的・ルール・確認方法の3つのみ（ルール内の小見出しは `### `）"
+    },
+    {
+      "text": "100行以内。確認：`grep -c '' vault/rules/common/roles.md` が100以下",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '' vault/rules/common/roles.md` / 出力: 34（100以下）"
+    },
+    {
+      "text": "「ルール」に、planner→creator・creator→verifier・verifier→creator/人 の3つの受け渡しが各1項目以上ある（何を渡し、受け手は何を根拠にしてよいか）",
+      "ok": true,
+      "note": "Read で `## ルール` 節を確認。`### planner → creator`（渡すもの：タスク票6見出し、根拠：決定済み最優先）、`### creator → verifier`（渡すもの：成果物と確認コマンド、根拠：進捗や説明文は不可）、`### verifier → creator / 人`（渡すもの：verdict の result/reasons/criteria[].note、根拠：verdict ファイルのみ）がそれぞれ複数項目ずつ存在"
+    },
+    {
+      "text": "既出の内容（5状態の遷移、todo.md の列構成、ディレクトリ一覧、流れ図）を再掲せず参照に留めている。確認：`grep -c 'docs/vault-spec.md' vault/rules/common/roles.md` が1以上、かつ `grep -c '^| ' vault/rules/common/roles.md` が0（表を持たない）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'docs/vault-spec.md' vault/rules/common/roles.md` / 出力: 1（1以上）。実行コマンド: `grep -c '^| ' vault/rules/common/roles.md` / 出力: 0（表なし）"
+    },
+    {
+      "text": "`bash scripts/rules.sh creator`・`bash scripts/rules.sh verifier`・`bash scripts/rules.sh planner` の3つすべての出力に `vault/rules/common/roles.md` が含まれる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/rules.sh creator` / 出力: vault/rules/common/roles.md を含む。`bash scripts/rules.sh verifier` / 出力: vault/rules/common/roles.md を含む。`bash scripts/rules.sh planner` / 出力: vault/rules/common/roles.md を含む"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=43 fail=0"
+    }
+  ],
+  "reasons": []
+}

@@ -1,0 +1,15 @@
+{
+  "task": "T-0021",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 09:25",
+  "criteria": [
+    {"text": "`vault/rules/creator/creator.md` が存在し、見出しが `## 目的` / `## ルール` / `## 確認方法` の3つだけ。確認：`grep -c '^## ' vault/rules/creator/creator.md` が3", "ok": true, "note": "実行コマンド: `grep -c '^## ' vault/rules/creator/creator.md` / 出力: 3。Read でも見出しが 目的・ルール・確認方法 の3つのみであることを確認"},
+    {"text": "100行以内。確認：`grep -c '' vault/rules/creator/creator.md` が100以下", "ok": true, "note": "実行コマンド: `grep -c '' vault/rules/creator/creator.md` / 出力: 31（100以下）"},
+    {"text": "「ルール」に (a) 着手時に `bash scripts/rules.sh creator` を実行して列挙されたファイルを読む、(b) タスク中に `vault/rules/` を編集しない、(c) 受け入れ基準の確認コマンドを自分でも実行して通してから `review` にする、の3点が各1項目以上ある。確認：`grep -c 'rules.sh creator' vault/rules/creator/creator.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'rules.sh creator' vault/rules/creator/creator.md` / 出力: 1。Read でファイル内容を確認し、(a) 9行目「着手時に `bash scripts/rules.sh creator` を実行し、列挙されたファイルをすべて読む」、(b) 21行目「タスク中に `vault/rules/` を編集しない」、(c) 13行目「受け入れ基準に併記された確認コマンドを自分でも実行し、すべて通してから `review` にする」がそれぞれ1項目以上存在することを確認"},
+    {"text": "「やらないこと」に、満たせない受け入れ基準に当たった時は基準やフック・設定を自分で書き換えず `blocked` にして question を書く旨があり、根拠のタスク ID を明記している。確認：`grep -c 'T-00' vault/rules/creator/creator.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'T-00' vault/rules/creator/creator.md` / 出力: 1。Read で18〜20行目に該当記述を確認：「満たせない受け入れ基準に当たっても、基準そのものを書き換えない。…status を `blocked` にして question に…書き、人の回答を待つ」に続けてT-0002を根拠として明記"},
+    {"text": "`bash scripts/rules.sh creator` の出力に `vault/rules/creator/creator.md` が含まれ、`bash scripts/rules.sh verifier` と `bash scripts/rules.sh planner` の出力には含まれない", "ok": true, "note": "実行コマンド: `bash scripts/rules.sh creator` / 出力: vault/rules/common/roles.md, vault/rules/creator/creator.md（creator.md を含む）。`bash scripts/rules.sh verifier` / 出力: vault/rules/common/roles.md のみ。`bash scripts/rules.sh planner` / 出力: vault/rules/common/roles.md, vault/rules/planner/planner.md（いずれも creator.md を含まない）"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=43 fail=0"}
+  ],
+  "reasons": []
+}

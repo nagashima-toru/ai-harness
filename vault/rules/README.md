@@ -1,6 +1,6 @@
 # vault/rules/ の書き方
 
-インストール先ごとに用意する「ルール」（コーディングルール・開発標準・方式設計・テスト標準・テスト観点など）の置き場。ハーネス本体はルールを同梱しない。ここに書くのはインストール先の仕事。
+作成エージェント・verifier・planner に渡す「ルール」の置き場。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`common/roles.md`・`creator/creator.md`・`verifier/verifier.md`・`planner/planner.md`）。コーディングルール・開発標準・方式設計・テスト観点などドメイン固有のルールはインストール先で書く。
 
 ## 振り分け（ディレクトリだけで決める）
 - `common/`：作成エージェント・verifier・planner の全員に渡す

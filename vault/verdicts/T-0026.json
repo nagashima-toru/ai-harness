@@ -1,0 +1,14 @@
+{
+  "task": "T-0026",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 15:26",
+  "criteria": [
+    {"text": "README.md が `docs/install.md` を参照している。確認コマンド: `grep -c 'docs/install.md' README.md`（結果が1以上）", "ok": true, "note": "実行コマンド: `grep -c 'docs/install.md' README.md` / 出力: 1"},
+    {"text": "README.md のセットアップ節から旧い組み込み手順の行が消えている。確認コマンド: `grep -c 'bash scripts/install.sh /path/to/your-project' README.md`（結果が0）", "ok": true, "note": "実行コマンド: `grep -c 'bash scripts/install.sh /path/to/your-project' README.md` / 出力: 0"},
+    {"text": "docs/runbook.md の冒頭が `docs/install.md` を参照している。確認コマンド: `grep -c 'docs/install.md' docs/runbook.md`（結果が1以上）", "ok": true, "note": "実行コマンド: `grep -c 'docs/install.md' docs/runbook.md` / 出力: 1"},
+    {"text": "docs/runbook.md の既存見出し `## 0. 大きなゴールは先に設計する` がそのまま残っている（番号・文言を変えない）。確認コマンド: `grep -c '^## 0\\. 大きなゴールは先に設計する' docs/runbook.md`（結果が1）", "ok": true, "note": "実行コマンド: `grep -c '^## 0\\. 大きなゴールは先に設計する' docs/runbook.md` / 出力: 1"},
+    {"text": "README.md の「構成」節に `install.md` の記載が追加されている（セットアップ節の参照と合わせて2箇所以上になる）。確認コマンド: `grep -c 'install.md' README.md`（結果が2以上）", "ok": true, "note": "実行コマンド: `grep -c 'install.md' README.md` / 出力: 2"}
+  ],
+  "reasons": []
+}

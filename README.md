@@ -16,11 +16,9 @@ AI の作業を「作成 → 検証」の二段構成にし、検証が PASS し
 # このリポジトリで試す
 git clone git@github.com:nagashima-toru/ai-harness.git && cd ai-harness
 bash scripts/smoke.sh        # フックの動作検証
-
-# 開発プロジェクトに組み込む（.claude/ と vault/ と scripts/smoke.sh を複製）
-bash scripts/install.sh /path/to/your-project
-cd /path/to/your-project && claude   # 一度対話起動してフォルダを信頼する（settings.json の許可を有効にするため）
 ```
+
+他のプロジェクトへ組み込む場合（まっさらな新規ディレクトリ／既存リポジトリのどちらでも）は `docs/install.md` を参照。
 
 ## 使い方
 | コマンド | 何をするか |
@@ -72,6 +70,6 @@ cd /path/to/your-project && claude   # 一度対話起動してフォルダを�
 ```
 .claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（design, plan, run-queue）
 vault/     todo.md（正本）、tasks/、plans/、designs/（設計文書）、verdicts/、log/queue.md、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
-docs/      vault-spec.md（仕様の正本）、runbook.md、decisions.md
+docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、decisions.md
 scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）、rules.sh（ルール解決）
 ```

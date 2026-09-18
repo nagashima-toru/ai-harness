@@ -32,6 +32,9 @@
 | T-0021 | done | 1 | T-0019 | creator（run-queue メイン）の責務と「やらないこと」をルール化する | |
 | T-0022 | done | 1 | T-0019 | verifier の責務と「やらないこと」をルール化する | |
 | T-0023 | done | 1 | T-0020,T-0021,T-0022 | 標準ルールを install.sh で配り「同梱しない」の記述を直す | |
+| T-0024 | done | 1 | - | docs/install.md を新規作成し「前提」「パターン1: まっさらな環境」節を書く | |
+| T-0025 | done | 1 | T-0024 | docs/install.md に「パターン2: 既存リポジトリ」と「インストール後の次の一歩」を追記する | |
+| T-0026 | done | 1 | T-0025 | README.md のセットアップ節と docs/runbook.md に docs/install.md への導線を追加する | |
 
 ## 計画
 | id | status | title |
@@ -51,3 +54,4 @@
 | P-013 | approved | ルール拡張ポイントの通し検証 |
 | P-014 | approved | /design スキルの追加と planner のタスク数上限 |
 | P-015 | approved | planner / creator / verifier の責務を標準ルール化する |
+| P-016 | approved | インストールガイドの改善 |

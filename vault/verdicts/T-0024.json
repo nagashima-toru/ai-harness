@@ -1,0 +1,39 @@
+{
+  "task": "T-0024",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 15:24",
+  "criteria": [
+    {
+      "text": "`docs/install.md` が存在する。確認コマンド: `test -f docs/install.md && echo yes`",
+      "ok": true,
+      "note": "実行コマンド: `test -f docs/install.md && echo yes` / 出力: yes"
+    },
+    {
+      "text": "`## パターン1: まっさらな環境にインストールする` という見出しが1つある。確認コマンド: `grep -c '^## パターン1' docs/install.md`（結果が1）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## パターン1' docs/install.md` / 出力: 1"
+    },
+    {
+      "text": "`git init` を行う手順が書かれている。確認コマンド: `grep -c 'git init' docs/install.md`（結果が1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'git init' docs/install.md` / 出力: 2"
+    },
+    {
+      "text": "`.gitignore` に含める4項目（`.DS_Store`、`__pycache__`、`*.pyc`、`.claude/settings.local.json`）が全て書かれている。確認コマンド: `for s in '.DS_Store' '__pycache__' '\\*.pyc' '.claude/settings.local.json'; do grep -c -- \"$s\" docs/install.md; done`（すべて1以上）",
+      "ok": true,
+      "note": "実行コマンド: `for s in '.DS_Store' '__pycache__' '\\*.pyc' '.claude/settings.local.json'; do grep -c -- \"$s\" docs/install.md; done` / 出力: 1, 1, 1, 1（すべて1以上）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行する手順が書かれている。確認コマンド: `grep -c 'bash scripts/smoke.sh' docs/install.md`（結果が1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'bash scripts/smoke.sh' docs/install.md` / 出力: 1"
+    },
+    {
+      "text": "`## パターン2` の見出しはまだ無い（T-0025 が追記するため、本タスクでは空見出しを残さない）。確認コマンド: `grep -c '^## パターン2' docs/install.md`（結果が0）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## パターン2' docs/install.md` / 出力: 0"
+    }
+  ],
+  "reasons": []
+}

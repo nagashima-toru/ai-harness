@@ -1,0 +1,15 @@
+{
+  "task": "T-0025",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-18 15:25",
+  "criteria": [
+    {"text": "`## パターン2: 既存リポジトリに追加する` という見出しが1つある。確認コマンド: `grep -c '^## パターン2' docs/install.md`（結果が1）", "ok": true, "note": "実行コマンド: `grep -c '^## パターン2' docs/install.md` / 出力: 1"},
+    {"text": "`## インストール後の次の一歩` という見出しが1つある。確認コマンド: `grep -c '^## インストール後の次の一歩' docs/install.md`（結果が1）", "ok": true, "note": "実行コマンド: `grep -c '^## インストール後の次の一歩' docs/install.md` / 出力: 1"},
+    {"text": "`scripts/install.sh` の note 文言を引用している。確認コマンド: `grep -c 'CLAUDE.md は既にあります' docs/install.md`（結果が1以上）", "ok": true, "note": "実行コマンド: `grep -c 'CLAUDE.md は既にあります' docs/install.md` / 出力: 1"},
+    {"text": "`vault/` を git 管理に入れる推奨（`git add vault/` を含むコマンド）が書かれている。確認コマンド: `grep -c 'git add vault/' docs/install.md`（結果が1以上）", "ok": true, "note": "指定コマンド `grep -c 'git add vault/' docs/install.md` は agent_write_guard に `git add` 部分文字列でブロックされ実行不可だったため、代替として `grep -Fc 'add vault/' docs/install.md` を実行し出力1、さらに `grep -n -F 'add vault/' docs/install.md` で90行目に `git add vault/ .claude/ CLAUDE.md scripts/rules.sh scripts/smoke.sh docs/vault-spec.md && git commit -m \"ai-harness を導入\"` があることを確認した"},
+    {"text": "`docs/runbook.md` への参照がある。確認コマンド: `grep -c 'docs/runbook.md' docs/install.md`（結果が1以上）", "ok": true, "note": "実行コマンド: `grep -c 'docs/runbook.md' docs/install.md` / 出力: 1"},
+    {"text": "T-0024 が書いたパターン1の見出しが壊れずに残っている。確認コマンド: `grep -c '^## パターン1' docs/install.md`（結果が1）", "ok": true, "note": "実行コマンド: `grep -c '^## パターン1' docs/install.md` / 出力: 1。補足として `grep -n '^## ' docs/install.md` で見出し順が前提→パターン1(16行)→パターン2(69行)→インストール後の次の一歩(105行)であることも確認した"}
+  ],
+  "reasons": []
+}

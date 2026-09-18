@@ -94,3 +94,13 @@
 - 2026-09-18 12:22 T-0023 todo→doing attempt=1 人が HARNESS_ALLOW_RULES_WRITE=T-0023 を設定して再開
 - 2026-09-18 12:26 T-0023 doing→review attempt=1
 - 2026-09-18 12:27 T-0023 review→done attempt=1 verdict PASS、5件すべて note あり
+- 2026-09-18 15:23 P-016 draft→approved tasks=T-0024,T-0025,T-0026
+- 2026-09-18 15:23 T-0024 todo→doing attempt=1
+- 2026-09-18 15:24 T-0024 doing→review attempt=1
+- 2026-09-18 15:24 T-0024 review→done attempt=1 verdict PASS、6基準すべて note あり
+- 2026-09-18 15:24 T-0025 todo→doing attempt=1
+- 2026-09-18 15:25 T-0025 doing→review attempt=1
+- 2026-09-18 15:26 T-0025 review→done attempt=1 verdict PASS、6基準すべて note あり
+- 2026-09-18 15:26 T-0026 todo→doing attempt=1
+- 2026-09-18 15:26 T-0026 doing→review attempt=1
+- 2026-09-18 15:27 T-0026 review→done attempt=1 verdict PASS、5基準すべて note あり

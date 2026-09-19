@@ -1,34 +1,118 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
-# 使い方: bash scripts/install.sh [--no-claude-md] <target-dir>
-# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh、scripts/merge_claude_md.py
-# 既存ファイルは上書きしない（.claude/settings.json と vault/todo.md が既にあれば残す）。
+# 使い方: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>
+# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh、scripts/merge_claude_md.py、scripts/merge_settings_json.py
+# 既存ファイルは上書きしない（vault/todo.md が既にあれば残す）。
+# .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
+# permissions.deny の不足分だけを足す（インストール先が足した permissions.allow は消さない）。
+# 複製の最後に .claude/harness-manifest.json を書く。記録するのは「この install で配った内容」＝
+# src 側の実ファイルの sha256 であり、dst の現状ではない（dst を記録すると、利用者が編集済みの
+# ファイルが「未編集」と誤判定され、次の更新で編集が黙って上書きされるため）。
 # 例外は CLAUDE.md で、既定では merge_claude_md.py がマーカー付きブロックだけをマージする（既存本文は残し、書き換え時はバックアップを作る）。
 # --no-claude-md を付けると CLAUDE.md には触れず、既存があれば案内だけを出す。
+# --update を付けると、マニフェストと照合してハーネス本体を更新する。dst のハッシュがマニフェストと
+# 一致（＝配った時のまま）なら上書きし、一致しなければ利用者が編集したとみなしてスキップし報告する。
+USAGE="usage: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>"
 set -eu
 NO_CLAUDE_MD=0
+UPDATE=0
 ARGS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-claude-md) NO_CLAUDE_MD=1 ;;
-    -*) echo "usage: bash scripts/install.sh [--no-claude-md] <target-dir>" >&2; exit 2 ;;
-    *) if [ -n "$ARGS" ]; then echo "usage: bash scripts/install.sh [--no-claude-md] <target-dir>" >&2; exit 2; fi; ARGS="$1" ;;
+    --update) UPDATE=1 ;;
+    -*) echo "$USAGE" >&2; exit 2 ;;
+    *) if [ -n "$ARGS" ]; then echo "$USAGE" >&2; exit 2; fi; ARGS="$1" ;;
   esac
   shift
 done
-if [ -z "$ARGS" ]; then echo "usage: bash scripts/install.sh [--no-claude-md] <target-dir>" >&2; exit 2; fi
+if [ -z "$ARGS" ]; then echo "$USAGE" >&2; exit 2; fi
 set -- "$ARGS"
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DST="$1"
 mkdir -p "$DST"
 DST="$(cd "$DST" && pwd)"
 
+MANIFEST_FILE="$DST/.claude/harness-manifest.json"
+HANDLED_LIST="$(mktemp)"   # --update で処理済みの相対パス（通常の複製から除外する）
+SKIPPED_LIST="$(mktemp)"   # 編集済みとみなしてスキップした相対パス（マニフェストを据え置く）
+trap 'rm -f "$HANDLED_LIST" "$SKIPPED_LIST"' EXIT
+
 copy_if_absent() { # $1=src $2=dst
-  if [ -e "$2" ]; then echo "skip  (exists) ${2#$DST/}"; else mkdir -p "$(dirname "$2")"; cp "$1" "$2"; echo "copy  ${2#$DST/}"; fi
+  rel="${2#$DST/}"
+  if [ -s "$HANDLED_LIST" ] && grep -Fxq "$rel" "$HANDLED_LIST"; then return 0; fi
+  if [ -e "$2" ]; then echo "skip  (exists) $rel"; else mkdir -p "$(dirname "$2")"; cp "$1" "$2"; echo "copy  $rel"; fi
 }
 
-# .claude/
-for f in $(cd "$SRC/.claude" && find . -type f ! -name 'settings.local.json' | sed 's|^\./||'); do
+# ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
+# 利用者の資産（vault/plans, tasks, verdicts, log, archive, designs の中身、標準4本以外の
+# vault/rules/、settings.local.json）は含めない。.claude/settings.json は専用マージャの対象。
+manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存在するものだけ）
+  (
+    cd "$SRC" || exit 0
+    find .claude/hooks -name '*.py' -type f 2>/dev/null
+    find .claude/agents -name '*.md' -type f 2>/dev/null
+    find .claude/skills -name 'SKILL.md' -type f 2>/dev/null
+    find vault/templates -name '*.md' -type f 2>/dev/null
+    for p in .claude/ai-harness.md scripts/smoke.sh scripts/rules.sh \
+             scripts/merge_claude_md.py scripts/merge_settings_json.py \
+             scripts/install.sh docs/vault-spec.md \
+             vault/rules/README.md vault/rules/common/roles.md \
+             vault/rules/creator/creator.md vault/rules/verifier/verifier.md \
+             vault/rules/planner/planner.md; do
+      [ -f "$p" ] && echo "$p"
+    done
+  ) | sed 's|^\./||' | sort -u
+}
+
+# --update：マニフェストと照合して、未編集なら上書き・編集済みならスキップして報告する。
+# 通常の複製ループより先に走らせ、ここで処理したパスは copy_if_absent の対象から外す。
+if [ "$UPDATE" -eq 1 ]; then
+  UPDATE_LIST="$(mktemp)"
+  manifest_paths > "$UPDATE_LIST"
+  python3 -c '
+import hashlib, json, os, shutil, sys
+src, dst, manifest, listfile, handled, skipped = sys.argv[1:7]
+old = {}
+if os.path.isfile(manifest):
+    try:
+        with open(manifest, encoding="utf-8") as fh:
+            old = json.load(fh).get("files") or {}
+    except Exception:
+        old = {}
+def sha(p):
+    with open(p, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+h_out, s_out = [], []
+with open(listfile, encoding="utf-8") as fh:
+    rels = [l.strip() for l in fh if l.strip()]
+for rel in rels:
+    sp, dp = os.path.join(src, rel), os.path.join(dst, rel)
+    if not os.path.isfile(sp):
+        continue
+    h_out.append(rel)
+    if not os.path.exists(dp):
+        os.makedirs(os.path.dirname(dp), exist_ok=True)
+        shutil.copyfile(sp, dp)
+        print("copy " + rel)
+        continue
+    recorded = old.get(rel)
+    if recorded is not None and recorded == sha(dp):
+        shutil.copyfile(sp, dp)
+        print("update " + rel)
+    else:
+        print("skip (edited) " + rel)
+        s_out.append(rel)
+with open(handled, "w", encoding="utf-8") as fh:
+    fh.write("".join(r + "\n" for r in h_out))
+with open(skipped, "w", encoding="utf-8") as fh:
+    fh.write("".join(r + "\n" for r in s_out))
+' "$SRC" "$DST" "$MANIFEST_FILE" "$UPDATE_LIST" "$HANDLED_LIST" "$SKIPPED_LIST"
+  rm -f "$UPDATE_LIST"
+fi
+
+# .claude/（settings.json は専用マージャで扱うのでこのループから外す）
+for f in $(cd "$SRC/.claude" && find . -type f ! -name 'settings.local.json' ! -name 'settings.json' | sed 's|^\./||'); do
   copy_if_absent "$SRC/.claude/$f" "$DST/.claude/$f"
 done
 chmod +x "$DST"/.claude/hooks/*.py
@@ -70,7 +154,11 @@ fi
 copy_if_absent "$SRC/scripts/smoke.sh" "$DST/scripts/smoke.sh"
 copy_if_absent "$SRC/scripts/rules.sh" "$DST/scripts/rules.sh"
 copy_if_absent "$SRC/scripts/merge_claude_md.py" "$DST/scripts/merge_claude_md.py"
+copy_if_absent "$SRC/scripts/merge_settings_json.py" "$DST/scripts/merge_settings_json.py"
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
+
+# .claude/settings.json（専用マージャ。--update の有無や既存の有無にかかわらず常に呼ぶ）
+python3 "$SRC/scripts/merge_settings_json.py" "$SRC/.claude/settings.json" "$DST/.claude/settings.json"
 
 # CLAUDE.md（既定はマーカー付きブロックのマージ。--no-claude-md なら従来どおり案内だけ）
 if [ "$NO_CLAUDE_MD" -eq 1 ]; then
@@ -82,6 +170,47 @@ if [ "$NO_CLAUDE_MD" -eq 1 ]; then
 else
   python3 "$SRC/scripts/merge_claude_md.py" "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
 fi
+
+# ハーネス本体のマニフェスト（配ったファイルの sha256 を記録する）。
+# 記録するのは src の実ファイルのハッシュ。ただし --update で「編集済み」としてスキップした
+# パスは、今回配っていないので既存の記録を据え置く。
+MANIFEST_LIST="$(mktemp)"
+manifest_paths > "$MANIFEST_LIST"
+python3 -c '
+import hashlib, json, os, sys
+src, out, version, listfile, skipped = sys.argv[1:6]
+prev = {}
+if os.path.isfile(out):
+    try:
+        with open(out, encoding="utf-8") as fh:
+            prev = json.load(fh).get("files") or {}
+    except Exception:
+        prev = {}
+keep = set()
+if os.path.isfile(skipped):
+    with open(skipped, encoding="utf-8") as fh:
+        keep = {l.strip() for l in fh if l.strip()}
+files = {}
+with open(listfile, encoding="utf-8") as fh:
+    for line in fh:
+        rel = line.strip()
+        if not rel:
+            continue
+        p = os.path.join(src, rel)
+        if not os.path.isfile(p):
+            continue
+        if rel in keep and rel in prev:
+            files[rel] = prev[rel]
+            continue
+        with open(p, "rb") as g:
+            files[rel] = hashlib.sha256(g.read()).hexdigest()
+os.makedirs(os.path.dirname(out), exist_ok=True)
+with open(out, "w", encoding="utf-8") as fh:
+    json.dump({"version": version, "files": files}, fh, ensure_ascii=False, indent=2)
+    fh.write("\n")
+print("manifest  .claude/harness-manifest.json (%d files)" % len(files))
+' "$SRC" "$MANIFEST_FILE" "$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')" "$MANIFEST_LIST" "$SKIPPED_LIST"
+rm -f "$MANIFEST_LIST"
 
 echo
 echo "done: $DST"

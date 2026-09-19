@@ -252,6 +252,103 @@ bash "$ROOT/scripts/install.sh" --unknown "$ITMP" >/dev/null 2>&1; rc=$?
 expect_eq "(g) 不正なオプション → exit 2" "2" "$rc"
 rm -rf "$ITMP"
 
+echo "== install.sh のマニフェスト =="
+NTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$NTMP" >/dev/null 2>&1
+NMAN="$NTMP/.claude/harness-manifest.json"
+expect_eq "(h) マニフェストが作られる" "1" "$([ -f "$NMAN" ] && echo 1 || echo 0)"
+expect_eq "(h) files が1件以上" "True" \
+  "$(python3 -c "import json;print(len(json.load(open('$NMAN'))['files']) >= 1)")"
+expect_eq "(h) 代表2パスのハッシュが64桁16進" "True" \
+  "$(python3 -c "import json,re;d=json.load(open('$NMAN'))['files'];print(bool(re.fullmatch('[0-9a-f]{64}',d['.claude/hooks/stop_gate.py'])) and bool(re.fullmatch('[0-9a-f]{64}',d['docs/vault-spec.md'])))")"
+expect_eq "(h) 利用者の資産は含まれない" "False" \
+  "$(python3 -c "import json;d=json.load(open('$NMAN'))['files'];print(any(k.startswith(('vault/plans/','vault/tasks/','vault/verdicts/','vault/log/','vault/archive/','vault/designs/')) for k in d))")"
+printf -- '- 独自ルール\n' >> "$NTMP/vault/rules/common/roles.md"
+bash "$ROOT/scripts/install.sh" "$NTMP" >/dev/null 2>&1
+expect_eq "(i) 記録は src のハッシュで dst とは一致しない" "True" \
+  "$(python3 -c "
+import hashlib, json
+h = lambda p: hashlib.sha256(open(p,'rb').read()).hexdigest()
+rel = 'vault/rules/common/roles.md'
+m = json.load(open('$NMAN'))['files'][rel]
+print(m == h('$ROOT/' + rel) and m != h('$NTMP/' + rel))")"
+expect_eq "(i) 編集した行はそのまま残る" "1" "$(grep -c '^- 独自ルール$' "$NTMP/vault/rules/common/roles.md")"
+rm -rf "$NTMP"
+
+echo "== install.sh --update =="
+UTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$UTMP" >/dev/null 2>&1
+uout="$(bash "$ROOT/scripts/install.sh" --update "$UTMP" 2>&1)"
+expect_eq "(j) 未編集は update として報告される" "1" \
+  "$(echo "$uout" | grep -c '^update \.claude/hooks/stop_gate\.py$')"
+expect_eq "(j) 未編集ファイルが src と一致する" "0" \
+  "$(diff "$ROOT/.claude/hooks/stop_gate.py" "$UTMP/.claude/hooks/stop_gate.py" >/dev/null 2>&1; echo $?)"
+expect_eq "(j) 上書き後のマニフェストが dst と一致する" "True" \
+  "$(python3 -c "
+import hashlib, json
+m = json.load(open('$UTMP/.claude/harness-manifest.json'))['files']['docs/vault-spec.md']
+print(m == hashlib.sha256(open('$UTMP/docs/vault-spec.md','rb').read()).hexdigest())")"
+printf -- '- 独自ルール2\n' >> "$UTMP/vault/rules/common/roles.md"
+uout="$(bash "$ROOT/scripts/install.sh" --update "$UTMP" 2>&1)"
+expect_eq "(k) 編集済みは skip (edited) で報告される" "1" \
+  "$(echo "$uout" | grep -c '^skip (edited) vault/rules/common/roles\.md$')"
+expect_eq "(k) 編集した行は残る" "1" "$(grep -c '^- 独自ルール2$' "$UTMP/vault/rules/common/roles.md")"
+rm -f "$UTMP/.claude/harness-manifest.json"
+ubefore="$(shasum "$UTMP/.claude/hooks/stop_gate.py" | cut -d' ' -f1)"
+uout="$(bash "$ROOT/scripts/install.sh" --update "$UTMP" 2>&1)"
+expect_eq "(l) マニフェスト無し → 既存は update されない" "0" "$(echo "$uout" | grep -c '^update ')"
+expect_eq "(l) マニフェスト無し → 既存ファイルは上書きされない" "$ubefore" \
+  "$(shasum "$UTMP/.claude/hooks/stop_gate.py" | cut -d' ' -f1)"
+rm -rf "$UTMP"
+
+echo "== merge_settings_json.py =="
+SMERGE="$ROOT/scripts/merge_settings_json.py"
+STMP="$(mktemp -d)"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/new/settings.json")"
+expect_eq "(m) dst が無い → create" "create" "${out%% *}"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/new/settings.json")"
+expect_eq "(m) 同じ内容で再実行 → skip" "skip" "${out%% *}"
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+d['permissions']['allow'].append('Bash(独自コマンド *)')
+d['permissions']['deny'].remove('Bash(sudo *)')
+del d['hooks']['PostToolUse']
+pathlib.Path('$STMP/settings.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/settings.json")"
+expect_eq "(n) 欠けている要素がある → merge" "merge" "${out%% *}"
+expect_eq "(n) allow の独自要素は残る" "True" \
+  "$(python3 -c "import json;print('Bash(独自コマンド *)' in json.load(open('$STMP/settings.json'))['permissions']['allow'])")"
+expect_eq "(n) 欠落した hooks エントリが復元される" "True" \
+  "$(python3 -c "import json;d=json.load(open('$STMP/settings.json'));print(any('todo_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
+expect_eq "(n) 欠落した deny 要素が復元される" "True" \
+  "$(python3 -c "import json;print('Bash(sudo *)' in json.load(open('$STMP/settings.json'))['permissions']['deny'])")"
+expect_eq "(n) バックアップが1つできる" "1" "$(ls "$STMP" | grep -c '^settings\.json\.bak-')"
+rm -rf "$STMP"
+
+echo "== install.sh の settings.json 扱い =="
+WTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$WTMP" >/dev/null 2>&1
+expect_eq "(o) merge_settings_json.py が複製される" "1" \
+  "$([ -f "$WTMP/scripts/merge_settings_json.py" ] && echo 1 || echo 0)"
+expect_eq "(o) settings.json が作られる" "1" "$([ -f "$WTMP/.claude/settings.json" ] && echo 1 || echo 0)"
+expect_eq "(o) settings.json に copy_if_absent を使っていない" "0" \
+  "$(grep -c 'copy_if_absent.*settings\.json' "$ROOT/scripts/install.sh")"
+python3 -c "
+import json, pathlib
+d = json.load(open('$WTMP/.claude/settings.json'))
+d['permissions']['allow'].append('Bash(独自コマンド *)')
+del d['hooks']['PostToolUse']
+pathlib.Path('$WTMP/.claude/settings.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+bash "$ROOT/scripts/install.sh" --update "$WTMP" >/dev/null 2>&1
+expect_eq "(p) --update 後も独自の allow が残る" "True" \
+  "$(python3 -c "import json;print('Bash(独自コマンド *)' in json.load(open('$WTMP/.claude/settings.json'))['permissions']['allow'])")"
+expect_eq "(p) --update で欠落 hooks が足される" "True" \
+  "$(python3 -c "import json;d=json.load(open('$WTMP/.claude/settings.json'));print(any('todo_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
+rm -rf "$WTMP"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

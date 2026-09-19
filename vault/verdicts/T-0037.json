@@ -1,0 +1,34 @@
+{
+  "task": "T-0037",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-19 21:13",
+  "criteria": [
+    {
+      "text": "install 先の `.claude/hooks/stop_gate.py` を書き換えずに `bash scripts/install.sh --update <dst>` を再実行すると、`diff <src>/.claude/hooks/stop_gate.py <dst>/.claude/hooks/stop_gate.py` が差分なしで終わる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/install.sh /tmp/verify_t0037_d1` → `bash scripts/install.sh --update /tmp/verify_t0037_d1` → `diff .claude/hooks/stop_gate.py /tmp/verify_t0037_d1/.claude/hooks/stop_gate.py; echo diff_exit=$?` / 出力: 更新時の出力に `update .claude/hooks/stop_gate.py` を含み、diff の出力は空で `diff_exit=0`"
+    },
+    {
+      "text": "install 先の `vault/rules/common/roles.md` に1行足してから `--update` で再 install すると、標準出力に `skip (edited)` と `vault/rules/common/roles.md` の両方が含まれ、足した1行が `<dst>/vault/rules/common/roles.md` に残っている",
+      "ok": true,
+      "note": "直接確認は不可：verifier は vault/verdicts/ 以外への書き込み（`/tmp` の dst ファイル編集含む）が agent_write_guard に拒否される（実行コマンド: `printf ... >> /tmp/.../roles.md` / 出力: `[agent_write_guard] verifier の Bash では書き込み・破壊的操作を行えません`）。代替として `scripts/smoke.sh` 内の同一シナリオの自動ケース (k) を実行し確認した。実行コマンド: `bash scripts/smoke.sh | tail -60`（該当部: `== install.sh --update ==` 節、`printf -- '- 独自ルール2\\n' >> \"$UTMP/vault/rules/common/roles.md\"` の後 `--update` を実行） / 出力: `ok   (k) 編集済みは skip (edited) で報告される` `ok   (k) 編集した行は残る`（`grep -c '^skip (edited) vault/rules/common/roles\\.md$'` が1、追加行の `grep -c` が1）"
+    },
+    {
+      "text": "`--update` で上書きされたファイル（例 `docs/vault-spec.md`）について、上書き後のマニフェストのハッシュが dst の実ファイルの現在のハッシュと一致する。確認コマンド: `python3 -c \"import hashlib,json;m=json.load(open('<dst>/.claude/harness-manifest.json'))['files']['docs/vault-spec.md'];print(m==hashlib.sha256(open('<dst>/docs/vault-spec.md','rb').read()).hexdigest())\"` が `True`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -60`（該当部: `== install.sh --update ==` 節の (j) ケース、指定コマンドと同一のロジック `m = json.load(open('$UTMP/.claude/harness-manifest.json'))['files']['docs/vault-spec.md']; print(m == hashlib.sha256(open('$UTMP/docs/vault-spec.md','rb').read()).hexdigest())` を実行） / 出力: `ok   (j) 上書き後のマニフェストが dst と一致する`（期待値 `True` と一致）"
+    },
+    {
+      "text": "マニフェストが存在しない `<dst>`（初回 install を経ずに手動で用意したディレクトリなど）に対して `--update` を実行すると、既存ファイルはすべて `skip (edited)` として報告され、上書きされない",
+      "ok": true,
+      "note": "直接確認は不可：verifier は vault/verdicts/ 以外への書き込みが agent_write_guard に拒否されるため、手動でマニフェストを消したり dst を用意したりできない。代替として `scripts/smoke.sh` の同一シナリオの自動ケース (l) を実行した。実行コマンド: `bash scripts/smoke.sh | tail -60`（該当部: `== install.sh --update ==` 節、`rm -f \"$UTMP/.claude/harness-manifest.json\"` でマニフェストを消してから `--update` を実行） / 出力: `ok   (l) マニフェスト無し → 既存は update されない`（`update ` で始まる行が0件）`ok   (l) マニフェスト無し → 既存ファイルは上書きされない`（`.claude/hooks/stop_gate.py` のハッシュが実行前後で不変）。既存ファイルはすべて dst に存在するため `copy` にはならず、`update` が0件であることは全件が `skip (edited)` として扱われたことを示す（decided 記載の実装分岐：dst 有り＋マニフェスト無し/不一致→skip、dst 無し→copy、のみで update は無い）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（新規ケース込み）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=77 fail=0`（`== install.sh --update ==` 節の新規ケース (j)(k)(l) を含む全77件が ok）"
+    }
+  ],
+  "reasons": []
+}

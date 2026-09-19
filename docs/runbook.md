@@ -51,6 +51,15 @@ git mv vault/verdicts/T-0001.json vault/archive/$(date +%Y-%m)/
 2. 渡したい相手（全員／作成エージェント／verifier／planner）でディレクトリを決める
 3. 反映させたい受け入れ基準の行にルールファイルを名指しして参照する
 
+## 7. ハーネス自体の更新を取り込む
+このハーネスを他のプロジェクトに組み込んでいる場合、フックやスキルを直しても組み込み先には届かない。取り込みたい時に次を打つ。
+
+```bash
+bash /path/to/ai-harness/scripts/install.sh --update /path/to/your-project
+```
+
+未編集のファイルは `update <path>` で最新化され、組み込み先で編集したファイルは `skip (edited) <path>` と報告されるだけで上書きされない。`.claude/settings.json` は hooks の欠落エントリと `permissions.deny` の不足分だけが足される。詳細は `docs/install.md` の「ハーネスを更新する（2回目以降）」。
+
 ## 困ったとき
 | 症状 | 見るところ |
 |---|---|

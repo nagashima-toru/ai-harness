@@ -38,6 +38,11 @@
 | T-0027 | done | 1 | - | `.claude/ai-harness.md` 新設とルート `CLAUDE.md` のスタブ化 | |
 | T-0028 | done | 1 | T-0027 | `scripts/merge_claude_md.py` 新規作成と `scripts/smoke.sh` へのケース追加 | |
 | T-0029 | done | 1 | T-0028 | `scripts/install.sh` への組み込み（`--no-claude-md`）と関連ドキュメント更新 | |
+| T-0036 | done | 1 | - | 配布ファイルのハッシュ記録（マニフェスト書き込み）を install.sh に追加する | |
+| T-0037 | done | 1 | T-0036 | `--update` フラグを実装する（未編集は上書き・編集済みはスキップして報告） | |
+| T-0038 | done | 1 | - | `scripts/merge_settings_json.py` を新規作成する | |
+| T-0039 | done | 1 | T-0037,T-0038 | `scripts/install.sh` に `merge_settings_json.py` を組み込み、マニフェスト対象を確定する | |
+| T-0040 | done | 1 | T-0039 | ドキュメント更新と全体の通し確認 | |
 
 ## 計画
 | id | status | title |
@@ -59,3 +64,4 @@
 | P-015 | approved | planner / creator / verifier の責務を標準ルール化する |
 | P-016 | approved | インストールガイドの改善 |
 | P-017 | approved | CLAUDE.md のマージインストール（外出し + merge_claude_md.py） |
+| P-019 | approved | インストール先への更新経路を作る（ハッシュ照合と settings マージャ） |

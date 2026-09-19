@@ -1,0 +1,29 @@
+{
+  "task": "T-0040",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-19 21:46",
+  "criteria": [
+    {
+      "text": "`docs/install.md` に `--update`・`harness-manifest.json`・`skip (edited)`・`merge_settings_json.py` の4語すべてへの言及がある。確認コマンド: `grep -c -- '--update' docs/install.md`（1以上）、`grep -c 'harness-manifest.json' docs/install.md`（1以上）、`grep -c 'skip (edited)' docs/install.md`（1以上）、`grep -c 'merge_settings_json.py' docs/install.md`（1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -- '--update' docs/install.md` / 出力: 6。`grep -c 'harness-manifest.json' docs/install.md` / 出力: 2。`grep -c 'skip (edited)' docs/install.md` / 出力: 2。`grep -c 'merge_settings_json.py' docs/install.md` / 出力: 4。いずれも1以上"
+    },
+    {
+      "text": "`README.md` の「## セットアップ」節に `--update` の言及がある。確認コマンド: `grep -c -- '--update' README.md`（1以上）",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/## セットアップ/,/^## /p' README.md` で節の範囲を確認したうえで `grep -n -- '--update' README.md` / 出力: 21行目「他のプロジェクトへ組み込む場合...`bash scripts/install.sh --update <組み込み先>`で取り込む...」が「## セットアップ」〜「## 使い方」の間に1件あり、全体の一致数も1"
+    },
+    {
+      "text": "`docs/runbook.md` に `--update` の言及が1箇所以上ある。確認コマンド: `grep -c -- '--update' docs/runbook.md`（1以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -- '--update' docs/runbook.md` / 出力: 1（58行目に `bash /path/to/ai-harness/scripts/install.sh --update /path/to/your-project` あり）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（T-0036〜T-0039 の全ケースを通しで実行）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=89 fail=0`"
+    }
+  ],
+  "reasons": []
+}

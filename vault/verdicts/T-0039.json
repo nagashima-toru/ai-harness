@@ -1,0 +1,29 @@
+{
+  "task": "T-0039",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-19 21:43",
+  "criteria": [
+    {
+      "text": "`.claude/settings.json` の `permissions.allow` に独自要素を足した状態で `bash scripts/install.sh --update <dst>` を実行すると、実行後の `<dst>/.claude/settings.json` にその独自要素と、欠けていた hooks エントリ（`hooks[].command` に `todo_guard.py` を含む文字列）の両方が含まれる",
+      "ok": true,
+      "note": "実行コマンド: 一時dstに初回 `bash scripts/install.sh <dst>` 後、python3 で settings.json の allow に `Bash(my_custom_tool *)` を追加し `hooks.PostToolUse`（todo_guard.py を含む唯一のエントリ）を削除、その上で `bash scripts/install.sh --update <dst>` を実行 → 出力に `merge <dst>/.claude/settings.json` を含む。実行後 `grep -n 'my_custom_tool|todo_guard.py' <dst>/.claude/settings.json` → 55行目に `Bash(my_custom_tool *)`、104行目に `todo_guard.py` を含む command 行が両方出力された"
+    },
+    {
+      "text": "`bash scripts/install.sh <dst>`（初回、フラグなし）を実行すると `scripts/merge_settings_json.py` が `<dst>/scripts/merge_settings_json.py` として複製される。確認コマンド: `test -f <dst>/scripts/merge_settings_json.py && echo ok`（`ok` が出る）",
+      "ok": true,
+      "note": "実行コマンド: 一時dstへ `bash scripts/install.sh <dst>` を実行後 `test -f <dst>/scripts/merge_settings_json.py && echo ok` / 出力: `ok`"
+    },
+    {
+      "text": "`scripts/install.sh` の中で `.claude/settings.json` に対して `copy_if_absent` が呼ばれていない。確認コマンド: `grep -n 'settings.json' scripts/install.sh` の該当行を目視し、`merge_settings_json.py` の呼び出しだけになっていることを確認する",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'settings.json' scripts/install.sh` / 出力: settings.json への言及はコメント・find除外条件・`merge_settings_json.py` 呼び出し（161行目 `python3 \"$SRC/scripts/merge_settings_json.py\" ...`）のみで、`copy_if_absent` と settings.json の組み合わせは無し"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（新規ケース込み）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=89 fail=0`"
+    }
+  ],
+  "reasons": []
+}

@@ -1,0 +1,39 @@
+{
+  "task": "T-0038",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-19 21:22",
+  "criteria": [
+    {
+      "text": "dst が存在しない状態で `python3 scripts/merge_settings_json.py <src> <dst>` を実行すると dst が作成され、標準出力が `create ` で始まる",
+      "ok": true,
+      "note": "実行コマンド: `python3 scripts/merge_settings_json.py \"$PWD/.claude/settings.json\" \"$D/new/settings.json\"`（$D は空の一時ディレクトリ、new/settings.json は未存在） / 出力: `create /var/.../tmp.../new/settings.json`。ファイルが新規作成され、標準出力が `create ` で始まった"
+    },
+    {
+      "text": "dst の `permissions.allow` に独自の要素を1つ足した settings.json に対して実行すると、実行後もその要素が残っている。確認コマンド: `python3 -c \"import json;print('独自要素' in json.load(open('<dst>'))['permissions']['allow'])\"` が `True`",
+      "ok": true,
+      "note": "実行コマンド: allow に「独自要素」を追加した settings.json を用意し `python3 scripts/merge_settings_json.py <src> <dst>` を実行後、指定の確認コマンド `python3 -c \"import json;print('独自要素' in json.load(open('<dst>'))['permissions']['allow'])\"` を実行 / 出力: `True`"
+    },
+    {
+      "text": "dst の `hooks.PostToolUse` エントリを削除した settings.json に対して実行すると、実行後の `hooks.PostToolUse` の `hooks[].command` のいずれかに `todo_guard.py` を含む文字列がある",
+      "ok": true,
+      "note": "実行コマンド: `hooks.PostToolUse` を削除した settings.json に対して merge_settings_json.py を実行後、`python3 -c \"import json;d=json.load(open('<dst>'));print(any('todo_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))\"` を実行 / 出力: `True`"
+    },
+    {
+      "text": "dst の `permissions.deny` から要素を1つ削除した settings.json に対して実行すると、実行後の `permissions.deny` にその要素が含まれる",
+      "ok": true,
+      "note": "実行コマンド: `permissions.deny` から `Bash(sudo *)` を削除した settings.json に対して merge_settings_json.py を実行後、`python3 -c \"import json;print('Bash(sudo *)' in json.load(open('<dst>'))['permissions']['deny'])\"` を実行 / 出力: `True`"
+    },
+    {
+      "text": "同じ src/dst の組で直後にもう一度実行すると、標準出力が `skip ` で始まる（冪等）",
+      "ok": true,
+      "note": "実行コマンド: criterion1 で作成した dst に対して同じ src/dst でもう一度 `python3 scripts/merge_settings_json.py <src> <dst>` を実行 / 出力: `skip /var/.../tmp.../new/settings.json`"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（新規ケース込み）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=84 fail=0`（`== merge_settings_json.py ==` 節の7ケース込みで全件成功）"
+    }
+  ],
+  "reasons": []
+}

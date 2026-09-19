@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
-# 使い方: bash scripts/install.sh <target-dir>
-# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh
+# 使い方: bash scripts/install.sh [--no-claude-md] <target-dir>
+# 複製するもの: .claude/（settings.json, agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh、scripts/merge_claude_md.py
 # 既存ファイルは上書きしない（.claude/settings.json と vault/todo.md が既にあれば残す）。
+# 例外は CLAUDE.md で、既定では merge_claude_md.py がマーカー付きブロックだけをマージする（既存本文は残し、書き換え時はバックアップを作る）。
+# --no-claude-md を付けると CLAUDE.md には触れず、既存があれば案内だけを出す。
 set -eu
-if [ $# -ne 1 ]; then echo "usage: bash scripts/install.sh <target-dir>" >&2; exit 2; fi
+NO_CLAUDE_MD=0
+ARGS=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-claude-md) NO_CLAUDE_MD=1 ;;
+    -*) echo "usage: bash scripts/install.sh [--no-claude-md] <target-dir>" >&2; exit 2 ;;
+    *) if [ -n "$ARGS" ]; then echo "usage: bash scripts/install.sh [--no-claude-md] <target-dir>" >&2; exit 2; fi; ARGS="$1" ;;
+  esac
+  shift
+done
+if [ -z "$ARGS" ]; then echo "usage: bash scripts/install.sh [--no-claude-md] <target-dir>" >&2; exit 2; fi
+set -- "$ARGS"
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DST="$1"
 mkdir -p "$DST"
@@ -56,15 +69,23 @@ fi
 # scripts/smoke.sh、scripts/rules.sh、docs/vault-spec.md（エージェントが参照する正本）
 copy_if_absent "$SRC/scripts/smoke.sh" "$DST/scripts/smoke.sh"
 copy_if_absent "$SRC/scripts/rules.sh" "$DST/scripts/rules.sh"
+copy_if_absent "$SRC/scripts/merge_claude_md.py" "$DST/scripts/merge_claude_md.py"
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
 
-# CLAUDE.md（無ければ複製、あれば追記の案内）
-if [ -e "$DST/CLAUDE.md" ]; then
-  echo "note  CLAUDE.md は既にあります。$SRC/CLAUDE.md の内容を追記してください"
+# CLAUDE.md（既定はマーカー付きブロックのマージ。--no-claude-md なら従来どおり案内だけ）
+if [ "$NO_CLAUDE_MD" -eq 1 ]; then
+  if [ -e "$DST/CLAUDE.md" ]; then
+    echo "note  CLAUDE.md は既にあります。$SRC/CLAUDE.md の内容を追記してください"
+  else
+    copy_if_absent "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
+  fi
 else
-  copy_if_absent "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
+  python3 "$SRC/scripts/merge_claude_md.py" "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
 fi
 
 echo
 echo "done: $DST"
+if [ "$NO_CLAUDE_MD" -eq 0 ]; then
+  echo "check: 既存の CLAUDE.md にハーネスと矛盾するルールが残っていないか確認してください（マージは追記するだけで、矛盾は解消しません）"
+fi
 echo "next: cd \"$DST\" && bash scripts/smoke.sh && claude   # 一度対話起動してフォルダを信頼する"

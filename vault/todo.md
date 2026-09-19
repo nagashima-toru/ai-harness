@@ -35,6 +35,9 @@
 | T-0024 | done | 1 | - | docs/install.md を新規作成し「前提」「パターン1: まっさらな環境」節を書く | |
 | T-0025 | done | 1 | T-0024 | docs/install.md に「パターン2: 既存リポジトリ」と「インストール後の次の一歩」を追記する | |
 | T-0026 | done | 1 | T-0025 | README.md のセットアップ節と docs/runbook.md に docs/install.md への導線を追加する | |
+| T-0027 | done | 1 | - | `.claude/ai-harness.md` 新設とルート `CLAUDE.md` のスタブ化 | |
+| T-0028 | done | 1 | T-0027 | `scripts/merge_claude_md.py` 新規作成と `scripts/smoke.sh` へのケース追加 | |
+| T-0029 | done | 1 | T-0028 | `scripts/install.sh` への組み込み（`--no-claude-md`）と関連ドキュメント更新 | |
 
 ## 計画
 | id | status | title |
@@ -55,3 +58,4 @@
 | P-014 | approved | /design スキルの追加と planner のタスク数上限 |
 | P-015 | approved | planner / creator / verifier の責務を標準ルール化する |
 | P-016 | approved | インストールガイドの改善 |
+| P-017 | approved | CLAUDE.md のマージインストール（外出し + merge_claude_md.py） |

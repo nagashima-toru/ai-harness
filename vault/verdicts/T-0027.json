@@ -1,0 +1,34 @@
+{
+  "task": "T-0027",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-19 13:04",
+  "criteria": [
+    {
+      "text": "`.claude/ai-harness.md` が存在し30行以内である。確認コマンド: `test -f .claude/ai-harness.md && [ \"$(wc -l < .claude/ai-harness.md)\" -le 30 ] && echo ok`（`ok` が出る）",
+      "ok": true,
+      "note": "実行コマンド: `test -f .claude/ai-harness.md && [ \"$(wc -l < .claude/ai-harness.md)\" -le 30 ] && echo ok` / 出力: ok（`wc -l .claude/ai-harness.md` は 30）"
+    },
+    {
+      "text": "`.claude/ai-harness.md` に「開始時に読む順」「状態遷移」「質問のしかた」「禁止」の4見出しが残り、「フック」見出しは無い。確認コマンド: `grep -cE '^## (開始時に読む順|状態遷移|質問のしかた|禁止)' .claude/ai-harness.md`（4）と `grep -c '^## フック' .claude/ai-harness.md`（0）",
+      "ok": true,
+      "note": "実行コマンド: `grep -cE '^## (開始時に読む順|状態遷移|質問のしかた|禁止)' .claude/ai-harness.md` / 出力: 4。`grep -c '^## フック' .claude/ai-harness.md` / 出力: 0"
+    },
+    {
+      "text": "ルート `CLAUDE.md` はちょうど4行で、1行目が `<!-- ai-harness:begin v1 -->`、3行目が `@.claude/ai-harness.md`、4行目が `<!-- ai-harness:end -->` である。確認コマンド: `wc -l < CLAUDE.md`（4）、`sed -n '1p' CLAUDE.md`（`<!-- ai-harness:begin v1 -->`）、`sed -n '3p' CLAUDE.md`（`@.claude/ai-harness.md`）、`sed -n '4p' CLAUDE.md`（`<!-- ai-harness:end -->`）",
+      "ok": true,
+      "note": "実行コマンド: `wc -l < CLAUDE.md` / 出力: 4。`sed -n '1p;2p;3p;4p' CLAUDE.md` / 出力: 1行目=`<!-- ai-harness:begin v1 -->`、3行目=`@.claude/ai-harness.md`、4行目=`<!-- ai-harness:end -->`"
+    },
+    {
+      "text": "`CLAUDE.md` の2行目が `# ` で始まる見出し行である。確認コマンド: `sed -n '2p' CLAUDE.md | grep -c '^# '`（1）",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '2p' CLAUDE.md | grep -c '^# '` / 出力: 1（2行目は `# AI協働ハーネス 共通ルール`）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` が既存ケースのまま pass のみで終わる。確認コマンド: `bash scripts/smoke.sh | tail -1`（`fail=0` を含む）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=43 fail=0"
+    }
+  ],
+  "reasons": []
+}

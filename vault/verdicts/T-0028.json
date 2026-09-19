@@ -1,0 +1,34 @@
+{
+  "task": "T-0028",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-19 13:09",
+  "criteria": [
+    {
+      "text": "dst が存在しない状態で `python3 scripts/merge_claude_md.py <src> <dst>` を実行すると dst が作成され `@.claude/ai-harness.md` を含み、標準出力が `create ` で始まる。確認コマンド: smoke.sh 内の該当ケース、または個別に `TMP=$(mktemp -d); python3 scripts/merge_claude_md.py CLAUDE.md \"$TMP/CLAUDE.md\"` を実行し出力とファイル内容を確認",
+      "ok": true,
+      "note": "実行コマンド: `TMP=$(mktemp -d); python3 scripts/merge_claude_md.py CLAUDE.md \"$TMP/CLAUDE.md\"; cat \"$TMP/CLAUDE.md\"; grep -c '@.claude/ai-harness.md' \"$TMP/CLAUDE.md\"` / 出力: `create <TMP>/CLAUDE.md`、ファイル内容は4行のブロック（`@.claude/ai-harness.md` を含む）、grep -c の結果は1"
+    },
+    {
+      "text": "既存 dst（マーカーを含まない本文があるファイル）に対して実行すると、既存行がすべて残ったまま末尾にブロックが追記され、`<dst>.bak-<YYYYMMDDHHMMSS>` が1つ作られ、標準出力が `merge ` で始まる",
+      "ok": true,
+      "note": "実行コマンド: dst に `# 既存プロジェクト`/`- 既存のルール` を書いた上で `python3 scripts/merge_claude_md.py CLAUDE.md \"$TMP/CLAUDE.md\"` を実行し、`cat`・`ls \"$TMP\" | grep -c '^CLAUDE\\.md\\.bak-'`・`grep -c '^- 既存のルール$'` で確認 / 出力: 標準出力は `merge <TMP>/CLAUDE.md`、末尾にブロックが追記され既存行は残存、bak ファイルが1件、`- 既存のルール` の出現数は1"
+    },
+    {
+      "text": "同じ src/dst の組で直後にもう一度実行すると、`ai-harness:begin` の出現回数が1のままで、標準出力が `skip ` で始まる（冪等）。確認コマンド: `grep -c 'ai-harness:begin' <dst>`（1）",
+      "ok": true,
+      "note": "実行コマンド: 上記 (b) の dst に対し直後にもう一度 `python3 scripts/merge_claude_md.py CLAUDE.md \"$TMP/CLAUDE.md\"` を実行し `grep -c 'ai-harness:begin' \"$TMP/CLAUDE.md\"` / 出力: 標準出力は `skip <TMP>/CLAUDE.md`、grep -c の結果は1"
+    },
+    {
+      "text": "src のブロック本文（見出し行など）を変えてから再実行すると、旧ブロックが消えて新ブロックに置き換わり、マーカー外の既存本文は変更されない。標準出力は `update ` で始まる",
+      "ok": true,
+      "note": "個別コマンドでの src2.md 生成はエージェント書き込みガード（`-->` を含むテキストが `>` リダイレクトと誤検知される）で実行不可だったため、代替として `bash scripts/smoke.sh` を実行し、同じシナリオを検証する smoke.sh 内の (d) ケース群を確認した。出力: `ok (d) ブロック本文が変わった → update` / `ok (d) 新しいブロックに置き換わる` / `ok (d) 旧ブロックの行は消える` / `ok (d) マーカー外の既存本文は無傷` / `ok (d) begin の出現は1回のまま` の5件すべて ok"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` が pass のみで終わる（新規ケース込みで fail=0）。確認コマンド: `bash scripts/smoke.sh | tail -1`（`fail=0` を含む）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -3` / 出力: `smoke: pass=56 fail=0`"
+    }
+  ],
+  "reasons": []
+}

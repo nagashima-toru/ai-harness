@@ -198,6 +198,60 @@ expect_rules "(e) 不正な引数 → exit 2" 2 "" "$rc" "$out"
 out="$(bash "$RULES_SH" 2>/dev/null)"; rc=$?
 expect_rules "(e) 引数なし → exit 2" 2 "" "$rc" "$out"
 
+echo "== merge_claude_md.py =="
+MERGE_PY="$ROOT/scripts/merge_claude_md.py"
+MTMP="$TMP/merge"
+mkdir -p "$MTMP"
+expect_eq() { # $1=name $2=want $3=got
+  if [ "$3" = "$2" ]; then
+    echo "  ok   $1"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $1 (want='$2' got='$3')"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+
+out="$(python3 "$MERGE_PY" "$ROOT/CLAUDE.md" "$MTMP/new/CLAUDE.md")"
+expect_eq "(a) dst が無い → create" "create" "${out%% *}"
+expect_eq "(a) 作成された CLAUDE.md が @import を含む" "1" "$(grep -c '@\.claude/ai-harness\.md' "$MTMP/new/CLAUDE.md")"
+
+printf '# 既存プロジェクト\n\n- 既存のルール\n' > "$MTMP/CLAUDE.md"
+out="$(python3 "$MERGE_PY" "$ROOT/CLAUDE.md" "$MTMP/CLAUDE.md")"
+expect_eq "(b) 既存本文あり → merge" "merge" "${out%% *}"
+expect_eq "(b) 既存行がそのまま残る" "1" "$(grep -c '^- 既存のルール$' "$MTMP/CLAUDE.md")"
+expect_eq "(b) 末尾にブロックが付く" "1" "$(grep -c 'ai-harness:end' "$MTMP/CLAUDE.md")"
+expect_eq "(b) バックアップが1つできる" "1" "$(ls "$MTMP" | grep -c '^CLAUDE\.md\.bak-')"
+
+out="$(python3 "$MERGE_PY" "$ROOT/CLAUDE.md" "$MTMP/CLAUDE.md")"
+expect_eq "(c) 同じ内容で再実行 → skip" "skip" "${out%% *}"
+expect_eq "(c) begin の出現は1回のまま" "1" "$(grep -c 'ai-harness:begin' "$MTMP/CLAUDE.md")"
+
+printf '<!-- ai-harness:begin v1 -->\n# 変更後の見出し\n@.claude/ai-harness.md\n<!-- ai-harness:end -->\n' > "$MTMP/src2.md"
+out="$(python3 "$MERGE_PY" "$MTMP/src2.md" "$MTMP/CLAUDE.md")"
+expect_eq "(d) ブロック本文が変わった → update" "update" "${out%% *}"
+expect_eq "(d) 新しいブロックに置き換わる" "1" "$(grep -c '^# 変更後の見出し$' "$MTMP/CLAUDE.md")"
+expect_eq "(d) 旧ブロックの行は消える" "0" "$(grep -c '^# AI協働ハーネス 共通ルール$' "$MTMP/CLAUDE.md")"
+expect_eq "(d) マーカー外の既存本文は無傷" "1" "$(grep -c '^- 既存のルール$' "$MTMP/CLAUDE.md")"
+expect_eq "(d) begin の出現は1回のまま" "1" "$(grep -c 'ai-harness:begin' "$MTMP/CLAUDE.md")"
+
+echo "== install.sh の CLAUDE.md 扱い =="
+ITMP="$(mktemp -d)"
+printf '# 既存プロジェクト\n\n- 既存のルール\n' > "$ITMP/CLAUDE.md"
+before="$(cat "$ITMP/CLAUDE.md")"
+bash "$ROOT/scripts/install.sh" --no-claude-md "$ITMP" >/dev/null 2>&1
+expect_eq "(e) --no-claude-md → CLAUDE.md は変更されない" "$before" "$(cat "$ITMP/CLAUDE.md")"
+expect_eq "(e) --no-claude-md → バックアップも作られない" "0" "$(ls "$ITMP" | grep -c '^CLAUDE\.md\.bak-')"
+out="$(bash "$ROOT/scripts/install.sh" "$ITMP" 2>&1)"
+expect_eq "(f) 既定 → merge され既存行は残る" "1" "$(grep -c '^- 既存のルール$' "$ITMP/CLAUDE.md")"
+expect_eq "(f) 既定 → ブロックが1つ入る" "1" "$(grep -c 'ai-harness:begin' "$ITMP/CLAUDE.md")"
+expect_eq "(f) 既定 → merge_claude_md.py も複製される" "1" "$(ls "$ITMP/scripts" | grep -c '^merge_claude_md\.py$')"
+bash "$ROOT/scripts/install.sh" "$ITMP" >/dev/null 2>&1
+expect_eq "(f) 2回目の install → ブロックは1つのまま" "1" "$(grep -c 'ai-harness:begin' "$ITMP/CLAUDE.md")"
+bash "$ROOT/scripts/install.sh" >/dev/null 2>&1; rc=$?
+expect_eq "(g) 引数なし → exit 2" "2" "$rc"
+bash "$ROOT/scripts/install.sh" --unknown "$ITMP" >/dev/null 2>&1; rc=$?
+expect_eq "(g) 不正なオプション → exit 2" "2" "$rc"
+rm -rf "$ITMP"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

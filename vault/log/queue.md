@@ -104,3 +104,13 @@
 - 2026-09-18 15:26 T-0026 todo→doing attempt=1
 - 2026-09-18 15:26 T-0026 doing→review attempt=1
 - 2026-09-18 15:27 T-0026 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-19 13:01 P-017 draft→approved tasks=T-0027,T-0028,T-0029
+- 2026-09-19 13:02 T-0027 todo→doing attempt=1
+- 2026-09-19 13:03 T-0027 doing→review attempt=1
+- 2026-09-19 13:04 T-0027 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-19 13:04 T-0028 todo→doing attempt=1
+- 2026-09-19 13:06 T-0028 doing→review attempt=1
+- 2026-09-19 13:09 T-0028 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-19 13:09 T-0029 todo→doing attempt=1
+- 2026-09-19 13:12 T-0029 doing→review attempt=1
+- 2026-09-19 13:13 T-0029 review→done attempt=1 verdict PASS、5基準すべて note あり

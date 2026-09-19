@@ -31,7 +31,9 @@ git init
 ```bash
 bash /path/to/ai-harness/scripts/install.sh .
 ```
-複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`、`vault/` のテンプレートと標準ルールと空の `todo.md`、`scripts/smoke.sh`、`scripts/rules.sh`、`docs/vault-spec.md`、`CLAUDE.md`）。既存ファイルは上書きしない。
+複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと標準ルールと空の `todo.md`、`scripts/smoke.sh`、`scripts/rules.sh`、`scripts/merge_claude_md.py`、`docs/vault-spec.md`、`CLAUDE.md`）。既存ファイルは上書きしない。
+
+ハーネスのルール本文は `.claude/ai-harness.md` にあり、`CLAUDE.md` はそれを読み込むだけのマーカー付きブロック（4行）になっている。
 
 ### 4. `.gitignore` を作る
 ai-harness と同じ4行を使う。
@@ -73,14 +75,32 @@ bash scripts/smoke.sh
 ```bash
 bash /path/to/ai-harness/scripts/install.sh /path/to/your-project
 ```
-`scripts/install.sh` は既存ファイルを上書きしない。出力に次の2種類が出る。
+既存ファイルは上書きしない。唯一の例外が `CLAUDE.md` で、ハーネスのルールを読み込む4行のブロックだけを既定でマージする（既存の本文はそのまま残る）。出力は次のとおり。
 
 | 出力 | 意味 | やること |
 |---|---|---|
-| `note  CLAUDE.md は既にあります。...` | 既存の `CLAUDE.md` を残した（複製していない） | ai-harness の `CLAUDE.md` の内容を、既存の `CLAUDE.md` に自分で追記する |
+| `create <path>/CLAUDE.md` | `CLAUDE.md` が無かったので作成した | そのまま使う |
+| `merge <path>/CLAUDE.md` | 既存の `CLAUDE.md` の末尾にハーネスのブロックを追記した（`CLAUDE.md.bak-<日時>` を残す） | 既存のルールとハーネスの規律が矛盾していないか確認する |
+| `update <path>/CLAUDE.md` | 既にあったハーネスのブロックを新しい内容に置き換えた（再インストール時。`CLAUDE.md.bak-<日時>` を残す） | そのまま使う |
+| `skip <path>/CLAUDE.md` | 既に最新のブロックが入っているので何もしなかった | そのまま使う |
 | `skip  (exists) ...` | そのファイルが既にあるので複製しなかった（`.claude/settings.json`、`vault/todo.md` など） | 既存のものをそのまま使う。ハーネスに必要な設定が足りなければ手で追記する |
 
-`.claude/settings.json` が既にある場合は、ai-harness 側の `hooks`（Stop / PreToolUse / PostToolUse）と `permissions` を既存の設定にマージする。ここが入っていないとフックが働かない。
+マージされるのは次の4行だけで、ルール本文は `.claude/ai-harness.md` にある（`@` で読み込まれる）。ハーネスを更新した時は `install.sh` を再実行すればブロックが `update` される。
+
+```
+<!-- ai-harness:begin v1 -->
+# AI協働ハーネス 共通ルール
+@.claude/ai-harness.md
+<!-- ai-harness:end -->
+```
+
+`CLAUDE.md` に一切触れたくない場合は `--no-claude-md` を付ける。その場合は従来どおり `note  CLAUDE.md は既にあります。...` の案内が出るだけで、ハーネスのルールはメインコンテキストに載らない。
+
+```bash
+bash /path/to/ai-harness/scripts/install.sh --no-claude-md /path/to/your-project
+```
+
+**`.claude/settings.json` は自動マージされない。** 既にある場合は `skip  (exists)` と出るだけなので、ai-harness 側の `hooks`（Stop / PreToolUse / PostToolUse）と `permissions` を既存の設定に手で足すこと。ここが入っていないとフックが1つも働かない。
 
 ### 2. 既存のワークフローとの関係を確認する
 ハーネスはファイルを追加するだけで、既存のビルド設定（ビルドスクリプト、CI、lint、テスト）を変更しない。

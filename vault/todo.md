@@ -43,6 +43,11 @@
 | T-0038 | done | 1 | - | `scripts/merge_settings_json.py` を新規作成する | |
 | T-0039 | done | 1 | T-0037,T-0038 | `scripts/install.sh` に `merge_settings_json.py` を組み込み、マニフェスト対象を確定する | |
 | T-0040 | done | 1 | T-0039 | ドキュメント更新と全体の通し確認 | |
+| T-0041 | done | 1 | - | `docs/vault-spec.md` の1・3・4節を書き直し、冒頭に未適用注記を置く | |
+| T-0042 | done | 1 | T-0041 | `docs/vault-spec.md` の2・5・6・7節（状態／タスク票／verdict／ログ）を書き直す | |
+| T-0043 | done | 1 | T-0042 | `docs/vault-spec.md` の8・9・10節（粒度／Stopフック／plan_guardフック）を書き直す | |
+| T-0044 | done | 1 | T-0043 | `docs/vault-spec.md` の11・12・13節を書き直し、全体の整合を確認する | |
+| T-0045 | done | 1 | T-0041 | `vault/templates/plan.md` を新形式に更新する | |
 
 ## 計画
 | id | status | title |
@@ -65,3 +70,4 @@
 | P-016 | approved | インストールガイドの改善 |
 | P-017 | approved | CLAUDE.md のマージインストール（外出し + merge_claude_md.py） |
 | P-019 | approved | インストール先への更新経路を作る（ハッシュ照合と settings マージャ） |
+| P-020 | approved | 新しい状態モデルの仕様とテンプレートを固める（D-001 フェーズ2） |

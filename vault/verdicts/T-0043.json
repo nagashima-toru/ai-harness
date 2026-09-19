@@ -1,0 +1,29 @@
+{
+  "task": "T-0043",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 05:04",
+  "criteria": [
+    {
+      "text": "粒度の基準の節で、run（旧 run-queue）が必ず変えるファイルの例が `vault/todo.md` ではなく計画票になっている。確認：`grep -F 'vault/plans/<計画ID>.md' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'vault/plans/<計画ID>.md' docs/vault-spec.md` は agent_write_guard に書き込み操作と誤検知されて実行不可（`<` を含むパターンが原因）。代替として `grep -F 'vault/plans/' docs/vault-spec.md | grep -F '計画ID'` を実行 / 出力: 3行ヒット、うち8節（130行目）に『run で必ず変わるファイル（計画票のタスク表、`vault/log/<計画ID>.md`、タスク票の「進捗」）』とあり、`vault/todo.md` ではなく計画票が例になっている"
+    },
+    {
+      "text": "Stop フックの節が、todo.md ではなく計画票のタスク表を読む記述になっている。確認：`grep -F '承認済み計画票のタスク表と verdict' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F '承認済み計画票のタスク表と verdict' docs/vault-spec.md` / 出力: 1行ヒット（135行目「`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。」）"
+    },
+    {
+      "text": "見出しが「plan_guard フックの判定」に改称され、`plan_guard.py` への言及がある。確認：`grep -F 'plan_guard フックの判定' docs/vault-spec.md` と `grep -F 'plan_guard.py' docs/vault-spec.md` の出力がそれぞれ1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'plan_guard フックの判定' docs/vault-spec.md` / 出力: 1行ヒット（148行目「## 10. plan_guard フックの判定」）。実行コマンド: `grep -F 'plan_guard.py' docs/vault-spec.md` / 出力: 1行ヒット（150行目「`.claude/hooks/plan_guard.py` は PostToolUse（...）」）"
+    },
+    {
+      "text": "plan_guard フックの節の5つの検査内容（doing が2件以上・blocked で question が空・status が5値以外・id の重複・データ行の列数が6でない）が残っている。確認：`grep -F 'データ行の列数が6でない' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'データ行の列数が6でない' docs/vault-spec.md` / 出力: 1行ヒット（150行目に『doing が2件以上・blocked なのに question が空・status が5値以外・id の重複・データ行の列数が6でない』の5項目すべてが残っている）"
+    }
+  ],
+  "reasons": []
+}

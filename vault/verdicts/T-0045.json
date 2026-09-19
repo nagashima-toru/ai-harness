@@ -1,0 +1,14 @@
+{
+  "task": "T-0045",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 05:09",
+  "criteria": [
+    {"text": "frontmatter の `id` の例が計画 ID の新形式（`P-YYYYMMDD-<slug>`）になっている。確認：`grep -F 'P-YYYYMMDD' vault/templates/plan.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F 'P-YYYYMMDD' vault/templates/plan.md` / 出力: `id: P-YYYYMMDD-<slug>`（1行）"},
+    {"text": "frontmatter の `status` の初期値が `draft` のままである。確認：`grep -F 'status: draft' vault/templates/plan.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F 'status: draft' vault/templates/plan.md` / 出力: `status: draft`（1行）"},
+    {"text": "本文にタスク表があり、列見出しが `id | status | attempt | after | title | question` である。確認：`grep -F '| id | status | attempt | after | title | question |' vault/templates/plan.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '| id | status | attempt | after | title | question |' vault/templates/plan.md` / 出力: 該当ヘッダ行が1行"},
+    {"text": "`attempt` 列が含まれる。確認：`grep -c 'attempt' vault/templates/plan.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'attempt' vault/templates/plan.md` / 出力: `1`"},
+    {"text": "旧来の「タスク一覧（順序・依存・各タスクの受け入れ基準の要約）」という見出しが消えている。確認：`grep -c '順序・依存' vault/templates/plan.md` が0", "ok": true, "note": "実行コマンド: `grep -c '順序・依存' vault/templates/plan.md` / 出力: `0`"}
+  ],
+  "reasons": []
+}

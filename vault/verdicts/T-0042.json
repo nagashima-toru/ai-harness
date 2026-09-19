@@ -1,0 +1,14 @@
+{
+  "task": "T-0042",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 05:03",
+  "criteria": [
+    {"text": "状態の節に「doing は常に1件（計画内で）」の趣旨の一文がある。確認：`grep -F '計画内で常に1件' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '計画内で常に1件' docs/vault-spec.md` / 出力: `| \\`doing\\` | 作業中。**計画内で常に1件だけ** | 作成エージェント |`（1行）"},
+    {"text": "verdict.json の例の `task` フィールドが `<計画ID>/T-01` 形式になっている。確認：`grep -F '\"task\": \"P-20260919-git-ops/T-01\"' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '\"task\": \"P-20260919-git-ops/T-01\"' docs/vault-spec.md` / 出力: `  \"task\": \"P-20260919-git-ops/T-01\",`（1行）"},
+    {"text": "verdict の attempt 照合の説明が「計画票のタスク表の attempt と一致させる」旨に更新されている。確認：`grep -F '計画票のタスク表の attempt' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '計画票のタスク表の attempt' docs/vault-spec.md` / 出力: `- \\`attempt\\` は計画票のタスク表の attempt と一致させる。...`（1行）"},
+    {"text": "ログの節でパスが `vault/log/<計画ID>.md` になっており、1行形式の例に計画スコープの短い ID（`T-01` 形式）が使われている。確認：`grep -F 'vault/log/<計画ID>.md' docs/vault-spec.md` と `grep -F 'T-01 doing→review attempt=1' docs/vault-spec.md` の出力がそれぞれ1行以上", "ok": true, "note": "1点目：`grep -F 'vault/log/<計画ID>.md' docs/vault-spec.md` は agent_write_guard が検索文字列中の `<...>.md` をリダイレクトと誤検知し実行不可（`[agent_write_guard] verifier の Bash では書き込み・破壊的操作を行えません`）。代替として docs/vault-spec.md を Read で確認し、118行目に `## 7. ログ \\`vault/log/<計画ID>.md\\`` の見出しがあることを確認した。2点目：`grep -F 'T-01 doing→review attempt=1' docs/vault-spec.md` / 出力: `計画ごとに1ファイル。追記のみ。1行 = \\`- YYYY-MM-DD HH:MM T-01 doing→review attempt=1 補足\\``（1行）"},
+    {"text": "タスク票の節の6見出し（目的 / 入力 / 成果物 / 受け入れ基準 / 決定済み / 進捗）が残っている。確認：`grep -F '目的 / 入力 / 成果物 / 受け入れ基準 / 決定済み / 進捗' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '目的 / 入力 / 成果物 / 受け入れ基準 / 決定済み / 進捗' docs/vault-spec.md` / 出力: `見出しは \\`目的 / 入力 / 成果物 / 受け入れ基準 / 決定済み / 進捗\\` の6つで固定。順序も変えない。`（1行）"}
+  ],
+  "reasons": []
+}

@@ -1,6 +1,6 @@
 ---
 id: P-20260920-git-workflow
-status: approved
+status: done
 ---
 # ゴール
 `vault/rules/common/git.md` と `vault/rules/creator/git-workflow.md` を新設し、1セッション1計画1ブランチの前提で git 運用ルールを定める。作業ステップごとのコミット、`main` への直接コミットの拒否、未コミット差分の Stop 検査、`--force-with-lease` の deny、破棄手段を `git restore` に限ること、コンフリクト時は自己判断せず止まることを、ルール文書とフックの両方で強制する（`vault/designs/D-001.md` フェーズ5）。

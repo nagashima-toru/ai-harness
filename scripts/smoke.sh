@@ -142,6 +142,16 @@ expect_guard "(h) approved な計画票が2件以上・どちらかに doing あ
   "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
+GTMP="$(mktemp -d)"
+git -C "$GTMP" init -q -b main
+git -C "$GTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+expect_guard "(i) main で git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+git -C "$GTMP" checkout -q -b work/p-test
+expect_guard "(j) work ブランチで git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+rm -rf "$GTMP"
+
 echo "== plan_guard.py =="
 run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }
 

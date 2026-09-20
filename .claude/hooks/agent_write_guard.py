@@ -16,7 +16,10 @@ Bash 内で export しても届かない（実質的に人しか解除できな�
 import json
 import os
 import re
+import subprocess
 import sys
+
+GIT_COMMIT_PATTERN = r"\bgit\s+commit\b"
 
 ALLOWED = {
     "verifier": ["vault/verdicts/"],
@@ -137,6 +140,21 @@ def rules_write_allowed(active_ids):
     return all(tid in allowed for tid in active_ids)
 
 
+def current_branch(root):
+    """現在のブランチ名を返す。非 git リポジトリ・エラー・detached HEAD 等は None（fail-open）。"""
+    try:
+        out = subprocess.run(
+            ["git", "-C", root, "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:
+        return None
+    if out.returncode != 0:
+        return None
+    branch = out.stdout.strip()
+    return branch or None
+
+
 def targets_vault_rules(tool, tool_input, root):
     """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。"""
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
@@ -162,6 +180,16 @@ def main():
     root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd()
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input") or {}
+
+    # main 直接コミット拒否：agent_type を問わず、現在のブランチが main の時は git commit を拒否する。
+    # 非 git リポジトリ・ブランチ取得不能（detached HEAD 等）は fail-open（この判定は素通り）。
+    if tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        if re.search(GIT_COMMIT_PATTERN, cmd) and current_branch(root) == "main":
+            deny(
+                f"[agent_write_guard] main への直接コミットはできません。"
+                f"ブランチを切ってください（work/<計画IDの英小文字>）: {cmd[:120]}"
+            )
 
     # 改ざん防止：agent_type を問わず、doing/review 中は vault/rules/ への書き込みを拒否する
     # （HARNESS_ALLOW_RULES_WRITE に doing/review の ID が指定されている時だけ解除する）

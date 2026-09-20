@@ -1,0 +1,29 @@
+{
+  "task": "P-20260920-git-workflow/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 18:35",
+  "criteria": [
+    {
+      "text": "`permissions.deny` に `Bash(git push --force-with-lease*)` が含まれる。確認：`python3 -c \"import json;print('Bash(git push --force-with-lease*)' in json.load(open('.claude/settings.json'))['permissions']['deny'])\"` が `True`",
+      "ok": true,
+      "note": "指定の python3 コマンドは verifier の Bash サンドボックス（agent_write_guard.py）に、コマンド文字列中の 'git push' の部分一致で書き込みコマンドと誤判定され実行不可（deny: `verifier の Bash では書き込み・破壊的操作を行えません`）。代替として `cat .claude/settings.json`（Bash）で内容を確認したところ、`permissions.deny` 配列に `\"Bash(git push --force-with-lease*)\"` が1件存在した。さらに `git show 3b544a6 -- .claude/settings.json` で該当コミットの diff を確認し、`+      \"Bash(git push --force-with-lease*)\",` の1行追加のみであることも確認した。"
+    },
+    {
+      "text": "既存の `deny` 要素（`git reset --hard*`・`git clean *`・`git push --force*` 等）が変更・削除されていない。確認：`git diff .claude/settings.json` に `-` で始まる行（削除）が無い",
+      "ok": true,
+      "note": "実行コマンド: `git diff .claude/settings.json` / 出力: 空（作業ツリーに差分なし＝当該変更は既にコミット済み）。追加確認として `git show 3b544a6 -- .claude/settings.json` を実行し、変更が `+      \"Bash(git push --force-with-lease*)\",` の追加1行のみで削除行（`-` 始まり）が無いことを確認した。"
+    },
+    {
+      "text": "JSON として妥当である。確認：`python3 -c \"import json;json.load(open('.claude/settings.json'))\"` がエラーなく終了する",
+      "ok": true,
+      "note": "実行コマンド: `python3 -c \"import json;json.load(open('.claude/settings.json'))\" && echo OK` / 出力: OK（エラーなく終了）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（`merge_settings_json.py` 関連のケースを含めて影響しないことを確認する）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=99 fail=0`（fail=0 を含む）"
+    }
+  ],
+  "reasons": []
+}

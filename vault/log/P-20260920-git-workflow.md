@@ -17,3 +17,4 @@
 - 2026-09-20 18:32 T-04 review→done attempt=1 verdict PASS、5基準すべて note あり
 - 2026-09-20 18:32 T-05 todo→doing attempt=1
 - 2026-09-20 18:34 T-05 doing→review attempt=1
+- 2026-09-20 18:36 T-05 review→done attempt=1 verdict PASS、4基準すべて note あり

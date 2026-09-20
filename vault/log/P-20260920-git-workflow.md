@@ -6,3 +6,5 @@
 - 2026-09-20 17:54 T-01 todo→doing attempt=1 事前に内容を編集済み（doing/review中はvault/rules/拒否のため）
 - 2026-09-20 17:58 T-01 doing→review attempt=1
 - 2026-09-20 18:00 T-01 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 18:00 T-02 todo→doing attempt=1 事前に内容を編集済み
+- 2026-09-20 18:01 T-02 doing→review attempt=1

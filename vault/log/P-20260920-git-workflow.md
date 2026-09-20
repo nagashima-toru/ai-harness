@@ -8,3 +8,4 @@
 - 2026-09-20 18:00 T-01 review→done attempt=1 verdict PASS、5基準すべて note あり
 - 2026-09-20 18:00 T-02 todo→doing attempt=1 事前に内容を編集済み
 - 2026-09-20 18:01 T-02 doing→review attempt=1
+- 2026-09-20 18:02 T-02 review→done attempt=1 verdict PASS、6基準すべて note あり

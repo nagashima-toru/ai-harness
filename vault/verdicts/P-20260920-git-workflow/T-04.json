@@ -1,0 +1,34 @@
+{
+  "task": "P-20260920-git-workflow/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 18:28",
+  "criteria": [
+    {
+      "text": "`git status --porcelain` の出力が非空ならブロックする。確認：新規 smoke ケース「未コミットの差分がある → ブロック」が `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep -A25 \"== stop_gate.py ==\"` / 出力: `ok   (f) 未コミットの変更がある → ブロック`。.claude/hooks/stop_gate.py の has_uncommitted_changes() が git status --porcelain の標準出力を strip() し非空なら True を返し、main() で block() する実装を確認"
+    },
+    {
+      "text": "非 git リポジトリ、またはクリーンな作業ツリーならこの検査を素通りし既存の判定に進む。確認：新規 smoke ケース「クリーンな作業ツリー → 許可（既存判定へ進む）」が `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep -A25 \"== stop_gate.py ==\"` / 出力: `ok   (g) 未コミットの変更が無い → 許可（既存判定へ進む）`。同セクションの既存ケース（TMP に git を初期化しない）も全て ok のままで、非 git リポジトリでの素通りも維持されていることを確認"
+    },
+    {
+      "text": "ブロック理由に、作業ステップごとにコミットしてから終了する旨の文言が含まれる。確認：`grep -c 'コミット' .claude/hooks/stop_gate.py` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'コミット' .claude/hooks/stop_gate.py` / 出力: 3（1以上）。該当行は「未コミットの変更があります。作業ステップごとにコミットしてから終了してください（git status --porcelain の出力を確認）。」"
+    },
+    {
+      "text": "既存の `stop_gate.py` の smoke ケース（verdict の形式検査・attempt 照合・PASS/FAIL 判定など）がすべて引き続き通る",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep -A25 \"== stop_gate.py ==\"` / 出力: 「== stop_gate.py ==」セクション全20件（既存18件＋新規(f)(g)）がすべて `ok`。NG は0件"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=99 fail=0`"
+    }
+  ],
+  "reasons": []
+}

@@ -96,6 +96,19 @@ make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","a
 expect "(d) note が空白のみ → ブロック（不正）" block "$(run_stop)" "不正"
 make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"'],"reasons":"none"}'
 expect "(e) reasons が配列でない → ブロック（不正）" block "$(run_stop)" "不正"
+
+SGTMP="$(mktemp -d)"
+mkdir -p "$SGTMP/vault/plans"
+git -C "$SGTMP" init -q -b main
+git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+echo dirty > "$SGTMP/x.txt"
+expect "(f) 未コミットの変更がある → ブロック" block \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "コミット"
+rm -f "$SGTMP/x.txt"
+expect "(g) 未コミットの変更が無い → 許可（既存判定へ進む）" allow \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
+rm -rf "$SGTMP"
+
 echo "== agent_write_guard.py =="
 run_guard() { printf '%s' "$1" | CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
 expect_guard() { # $1=name $2=deny|allow $3=output

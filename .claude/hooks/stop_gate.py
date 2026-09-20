@@ -11,6 +11,7 @@ vault/verdicts/<計画ID>/<タスクID>.json を読んで判定する。
 import json
 import os
 import re
+import subprocess
 import sys
 
 MAX_ATTEMPTS = int(os.environ.get("HARNESS_MAX_ATTEMPTS", "3"))
@@ -42,6 +43,22 @@ def plan_id_and_status(path):
     plan_id = id_m.group(1) if id_m else os.path.basename(path)[: -len(".md")]
     status = status_m.group(1) if status_m else None
     return plan_id, status
+
+
+def has_uncommitted_changes(root):
+    """作業ツリーに未コミットの変更があるか。非 git リポジトリ・取得不能なら False（fail-open）。"""
+    if not os.path.isdir(os.path.join(root, ".git")):
+        return False
+    try:
+        out = subprocess.run(
+            ["git", "-C", root, "status", "--porcelain"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:
+        return False
+    if out.returncode != 0:
+        return False
+    return bool(out.stdout.strip())
 
 
 def approved_plans(root):
@@ -146,6 +163,13 @@ def main():
         allow()
 
     root = project_dir(payload)
+
+    if has_uncommitted_changes(root):
+        block(
+            "[stop_gate] 未コミットの変更があります。"
+            "作業ステップごとにコミットしてから終了してください（git status --porcelain の出力を確認）。"
+        )
+
     plans = approved_plans(root)
 
     if len(plans) == 0:

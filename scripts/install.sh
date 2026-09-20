@@ -58,7 +58,8 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
              scripts/merge_claude_md.py scripts/merge_settings_json.py \
              scripts/install.sh docs/vault-spec.md \
              vault/rules/README.md vault/rules/common/roles.md \
-             vault/rules/creator/creator.md vault/rules/verifier/verifier.md \
+             vault/rules/common/git.md vault/rules/creator/creator.md \
+             vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md \
              vault/rules/planner/planner.md; do
       [ -f "$p" ] && echo "$p"
     done
@@ -122,7 +123,7 @@ for d in plans tasks verdicts log designs archive templates rules; do mkdir -p "
 # vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）と、役割定義の標準ルール4本を複製する。
 # ドメイン固有のルール（コーディングルール・方式設計・テスト観点など）は複製・上書きの対象にしない。
 # 標準ルールも copy_if_absent なので、インストール先で編集したものは上書きしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep rules/common/roles.md rules/creator/creator.md rules/verifier/verifier.md rules/planner/planner.md; do
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep rules/common/roles.md rules/common/git.md rules/creator/creator.md rules/creator/git-workflow.md rules/verifier/verifier.md rules/planner/planner.md; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 

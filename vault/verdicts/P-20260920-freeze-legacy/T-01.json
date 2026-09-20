@@ -1,0 +1,39 @@
+{
+  "task": "P-20260920-freeze-legacy/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 16:55",
+  "criteria": [
+    {
+      "text": "`vault/todo.md` と `vault/log/queue.md` が存在しない。確認：`test ! -e vault/todo.md && test ! -e vault/log/queue.md && echo ok`",
+      "ok": true,
+      "note": "実行コマンド: `test ! -e vault/todo.md && test ! -e vault/log/queue.md && echo ok` / 出力: ok"
+    },
+    {
+      "text": "17個の旧計画票が `vault/archive/2026-09/plans/` にそのまま移っている。確認：`ls vault/archive/2026-09/plans/ | wc -l` が17",
+      "ok": true,
+      "note": "実行コマンド: `ls vault/archive/2026-09/plans/ | wc -l` / 出力: 17"
+    },
+    {
+      "text": "29個の旧タスク票と29個の旧 verdict が `vault/archive/2026-09/tasks/`・`vault/archive/2026-09/verdicts/` に移っている。確認：`ls vault/archive/2026-09/tasks/ | wc -l` と `ls vault/archive/2026-09/verdicts/ | wc -l` がともに29",
+      "ok": true,
+      "note": "実行コマンド: `ls vault/archive/2026-09/tasks/ | wc -l && ls vault/archive/2026-09/verdicts/ | wc -l` / 出力: 29 / 29"
+    },
+    {
+      "text": "`vault/archive/2026-09/todo.md`・`vault/archive/2026-09/log/queue.md` が存在する。確認：`test -e vault/archive/2026-09/todo.md && test -e vault/archive/2026-09/log/queue.md && echo ok`",
+      "ok": true,
+      "note": "実行コマンド: `test -e vault/archive/2026-09/todo.md && test -e vault/archive/2026-09/log/queue.md && echo ok` / 出力: ok"
+    },
+    {
+      "text": "破棄対象（`vault/plans/P-018.md`・`vault/tasks/T-0030.md`〜`T-0035.md`）が削除されている。確認：`git ls-files vault/plans/P-018.md vault/tasks/T-0030.md vault/tasks/T-0031.md vault/tasks/T-0032.md vault/tasks/T-0033.md vault/tasks/T-0034.md vault/tasks/T-0035.md | wc -l` が0",
+      "ok": true,
+      "note": "実行コマンド: `git ls-files vault/plans/P-018.md vault/tasks/T-0030.md vault/tasks/T-0031.md vault/tasks/T-0032.md vault/tasks/T-0033.md vault/tasks/T-0034.md vault/tasks/T-0035.md | wc -l` / 出力: 0"
+    },
+    {
+      "text": "`docs/vault-spec.md` 冒頭の未適用注記が削除されている。確認：`grep -c 'この仕様はフェーズ3〜4の実装が完了するまで未適用' docs/vault-spec.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'この仕様はフェーズ3〜4の実装が完了するまで未適用' docs/vault-spec.md` / 出力: 0"
+    }
+  ],
+  "reasons": []
+}

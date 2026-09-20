@@ -1,0 +1,39 @@
+{
+  "task": "P-20260920-freeze-legacy/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 17:03",
+  "criteria": [
+    {
+      "text": "`vault/todo.md` への言及が消えている。確認：`grep -c 'todo.md' .claude/ai-harness.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'todo.md' .claude/ai-harness.md` / 出力: 0"
+    },
+    {
+      "text": "「状態遷移」に `doing` が計画内で常に1件である旨が書かれている。確認：`grep -c '計画内で常に1件' .claude/ai-harness.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '計画内で常に1件' .claude/ai-harness.md` / 出力: 1（`## 状態遷移（5つで固定）`節に「`doing` は計画内で常に1件だけ」の行あり）"
+    },
+    {
+      "text": "冒頭またはいずれかの節に「1セッション=1計画=1ブランチ」の運用モデルが明記されている。確認：`grep -c '1セッション.*1計画.*1ブランチ' .claude/ai-harness.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '1セッション.*1計画.*1ブランチ' .claude/ai-harness.md` / 出力: 1（冒頭2〜3行目に「1セッション=1計画=1ブランチで、計画の作成から実行までを1本のブランチに閉じる」）"
+    },
+    {
+      "text": "「スキル」節が `/run-queue` ではなく `/run` を挙げている。確認：`grep -c '/run-queue' .claude/ai-harness.md` が0 かつ `grep -c '/run' .claude/ai-harness.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '/run-queue' .claude/ai-harness.md` / 出力: 0。実行コマンド: `grep -c '/run' .claude/ai-harness.md` / 出力: 1（`## スキル`節に `/run`（自分のブランチの承認済み計画を1タスク処理する）とある）"
+    },
+    {
+      "text": "「禁止」に計画票のタスク表の列順・見出し名を変えない旨が明記されている（`todo.md` の列順という表現は使わない）。確認：`grep -c 'タスク表の列順・見出し名' .claude/ai-harness.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'タスク表の列順・見出し名' .claude/ai-harness.md` / 出力: 1（`## 禁止`節に「計画票のタスク表の列順・見出し名を変えること」とあり、`todo.md` の列順という表現は使われていない）"
+    },
+    {
+      "text": "見出し構成が変わらず6個のまま（`## 開始時に読む順`・`## 状態遷移（5つで固定）`・`## 質問のしかた`・`## 役割`・`## スキル`・`## 禁止`）。確認：`grep -c '^## ' .claude/ai-harness.md` が6",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## ' .claude/ai-harness.md` / 出力: 6（Read で確認した見出しは `## 開始時に読む順`・`## 状態遷移（5つで固定）`・`## 質問のしかた`・`## 役割`・`## スキル`・`## 禁止`の順で一致）"
+    }
+  ],
+  "reasons": []
+}

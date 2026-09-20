@@ -1,0 +1,29 @@
+{
+  "task": "T-0051",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 14:15",
+  "criteria": [
+    {
+      "text": "4ファイルから `vault/todo.md` への言及が消えている。確認：\n  `grep -rc 'vault/todo.md' vault/rules/common/roles.md vault/rules/creator/creator.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md`\n  の出力がすべて `<パス>:0`",
+      "ok": true,
+      "note": "実行コマンド: `grep -rc 'vault/todo.md' vault/rules/common/roles.md vault/rules/creator/creator.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md` / 出力: vault/rules/planner/planner.md:0, vault/rules/common/roles.md:0, vault/rules/verifier/verifier.md:0, vault/rules/creator/creator.md:0（4ファイルとも0件）"
+    },
+    {
+      "text": "4ファイルとも `vault/plans/` （状態は計画票のタスク表が持つ）への言及がある。確認：\n  `grep -l 'vault/plans/' vault/rules/common/roles.md vault/rules/creator/creator.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md | wc -l`\n  が4",
+      "ok": true,
+      "note": "実行コマンド: `grep -l 'vault/plans/' vault/rules/common/roles.md vault/rules/creator/creator.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md | wc -l` / 出力: 4"
+    },
+    {
+      "text": "4ファイルの見出し構成（`## ` で始まる行数）が変更前と同じ（roles.md=3・creator.md=3・\n  verifier.md=3・planner.md=3、いずれも `## 目的`／`## ルール`／`## 確認方法`）。確認：4ファイルそ\n  れぞれで `grep -c '^## '` を実行し、全て3であること",
+      "ok": true,
+      "note": "実行コマンド: `for f in <4ファイル>; do grep -c '^## ' \"$f\"; done` / 出力: 4ファイルとも3。さらに `grep '^## '` で見出し文言を確認したところ、4ファイルとも `## 目的`／`## ルール`／`## 確認方法` の順で一致"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（ルール文書のみの変更であり、既存のフック挙\n  動には影響しないことの確認）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=95 fail=0"
+    }
+  ],
+  "reasons": []
+}

@@ -48,6 +48,12 @@
 | T-0043 | done | 1 | T-0042 | `docs/vault-spec.md` の8・9・10節（粒度／Stopフック／plan_guardフック）を書き直す | |
 | T-0044 | done | 1 | T-0043 | `docs/vault-spec.md` の11・12・13節を書き直し、全体の整合を確認する | |
 | T-0045 | done | 1 | T-0041 | `vault/templates/plan.md` を新形式に更新する | |
+| T-0046 | done | 1 | - | `todo_guard.py` を `plan_guard.py` に作り替え、計画票のタスク表を検査する | |
+| T-0047 | done | 1 | T-0046 | `stop_gate.py` の読む先を計画票に変える（判定ロジックは保つ） | |
+| T-0048 | done | 1 | T-0047 | `agent_write_guard.py` の doing/review 判定を計画票ベースに変える | |
+| T-0049 | done | 1 | - | `/plan` にブランチ作成を追加し `planner.md` を新ID方式に直す | |
+| T-0050 | done | 1 | - | `run-queue` を `run` に改名し `verifier.md` を新方式に直す | |
+| T-0051 | done | 1 | T-0048,T-0049,T-0050 | 標準ルール4本の `vault/todo.md` 言及を新方式に直す | |
 
 ## 計画
 | id | status | title |
@@ -71,3 +77,4 @@
 | P-017 | approved | CLAUDE.md のマージインストール（外出し + merge_claude_md.py） |
 | P-019 | approved | インストール先への更新経路を作る（ハッシュ照合と settings マージャ） |
 | P-020 | approved | 新しい状態モデルの仕様とテンプレートを固める（D-001 フェーズ2） |
+| P-021 | approved | フックとスキルを計画票ベースに作り替える（D-001 フェーズ3） |

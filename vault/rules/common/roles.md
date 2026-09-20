@@ -1,12 +1,12 @@
 ## 目的
-planner / creator（run-queue の作成エージェント）/ verifier の間で、誰の出力が誰の入力になるかを定める。
-状態遷移・todo.md の列構成・各ファイルの形式は `docs/vault-spec.md` を正本とし、ここでは繰り返さない。
+planner / creator（run の作成エージェント）/ verifier の間で、誰の出力が誰の入力になるかを定める。
+状態遷移・計画票のタスク表の列構成・各ファイルの形式は `docs/vault-spec.md` を正本とし、ここでは繰り返さない。
 
 ## ルール
 
 ### 人 → planner
 - 人が渡すのはゴール（と、あれば `vault/designs/D-xxx.md`）。planner はそれ以外を要求として補わない。
-- planner の出力が人の承認を受けて初めて `vault/todo.md` に載る。承認前の draft を creator は取らない。
+- planner の出力が人の承認を受けて初めて計画票（`vault/plans/<計画ID>.md`）の `status` が `approved` になる。承認前の draft を creator は取らない。
 
 ### planner → creator
 - 渡すのは `vault/tasks/<id>.md` の6見出しだけ。タスク票に書かれていないことは、計画票や会話ではなく「決定済み」に追記されるまで存在しないものとして扱う。
@@ -22,7 +22,7 @@ planner / creator（run-queue の作成エージェント）/ verifier の間で
 - 渡すのは `vault/verdicts/<id>.json` の `result` / `reasons` / `criteria[].note` だけ。verdict ファイルが唯一の判定結果で、返答文は控えに過ぎない。
 - creator は verifier の返答文ではなく verdict ファイルを読んで次の行動（done / attempt+1 / blocked）を決める。
 - FAIL の時、creator が修正の手がかりにできるのは `reasons` と該当する `criteria[].note`。そこに書かれていない不満は無かったものとして扱う。
-- `attempt` が todo.md と一致しない verdict は受け取らない（古い結果で done にしない）。
+- `attempt` が計画票のタスク表と一致しない verdict は受け取らない（古い結果で done にしない）。
 
 ### creator → 人
 - 渡すのは `blocked` にした行の question 1つ。question は人が1回で答えられる形にし、判断待ちの間に推測で作業を進めない。

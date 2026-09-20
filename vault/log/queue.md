@@ -146,3 +146,26 @@
 - 2026-09-20 05:08 T-0045 todo→doing attempt=1
 - 2026-09-20 05:09 T-0045 doing→review attempt=1
 - 2026-09-20 05:09 T-0045 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 05:29 P-021 draft→approved tasks=T-0046,T-0047,T-0048,T-0049,T-0050,T-0051
+- 2026-09-20 11:32 T-0046 todo→doing attempt=1
+- 2026-09-20 11:40 T-0046 doing→blocked attempt=1 plan_guard配線で旧approved計画20件が不変条件違反を検出
+- 2026-09-20 11:45 T-0046 blocked→doing attempt=1 人の指示で旧計画19件をstatus:doneに一括移行、作業再開
+- 2026-09-20 11:50 T-0046 doing→review attempt=1
+- 2026-09-20 12:08 T-0046 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 12:08 T-0047 todo→doing attempt=1
+- 2026-09-20 12:38 T-0047 doing→review attempt=1
+- 2026-09-20 12:52 T-0047 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 12:52 T-0048 todo→doing attempt=1
+- 2026-09-20 13:09 T-0048 doing→review attempt=1
+- 2026-09-20 13:15 T-0048 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 13:15 T-0049 todo→doing attempt=1
+- 2026-09-20 13:48 T-0049 doing→review attempt=1
+- 2026-09-20 14:03 T-0049 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 14:03 T-0050 todo→doing attempt=1
+- 2026-09-20 14:06 T-0050 doing→review attempt=1
+- 2026-09-20 14:07 T-0050 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-20 14:07 T-0051 todo→doing attempt=1
+- 2026-09-20 14:08 T-0051 訂正: 直前の行は誤記。決定済みの手順（編集を先、状態遷移を後）に従い、todo.md の status はまだ todo のまま。先に vault/rules/ の4ファイルを編集してから doing にする
+- 2026-09-20 14:14 T-0051 todo→doing attempt=1 編集完了後にdoingへ（決定済みの回避策の手順どおり）
+- 2026-09-20 14:14 T-0051 doing→review attempt=1
+- 2026-09-20 14:16 T-0051 review→done attempt=1 verdict PASS、4基準すべて note あり

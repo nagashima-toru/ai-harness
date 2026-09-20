@@ -6,9 +6,9 @@
 対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（リダイレクトや破壊的コマンドの簡易判定）
 メインエージェントや他のサブエージェントには何もしない。
 
-改ざん防止：上記とは別に、vault/todo.md に doing/review 中のタスクが1件でもあれば、
-agent_type を問わず（メインエージェント含む）vault/rules/ 配下への書き込みを拒否する。
-作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めるのを防ぐ。
+改ざん防止：上記とは別に、自分のブランチの承認済み計画票のタスク表に doing/review 中のタスクが
+1件でもあれば、agent_type を問わず（メインエージェント含む）vault/rules/ 配下への書き込みを拒否
+する。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めるのを防ぐ。
 解除は環境変数 HARNESS_ALLOW_RULES_WRITE=<doing/review のタスク ID> を人が起動時に
 与えた時だけ効く。フックは Claude Code プロセスの環境を継承するため、作成エージェントが
 Bash 内で export しても届かない（実質的に人しか解除できない）。
@@ -50,31 +50,74 @@ def normalize(path, root):
     return rel.replace(os.sep, "/")
 
 
-def active_doing_review_task_ids(root):
-    """vault/todo.md の「## タスク」表から status が doing/review の id を返す（無ければ空リスト）。
-    .claude/hooks/todo_guard.py の raw_rows と同じ規則の簡易版をこのファイル内に持つ（import はしない）。"""
-    todo_path = os.path.join(root, "vault", "todo.md")
-    if not os.path.isfile(todo_path):
-        return []
+def plan_id_and_status(path):
+    """計画票の frontmatter から (id, status) を返す。読めない・frontmatter が無ければ (None, None)。
+    .claude/hooks/plan_guard.py と同じ規則をこのファイル内にコピーして使う（import はしない）。"""
     try:
-        with open(todo_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return None, None
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
+    if not m:
+        return None, None
+    front = m.group(1)
+    id_m = re.search(r"^id:\s*(\S+)\s*$", front, re.MULTILINE)
+    status_m = re.search(r"^status:\s*(\S+)\s*$", front, re.MULTILINE)
+    plan_id = id_m.group(1) if id_m else os.path.basename(path)[: -len(".md")]
+    status = status_m.group(1) if status_m else None
+    return plan_id, status
+
+
+def approved_plans(root):
+    """vault/plans/*.md のうち status: approved のもの一覧を [(plan_id, path), ...] で返す。"""
+    plans_dir = os.path.join(root, "vault", "plans")
+    if not os.path.isdir(plans_dir):
+        return []
+    out = []
+    for name in sorted(os.listdir(plans_dir)):
+        if not name.endswith(".md"):
+            continue
+        path = os.path.join(plans_dir, name)
+        plan_id, status = plan_id_and_status(path)
+        if status == "approved":
+            out.append((plan_id, path))
+    return out
+
+
+def doing_review_ids_in_plan(path):
+    """1つの計画票の「## タスク表」（前方一致）以降から status が doing/review の id を返す。"""
+    try:
+        with open(path, encoding="utf-8") as f:
             text = f.read()
     except Exception:
         return []
     ids = []
-    in_tasks = False
+    in_table = False
     for line in text.splitlines():
         if line.startswith("## "):
-            in_tasks = line.strip() == "## タスク"
+            in_table = line.strip().startswith("## タスク表")
             continue
         stripped = line.strip()
-        if not in_tasks or not stripped.startswith("|"):
+        if not in_table or not stripped.startswith("|"):
             continue
         cells = [c.strip() for c in stripped.strip("|").split("|")]
         if not cells or cells[0] == "id" or re.fullmatch(r"-*", cells[0]):
             continue
         if len(cells) >= 2 and cells[1] in ("doing", "review"):
             ids.append(cells[0])
+    return ids
+
+
+def active_doing_review_task_ids(root):
+    """自分のブランチの承認済み計画票のタスク表から status が doing/review の id を返す
+    （無ければ空リスト）。approved が0件なら空リスト（fail-open）。approved が2件以上ある
+    異常時は、見つかった全部の計画票から集めて返す（保守的に倒す。1ブランチ1計画の不変条件
+    の是正は plan_guard.py の役目で、このフックは vault/rules/ への書き込みだけを拒むため、
+    集めすぎても過剰に止まることはない）。"""
+    ids = []
+    for _, path in approved_plans(root):
+        ids.extend(doing_review_ids_in_plan(path))
     return ids
 
 

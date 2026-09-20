@@ -4,34 +4,40 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STOP_HOOK="$ROOT/.claude/hooks/stop_gate.py"
-TODO_HOOK="$ROOT/.claude/hooks/todo_guard.py"
+PLAN_GUARD_HOOK="$ROOT/.claude/hooks/plan_guard.py"
 GUARD_HOOK="$ROOT/.claude/hooks/agent_write_guard.py"
 RULES_SH="$ROOT/scripts/rules.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS_N=0; FAIL_N=0
 
-make_todo() { # $1=id $2=status $3=attempt
-  mkdir -p "$TMP/vault/verdicts"
-  cat > "$TMP/vault/todo.md" <<EOT
-# キュー
-
-## タスク
-| id | status | attempt | after | title | question |
-|---|---|---|---|---|---|
-| $1 | $2 | $3 | - | テスト | |
-
-## 計画
-| id | status | title |
-|---|---|---|
-EOT
+make_plan() { # $1=planID $2=planStatus $3...=「## タスク表」のデータ行（複数可）
+  local plan_id="$1" plan_status="$2"
+  mkdir -p "$TMP/vault/plans"
+  shift 2
+  {
+    echo "---"
+    echo "id: $plan_id"
+    echo "status: $plan_status"
+    echo "---"
+    echo "# ゴール"
+    echo
+    echo "## タスク表（状態の正本）"
+    echo "| id | status | attempt | after | title | question |"
+    echo "|---|---|---|---|---|---|"
+    for r in "$@"; do echo "$r"; done
+  } > "$TMP/vault/plans/$plan_id.md"
 }
-make_verdict() { # $1=id $2=attempt $3=result
-  printf '{"task":"%s","attempt":%s,"result":"%s","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}\n' "$1" "$2" "$3" > "$TMP/vault/verdicts/$1.json"
+make_plan_task() { # $1=id $2=status $3=attempt （旧 make_todo と同じ引数3つの形）
+  make_plan "P-TEST" "approved" "| $1 | $2 | $3 | - | テスト | |"
+}
+make_verdict() { # $1=id $2=attempt $3=result （計画 ID は P-TEST 固定。task は "P-TEST/<id>" 形式）
+  mkdir -p "$TMP/vault/verdicts/P-TEST"
+  printf '{"task":"P-TEST/%s","attempt":%s,"result":"%s","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}\n' "$1" "$2" "$3" > "$TMP/vault/verdicts/P-TEST/$1.json"
 }
 DEFAULT_STDIN='{"hook_event_name":"Stop","stop_hook_active":false}'
 make_task() { # $1=id $2=受け入れ基準の箇条書き行数
-  mkdir -p "$TMP/vault/tasks"
+  mkdir -p "$TMP/vault/tasks/P-TEST"
   {
     echo "# $1 テスト"
     echo
@@ -39,10 +45,11 @@ make_task() { # $1=id $2=受け入れ基準の箇条書き行数
     for i in $(seq 1 "$2"); do echo "- 基準$i"; done
     echo
     echo "## 決定済み"
-  } > "$TMP/vault/tasks/$1.md"
+  } > "$TMP/vault/tasks/P-TEST/$1.md"
 }
-write_verdict() { # $1=id $2=json 文字列（形式検証のテスト用）
-  printf '%s' "$2" > "$TMP/vault/verdicts/$1.json"
+write_verdict() { # $1=id $2=json 文字列（形式検証のテスト用。保存先は P-TEST スコープ）
+  mkdir -p "$TMP/vault/verdicts/P-TEST"
+  printf '%s' "$2" > "$TMP/vault/verdicts/P-TEST/$1.json"
 }
 run_stop() { # $1=stdin json（省略時は DEFAULT_STDIN）
   printf '%s' "${1:-$DEFAULT_STDIN}" \
@@ -60,29 +67,34 @@ expect() { # $1=name $2=block|allow $3=output $4=substring(optional)
 }
 
 echo "== stop_gate.py =="
-make_todo T-0001 doing 1;                        expect "doing あり・verdict なし → ブロック" block "$(run_stop)" "verifier"
-make_todo T-0001 review 1; make_verdict T-0001 1 FAIL; expect "FAIL・attempt=1 → ブロック（doing に戻す）" block "$(run_stop)" "doing に戻し"
-make_todo T-0001 doing 3;  make_verdict T-0001 3 FAIL; expect "FAIL・attempt=3・doing → ブロック（blocked にする）" block "$(run_stop)" "blocked"
-make_todo T-0001 blocked 3; make_verdict T-0001 3 FAIL; expect "FAIL・attempt=3・blocked → 許可" allow "$(run_stop)"
-make_todo T-0001 review 1; make_verdict T-0001 1 PASS; expect "PASS・review → ブロック（done にする）" block "$(run_stop)" "done"
-make_todo T-0001 done 1;   make_verdict T-0001 1 PASS; expect "PASS・done → 許可" allow "$(run_stop)"
-make_todo T-0001 todo 0;   rm -f "$TMP/vault/verdicts/T-0001.json"; expect "doing/review なし → 許可" allow "$(run_stop)"
-make_todo T-0001 review 2; make_verdict T-0001 1 PASS; expect "PASS だが attempt 不一致（古い verdict）→ ブロック（verifier）" block "$(run_stop)" "古い"
-make_todo T-0001 review 1; rm -f "$TMP/vault/verdicts/T-0001.json"; expect "stop_hook_active=true → 許可（既定）" allow "$(run_stop '{"hook_event_name":"Stop","stop_hook_active":true}')"
-make_todo T-0001 review 1; expect "stop_hook_active=true + HARNESS_STRICT_STOP=1 → ブロック" block "$(printf '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$TMP" HARNESS_STRICT_STOP=1 python3 "$STOP_HOOK")" "verifier"
-make_todo T-0001 review 2; make_verdict T-0001 2 FAIL; expect "HARNESS_MAX_ATTEMPTS=2 で attempt=2 FAIL → blocked 指示" block "$(HARNESS_MAX_ATTEMPTS=2 run_stop)" "blocked"
+make_plan_task T-0001 doing 1;                        expect "doing あり・verdict なし → ブロック" block "$(run_stop)" "verifier"
+make_plan_task T-0001 review 1; make_verdict T-0001 1 FAIL; expect "FAIL・attempt=1 → ブロック（doing に戻す）" block "$(run_stop)" "doing に戻し"
+make_plan_task T-0001 doing 3;  make_verdict T-0001 3 FAIL; expect "FAIL・attempt=3・doing → ブロック（blocked にする）" block "$(run_stop)" "blocked"
+make_plan_task T-0001 blocked 3; make_verdict T-0001 3 FAIL; expect "FAIL・attempt=3・blocked → 許可" allow "$(run_stop)"
+make_plan_task T-0001 review 1; make_verdict T-0001 1 PASS; expect "PASS・review → ブロック（done にする）" block "$(run_stop)" "done"
+make_plan_task T-0001 done 1;   make_verdict T-0001 1 PASS; expect "PASS・done → 許可" allow "$(run_stop)"
+make_plan_task T-0001 todo 0;   rm -f "$TMP/vault/verdicts/P-TEST/T-0001.json"; expect "doing/review なし → 許可" allow "$(run_stop)"
+make_plan_task T-0001 review 2; make_verdict T-0001 1 PASS; expect "PASS だが attempt 不一致（古い verdict）→ ブロック（verifier）" block "$(run_stop)" "古い"
+make_plan_task T-0001 review 1; rm -f "$TMP/vault/verdicts/P-TEST/T-0001.json"; expect "stop_hook_active=true → 許可（既定）" allow "$(run_stop '{"hook_event_name":"Stop","stop_hook_active":true}')"
+make_plan_task T-0001 review 1; expect "stop_hook_active=true + HARNESS_STRICT_STOP=1 → ブロック" block "$(printf '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$TMP" HARNESS_STRICT_STOP=1 python3 "$STOP_HOOK")" "verifier"
+make_plan_task T-0001 review 2; make_verdict T-0001 2 FAIL; expect "HARNESS_MAX_ATTEMPTS=2 で attempt=2 FAIL → blocked 指示" block "$(HARNESS_MAX_ATTEMPTS=2 run_stop)" "blocked"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+make_plan "P-A" "approved" "| T-0001 | doing | 1 | - | A | |"; make_plan "P-B" "approved" "| T-0001 | doing | 1 | - | B | |"
+expect "approved な計画票が2件以上 → ブロック" block "$(run_stop)" "approved"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+expect "approved な計画票が0件 → 許可" allow "$(run_stop)"
 
 OK_C='{"text":"基準","ok":true,"note":"実行コマンド: x / 出力: y"}'
-make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"FOO","checked_at":"","criteria":['"$OK_C"'],"reasons":[]}'
+make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"FOO","checked_at":"","criteria":['"$OK_C"'],"reasons":[]}'
 expect "(a) result が PASS/FAIL 以外 → ブロック（不正）" block "$(run_stop)" "不正"
-make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":[{"text":"基準","ok":true}],"reasons":[]}'
+make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":[{"text":"基準","ok":true}],"reasons":[]}'
 expect "(b) criteria の要素に note が無い → ブロック（不正）" block "$(run_stop)" "不正"
-make_todo T-0001 review 1; make_task T-0001 3; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"','"$OK_C"'],"reasons":[]}'
+make_plan_task T-0001 review 1; make_task T-0001 3; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"','"$OK_C"'],"reasons":[]}'
 expect "(c) criteria 2件 vs タスク票の基準 3行 → ブロック（不正）" block "$(run_stop)" "一致しません"
-rm -f "$TMP/vault/tasks/T-0001.md"
-make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":[{"text":"基準","ok":true,"note":"  "}],"reasons":[]}'
+rm -f "$TMP/vault/tasks/P-TEST/T-0001.md"
+make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":[{"text":"基準","ok":true,"note":"  "}],"reasons":[]}'
 expect "(d) note が空白のみ → ブロック（不正）" block "$(run_stop)" "不正"
-make_todo T-0001 review 1; write_verdict T-0001 '{"task":"T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"'],"reasons":"none"}'
+make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"'],"reasons":"none"}'
 expect "(e) reasons が配列でない → ブロック（不正）" block "$(run_stop)" "不正"
 echo "== agent_write_guard.py =="
 run_guard() { printf '%s' "$1" | CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
@@ -105,13 +117,13 @@ expect_guard "planner が vault/todo.md に Edit → 拒否" deny \
 expect_guard "メインエージェントが README.md に Edit → 許可" allow \
   "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
 
-make_todo T-0001 doing 1
+make_plan_task T-0001 doing 1
 expect_guard "(a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否" deny \
   "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
-make_todo T-0001 todo 0
+make_plan_task T-0001 todo 0
 expect_guard "(b) doing/review 無し・メインエージェントが vault/rules/ へ Write → 許可" allow \
   "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
-make_todo T-0001 doing 1
+make_plan_task T-0001 doing 1
 expect_guard "(c) doing 中に verifier が vault/verdicts/ へ Write → 許可（従来どおり）" allow \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/T-0001.json"}}')"
 RULES_WRITE_JSON='{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/roles.md"}}'
@@ -121,41 +133,43 @@ expect_guard "(e) HARNESS_ALLOW_RULES_WRITE が doing の ID と不一致 → �
   "$(printf '%s' "$RULES_WRITE_JSON" | CLAUDE_PROJECT_DIR="$TMP" HARNESS_ALLOW_RULES_WRITE=T-9999 python3 "$GUARD_HOOK")"
 expect_guard "(f) HARNESS_ALLOW_RULES_WRITE=1（ID でない値）→ 拒否" deny \
   "$(printf '%s' "$RULES_WRITE_JSON" | CLAUDE_PROJECT_DIR="$TMP" HARNESS_ALLOW_RULES_WRITE=1 python3 "$GUARD_HOOK")"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+expect_guard "(g) approved な計画票が0件・vault/rules/ へ Write → 許可" allow \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
+make_plan "P-A" "approved" "| T-0001 | todo | 0 | - | A | |"
+make_plan "P-B" "approved" "| T-0001 | doing | 1 | - | B | |"
+expect_guard "(h) approved な計画票が2件以上・どちらかに doing あり・vault/rules/ へ Write → 拒否" deny \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
-echo "== todo_guard.py =="
-make_todo_rows() { # 各引数が「## タスク」表のデータ行1行
-  {
-    echo "# キュー"
-    echo
-    echo "## タスク"
-    echo "| id | status | attempt | after | title | question |"
-    echo "|---|---|---|---|---|---|"
-    for r in "$@"; do echo "$r"; done
-    echo
-    echo "## 計画"
-    echo "| id | status | title |"
-    echo "|---|---|---|"
-  } > "$TMP/vault/todo.md"
-}
-run_todo_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$TODO_HOOK"; }
+echo "== plan_guard.py =="
+run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }
 
-make_todo_rows "| T-0001 | doing | 1 | - | A | |" "| T-0002 | doing | 1 | - | B | |"
-expect "(a) doing が2件 → ブロック" block "$(run_todo_guard)" "doing"
-make_todo_rows "| T-0001 | blocked | 1 | - | A | |"
-expect "(b) blocked なのに question が空 → ブロック" block "$(run_todo_guard)" "question"
-make_todo_rows "| T-0001 | pending | 0 | - | A | |"
-expect "(c) status が5値以外 → ブロック" block "$(run_todo_guard)" "status"
-make_todo_rows "| T-0001 | todo | 0 | - | A | |" "| T-0001 | done | 1 | - | B | |"
-expect "(d) id が重複 → ブロック" block "$(run_todo_guard)" "重複"
-make_todo_rows "| T-0001 | todo | 0 | - | A |"
-expect "(e) データ行の列数が6でない → ブロック" block "$(run_todo_guard)" "列数"
-make_todo_rows "| T-0001 | done | 1 | - | A | |" "| T-0002 | doing | 2 | T-0001 | B | |" "| T-0003 | blocked | 1 | - | C | 方針を決めてほしい |"
-expect "正常な todo.md（doing 1件・blocked に question あり）→ 許可" allow "$(run_todo_guard)"
-make_todo_rows
-expect "データ行が無い → 許可" allow "$(run_todo_guard)"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+make_plan "P-TEST" "approved" "| T-0001 | doing | 1 | - | A | |" "| T-0002 | doing | 1 | - | B | |"
+expect "(a) doing が2件 → ブロック" block "$(run_plan_guard)" "doing"
+make_plan "P-TEST" "approved" "| T-0001 | blocked | 1 | - | A | |"
+expect "(b) blocked なのに question が空 → ブロック" block "$(run_plan_guard)" "question"
+make_plan "P-TEST" "approved" "| T-0001 | pending | 0 | - | A | |"
+expect "(c) status が5値以外 → ブロック" block "$(run_plan_guard)" "status"
+make_plan "P-TEST" "approved" "| T-0001 | todo | 0 | - | A | |" "| T-0001 | done | 1 | - | B | |"
+expect "(d) id が重複 → ブロック" block "$(run_plan_guard)" "重複"
+make_plan "P-TEST" "approved" "| T-0001 | todo | 0 | - | A |"
+expect "(e) データ行の列数が6でない → ブロック" block "$(run_plan_guard)" "列数"
+make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0002 | doing | 2 | T-0001 | B | |" "| T-0003 | blocked | 1 | - | C | 方針を決めてほしい |"
+expect "正常な計画票（doing 1件・blocked に question あり）→ 許可" allow "$(run_plan_guard)"
+make_plan "P-TEST" "approved"
+expect "データ行が無い → 許可" allow "$(run_plan_guard)"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+expect "(f) approved な計画票が0件 → 許可" allow "$(run_plan_guard)"
+make_plan "P-A" "approved" "| T-0001 | todo | 0 | - | A | |"
+make_plan "P-B" "approved" "| T-0001 | todo | 0 | - | B | |"
+expect "(f) approved な計画票が2件以上 → ブロック" block "$(run_plan_guard)" "approved"
+rm -rf "$TMP/vault/plans"
 EMPTY_DIR="$(mktemp -d)"
-expect "todo.md が無い → 許可" allow "$(printf '{}' | CLAUDE_PROJECT_DIR="$EMPTY_DIR" python3 "$TODO_HOOK")"
+expect "vault/plans が無い → 許可" allow "$(printf '{}' | CLAUDE_PROJECT_DIR="$EMPTY_DIR" python3 "$PLAN_GUARD_HOOK")"
 rm -rf "$EMPTY_DIR"
+mkdir -p "$TMP/vault/plans"
 
 echo "== rules.sh =="
 reset_rules() { rm -rf "$TMP/vault/rules"; }
@@ -321,7 +335,7 @@ expect_eq "(n) 欠けている要素がある → merge" "merge" "${out%% *}"
 expect_eq "(n) allow の独自要素は残る" "True" \
   "$(python3 -c "import json;print('Bash(独自コマンド *)' in json.load(open('$STMP/settings.json'))['permissions']['allow'])")"
 expect_eq "(n) 欠落した hooks エントリが復元される" "True" \
-  "$(python3 -c "import json;d=json.load(open('$STMP/settings.json'));print(any('todo_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
+  "$(python3 -c "import json;d=json.load(open('$STMP/settings.json'));print(any('plan_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
 expect_eq "(n) 欠落した deny 要素が復元される" "True" \
   "$(python3 -c "import json;print('Bash(sudo *)' in json.load(open('$STMP/settings.json'))['permissions']['deny'])")"
 expect_eq "(n) バックアップが1つできる" "1" "$(ls "$STMP" | grep -c '^settings\.json\.bak-')"
@@ -346,7 +360,7 @@ bash "$ROOT/scripts/install.sh" --update "$WTMP" >/dev/null 2>&1
 expect_eq "(p) --update 後も独自の allow が残る" "True" \
   "$(python3 -c "import json;print('Bash(独自コマンド *)' in json.load(open('$WTMP/.claude/settings.json'))['permissions']['allow'])")"
 expect_eq "(p) --update で欠落 hooks が足される" "True" \
-  "$(python3 -c "import json;d=json.load(open('$WTMP/.claude/settings.json'));print(any('todo_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
+  "$(python3 -c "import json;d=json.load(open('$WTMP/.claude/settings.json'));print(any('plan_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
 rm -rf "$WTMP"
 
 echo

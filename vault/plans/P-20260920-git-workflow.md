@@ -21,7 +21,7 @@ status: approved
 | T-02 | done | 1 | - | vault/rules/creator/git-workflow.md を新設する | |
 | T-03 | done | 1 | - | agent_write_guard.py に main 直接コミット拒否を追加する | |
 | T-04 | done | 1 | - | stop_gate.py に未コミット差分の Stop 検査を追加する | |
-| T-05 | todo | 0 | - | settings.json に --force-with-lease の deny を追加する | |
+| T-05 | review | 1 | - | settings.json に --force-with-lease の deny を追加する | |
 | T-06 | todo | 0 | T-01,T-02 | install.sh の複製対象とマニフェストに新規ルール2本を追加する | |
 | T-07 | todo | 0 | - | README/runbook に PR 後の人によるマージ手順を追記する | |
 

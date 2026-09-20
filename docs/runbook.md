@@ -29,6 +29,7 @@
   - 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）
   - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
   - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にし `gh pr create` する（`gh pr merge` はしない。マージは人が行う）
+  - PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `gh pr create` までしか行わない）。
 
 ## 4. blocked に答えて戻す
 1. 計画票（`vault/plans/<計画ID>.md`）のタスク表で `status=blocked` の行の `question` を読む

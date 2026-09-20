@@ -70,6 +70,7 @@ bash scripts/smoke.sh        # フックの動作検証
  │ blocked に答えて戻す・PR をマージ
  └──────────────────────▶ vault/plans/<計画ID>.md（状態の正本）  vault/log/<計画ID>.md（追記ログ）
 ```
+PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `gh pr create` までしか行わない）。
 
 ## 構成
 ```

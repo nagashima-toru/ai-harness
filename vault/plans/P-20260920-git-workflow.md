@@ -17,7 +17,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | vault/rules/common/git.md を新設する | |
+| T-01 | done | 1 | - | vault/rules/common/git.md を新設する | |
 | T-02 | todo | 0 | - | vault/rules/creator/git-workflow.md を新設する | |
 | T-03 | todo | 0 | - | agent_write_guard.py に main 直接コミット拒否を追加する | |
 | T-04 | todo | 0 | - | stop_gate.py に未コミット差分の Stop 検査を追加する | |

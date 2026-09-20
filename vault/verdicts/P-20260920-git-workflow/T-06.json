@@ -1,0 +1,34 @@
+{
+  "task": "P-20260920-git-workflow/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 18:40",
+  "criteria": [
+    {
+      "text": "`vault/rules/common/git.md` が複製対象（`copy_if_absent` のループ対象一覧）に追加されている。確認：`grep -c 'rules/common/git.md' scripts/install.sh` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'rules/common/git.md' scripts/install.sh` / 出力: 2（1以上）。うち1件は複製ループ（126行目、`vault/` プレフィックス無しの `rules/common/git.md`）に含まれることを `grep -n` で確認済み"
+    },
+    {
+      "text": "`vault/rules/creator/git-workflow.md` が複製対象に追加されている。確認：`grep -c 'rules/creator/git-workflow.md' scripts/install.sh` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'rules/creator/git-workflow.md' scripts/install.sh` / 出力: 2（1以上）。うち1件は複製ループ（126行目）に含まれることを `grep -n` で確認済み"
+    },
+    {
+      "text": "両ファイルが `manifest_paths()` の一覧（`for p in ...` の行）にも追加されている。確認：`sed -n '/manifest_paths/,/^}/p' scripts/install.sh | grep -c 'rules/common/git.md'` と同範囲での `rules/creator/git-workflow.md` がそれぞれ1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/manifest_paths/,/^}/p' scripts/install.sh | grep -c 'rules/common/git.md'` / 出力: 2。同様に `rules/creator/git-workflow.md` も2。`sed` 範囲の中身を確認すると `for p in ...` の一覧（61-62行目）に `vault/rules/common/git.md` と `vault/rules/creator/git-workflow.md` がそれぞれ1回ずつ含まれている"
+    },
+    {
+      "text": "一時ディレクトリへ install した結果、マニフェストの `files` に両パスが含まれる。確認：`bash scripts/install.sh <一時dst>` の後 `python3 -c \"import json;d=json.load(open('<一時dst>/.claude/harness-manifest.json'))['files'];print('vault/rules/common/git.md' in d and 'vault/rules/creator/git-workflow.md' in d)\"` が `True`",
+      "ok": true,
+      "note": "実行コマンド: `DST=$(mktemp -d) && bash scripts/install.sh \"$DST\"` の後、生成された `.claude/harness-manifest.json` の `files` に対し `'vault/rules/common/git.md' in d and 'vault/rules/creator/git-workflow.md' in d` を判定 / 出力: install ログに `copy  vault/rules/common/git.md` と `copy  vault/rules/creator/git-workflow.md` が表示され、マニフェスト判定は `True`"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -3` / 出力: `smoke: pass=99 fail=0`"
+    }
+  ],
+  "reasons": []
+}

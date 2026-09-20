@@ -1,0 +1,13 @@
+{
+  "task": "P-20260920-git-workflow/T-07",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 18:42",
+  "criteria": [
+    {"text": "`README.md` に、PR ができた後は人が確認して `gh pr merge` でマージする旨の一文がある。確認：`grep -c 'PR ができたら' README.md` が1以上、`grep -c 'gh pr merge' README.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'PR ができたら' README.md` / 出力: 1。`grep -c 'gh pr merge' README.md` / 出力: 1。README.md 73行目に「PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `gh pr create` までしか行わない）。」の一文を確認"},
+    {"text": "`docs/runbook.md` に同様の一文がある。確認：`grep -c 'PR ができたら' docs/runbook.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'PR ができたら' docs/runbook.md` / 出力: 1。docs/runbook.md 32行目に同一の一文を確認"},
+    {"text": "既存のエージェント側の制約（`gh pr create` までで `gh pr merge` は実行しない）と矛盾しない文言になっている", "ok": true, "note": "確認方法: `grep -n -B2 -A2 'PR ができたら' README.md docs/runbook.md` を実行。docs/runbook.md 31行目の既存記述「`gh pr create` する（`gh pr merge` はしない。マージは人が行う）」と、追加された32行目「PR ができたら、人が内容を確認して `gh pr merge` でマージする（...エージェントは `gh pr create` までしか行わない）。」は、gh pr merge を行うのは人でありエージェントは gh pr create までという点で一致しており矛盾なし"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む（ドキュメントのみの変更で影響しないことを確認する）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=99 fail=0"}
+  ],
+  "reasons": []
+}

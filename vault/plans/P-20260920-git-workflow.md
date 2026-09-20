@@ -23,7 +23,7 @@ status: approved
 | T-04 | done | 1 | - | stop_gate.py に未コミット差分の Stop 検査を追加する | |
 | T-05 | done | 1 | - | settings.json に --force-with-lease の deny を追加する | |
 | T-06 | done | 1 | T-01,T-02 | install.sh の複製対象とマニフェストに新規ルール2本を追加する | |
-| T-07 | review | 1 | - | README/runbook に PR 後の人によるマージ手順を追記する | |
+| T-07 | done | 1 | - | README/runbook に PR 後の人によるマージ手順を追記する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

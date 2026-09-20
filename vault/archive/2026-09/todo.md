@@ -1,0 +1,80 @@
+# キュー
+
+## ルール
+- todo の一番上から1件だけ doing にする。doing は常に1件
+- done にできるのは verdicts/<id>.json が PASS の時だけ
+- 迷ったら blocked にして question を書く。勝手に決めない
+- 状態を変えたら log/queue.md に1行追記する
+
+## タスク
+| id | status | attempt | after | title | question |
+|---|---|---|---|---|---|
+| T-0001 | done | 1 | - | ハーネスの動作確認（README の使い方節に1行追記） | |
+| T-0002 | done | 1 | - | verdict.json の note 要件を仕様と verifier プロンプトに追記 | |
+| T-0003 | done | 1 | - | planner に「run-queue で必ず変わるファイルの差分不変を受け入れ基準にしない」ルールを追記 | |
+| T-0004 | done | 1 | - | stop_gate.py に verdict 形式検証を追加し smoke.sh と vault-spec.md を更新 | |
+| T-0005 | done | 1 | - | todo_guard フックで todo.md の整合性を PostToolUse でチェックする | |
+| T-0006 | done | 1 | - | vault-spec.md に「ルール（vault/rules/）」節を追加し置き場を作る | |
+| T-0007 | done | 1 | - | scripts/rules.sh を新規作成し smoke.sh にケースを追加する | |
+| T-0008 | done | 1 | - | run-queue にルール読み込み手順を追加する | |
+| T-0009 | done | 1 | - | verifier にルール読み込みと参照時の判定手順を追加する | |
+| T-0010 | done | 1 | - | planner.md にルール読み込み手順を追加し vault-spec.md の粒度基準を更新する | |
+| T-0011 | done | 1 | - | agent_write_guard.py に doing/review 中の vault/rules/ 書き込み拒否を追加する | |
+| T-0012 | done | 1 | - | install.sh にルール拡張ポイントの複製対象を追加する | |
+| T-0013 | done | 1 | T-0012 | README.md に「拡張ポイント（ルール）」節を追加し runbook にルール追加手順を書く | |
+| T-0014 | done | 1 | - | ルール拡張ポイントの通し検証を行い docs/decisions.md に記録する | |
+| T-0015 | done | 1 | - | 設計文書の vault 仕様とテンプレート・置き場を作る | |
+| T-0016 | done | 1 | T-0015 | /design スキルを新規作成する | |
+| T-0017 | done | 1 | T-0016 | /design の配布と周知、planner のタスク数上限を追加する | |
+| T-0018 | done | 1 | - | agent_write_guard に人だけが使えるルール編集の解除口を追加する | |
+| T-0019 | done | 1 | T-0018 | common に3役割の受け渡し（入出力のつながり）ルールを書く | |
+| T-0020 | done | 1 | T-0019 | planner の責務と「やらないこと」をルール化する | |
+| T-0021 | done | 1 | T-0019 | creator（run-queue メイン）の責務と「やらないこと」をルール化する | |
+| T-0022 | done | 1 | T-0019 | verifier の責務と「やらないこと」をルール化する | |
+| T-0023 | done | 1 | T-0020,T-0021,T-0022 | 標準ルールを install.sh で配り「同梱しない」の記述を直す | |
+| T-0024 | done | 1 | - | docs/install.md を新規作成し「前提」「パターン1: まっさらな環境」節を書く | |
+| T-0025 | done | 1 | T-0024 | docs/install.md に「パターン2: 既存リポジトリ」と「インストール後の次の一歩」を追記する | |
+| T-0026 | done | 1 | T-0025 | README.md のセットアップ節と docs/runbook.md に docs/install.md への導線を追加する | |
+| T-0027 | done | 1 | - | `.claude/ai-harness.md` 新設とルート `CLAUDE.md` のスタブ化 | |
+| T-0028 | done | 1 | T-0027 | `scripts/merge_claude_md.py` 新規作成と `scripts/smoke.sh` へのケース追加 | |
+| T-0029 | done | 1 | T-0028 | `scripts/install.sh` への組み込み（`--no-claude-md`）と関連ドキュメント更新 | |
+| T-0036 | done | 1 | - | 配布ファイルのハッシュ記録（マニフェスト書き込み）を install.sh に追加する | |
+| T-0037 | done | 1 | T-0036 | `--update` フラグを実装する（未編集は上書き・編集済みはスキップして報告） | |
+| T-0038 | done | 1 | - | `scripts/merge_settings_json.py` を新規作成する | |
+| T-0039 | done | 1 | T-0037,T-0038 | `scripts/install.sh` に `merge_settings_json.py` を組み込み、マニフェスト対象を確定する | |
+| T-0040 | done | 1 | T-0039 | ドキュメント更新と全体の通し確認 | |
+| T-0041 | done | 1 | - | `docs/vault-spec.md` の1・3・4節を書き直し、冒頭に未適用注記を置く | |
+| T-0042 | done | 1 | T-0041 | `docs/vault-spec.md` の2・5・6・7節（状態／タスク票／verdict／ログ）を書き直す | |
+| T-0043 | done | 1 | T-0042 | `docs/vault-spec.md` の8・9・10節（粒度／Stopフック／plan_guardフック）を書き直す | |
+| T-0044 | done | 1 | T-0043 | `docs/vault-spec.md` の11・12・13節を書き直し、全体の整合を確認する | |
+| T-0045 | done | 1 | T-0041 | `vault/templates/plan.md` を新形式に更新する | |
+| T-0046 | done | 1 | - | `todo_guard.py` を `plan_guard.py` に作り替え、計画票のタスク表を検査する | |
+| T-0047 | done | 1 | T-0046 | `stop_gate.py` の読む先を計画票に変える（判定ロジックは保つ） | |
+| T-0048 | done | 1 | T-0047 | `agent_write_guard.py` の doing/review 判定を計画票ベースに変える | |
+| T-0049 | done | 1 | - | `/plan` にブランチ作成を追加し `planner.md` を新ID方式に直す | |
+| T-0050 | done | 1 | - | `run-queue` を `run` に改名し `verifier.md` を新方式に直す | |
+| T-0051 | done | 1 | T-0048,T-0049,T-0050 | 標準ルール4本の `vault/todo.md` 言及を新方式に直す | |
+
+## 計画
+| id | status | title |
+|---|---|---|
+| P-001 | approved | 初期構築 |
+| P-002 | approved | verdict.json に検証の根拠を残す |
+| P-003 | approved | planner が満たせない受け入れ基準を書かないようにする |
+| P-004 | approved | stop_gate で verdict の形式を検証する |
+| P-005 | approved | todo.md の整合性チェックをフック化する |
+| P-006 | approved | vault/rules/ の仕様と置き場を決める |
+| P-007 | approved | ルール解決スクリプト scripts/rules.sh を作る |
+| P-008 | approved | run-queue にルール読み込みを追加する |
+| P-009 | approved | verifier にルール読み込みを追加する |
+| P-010 | approved | planner にルール読み込みを追加する |
+| P-011 | approved | 改ざん防止フック（agent_write_guard.py 拡張） |
+| P-012 | approved | install.sh と README（拡張ポイントを配る・説明する） |
+| P-013 | approved | ルール拡張ポイントの通し検証 |
+| P-014 | approved | /design スキルの追加と planner のタスク数上限 |
+| P-015 | approved | planner / creator / verifier の責務を標準ルール化する |
+| P-016 | approved | インストールガイドの改善 |
+| P-017 | approved | CLAUDE.md のマージインストール（外出し + merge_claude_md.py） |
+| P-019 | approved | インストール先への更新経路を作る（ハッシュ照合と settings マージャ） |
+| P-020 | approved | 新しい状態モデルの仕様とテンプレートを固める（D-001 フェーズ2） |
+| P-021 | approved | フックとスキルを計画票ベースに作り替える（D-001 フェーズ3） |

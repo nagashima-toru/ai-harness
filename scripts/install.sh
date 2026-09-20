@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>
-# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空の todo.md・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh、scripts/merge_claude_md.py、scripts/merge_settings_json.py
-# 既存ファイルは上書きしない（vault/todo.md が既にあれば残す）。
+# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh、scripts/merge_claude_md.py、scripts/merge_settings_json.py
+# 状態は vault/plans/<計画ID>.md が持つ（キューは無い）。既存ファイルは上書きしない。
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
 # permissions.deny の不足分だけを足す（インストール先が足した permissions.allow は消さない）。
 # 複製の最後に .claude/harness-manifest.json を書く。記録するのは「この install で配った内容」＝
@@ -58,7 +58,8 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
              scripts/merge_claude_md.py scripts/merge_settings_json.py \
              scripts/install.sh docs/vault-spec.md \
              vault/rules/README.md vault/rules/common/roles.md \
-             vault/rules/creator/creator.md vault/rules/verifier/verifier.md \
+             vault/rules/common/git.md vault/rules/creator/creator.md \
+             vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md \
              vault/rules/planner/planner.md; do
       [ -f "$p" ] && echo "$p"
     done
@@ -117,44 +118,21 @@ for f in $(cd "$SRC/.claude" && find . -type f ! -name 'settings.local.json' ! -
 done
 chmod +x "$DST"/.claude/hooks/*.py
 
-# vault/（状態ファイルは初期状態で複製する）
-for d in tasks plans verdicts log templates archive; do mkdir -p "$DST/vault/$d"; done
+# vault/（空ディレクトリ構成のみ作る。計画票は /plan が作るので配らない）
+for d in plans tasks verdicts log designs archive templates rules; do mkdir -p "$DST/vault/$d"; done
 # vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）と、役割定義の標準ルール4本を複製する。
 # ドメイン固有のルール（コーディングルール・方式設計・テスト観点など）は複製・上書きの対象にしない。
 # 標準ルールも copy_if_absent なので、インストール先で編集したものは上書きしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep rules/common/roles.md rules/creator/creator.md rules/verifier/verifier.md rules/planner/planner.md; do
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep rules/common/roles.md rules/common/git.md rules/creator/creator.md rules/creator/git-workflow.md rules/verifier/verifier.md rules/planner/planner.md; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
-if [ ! -e "$DST/vault/todo.md" ]; then
-  cat > "$DST/vault/todo.md" <<'EOT'
-# キュー
-
-## ルール
-- todo の一番上から1件だけ doing にする。doing は常に1件
-- done にできるのは verdicts/<id>.json が PASS の時だけ
-- 迷ったら blocked にして question を書く。勝手に決めない
-- 状態を変えたら log/queue.md に1行追記する
-
-## タスク
-| id | status | attempt | after | title | question |
-|---|---|---|---|---|---|
-
-## 計画
-| id | status | title |
-|---|---|---|
-EOT
-  echo "copy  vault/todo.md"
-fi
-if [ ! -e "$DST/vault/log/queue.md" ]; then
-  printf '# キューログ（追記専用）\n\n形式：`- YYYY-MM-DD HH:MM T-0001 doing→review attempt=1 補足`\n\n' > "$DST/vault/log/queue.md"
-  echo "copy  vault/log/queue.md"
-fi
 
 # scripts/smoke.sh、scripts/rules.sh、docs/vault-spec.md（エージェントが参照する正本）
 copy_if_absent "$SRC/scripts/smoke.sh" "$DST/scripts/smoke.sh"
 copy_if_absent "$SRC/scripts/rules.sh" "$DST/scripts/rules.sh"
 copy_if_absent "$SRC/scripts/merge_claude_md.py" "$DST/scripts/merge_claude_md.py"
 copy_if_absent "$SRC/scripts/merge_settings_json.py" "$DST/scripts/merge_settings_json.py"
+copy_if_absent "$SRC/scripts/install.sh" "$DST/scripts/install.sh"
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
 
 # .claude/settings.json（専用マージャ。--update の有無や既存の有無にかかわらず常に呼ぶ）

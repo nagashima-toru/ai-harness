@@ -63,6 +63,7 @@
       "Bash(git push -f*)",
       "Bash(git push * --force*)",
       "Bash(git push * -f*)",
+      "Bash(git push --force-with-lease*)",
       "Bash(git reset --hard*)",
       "Bash(git clean *)",
       "Bash(git branch -D *)",
@@ -100,7 +101,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/todo_guard.py\"",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/plan_guard.py\"",
             "timeout": 30
           }
         ]

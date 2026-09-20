@@ -1,0 +1,34 @@
+{
+  "task": "T-0046",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 11:53",
+  "criteria": [
+    {
+      "text": "`.claude/hooks/plan_guard.py` が存在し、`.claude/hooks/todo_guard.py` が存在しない。確認：`test -f .claude/hooks/plan_guard.py && test ! -e .claude/hooks/todo_guard.py && echo ok`",
+      "ok": true,
+      "note": "実行コマンド: `test -f .claude/hooks/plan_guard.py && test ! -e .claude/hooks/todo_guard.py && echo ok` / 出力: ok"
+    },
+    {
+      "text": "`.claude/settings.json` の PostToolUse フックが `plan_guard.py` を指す。確認：`grep -c plan_guard.py .claude/settings.json` が1、`grep -c todo_guard.py .claude/settings.json` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c plan_guard.py .claude/settings.json` / 出力: 1。`grep -c todo_guard.py .claude/settings.json` / 出力: 0"
+    },
+    {
+      "text": "approved な計画票が0件なら何もしない（許可）、2件以上あるならブロックする（1ブランチ1計画の不変条件）。確認：`scripts/smoke.sh` に追加した該当ケース（allow 1件・block 1件）が通る",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh > vault/verdicts/_tmp_T-0046_smoke.log 2>&1` の後、`== plan_guard.py ==` セクションを確認 / 出力: `ok   (f) approved な計画票が0件 → 許可` と `ok   (f) approved な計画票が2件以上 → ブロック` の2行がいずれも ok"
+    },
+    {
+      "text": "単一の approved 計画票のタスク表に対し、doing2件以上／blocked で question 空／status が5値以外／id 重複／データ行の列数が6でない、の5パターンがそれぞれブロックし、正常な表とデータ行が無い表は許可される。確認：`scripts/smoke.sh` の `== plan_guard.py ==` セクションに該当ケースがあり通る",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` の出力から `== plan_guard.py ==` セクションを抽出 / 出力: (a)doing2件→ok, (b)blocked質問空→ok, (c)status5値以外→ok, (d)id重複→ok, (e)列数6でない→ok, 正常な計画票→許可(ok), データ行が無い→許可(ok)、計10行すべて ok"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh > vault/verdicts/_tmp_T-0046_smoke.log 2>&1; tail -5` / 出力: `smoke: pass=91 fail=0`"
+    }
+  ],
+  "reasons": []
+}

@@ -1,0 +1,39 @@
+{
+  "task": "T-0044",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 05:07",
+  "criteria": [
+    {
+      "text": "`docs/vault-spec.md` 全体から `vault/todo.md` への言及が消えている。確認：`grep -c 'vault/todo.md' docs/vault-spec.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/todo.md' docs/vault-spec.md` / 出力: 0"
+    },
+    {
+      "text": "agent_write_guard の節が、`vault/todo.md` の表解析ではなく計画票のタスク表の解析に言及している。確認：`grep -F '計画票のタスク表を簡易的に解析' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F '計画票のタスク表を簡易的に解析' docs/vault-spec.md` / 出力: 該当行1行がヒット（agent_write_guard節の本文中に「自分のブランチの計画票のタスク表を簡易的に解析し」と記載）"
+    },
+    {
+      "text": "agent_write_guard の節が `.claude/hooks/todo_guard.py` ではなく `.claude/hooks/plan_guard.py` の `raw_rows` を参照している。確認：`grep -F 'plan_guard.py の raw_rows' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'plan_guard.py の raw_rows' docs/vault-spec.md` / 出力: 該当行1行がヒット（「plan_guard.py の raw_rows と同じ規則をこのファイル内にコピーして使う」）。todo_guard.py への言及は同節に無い"
+    },
+    {
+      "text": "`HARNESS_ALLOW_RULES_WRITE` の使用例が計画スコープの ID 形式（`T-01`）になっている。確認：`grep -F 'HARNESS_ALLOW_RULES_WRITE=T-01' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'HARNESS_ALLOW_RULES_WRITE=T-01' docs/vault-spec.md` / 出力: `HARNESS_ALLOW_RULES_WRITE=T-01 claude` の1行がヒット"
+    },
+    {
+      "text": "見出し番号（`## <数字>. `形式）が1から13までの連番で、重複・欠番が無い。確認：`grep -oE '^## [0-9]+\\.' docs/vault-spec.md | tr -d '#. '` の出力が `1` から `13` までの13行",
+      "ok": true,
+      "note": "実行コマンド: `grep -oE '^## [0-9]+\\.' docs/vault-spec.md | tr -d '#. '` / 出力: 1,2,3,4,5,6,7,8,9,10,11,12,13 の13行（重複・欠番なし）"
+    },
+    {
+      "text": "T-0041 が冒頭に置いた未適用注記が残っている（このタスクでは消さない）。確認：`grep -F 'この仕様はフェーズ3〜4の実装が完了するまで未適用' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'この仕様はフェーズ3〜4の実装が完了するまで未適用' docs/vault-spec.md` / 出力: `> この仕様はフェーズ3〜4の実装が完了するまで未適用。` の1行がヒット"
+    }
+  ],
+  "reasons": []
+}

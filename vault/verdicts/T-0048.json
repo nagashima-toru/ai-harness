@@ -1,0 +1,34 @@
+{
+  "task": "T-0048",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 13:09",
+  "criteria": [
+    {
+      "text": "`active_doing_review_task_ids` が `vault/plans/` の approved な計画票のタスク表を読む形に変わり、`vault/todo.md` への参照が消える。確認：`grep -c 'vault/todo.md' .claude/hooks/agent_write_guard.py` が0、`grep -c 'vault/plans' .claude/hooks/agent_write_guard.py` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/todo.md' .claude/hooks/agent_write_guard.py` / 出力: 0。`grep -c 'vault/plans' .claude/hooks/agent_write_guard.py` / 出力: 3（1以上）"
+    },
+    {
+      "text": "approved な計画票が0件なら改ざん防止判定は素通りする（許可）。2件以上なら全部の計画票から doing/review の id を集めて判定する（保守的に倒す）。確認：scripts/smoke.sh の新規ケース（0件→allow、2件以上でどちらかに doing がある状態で vault/rules/ へ書き込み→deny）が通る",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | awk '/== agent_write_guard.py ==/{flag=1} flag{print} ...'` / 出力: `ok (g) approved な計画票が0件・vault/rules/ へ Write → 許可` と `ok (h) approved な計画票が2件以上・どちらかに doing あり・vault/rules/ へ Write → 拒否` の2行がいずれも ok で存在"
+    },
+    {
+      "text": "既存の == agent_write_guard.py == の全ケース（ALLOWED によるパス制限4件、doing 中の vault/rules/ 拒否・doing 無しでの許可・verifier の verdicts/ 書き込み許可の3件、HARNESS_ALLOW_RULES_WRITE の一致／不一致／非ID値の3件）が make_plan_task ベースで全件通る。確認：bash scripts/smoke.sh 2>&1 の == agent_write_guard.py == セクションに NG が無い",
+      "ok": true,
+      "note": "`bash scripts/smoke.sh 2>&1` はリダイレクトが agent_write_guard により拒否されるため、代替として `bash scripts/smoke.sh | awk '...'`（パイプのみ、リダイレクト無し）で同セクションを抽出して確認。出力：7件の基本ケース＋(a)〜(h)の8件（doing拒否/無し許可/verifier許可/HARNESS一致/不一致/非ID値/approved0件/approved2件以上）計15行すべて `ok`、`NG` は0件"
+    },
+    {
+      "text": "scripts/smoke.sh から未使用になった make_todo ヘルパー定義が削除されている。確認：grep -c '^make_todo()' scripts/smoke.sh が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^make_todo()' scripts/smoke.sh` / 出力: 0"
+    },
+    {
+      "text": "bash scripts/smoke.sh | tail -1 が fail=0 を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=95 fail=0`"
+    }
+  ],
+  "reasons": []
+}

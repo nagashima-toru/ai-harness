@@ -1,0 +1,15 @@
+{
+  "task": "P-20260920-git-workflow/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 18:01",
+  "criteria": [
+    {"text": "見出しが「目的 / ルール / 確認方法」の3つで、100行以内である。確認：`grep -c '^## ' vault/rules/creator/git-workflow.md` が3、`wc -l < vault/rules/creator/git-workflow.md` が100以下", "ok": true, "note": "実行コマンド: `grep -c '^## ' vault/rules/creator/git-workflow.md` / 出力: 3。実行コマンド: `wc -l < vault/rules/creator/git-workflow.md` / 出力: 14（100以下）。見出しは目的・ルール・確認方法の3つで一致"},
+    {"text": "ブランチを切るタイミング（`/plan` 時に既に切られており、作成エージェントは自分では切らない）の記述がある。確認：`grep -c '/plan' vault/rules/creator/git-workflow.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '/plan' vault/rules/creator/git-workflow.md` / 出力: 1（1以上を満たす）"},
+    {"text": "コミットのタイミング（作業ステップごと）の記述がある。確認：`grep -c '作業ステップ' vault/rules/creator/git-workflow.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '作業ステップ' vault/rules/creator/git-workflow.md` / 出力: 2（1以上を満たす）"},
+    {"text": "PR を作るタイミング（全タスクが `done` になった時）の記述がある。確認：`grep -c 'gh pr create' vault/rules/creator/git-workflow.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'gh pr create' vault/rules/creator/git-workflow.md` / 出力: 1（1以上を満たす）"},
+    {"text": "例外時（コンフリクトなど）は自己判断せず `blocked` にして止まる旨の記述がある。確認：`grep -c 'blocked' vault/rules/creator/git-workflow.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'blocked' vault/rules/creator/git-workflow.md` / 出力: 1（1以上を満たす）"},
+    {"text": "`bash scripts/rules.sh creator` の出力に `vault/rules/creator/git-workflow.md` が含まれる", "ok": true, "note": "実行コマンド: `bash scripts/rules.sh creator` / 出力: vault/rules/common/git.md, vault/rules/common/roles.md, vault/rules/creator/creator.md, vault/rules/creator/git-workflow.md（対象ファイルを含む）"}
+  ],
+  "reasons": []
+}

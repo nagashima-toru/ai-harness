@@ -1,0 +1,29 @@
+{
+  "task": "P-20260920-git-workflow/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 18:08",
+  "criteria": [
+    {
+      "text": "現在ブランチが `main` の時、`agent_type` を問わず Bash の `git commit` を deny する。確認：新規 smoke ケース「main ブランチで git commit → deny」が `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | sed -n '/== agent_write_guard.py ==/,/== plan_guard.py ==/p'` / 出力: `ok   (i) main で git commit → 拒否`。実装（.claude/hooks/agent_write_guard.py:184-192）は agent_type を問わず main() 冒頭で判定しており、role 判定（204行目以降）より前に実行される"
+    },
+    {
+      "text": "`main` 以外のブランチでは同じ `git commit` コマンドを（この判定では）拒否しない。確認：新規 smoke ケース「main 以外のブランチで git commit → allow」が `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | sed -n '/== agent_write_guard.py ==/,/== plan_guard.py ==/p'` / 出力: `ok   (j) work ブランチで git commit → 許可`"
+    },
+    {
+      "text": "既存の `agent_write_guard.py` の smoke ケース（role別許可・doing/review 中の vault/rules/ 改ざん防止）がすべて引き続き通る",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | sed -n '/== agent_write_guard.py ==/,/== plan_guard.py ==/p'` / 出力: 既存ケース（role別許可7件、(a)〜(h)のdoing/review・改ざん防止ケース）を含む全17件がすべて `ok`、`NG` は無し"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=97 fail=0`"
+    }
+  ],
+  "reasons": []
+}

@@ -1,0 +1,34 @@
+{
+  "task": "T-0050",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 14:06",
+  "criteria": [
+    {
+      "text": "`.claude/skills/run/SKILL.md` が存在し、`.claude/skills/run-queue/` が存在しない。確認：`test -f .claude/skills/run/SKILL.md && test ! -e .claude/skills/run-queue && echo ok`",
+      "ok": true,
+      "note": "実行コマンド: `test -f .claude/skills/run/SKILL.md && test ! -e .claude/skills/run-queue && echo ok` / 出力: ok"
+    },
+    {
+      "text": "`.claude/skills/run/SKILL.md` に `vault/todo.md` への言及が無い。確認：`grep -c 'todo.md' .claude/skills/run/SKILL.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'todo.md' .claude/skills/run/SKILL.md` / 出力: 0"
+    },
+    {
+      "text": "手順に、approved な計画票を `vault/plans/` から見つける・タスクを計画票のタスク表から取る・状態変更を `vault/log/<計画ID>.md` に追記する・全タスクが done になったら計画票の `status` を `done` にし `gh pr create` する（`gh pr merge` はしない）、の4点が書かれている。確認：`grep -c 'vault/log/' .claude/skills/run/SKILL.md` と `grep -c 'gh pr create' .claude/skills/run/SKILL.md` がそれぞれ1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/log/' .claude/skills/run/SKILL.md` / 出力: 5、`grep -c 'gh pr create' .claude/skills/run/SKILL.md` / 出力: 1。SKILL.md を Read で確認: 手順1で `vault/plans/*.md` を走査し approved を探す旨、手順2でタスク表からタスクを取る旨、手順2/4/6でvault/log/<計画ID>.md への追記、手順7で全タスクdone後にstatusをdoneにしgh pr create（gh pr mergeはしない）を実行する旨が明記されている"
+    },
+    {
+      "text": "`.claude/agents/verifier.md` の読み先・出力先が、計画票のタスク表（`attempt` の取得元）と `vault/verdicts/<計画ID>/<タスクID>.json`、`task` フィールドが `<計画ID>/<タスクID>` 形式になるよう更新されている。確認：`grep -c 'todo.md' .claude/agents/verifier.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'todo.md' .claude/agents/verifier.md` / 出力: 0。verifier.md を Read で確認: 「読むもの」1番目が「計画票（vault/plans/<計画ID>.md）のタスク表の該当行（attemptの値を取る）」、出力先が `vault/verdicts/<計画ID>/<id>.json`、verdict例の task が `\"P-20260919-git-ops/T-01\"` 形式になっている"
+    },
+    {
+      "text": "`.claude/skills/run/SKILL.md` の frontmatter が `name: run` になっている。確認：`grep -c '^name: run$' .claude/skills/run/SKILL.md` が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^name: run$' .claude/skills/run/SKILL.md` / 出力: 1"
+    }
+  ],
+  "reasons": []
+}

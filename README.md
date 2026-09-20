@@ -26,14 +26,15 @@ bash scripts/smoke.sh        # フックの動作検証
 | コマンド | 何をするか |
 |---|---|
 | `/design <ゴール>` | 大きなゴールを調査し、人に質問し、決定事項を固めた設計文書 `vault/designs/D-xxx.md` を作る |
-| `/plan <ゴール>` | planner がゴールをタスクに分割して draft を作る。`/plan approve P-001` で承認し todo.md に登録 |
-| `/run-queue` | todo.md の先頭タスクを1件処理する（作成 → verifier → done / 再試行 / blocked） |
-| `claude -p "/run-queue"` | 同じことを無人（非対話）で行う |
+| `/plan <ゴール>` | 計画 ID を決めてブランチ（`work/<計画ID>`）を切り、planner がタスクに分割して draft を作る。`/plan approve <計画ID>` で承認 |
+| `/run` | 自分のブランチの承認済み計画を1タスク処理する（作成 → verifier → done / 再試行 / blocked） |
+| `claude -p "/run"` | 同じことを無人（非対話）で行う |
 
 `/design` と `/plan` の使い分け：受け入れ基準が7行に収まらない・成果物が複数ファイルにまたがる・人に聞くことがある、のいずれかに当てはまる大きなゴールは `/design` から始める。設計文書のフェーズを1つずつ `/plan` に渡す。小さい要求は `/plan` に直行する。
 
 - 人が日々やることは `docs/runbook.md`、Vault の仕様は `docs/vault-spec.md` を参照
-- 無人で回す場合は `claude -p "/run-queue"` を cron や CI から定期実行する
+- 無人で回す場合は `claude -p "/run"` を cron や CI から定期実行する
+- 1セッション=1計画=1ブランチ。複数の計画を並行して進めたい時は、計画ごとに別のセッション（別のブランチ／worktree）を使う
 
 ## 拡張ポイント（ルール）
 「ルール」を作成エージェント・verifier・planner に渡せる。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`vault/rules/common/roles.md`、`vault/rules/creator/creator.md`、`vault/rules/verifier/verifier.md`、`vault/rules/planner/planner.md`）。コーディングルール・開発標準・方式設計・テスト観点などドメイン固有のルールはインストール先で書く。
@@ -53,25 +54,28 @@ bash scripts/smoke.sh        # フックの動作検証
 ```
  人                      作成エージェント（メイン）              verifier（別コンテキスト）
  │ /plan <ゴール>          │                                       │
- ├──────────────────────▶ planner が P-xxx / T-xxxx を draft      │
- │ /plan approve P-xxx     │                                       │
- ├──────────────────────▶ todo.md に登録（status=todo）            │
- │ /run-queue              │                                       │
+ ├──────────────────────▶ ブランチ work/<計画ID> を作成             │
+ │                        │ planner が計画票 <計画ID>.md / タスク票を draft │
+ │ /plan approve <計画ID>  │                                       │
+ ├──────────────────────▶ 計画票の status を approved に            │
+ │ /run                    │                                       │
  ├──────────────────────▶ todo→doing → 成果物を作る → review ──▶ 受け入れ基準を照合
- │                        │                                       │ verdicts/T-xxxx.json
+ │                        │                                       │ verdicts/<計画ID>/<id>.json
  │                        │ ◀─────────────────────────────────────┘
  │                        │ PASS → done / FAIL → doing(attempt+1) / 上限 → blocked
+ │                        │ 全タスク done → status を done にし gh pr create
  │                        ▼
  │               Stop フック（stop_gate.py）
- │               todo.md と verdict を照合し、整合しない終了をブロック
- │ blocked に答えて todo に戻す
- └──────────────────────▶ vault/todo.md（状態の正本）  vault/log/queue.md（追記ログ）
+ │               計画票のタスク表と verdict を照合し、整合しない終了をブロック
+ │ blocked に答えて戻す・PR をマージ
+ └──────────────────────▶ vault/plans/<計画ID>.md（状態の正本）  vault/log/<計画ID>.md（追記ログ）
 ```
+PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `gh pr create` までしか行わない）。
 
 ## 構成
 ```
-.claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（design, plan, run-queue）
-vault/     todo.md（正本）、tasks/、plans/、designs/（設計文書）、verdicts/、log/queue.md、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
+.claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（design, plan, run）
+vault/     plans/（計画票=状態の正本）、tasks/、designs/（設計文書）、verdicts/、log/、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
 docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、decisions.md
 scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）、rules.sh（ルール解決）
 ```

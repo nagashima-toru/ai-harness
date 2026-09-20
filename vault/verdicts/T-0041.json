@@ -1,0 +1,15 @@
+{
+  "task": "T-0041",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-20 05:00",
+  "criteria": [
+    {"text": "ディレクトリの節（新「## 1. ディレクトリ」）の表に `vault/log/<計画ID>.md` の行がある。確認： `grep -F 'vault/log/<計画ID>.md' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F \"vault/log/<計画ID>.md\" docs/vault-spec.md` は agent_write_guard に `<` をリダイレクトと誤検知されブロック（権限拒否）。代替として docs/vault-spec.md を Read で確認し、16行目に `| \\`vault/log/<計画ID>.md\\` | その計画の追記専用ログ |` が1行あった"},
+    {"text": "ID の節（新「## 3. ID・ファイル名・ブランチ名」）に `P-YYYYMMDD-<slug>` と `work/p-` を含むブランチ名の例がある。確認： `grep -c 'P-YYYYMMDD' docs/vault-spec.md` と `grep -c 'work/p-' docs/vault-spec.md` がそれぞれ1以上", "ok": true, "note": "実行コマンド: `grep -c 'P-YYYYMMDD' docs/vault-spec.md; grep -c 'work/p-' docs/vault-spec.md` / 出力: 1, 1（いずれも1以上）"},
+    {"text": "旧「## 4. todo.md の形式」節が消え、その内容（タスク表の列定義）が計画票の節（新「## 4. 計画票の形式」）に統合されている。確認： `grep -F '| id | status | attempt | after | title | question |' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '| id | status | attempt | after | title | question |' docs/vault-spec.md` / 出力: `| id | status | attempt | after | title | question |` が1行。Read でも「## 4. 計画票の形式」節にこの表があり、「## 4. todo.md の形式」という見出しは存在しないことを確認"},
+    {"text": "計画票の節に frontmatter の `status`（`draft` / `approved` / `done`）の3値の意味（`done` は全タスクが done で PR 作成済み。main へのマージは含まない）が書かれている。確認： `grep -F 'PR 作成済み' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F 'PR 作成済み' docs/vault-spec.md` / 出力: `\\`done\\` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは \\`gh pr create\\` までで \\`gh pr merge\\` は実行しない。` が1行。同節に draft/approved/done の3値表もあることを Read で確認"},
+    {"text": "ディレクトリまたは ID の節に「1セッション = 1計画 = 1ブランチ」の原則が明記されている。確認： `grep -F '1セッション' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F '1セッション' docs/vault-spec.md` / 出力: 「計画をまたぐキューは持たない。**1セッション = 1計画 = 1ブランチ**で、...」が1行（「## 1. ディレクトリ」節内）"},
+    {"text": "文書の冒頭（最初の `## ` 見出しより前）に、この仕様がまだ未適用である旨の注記がある。確認： `grep -F 'この仕様はフェーズ3〜4の実装が完了するまで未適用' docs/vault-spec.md` の出力が1行以上", "ok": true, "note": "実行コマンド: `grep -F 'この仕様はフェーズ3〜4の実装が完了するまで未適用' docs/vault-spec.md` / 出力: `> この仕様はフェーズ3〜4の実装が完了するまで未適用。` が1行。Read でも最初の `## ` 見出し（3行目「## 1. ディレクトリ」ではなく実際は9行目）より前の3〜5行目に引用ブロックとして配置されていることを確認"}
+  ],
+  "reasons": []
+}

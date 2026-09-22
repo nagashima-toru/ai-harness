@@ -39,7 +39,7 @@ verifier が PASS にした実例（`vault/verdicts/P-20260920-git-workflow/T-01
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | vault/rules/verifier/verifier.md に2つの新責務を追加する | |
+| T-01 | review | 1 | - | vault/rules/verifier/verifier.md に2つの新責務を追加する | |
 | T-02 | todo | 0 | T-01 | .claude/agents/verifier.md の手順に同じ2責務を反映する | |
 | T-03 | todo | 0 | - | docs/vault-spec.md の verdict 節に reasons の意味論拡張を明記する | |
 | T-04 | todo | 0 | - | docs/decisions.md に責務拡張の判断を1行追記する | |

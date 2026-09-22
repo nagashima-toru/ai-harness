@@ -1,0 +1,34 @@
+{
+  "task": "P-20260920-verifier-scope/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-22 15:15",
+  "criteria": [
+    {
+      "text": "変更ファイル一覧の取得が `git diff --name-only main...HEAD` になっている。確認：`grep -cF 'git diff --name-only main...HEAD' vault/rules/verifier/verifier.md` が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF 'git diff --name-only main...HEAD' vault/rules/verifier/verifier.md` / 出力: 1。Read で該当行（18行目）の文脈も確認し、宣言外ファイル検査のブレットの取得方法として組み込まれていることを確認した。目的（コミット済み差分から宣言外ファイルを検出できるようにする）に直接対応しており、基準は緩くない。"
+    },
+    {
+      "text": "`git status --porcelain` を変更ファイル一覧の取得手段として指示する記述が残っていない。確認：`grep -c 'git status --porcelain' vault/rules/verifier/verifier.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'git status --porcelain' vault/rules/verifier/verifier.md` / 出力: 0"
+    },
+    {
+      "text": "除外リスト4項目が改訂後も残っている。確認：`grep -cF '計画票（`vault/plans/<計画ID>.md`）' vault/rules/verifier/verifier.md`、`grep -cF 'タスク票の「進捗」' vault/rules/verifier/verifier.md`、`grep -cF '`vault/log/<計画ID>.md`' vault/rules/verifier/verifier.md`、`grep -cF '`vault/verdicts/` 配下' vault/rules/verifier/verifier.md` がそれぞれ1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF 'タスク票の「進捗」' vault/rules/verifier/verifier.md` / 出力: 2、`grep -cF '`vault/verdicts/` 配下' vault/rules/verifier/verifier.md` / 出力: 1。残り2件（`計画票（`vault/plans/<計画ID>.md`）` と `` `vault/log/<計画ID>.md` ``）は同じ grep コマンドが agent_write_guard フックに `[agent_write_guard] doing/review 中は vault/rules/ を編集できません` として拒否され実行不可だった（コマンド中の `<計画ID>.md` の `>` 直後に非空白文字が続く箇所がリダイレクトと誤検知されたため）。代替として Read ツールでファイル全文（18行目）を確認し、`計画票（`vault/plans/<計画ID>.md`）・タスク票の「進捗」・`vault/log/<計画ID>.md`・`vault/verdicts/` 配下。` という4項目が決定済みの文面どおり1回ずつそのまま含まれていることを目視確認した。"
+    },
+    {
+      "text": "既存の「やらないこと」節のブレット数が7のまま変わっていない。確認：`sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` が7",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` / 出力: 7"
+    },
+    {
+      "text": "ファイルが100行以内に収まっている。確認：`wc -l < vault/rules/verifier/verifier.md` が100以下",
+      "ok": true,
+      "note": "実行コマンド: `wc -l < vault/rules/verifier/verifier.md` / 出力: 35（100以下）"
+    }
+  ],
+  "reasons": []
+}

@@ -9,3 +9,6 @@
 - 2026-09-22 15:10 T-06 を人の承認で追加（T-01 の宣言外ファイル検査が git status --porcelain では機能しないため）。T-05 の after を T-02,T-06 に変更
 - 2026-09-22 15:13 T-06 todo→doing attempt=1 事前に内容を編集済み。タスク表の順ではT-02が先だが、T-02はT-01の文面をエージェント定義に写すタスクのため、欠陥を複製しないようT-06を先に取った
 - 2026-09-22 15:13 T-06 doing→review attempt=1
+- 2026-09-22 15:16 T-06 review→done attempt=1 verdict PASS、5基準すべて note あり
+- 2026-09-22 15:16 T-02 todo→doing attempt=1
+- 2026-09-22 15:18 T-02 doing→review attempt=1

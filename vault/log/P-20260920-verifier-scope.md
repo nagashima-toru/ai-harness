@@ -31,3 +31,4 @@
 - 2026-09-23 06:03 T-05 todo→doing attempt=1
 - 2026-09-23 06:03 T-05 doing→review attempt=1
 - 2026-09-23 06:06 T-05 review→done attempt=1 verdict PASS、6基準すべて note あり。T-05自身の検証でも基準妥当性判定が3件働いた
+- 2026-09-23 06:06 P-20260920-verifier-scope approved→done（全8タスクdone）

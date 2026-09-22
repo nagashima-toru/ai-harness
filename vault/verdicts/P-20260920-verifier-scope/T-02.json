@@ -1,0 +1,34 @@
+{
+  "task": "P-20260920-verifier-scope/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-22 15:19",
+  "criteria": [
+    {
+      "text": "手順に基準妥当性判定のステップが追加されている。確認：`grep -F '目的」の達成を意味するかを検討する' .claude/agents/verifier.md` の出力が1行",
+      "ok": true,
+      "note": "実行コマンド: `grep -F '目的」の達成を意味するかを検討する' .claude/agents/verifier.md` / 出力: 手順4「各受け入れ基準について、確認コマンドが通ることがタスク票の「目的」の達成を意味するかを検討する。…」の1行のみ。`grep -cF` でも件数=1を確認。"
+    },
+    {
+      "text": "手順に宣言外ファイル検査と除外リスト4項目のステップが追加されている。確認：`grep -F '計画票（`vault/plans/<計画ID>.md`）' .claude/agents/verifier.md`、`grep -F 'タスク票の「進捗」' .claude/agents/verifier.md`、`grep -F '`vault/log/<計画ID>.md`' .claude/agents/verifier.md`、`grep -F '`vault/verdicts/` 配下' .claude/agents/verifier.md` がそれぞれ1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -F 'タスク票の「進捗」' .claude/agents/verifier.md`（2行ヒット：11行目・31行目）、`grep -F '`vault/verdicts/` 配下' .claude/agents/verifier.md`（1行ヒット：31行目）はそのまま実行できた。残り2件（`計画票（`vault/plans/<計画ID>.md`）` と `` `vault/log/<計画ID>.md` ``）は agent_write_guard により直接実行を拒否されたため、代替として `grep -n '計画票' .claude/agents/verifier.md` を実行し、出力の14行目・31行目にそれぞれの文字列がそのまま含まれることを確認した（14行目に「計画票（`vault/plans/<計画ID>.md`）」、31行目に「`vault/log/<計画ID>.md`」を含む）。4項目とも1行以上該当。"
+    },
+    {
+      "text": "追加した2ステップはどちらも `ok: false` にはしないと明記されている。確認：`grep -F '`ok: false` にはしない' .claude/agents/verifier.md | wc -l` が2",
+      "ok": true,
+      "note": "実行コマンド: `grep -F '`ok: false` にはしない' .claude/agents/verifier.md | wc -l` / 出力: 2（手順4・手順9のそれぞれに1回ずつ出現）"
+    },
+    {
+      "text": "既存の「## 禁止」節のブレット数が4のまま変わっていない。確認：`sed -n '/^## 禁止/,/^## 出力/p' .claude/agents/verifier.md | grep -c '^- '` が4",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 禁止/,/^## 出力/p' .claude/agents/verifier.md | grep -c '^- '` / 出力: 4"
+    },
+    {
+      "text": "frontmatter の `model: sonnet` が変更されていない。確認：`grep -c '^model: sonnet$' .claude/agents/verifier.md` が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^model: sonnet$' .claude/agents/verifier.md` / 出力: 1"
+    }
+  ],
+  "reasons": []
+}

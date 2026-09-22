@@ -1,0 +1,36 @@
+{
+  "task": "P-20260920-verifier-scope/T-07",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-22 20:24",
+  "criteria": [
+    {
+      "text": "`vault/rules/creator/git-workflow.md` に、タスクを `doing` にした直後の時点のコミットハッシュをタスク票の「進捗」に `起点コミット: <短縮ハッシュ>` の形で記録する手順がある。確認：`grep -cF '起点コミット' vault/rules/creator/git-workflow.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '起点コミット' vault/rules/creator/git-workflow.md` / 出力: 1。該当ブレットを Read で確認：「タスクを `doing` にしたら、その時点の `git rev-parse --short HEAD` を取り、タスク票の『進捗』の先頭に『起点コミット: <短縮ハッシュ>』の形で1行記録する」が「ルール」節末尾に追加されている。git show c29f100 の diff でもこの1行のみが追加されていることを確認した。"
+    },
+    {
+      "text": "`vault/rules/verifier/verifier.md` の宣言外ファイル検査が、タスク票の「進捗」の起点コミットを使う範囲指定になっている。確認：`grep -cF '起点コミット' vault/rules/verifier/verifier.md` が1以上、かつ `grep -c 'main\\.\\.\\.HEAD' vault/rules/verifier/verifier.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '起点コミット' vault/rules/verifier/verifier.md` / 出力: 1。実行コマンド: `grep -c 'main\\.\\.\\.HEAD' vault/rules/verifier/verifier.md` / 出力: 0。Read で該当ブレットを確認：`git diff --name-only <起点コミット>..HEAD` を使う記述に置き換わっており、`main...HEAD` の記述は消えている。"
+    },
+    {
+      "text": "起点コミットが「進捗」に無い場合の扱い（記録が無ければこの検査は行わず、その旨を `note` に書く）が `vault/rules/verifier/verifier.md` に明記されている。確認：`grep -cF '起点コミットの記録が無い場合' vault/rules/verifier/verifier.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '起点コミットの記録が無い場合' vault/rules/verifier/verifier.md` / 出力: 1。Read で文脈を確認：「起点コミットの記録が無い場合はこの検査を行わず、その旨を `note` に書く（`reasons` には入れない。creator の記録漏れは基準違反ではない）」と明記されている。"
+    },
+    {
+      "text": "`.claude/agents/verifier.md` の手順9も同じ範囲指定になっている。確認：`grep -cF '起点コミット' .claude/agents/verifier.md` が1以上、かつ `grep -c 'main\\.\\.\\.HEAD' .claude/agents/verifier.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '起点コミット' .claude/agents/verifier.md` / 出力: 1。実行コマンド: `grep -c 'main\\.\\.\\.HEAD' .claude/agents/verifier.md` / 出力: 0。Read で手順9を確認：`git diff --name-only <起点コミット>..HEAD`・起点コミットが無い場合はこの検査を行わない例外まで、rule ファイルと同じ内容に揃っている。"
+    },
+    {
+      "text": "3ファイルとも既存の「やらないこと」「## 禁止」節のブレット数が変わっていない。確認：`sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` が7、`sed -n '/^## 禁止/,/^## 出力/p' .claude/agents/verifier.md | grep -c '^- '` が4",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` / 出力: 7。実行コマンド: `sed -n '/^## 禁止/,/^## 出力/p' .claude/agents/verifier.md | grep -c '^- '` / 出力: 4。加えて `git show c29f100 -- vault/rules/verifier/verifier.md .claude/agents/verifier.md vault/rules/creator/git-workflow.md` の diff を確認し、やらないこと／## 禁止節に変更行が含まれていないことを確認した（変更は宣言外ファイル検査ブレット・起点コミット記録ブレットの各1行のみ）。"
+    }
+  ],
+  "reasons": [
+    "宣言外ファイル検査（自身の手順）：タスク票『進捗』に『起点コミット』の記録が無いため、`vault/rules/verifier/verifier.md`／`.claude/agents/verifier.md` 自身が定める例外規定に従いこの検査は実施しなかった。タスク票『決定済み』に『このタスク自身の起点コミットは、新ルールがまだ無い状態で着手するため記録しなくてよい』と明記されており、記録漏れではなく意図的な省略と判断した。参考として `git show c29f100 --stat` を確認し、変更ファイルが成果物3ファイル（`vault/rules/creator/git-workflow.md`・`vault/rules/verifier/verifier.md`・`.claude/agents/verifier.md`）と、除外対象の `vault/log/P-20260920-verifier-scope.md`・`vault/plans/P-20260920-verifier-scope.md`・`vault/tasks/P-20260920-verifier-scope/T-07.md`（進捗）のみであることを確認した。"
+  ]
+}

@@ -19,3 +19,4 @@
 - 2026-09-22 15:21 T-04 todo→doing attempt=1
 - 2026-09-22 15:22 T-04 doing→review attempt=1
 - 2026-09-22 15:23 T-04 review→done attempt=1 verdict PASS、4基準すべて note あり
+- 2026-09-22 15:27 T-07 を人の承認で追加（main...HEAD が同じ計画の前のタスクの成果物まで拾う欠陥のため）。T-05 の after を T-02,T-07 に変更

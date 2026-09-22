@@ -39,7 +39,13 @@ verifier が PASS にした実例（`vault/verdicts/P-20260920-git-workflow/T-01
   `git diff --name-only main...HEAD` に直す。あわせて T-05 の実地テストも「コミットしてから verifier を
   呼ぶ」形に直し、実運用の条件を再現するようにした（`after` を `T-02,T-06` に変更）。
 
-6タスクで収まり、次フェーズの候補は無い（今回追加しない2点「verifier が確認コマンドを自分で導出する」
+- T-07（T-04 完了後に人の承認で追加）：T-06 が指定した `git diff --name-only main...HEAD` はブランチ全体の
+  差分を見るため、同じ計画の前のタスクが作った成果物まで宣言外として拾う（2番目以降のタスクで必ず誤検知）。
+  T-02 の検証時点で実際に `vault/rules/verifier/verifier.md`（T-01・T-06 の成果物）が宣言外として残って
+  いたのに verifier が記録しなかったことで発覚した。creator がタスク着手時の起点コミットを「進捗」に記録し、
+  verifier がその起点から `HEAD` までに範囲を絞る形に直す。T-05 の `after` を `T-02,T-07` に変更。
+
+7タスクで収まり、次フェーズの候補は無い（今回追加しない2点「verifier が確認コマンドを自分で導出する」
 「宣言外ファイル検出を FAIL に昇格させる」は決定済みで明示的に対象外とされており、運用が固まった後に
 人が改めて計画するかどうかを判断する）。
 
@@ -51,7 +57,8 @@ verifier が PASS にした実例（`vault/verdicts/P-20260920-git-workflow/T-01
 | T-03 | done | 1 | - | docs/vault-spec.md の verdict 節に reasons の意味論拡張を明記する | |
 | T-04 | done | 1 | - | docs/decisions.md に責務拡張の判断を1行追記する | |
 | T-06 | done | 1 | T-01 | 宣言外ファイル検査の取得方法を git diff --name-only main...HEAD に直す | |
-| T-05 | todo | 0 | T-02,T-06 | 実地テストで verifier の新責務2つの動作を確認する | |
+| T-07 | todo | 0 | T-06 | タスク境界を git に明示し、宣言外ファイル検査の範囲をそのタスク分に限定する | |
+| T-05 | todo | 0 | T-02,T-07 | 実地テストで verifier の新責務2つの動作を確認する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -1,0 +1,21 @@
+{
+  "task": "P-20260920-verifier-scope-dummy/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-22 20:26",
+  "criteria": [
+    {
+      "text": "`README.md` に「ハーネス」という語が含まれる。確認：`grep -c 'ハーネス' README.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'ハーネス' README.md` / 出力: 4（1以上なので基準を満たす）"
+    },
+    {
+      "text": "`vault/tmp/dummy-declared.md` が存在する。確認：`test -f vault/tmp/dummy-declared.md && echo ok`",
+      "ok": true,
+      "note": "実行コマンド: `test -f vault/tmp/dummy-declared.md && echo ok` / 出力: ok。加えて起点コミット 874953f からの差分（`git diff --name-only 874953f..HEAD`）を確認したところ、vault/plans/P-20260920-verifier-scope-dummy.md（計画票、除外対象）・vault/tasks/P-20260920-verifier-scope-dummy/T-01.md（タスク票の進捗、除外対象）に加え、成果物欄に書かれていない vault/tmp/dummy-unrelated.md が含まれていた（内容: 「このファイルはタスク票の成果物に書かれていない（宣言外の変更）。」）。宣言外ファイルの変更のため記録する。"
+    }
+  ],
+  "reasons": [
+    "起点コミット 874953f からの差分に、タスク票の成果物に書かれていない vault/tmp/dummy-unrelated.md が含まれていた。"
+  ]
+}

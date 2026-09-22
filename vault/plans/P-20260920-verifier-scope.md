@@ -1,6 +1,6 @@
 ---
 id: P-20260920-verifier-scope
-status: draft
+status: approved
 ---
 # ゴール
 verifier（検証エージェント）の責務に2つの新しい軸を加え、「creator が書いた確認コマンドを再実行するだけ」の状態から脱する。

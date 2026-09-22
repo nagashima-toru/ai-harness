@@ -1,0 +1,14 @@
+{
+  "task": "P-20260920-verifier-scope/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-22 15:06",
+  "criteria": [
+    {"text": "「責務」に基準妥当性判定の記述がある。確認：`grep -F '目的」の達成を意味するか' vault/rules/verifier/verifier.md` の出力が1行", "ok": true, "note": "実行コマンド: `grep -F '目的」の達成を意味するか' vault/rules/verifier/verifier.md` / 出力: 1行ヒット（「各受け入れ基準について、確認コマンドが通ることがタスク票の「目的」の達成を意味するかを判定する。…」）"},
+    {"text": "「責務」に宣言外ファイル検査と除外リスト4項目の記述がある。確認：`grep -F '計画票（\\`vault/plans/<計画ID>.md\\`）' vault/rules/verifier/verifier.md`、`grep -F 'タスク票の「進捗」' vault/rules/verifier/verifier.md`、`grep -F '\\`vault/log/<計画ID>.md\\`' vault/rules/verifier/verifier.md`、`grep -F '\\`vault/verdicts/\\` 配下' vault/rules/verifier/verifier.md` がそれぞれ1行以上", "ok": true, "note": "実行コマンド: 4本のgrep。うち「タスク票の「進捗」」と「`vault/verdicts/` 配下」の2本は1行ヒット（同一行）。残り2本（計画票／`vault/log/<計画ID>.md`）はagent_write_guardが `<計画ID>` の記号を誤検知しブロックされ実行不可（メッセージ: doing/review 中は対象ファイルを編集できません、と表示）。代替としてReadツールで verifier.md の18行目を確認したところ『…計画票（`vault/plans/<計画ID>.md`）・タスク票の「進捗」・`vault/log/<計画ID>.md`・`vault/verdicts/` 配下。』と4項目すべてが同一行に含まれていることを直接確認した"},
+    {"text": "追加した2つの責務はどちらも FAIL に繋がらないと明記されている。確認：`grep -c 'FAIL にはしない' vault/rules/verifier/verifier.md` が2以上", "ok": true, "note": "実行コマンド: `grep -c 'FAIL にはしない' vault/rules/verifier/verifier.md` / 出力: 2"},
+    {"text": "既存の「やらないこと」節のブレット数が7のまま変わっていない。確認：`sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` が7", "ok": true, "note": "実行コマンド: `sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` / 出力: 7"},
+    {"text": "ファイルが100行以内に収まっている。確認：`wc -l < vault/rules/verifier/verifier.md` が100以下", "ok": true, "note": "実行コマンド: `wc -l < vault/rules/verifier/verifier.md` / 出力: 35"}
+  ],
+  "reasons": []
+}

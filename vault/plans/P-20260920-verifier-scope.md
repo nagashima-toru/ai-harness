@@ -32,18 +32,26 @@ verifier が PASS にした実例（`vault/verdicts/P-20260920-git-workflow/T-01
   呼び、生成された verdict の `reasons` に両方が記録されることを確認する実地テスト。挙動の変更を検証する以上
   `after: T-01,T-02` とし、確認後はダミーファイルをすべて削除する。
 
-5タスクで収まり、次フェーズの候補は無い（今回追加しない2点「verifier が確認コマンドを自分で導出する」
+- T-06（T-01 完了後に人の承認で追加）：T-01 が書いた宣言外ファイル検査は `git status --porcelain` で変更
+  ファイル一覧を取る内容だったが、`vault/rules/creator/git-workflow.md` が「作業ステップごとにコミット」と
+  定めているため、verifier が動く時点では作業ツリーがクリーンで何も検出できないことが T-01 の検証中に判明
+  した（`vault/verdicts/P-20260920-verifier-scope/T-01.json` の `reasons` が空）。取得方法を
+  `git diff --name-only main...HEAD` に直す。あわせて T-05 の実地テストも「コミットしてから verifier を
+  呼ぶ」形に直し、実運用の条件を再現するようにした（`after` を `T-02,T-06` に変更）。
+
+6タスクで収まり、次フェーズの候補は無い（今回追加しない2点「verifier が確認コマンドを自分で導出する」
 「宣言外ファイル検出を FAIL に昇格させる」は決定済みで明示的に対象外とされており、運用が固まった後に
 人が改めて計画するかどうかを判断する）。
 
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | vault/rules/verifier/verifier.md に2つの新責務を追加する | |
+| T-01 | done | 1 | - | vault/rules/verifier/verifier.md に2つの新責務を追加する | |
 | T-02 | todo | 0 | T-01 | .claude/agents/verifier.md の手順に同じ2責務を反映する | |
 | T-03 | todo | 0 | - | docs/vault-spec.md の verdict 節に reasons の意味論拡張を明記する | |
 | T-04 | todo | 0 | - | docs/decisions.md に責務拡張の判断を1行追記する | |
-| T-05 | todo | 0 | T-01,T-02 | 実地テストで verifier の新責務2つの動作を確認する | |
+| T-06 | todo | 0 | T-01 | 宣言外ファイル検査の取得方法を git diff --name-only main...HEAD に直す | |
+| T-05 | todo | 0 | T-02,T-06 | 実地テストで verifier の新責務2つの動作を確認する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

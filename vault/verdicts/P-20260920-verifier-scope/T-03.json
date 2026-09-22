@@ -1,0 +1,13 @@
+{
+  "task": "P-20260920-verifier-scope/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-22 15:21",
+  "criteria": [
+    {"text": "「## 6. verdict.json」節に、`reasons` が FAIL 理由だけでなく「判定不能」「基準が緩い」「宣言外ファイル」の記録にも使われる旨の記述がある。確認：`sed -n '/^## 6\\. verdict.json/,/^## 7\\./p' docs/vault-spec.md | grep -c -e '判定不能' -e '基準が緩い' -e '宣言外ファイル'` が3以上", "ok": true, "note": "実行コマンド: `sed -n '/^## 6\\. verdict.json/,/^## 7\\./p' docs/vault-spec.md | grep -c -e '判定不能' -e '基準が緩い' -e '宣言外ファイル'` / 出力: 3"},
+    {"text": "追加した記述に、これらの記録は `result` を FAIL にはしない旨も明記されている。確認：`sed -n '/^## 6\\. verdict.json/,/^## 7\\./p' docs/vault-spec.md | grep -c 'FAIL にはしない'` が1以上", "ok": true, "note": "実行コマンド: `sed -n '/^## 6\\. verdict.json/,/^## 7\\./p' docs/vault-spec.md | grep -c 'FAIL にはしない'` / 出力: 1"},
+    {"text": "既存の「`result` は `PASS` / `FAIL` の2値」という記述行が変更されていない。確認：`grep -c '\\`result\\` は \\`PASS\\` / \\`FAIL\\` の2値' docs/vault-spec.md` が1", "ok": true, "note": "実行コマンド: `grep -c '\\`result\\` は \\`PASS\\` / \\`FAIL\\` の2値' docs/vault-spec.md` / 出力: 1"},
+    {"text": "見出し数（`## ` で始まる行）が13のまま変わっていない。確認：`grep -c '^## ' docs/vault-spec.md` が13", "ok": true, "note": "実行コマンド: `grep -c '^## ' docs/vault-spec.md` / 出力: 13"}
+  ],
+  "reasons": []
+}

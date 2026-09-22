@@ -50,7 +50,7 @@ verifier が PASS にした実例（`vault/verdicts/P-20260920-git-workflow/T-01
 | T-02 | todo | 0 | T-01 | .claude/agents/verifier.md の手順に同じ2責務を反映する | |
 | T-03 | todo | 0 | - | docs/vault-spec.md の verdict 節に reasons の意味論拡張を明記する | |
 | T-04 | todo | 0 | - | docs/decisions.md に責務拡張の判断を1行追記する | |
-| T-06 | todo | 0 | T-01 | 宣言外ファイル検査の取得方法を git diff --name-only main...HEAD に直す | |
+| T-06 | review | 1 | T-01 | 宣言外ファイル検査の取得方法を git diff --name-only main...HEAD に直す | |
 | T-05 | todo | 0 | T-02,T-06 | 実地テストで verifier の新責務2つの動作を確認する | |
 
 ## 計画の受け入れ基準

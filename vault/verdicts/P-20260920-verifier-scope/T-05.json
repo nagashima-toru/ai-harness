@@ -1,0 +1,43 @@
+{
+  "task": "P-20260920-verifier-scope/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-23 06:04",
+  "criteria": [
+    {
+      "text": "ダミー計画票・タスク票を用意し、緩い基準1行と宣言外ファイルの変更を作り、それらをコミットして作業ツリーをクリーンにしてから（実運用では creator が review 前にコミットするため）、`claude -p` の子プロセス経由で verifier に `P-20260920-verifier-scope-dummy/T-01` を検証させた。確認：実行したコマンドを「進捗」に引用する（`claude -p` の文字列を含む）",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 進捗/,$p' vault/tasks/P-20260920-verifier-scope/T-05.md | grep -c 'claude -p'` / 出力: 2（1回目・2回目の両方に `claude -p --model sonnet \"verifier サブエージェントを呼んで...\"` の実行コマンドが引用されていた）。基準が判定不能ではないが緩い：この確認コマンドは文字列 `claude -p` の出現回数を数えるだけで、子プロセスが実際に起動され verifier サブエージェントが検証を行ったことまでは保証しない。ただし進捗中の起点コミット（874953f・2be6d6e）やコミットメッセージ（d9fec12「T-01 (dummy) を検証。PASS、宣言外ファイルを reasons に記録」等）が git log の実際の履歴と一致しており、傍証として実行された可能性が高いと判断する。"
+    },
+    {
+      "text": "生成された verdict の `reasons` に「基準が緩い」旨と「宣言外ファイル」旨の両方が実際に記録されたことを確認し、その文言を引用して「進捗」に書く。確認：`sed -n '/^## 進捗/,$p' vault/tasks/P-20260920-verifier-scope/T-05.md | grep -c -e '緩い' -e '宣言外'` が2以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 進捗/,$p' vault/tasks/P-20260920-verifier-scope/T-05.md | grep -c -e '緩い' -e '宣言外'` / 出力: 6（2以上）。進捗には「基準が判定不能ではないが緩い：...README.md がこのタスクで変更されておらず既存記述由来のため、目的...の達成を保証しない」「起点コミット 2be6d6e..HEAD の差分に...vault/tmp/dummy-unrelated.md が含まれている（除外対象外）」など実際の reasons 文言の引用があった。基準が判定不能ではないが緩い：この確認コマンドは '緩い'/'宣言外' という単語の出現回数を数えるだけで、実際に verdict の reasons から引用された本物の文言かどうかまでは保証しない（単語を2回書くだけでも通る）。手動で進捗本文を確認したところ、具体的な reasons の引用文が実際に含まれており、目的は実質的に達成されていた。"
+    },
+    {
+      "text": "verdict の `result` が `PASS` のままだった（FAIL に繋がっていない）ことを「進捗」に記録する。確認：`sed -n '/^## 進捗/,$p' vault/tasks/P-20260920-verifier-scope/T-05.md | grep -c 'PASS'` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 進捗/,$p' vault/tasks/P-20260920-verifier-scope/T-05.md | grep -c 'PASS'` / 出力: 2（1以上）。「両方とも ok: true のまま、result は PASS（FAIL に繋がっていない）」等の記述があった。基準が判定不能ではないが緩い：この確認コマンドは文字列 'PASS' の出現回数を数えるだけで、実際の verdict.result が PASS だったことを独立に保証しない（文脈と無関係な 'PASS' の記載でも通る）。手動で進捗本文を確認したところ、1回目・2回目とも result が PASS であった旨が具体的に記述されていた。"
+    },
+    {
+      "text": "検証後、ダミーの計画票・タスク票・verdict・作成した宣言外ファイルをすべて削除し、リポジトリがクリーンな状態に戻っている。確認：`git status --porcelain | grep -c dummy` が0",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -c dummy` / 出力: 0。加えて `git status --porcelain` 自体も出力なし（作業ツリーは完全にクリーン）、`git ls-files | grep -c dummy` も 0、`vault/plans/P-20260920-verifier-scope-dummy.md`・`vault/tasks/P-20260920-verifier-scope-dummy/`・`vault/verdicts/P-20260920-verifier-scope-dummy/` はいずれも存在しないことを個別に確認した。"
+    },
+    {
+      "text": "`vault/plans/*.md` の中で `status: approved` が本計画1件だけである（ダミーが approved のまま残っていない）。確認：`grep -l '^status: approved$' vault/plans/*.md | wc -l` が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -l '^status: approved$' vault/plans/*.md | wc -l` / 出力: 1（該当ファイルは vault/plans/P-20260920-verifier-scope.md のみ）。"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` に `fail=0` が含まれる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=99 fail=0`。参考（指示9の宣言外ファイル検査）：本タスク（T-05）自身の「進捗」には `起点コミット: <短縮ハッシュ>` の形式の記録が無かったため、この検査は形式どおりには実施していない。参考として、直前タスク T-08 完了コミット `2be6d6e` からの `git diff --name-only 2be6d6e..HEAD` を確認したところ、変更ファイルは `vault/log/P-20260920-verifier-scope.md`・`vault/plans/P-20260920-verifier-scope.md`・`vault/tasks/P-20260920-verifier-scope/T-05.md` のみで、いずれも検査除外対象（計画票・タスク票の進捗・log）であり、宣言外ファイルの混入は無かった。"
+    }
+  ],
+  "reasons": [
+    "基準が判定不能ではないが緩い：この確認コマンドは文字列 `claude -p` の出現回数を数えるだけで、子プロセスが実際に起動され verifier サブエージェントが検証を行ったことまでは保証しない。ただし進捗中の起点コミット（874953f・2be6d6e）やコミットメッセージ（d9fec12「T-01 (dummy) を検証。PASS、宣言外ファイルを reasons に記録」等）が git log の実際の履歴と一致しており、傍証として実行された可能性が高いと判断する。",
+    "基準が判定不能ではないが緩い：この確認コマンドは '緩い'/'宣言外' という単語の出現回数を数えるだけで、実際に verdict の reasons から引用された本物の文言かどうかまでは保証しない（単語を2回書くだけでも通る）。手動で進捗本文を確認したところ、具体的な reasons の引用文が実際に含まれており、目的は実質的に達成されていた。",
+    "基準が判定不能ではないが緩い：この確認コマンドは文字列 'PASS' の出現回数を数えるだけで、実際の verdict.result が PASS だったことを独立に保証しない（文脈と無関係な 'PASS' の記載でも通る）。手動で進捗本文を確認したところ、1回目・2回目とも result が PASS であった旨が具体的に記述されていた。"
+  ]
+}

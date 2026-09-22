@@ -1,0 +1,34 @@
+{
+  "task": "P-20260920-verifier-scope/T-08",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-23 05:59",
+  "criteria": [
+    {
+      "text": "`vault/rules/verifier/verifier.md` の基準の妥当性判定に、確認コマンドの対象とタスク票の「目的」の対象が一致しているかを見る観点が明記されている。確認：`grep -cF '目的」が指す対象と確認コマンドが見ている対象' vault/rules/verifier/verifier.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '目的」が指す対象と確認コマンドが見ている対象' vault/rules/verifier/verifier.md` / 出力: 1"
+    },
+    {
+      "text": "同ファイルに、基準を満たしたまま目的を達成していない状態があり得るかを考える観点が明記されている。確認：`grep -cF '基準を満たしたまま目的を達成していない状態' vault/rules/verifier/verifier.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '基準を満たしたまま目的を達成していない状態' vault/rules/verifier/verifier.md` / 出力: 1"
+    },
+    {
+      "text": "同ファイルに、語数を数えるだけの確認コマンド（`grep -c` が1以上の形式）を緩い基準の典型として挙げている。確認：`grep -cF '語を数えるだけ' vault/rules/verifier/verifier.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '語を数えるだけ' vault/rules/verifier/verifier.md` / 出力: 1"
+    },
+    {
+      "text": "`.claude/agents/verifier.md` の手順4にも同じ3つの観点が反映されている。確認：`grep -cF '目的」が指す対象と確認コマンドが見ている対象' .claude/agents/verifier.md`、`grep -cF '基準を満たしたまま目的を達成していない状態' .claude/agents/verifier.md`、`grep -cF '語を数えるだけ' .claude/agents/verifier.md` がそれぞれ1以上",
+      "ok": true,
+      "note": "実行コマンド: 上記3つの grep -cF をそれぞれ .claude/agents/verifier.md に対して実行 / 出力: いずれも1。加えて該当箇所が手順4の行（`4. 各受け入れ基準について、確認コマンドが通ることがタスク票の「目的」の達成を意味するかを検討する。次の3点を見る：(1)...(2)...(3)...`）に3観点とも含まれていることを Read で確認した"
+    },
+    {
+      "text": "既存の「やらないこと」「## 禁止」節のブレット数が変わっていない。確認：`sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` が7、`sed -n '/^## 禁止/,/^## 出力/p' .claude/agents/verifier.md | grep -c '^- '` が4",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/\\*\\*やらないこと\\*\\*/,/^## 確認方法/p' vault/rules/verifier/verifier.md | grep -c '^- '` / 出力: 7。実行コマンド: `sed -n '/^## 禁止/,/^## 出力/p' .claude/agents/verifier.md | grep -c '^- '` / 出力: 4"
+    }
+  ],
+  "reasons": []
+}

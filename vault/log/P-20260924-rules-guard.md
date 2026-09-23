@@ -1,0 +1,13 @@
+- 2026-09-24 07:05 T-01 todo→doing attempt=1
+- 2026-09-24 07:05 T-01 doing→review attempt=1
+- 2026-09-24 07:19 T-01 review→done attempt=1
+- 2026-09-24 07:19 T-02 todo→doing attempt=1
+- 2026-09-24 07:19 T-02 doing→review attempt=1
+- 2026-09-24 07:22 T-02 review→done attempt=1
+- 2026-09-24 07:23 T-03 todo→doing attempt=1
+- 2026-09-24 07:23 T-03 doing→review attempt=1
+- 2026-09-24 07:25 T-03 review→done attempt=1
+- 2026-09-24 07:26 T-04 todo→doing attempt=1
+- 2026-09-24 07:26 T-04 doing→review attempt=1
+- 2026-09-24 07:27 T-04 review→done attempt=1
+- 2026-09-24 07:28 P-20260924-rules-guard 全タスク done、計画を完了とする

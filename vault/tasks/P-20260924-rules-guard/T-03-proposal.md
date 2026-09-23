@@ -1,3 +1,18 @@
+# 提案：vault/rules/creator/creator.md への追記
+
+対象ファイル: `vault/rules/creator/creator.md`
+
+## 追記内容（「## ルール」の「**責務**」箇条書きの末尾に1行追加）
+
+`責務` の最後の箇条書き（「FAIL の後に直すのは verdict の `reasons` と該当する `criteria[].note` に書かれた点だけ。そこに無い箇所まで書き換えない。」）の直後に、次の1行を追加する。
+
+```
+- ルール変更（`vault/rules/` 配下のファイル）を成果物とするタスクでは、実体パスに直接書き込めない（`agent_write_guard.py` が常に拒否する）。代わりに `vault/tasks/<計画ID>/<id>-proposal.md` に追記案を下書きし、それを成果物として `review` に回す。実体への反映は人が手作業で行う。
+```
+
+## 反映後の該当ファイル全文（参考。この形で `vault/rules/creator/creator.md` を上書きすることを想定）
+
+```markdown
 ## 目的
 作成エージェント（run のメイン）が、タスクを取ってから `review` に回すまでに守ることを定める。
 状態遷移・ファイル形式は `docs/vault-spec.md`、役割間の受け渡しは `vault/rules/common/roles.md` を正本とし、ここでは繰り返さない。
@@ -31,3 +46,4 @@
 - `git status` で、成果物・タスク票・計画票（`vault/plans/<計画ID>.md`）・log 以外のファイルに差分が出ていないか。
 - 基準を満たせずに何かを書き換えていないか（基準行・フック・設定を触っていたら、それは `blocked` にすべき場面）。
 - ルール変更が成果物のタスクで、実体パスではなく `vault/tasks/<計画ID>/<id>-proposal.md` に下書きしているか。
+```

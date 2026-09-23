@@ -171,33 +171,29 @@ vault/rules/
 ルールは受け入れ基準を増やすものではなく、**基準の判定方法を与えるもの**。受け入れ基準が `vault/rules/` のルールを参照する時（例：「コーディングルールに従っている」）だけ、verifier はルールを根拠に真偽を判定する。受け入れ基準がルールに触れていなければ、ルールを理由に FAIL にしない。作成側だけに渡した `creator/` のルールは verifier から見えないため、それを根拠に落とすこともない。
 
 ### 改ざん防止
-`doing` / `review` 中のタスクがある間は、`vault/rules/` への書き込みをフックで拒否する（実装は `.claude/hooks/agent_write_guard.py`）。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めることを防ぐ。詳細は「12. agent_write_guard フックの改ざん防止判定」。
+`vault/rules/` への書き込みは、タスクの状態や承認済み計画の有無を問わず、フックが常に拒否する（実装は `.claude/hooks/agent_write_guard.py`）。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めることを防ぐ。ルール変更を成果物とするタスクは提案ファイル方式で進める。詳細は「12. agent_write_guard フックの改ざん防止判定」。
 
 ## 12. agent_write_guard フックの改ざん防止判定
 
-`.claude/hooks/agent_write_guard.py` は verifier / planner 向けの書き込み先制限（本節冒頭）とは別に、`agent_type` を問わず（メインエージェント含む）適用する判定を持つ。自分のブランチの計画票のタスク表を簡易的に解析し（plan_guard.py の raw_rows と同じ規則をこのファイル内にコピーして使う。import はしない）、以下のとおり判定する。
+`.claude/hooks/agent_write_guard.py` は verifier / planner 向けの書き込み先制限（本節冒頭）とは別に、`agent_type` を問わず（メインエージェント含む）適用する判定を持つ。以下のとおり判定する。
 
 | 状況 | 判定 |
 |---|---|
-| `doing` / `review` の行が無い | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
-| `doing` / `review` の行が1件以上あり、対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`doing/review 中は vault/rules/ を編集できません` と対象タスク ID を reason に含める |
-| 上記に該当するが、環境変数 `HARNESS_ALLOW_RULES_WRITE` に `doing`/`review` の ID がすべて含まれる | 許可（明示解除。下記参照） |
+| 対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`vault/rules/ へは書き込めません` を reason に含める。タスクの状態（`todo`/`doing`/`review`）・承認済み計画の有無は問わない。解除口は無い |
 | 上記に該当しない（`vault/rules/` 以外への書き込み） | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
 
-この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、doing/review 中ならこの判定で先に拒否される。
+この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、この判定で先に拒否される。
 
-### 明示解除（ルール自体を変更するタスク用）
+### 提案ファイル方式（ルール自体を変更するタスク用）
 
-ルールファイルそのものを成果物とするタスクは、この判定に阻まれて1行も書けない。その場合だけ、人が起動時に環境変数で解除する。
+エージェントは `vault/rules/` に一切書き込めない（人だけが実体を編集できる）。ルールファイルそのものを成果物とするタスクは、次の手順で進める。
 
-```
-HARNESS_ALLOW_RULES_WRITE=T-01 claude
-```
+- タスク票の「成果物」は実パス（`vault/rules/...`）ではなく `vault/tasks/<計画ID>/<id>-proposal.md` にする。中身は追記・変更したい内容の下書き（差分でも全文でもよい）
+- verifier は実体ではなく、この提案ファイルの内容を受け入れ基準に照らして検証する
+- 提案ファイルから実体（`vault/rules/` 配下）への反映は、人が手作業で行う。反映を自動化するスクリプト・スキルは無い
+- 複数のルールファイルにまたがる変更は、成果物を1つに保つ原則（`vault/templates/task.md`）に従ってタスクを分割する
 
-- 値は解除を許すタスク ID の列（カンマまたは空白区切り）。`doing`/`review` の ID がすべて含まれる時だけ解除される
-- 未設定・空・不一致、および `1` / `true` のような ID でない値では解除しない
-- フックは Claude Code プロセスの環境を継承するため、作成エージェントが Bash 内で `export` しても届かない。実質的に人だけが解除できる
-- 解除しても verifier・planner は `vault/rules/` に書けない（後段の `ALLOWED` 判定で拒否される）
+この方式は `todo`/`doing`/`review` のどの状態でも同じで、ローカル・リモートいずれのセッションでも人の起動時操作（環境変数など）を必要としない。
 
 ## 13. 設計文書（`vault/designs/`）
 

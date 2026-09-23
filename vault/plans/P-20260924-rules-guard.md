@@ -36,7 +36,7 @@ verifier がそこを検証し、実体への反映は人が手作業で行う�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | agent_write_guard.py の常時拒否化と smoke.sh 更新 | |
-| T-02 | review | 1 | - | vault-spec.md を提案ファイル方式に書き直す | |
+| T-02 | done | 1 | - | vault-spec.md を提案ファイル方式に書き直す | |
 | T-03 | todo | 0 | - | creator ルールへの提案ファイル方式の指示を提案ファイルとして用意する | |
 | T-04 | todo | 0 | - | planner ルールへの提案ファイル方式の指示を提案ファイルとして用意する | |
 

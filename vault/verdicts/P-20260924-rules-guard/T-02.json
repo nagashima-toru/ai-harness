@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-rules-guard/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 07:22",
+  "criteria": [
+    {
+      "text": "第12節が提案ファイル方式（成果物パスを `vault/tasks/<計画ID>/<id>-proposal.md` にする、verifier はそこを検証する、実体への反映は人が手作業で行う）を記述している。確認：`grep -c -- '-proposal.md' docs/vault-spec.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -- '-proposal.md' docs/vault-spec.md` / 出力: 1。docs/vault-spec.md の第12節「提案ファイル方式」小節（187〜196行）を Read で確認し、成果物パスを `vault/tasks/<計画ID>/<id>-proposal.md` にする旨・verifier がそのファイルを検証する旨・実体への反映は人が手作業で行う旨が明記されていた"
+    },
+    {
+      "text": "`vault/rules/` への書き込み拒否が、`doing`/`review` の有無や承認済み計画の有無を問わず常に発火する旨が明記されている。確認：`awk '/^## 11\\./,/^## 13\\./' docs/vault-spec.md | grep -c 'review 中'` が0（状態条件付きの説明が残っていない）",
+      "ok": true,
+      "note": "実行コマンド: `awk '/^## 11\\./,/^## 13\\./' docs/vault-spec.md | grep -c 'review 中'` / 出力: 0。第11節174行に「タスクの状態や承認済み計画の有無を問わず、フックが常に拒否する」、第12節182行の表にも「タスクの状態（todo/doing/review）・承認済み計画の有無は問わない。解除口は無い」と明記されており、状態条件付きの説明は残っていない"
+    },
+    {
+      "text": "`HARNESS_ALLOW_RULES_WRITE` への言及が消えている。確認：`grep -c HARNESS_ALLOW_RULES_WRITE docs/vault-spec.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c HARNESS_ALLOW_RULES_WRITE docs/vault-spec.md` / 出力: 0"
+    },
+    {
+      "text": "見出し番号の連番が保たれている（第12節の見出しが存在し、第13節がそのまま続く）。確認：`grep -c '^## 13\\.' docs/vault-spec.md` が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '^## ' docs/vault-spec.md` / 出力: 1〜13が連番で存在し、176行「## 12. agent_write_guard フックの改ざん防止判定」の直後198行に「## 13. 設計文書」が続く。`grep -c '^## 13\\.' docs/vault-spec.md` の出力も1"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` に `fail=0` が含まれる（このタスクの編集がドキュメントのみでも、smoke.sh はドキュメントを読まないため通ることの確認）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=96 fail=0`"
+    }
+  ],
+  "reasons": []
+}

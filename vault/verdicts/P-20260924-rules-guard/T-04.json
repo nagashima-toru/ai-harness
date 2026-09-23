@@ -1,0 +1,37 @@
+{
+  "task": "P-20260924-rules-guard/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 07:27",
+  "criteria": [
+    {
+      "text": "提案ファイルが存在し、追記対象を明記している。確認：`grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260924-rules-guard/T-04-proposal.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260924-rules-guard/T-04-proposal.md` / 出力: 3（1以上）。1行目「# 提案：vault/rules/planner/planner.md への追記」と3行目「対象ファイル: `vault/rules/planner/planner.md`」で追記対象を明記している。ただしこの確認コマンドは文字列の出現回数を数えるだけで、その出現が実際に「追記対象の明記」として機能しているかまでは見ていない（緩い基準の典型）。今回はたまたま内容が伴っていたため目的も達成されている。"
+    },
+    {
+      "text": "提案内容に、ルール変更が成果物のタスクでは成果物欄を `vault/tasks/<計画ID>/<id>-proposal.md` にする旨の指示が含まれる。確認：`grep -c -- '-proposal.md' vault/tasks/P-20260924-rules-guard/T-04-proposal.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -- '-proposal.md' vault/tasks/P-20260924-rules-guard/T-04-proposal.md` / 出力: 3（1以上）。10行目・31行目に「タスク票の『成果物』を実体パスではなく `vault/tasks/<計画ID>/<id>-proposal.md` にする」という指示文がある。ただしこの確認コマンドも文字列'-proposal.md'の出現回数のみを見ており、その出現が実際に指示文として成立しているかは保証しない（緩い基準の典型）。今回は内容を目視確認した結果、指示として成立している。"
+    },
+    {
+      "text": "提案内容に、実パス（`vault/rules/` 配下）を成果物欄に書いてはいけない旨の記述が含まれる。確認：`grep -c 'vault/rules/' vault/tasks/P-20260924-rules-guard/T-04-proposal.md` が1以上かつ、その行の近傍に「成果物」の語がある（目視確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'vault/rules/' vault/tasks/P-20260924-rules-guard/T-04-proposal.md` / 出力: 1,3,10,13,18,31行目にヒット。10行目「タスク票の『成果物』を実体パスではなく...にする」の同一行に『成果物』の語が同居しており、近傍確認の条件を満たす。文言は『実体パスではなく…にする』という肯定的な言い回しで、『書いてはいけない』という否定形そのものではないが、同義の指示として成立している。"
+    },
+    {
+      "text": "`vault/rules/planner/planner.md` 自体には手を付けていない（提案のみで実体は変えない）。確認：`git status --porcelain -- vault/rules/planner/planner.md` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain -- vault/rules/planner/planner.md` / 出力: （空）。実体ファイルは未変更。"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` に `fail=0` が含まれる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=96 fail=0`"
+    }
+  ],
+  "reasons": [
+    "確認コマンド`grep -c 'vault/rules/planner/planner.md' ...`は文字列の出現回数を数えるだけで、その出現が実際に「追記対象の明記」として機能しているかまでは見ていない（緩い基準の典型）。今回はたまたま内容が伴っていたため目的も達成されている。",
+    "確認コマンド`grep -c -- '-proposal.md' ...`も文字列'-proposal.md'の出現回数のみを見ており、その出現が実際に指示文として成立しているかは保証しない（緩い基準の典型）。今回は内容を目視確認した結果、指示として成立している。"
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 id: P-20260924-rules-guard
-status: draft
+status: approved
 ---
 # ゴール
 `vault/designs/D-002.md` フェーズ1。`.claude/hooks/agent_write_guard.py` から `HARNESS_ALLOW_RULES_WRITE`

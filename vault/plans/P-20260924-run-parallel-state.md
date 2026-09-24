@@ -15,7 +15,7 @@ D-003（`vault/designs/D-003.md`）フェーズ1「状態遷移ルールの緩�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | 状態遷移ルールの記述を ai-harness.md と vault-spec.md で書き換える | |
-| T-02 | review | 1 | - | plan_guard.py の doing 判定を after 依存検査に置き換える | |
+| T-02 | done | 1 | - | plan_guard.py の doing 判定を after 依存検査に置き換える | |
 | T-03 | todo | 0 | - | stop_gate.py の doing/review 検査を全行ループに変更する | |
 
 ## 計画の受け入れ基準

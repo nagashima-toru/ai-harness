@@ -1,6 +1,6 @@
 ---
 id: P-20260924-run-parallel-state
-status: draft
+status: approved
 ---
 # ゴール
 D-003（`vault/designs/D-003.md`）フェーズ1「状態遷移ルールの緩和とフックの整合性検査更新」を実施する。`.claude/ai-harness.md` と `docs/vault-spec.md` の状態遷移の記述を、「`doing` は計画内で常に1件だけ」から「`doing`/`review` は複数件になりうるが、その全ては `after` 依存の無い集合（着手可能集合）に限り、計画票・ログへの書き込みは常にオーケストレーター1プロセスに集約する」に書き換える。`.claude/hooks/plan_guard.py` の「doing が2件以上ならブロック」判定を「doing/review の集合内に `after` 依存関係が張られていたらブロック」判定に置き換え、`.claude/hooks/stop_gate.py` の「doing/review のタスクは1件だけ想定」というロジック（`next(...)` で1件だけ取り出す部分）を、doing/review の全行をそれぞれ検査するループに変更する。`run` スキル自体（`run/SKILL.md`）はこのフェーズでは変更しない。実際に複数タスクを同時に doing にする機能はフェーズ3で入れる。

@@ -38,7 +38,7 @@ ALLOWED = {
 }
 DENIED_FOR_CREATOR = ("vault/plans/", "vault/log/")
 BASH_WRITE_PATTERNS = [
-    r"(^|[^<>])>{1,2}\s*\S",          # リダイレクト（<> や >& を含む単純な誤検知は許容）
+    r"(^|[^<>])>{1,2}\s*(?!&)\S",     # リダイレクト（`2>&1` のような N>&M fd 複製は書き込みとみなさない）
     r"\btee\b",
     r"\b(rm|mv|cp|touch|mkdir|chmod|chown)\b",
     r"\bgit\s+(add|commit|push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)\b",
@@ -63,6 +63,53 @@ def normalize(path, root):
     ap = os.path.abspath(os.path.join(root, path)) if not os.path.isabs(path) else os.path.abspath(path)
     rel = os.path.relpath(ap, root)
     return rel.replace(os.sep, "/")
+
+
+def git_toplevel(dir_path):
+    """dir_path から `git rev-parse --show-toplevel` を試みる。
+
+    worktree 内から呼ばれた場合はその worktree のルートを返す。非 git・取得失敗時は None
+    （呼び出し側で既存のフォールバック順に進む＝fail-open）。
+    """
+    if not dir_path:
+        return None
+    try:
+        out = subprocess.run(
+            ["git", "-C", dir_path, "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:
+        return None
+    if out.returncode != 0:
+        return None
+    top = out.stdout.strip()
+    return top or None
+
+
+def resolve_root(tool, tool_input, payload):
+    """書き込み先パスの正規化に使う root を求める。
+
+    Write/Edit/MultiEdit/NotebookEdit では対象 file_path の親ディレクトリを起点に、
+    Bash では payload.cwd を起点に、それぞれ `git rev-parse --show-toplevel` で
+    worktree のルートを優先的に求める。取得できない場合のみ既存の
+    CLAUDE_PROJECT_DIR → payload.cwd → os.getcwd() の優先順にフォールバックする。
+    """
+    fallback = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd()
+    probe_dir = None
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        if path:
+            abs_path = path if os.path.isabs(path) else os.path.abspath(os.path.join(fallback, path))
+            probe_dir = os.path.dirname(abs_path)
+    elif tool == "Bash":
+        cwd = payload.get("cwd") or ""
+        if cwd:
+            probe_dir = cwd
+    if probe_dir:
+        top = git_toplevel(probe_dir)
+        if top:
+            return top
+    return fallback
 
 
 def current_branch(root):
@@ -142,9 +189,9 @@ def main():
     except Exception:
         sys.exit(0)
 
-    root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd()
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input") or {}
+    root = resolve_root(tool, tool_input, payload)
 
     # main 直接コミット拒否：agent_type を問わず、現在のブランチが main の時は git commit を拒否する。
     # 非 git リポジトリ・ブランチ取得不能（detached HEAD 等）は fail-open（この判定は素通り）。

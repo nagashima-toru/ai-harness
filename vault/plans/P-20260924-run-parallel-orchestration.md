@@ -1,6 +1,6 @@
 ---
 id: P-20260924-run-parallel-orchestration
-status: draft
+status: approved
 ---
 # ゴール
 D-003（`vault/designs/D-003.md`）フェーズ3「並行実行オーケストレーション」を実施する。フェーズ1（`P-20260924-run-parallel-state`）・フェーズ2（`P-20260924-creator-subagent`）は完了済み（done）。`run` スキルに、計画票のタスク表から「着手可能集合」（`todo` かつ `after` が全て `done`）を求め、環境変数 `HARNESS_MAX_PARALLEL`（既定 3）を上限にタスクを選ぶ手順を追加する。選んだタスク全部をまとめて1回の書き込みで `doing` にし、`vault/log/<計画ID>.md` に1回（または選んだタスク分まとめて）追記する。その上で、選んだタスクそれぞれについて Agent ツールで `creator` を `isolation: "worktree"` 付きで並行起動する（1メッセージで複数呼び出し）。各呼び出しの結果からタスクごとの worktree パス・ブランチを受け取る。次に、完了した creator それぞれについて verifier を並行起動する。verifier は通常（非 worktree）の Agent 呼び出しとし、プロンプトでタスク ID と対象 worktree のパスを渡し、verifier は `EnterWorktree(path=...)` でその worktree に入ってから検証して `vault/verdicts/<計画ID>/<id>.json` を書く。全 verifier の完了後、オーケストレーターはタスクを1件ずつ逐次処理する：PASS なら該当 worktree のブランチを計画ブランチへ `git merge --no-ff` し、成功したら計画票を `review→done` にしてログ追記し worktree を削除する。マージでコンフリクトが起きたら該当タスクを `blocked` にし question にコンフリクトの状況を書き、worktree は削除せず残す。FAIL なら計画ブランチへはマージせず、attempt 上限未満なら `doing`（attempt+1）に、上限到達なら `blocked` にし、いずれもログに追記する（worktree は次の attempt で再利用するか、破棄して次の attempt 時に作り直すかは実装時に決めてよい）。着手可能集合が1件しかない場合も同じ経路（creator/verifier サブエージェント + worktree）を通す。

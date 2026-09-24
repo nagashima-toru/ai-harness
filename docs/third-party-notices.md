@@ -1,12 +1,12 @@
 # サードパーティ通知（Third-Party Notices）
 
 このリポジトリを public 化するにあたり、選定ライセンス（MIT License、
-`Copyright (c) 2026 nagashima-toru`。T-01 で決定）との互換性確認のため、
+`Copyright (c) 2026 nagashima-toru`）との互換性確認のため、
 以下の対象について外部由来のコード・雛形が含まれていないかを確認した結果を記録する。
 
 ## 調査対象と方法
 
-調査対象は T-03 の「決定済み」で指定された範囲に限る。
+調査対象は次の範囲に限る。
 
 - `.claude/skills/` 配下の全ファイル
 - `.claude/hooks/` 配下の全ファイル

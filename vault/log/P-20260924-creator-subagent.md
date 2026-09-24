@@ -14,3 +14,4 @@
 - 2026-09-24 16:30 T-05 doing→review attempt=1
 - 2026-09-24 16:31 T-05 review→doing attempt=2 末尾に実体パス記載が無くFAIL
 - 2026-09-24 16:32 T-05 doing→review attempt=2
+- 2026-09-24 16:38 T-05 review→done attempt=2

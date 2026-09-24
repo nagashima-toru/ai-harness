@@ -14,7 +14,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard: verifier の Bash 書き込み制限をリポジトリ外の一時作業に限り許可する | |
+| T-01 | review | 1 | - | agent_write_guard: verifier の Bash 書き込み制限をリポジトリ外の一時作業に限り許可する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

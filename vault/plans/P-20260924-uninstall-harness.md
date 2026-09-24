@@ -1,6 +1,6 @@
 ---
 id: P-20260924-uninstall-harness
-status: draft
+status: approved
 ---
 # ゴール
 

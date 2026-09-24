@@ -65,12 +65,35 @@ def normalize(path, root):
     return rel.replace(os.sep, "/")
 
 
+def existing_ancestor(dir_path):
+    """dir_path 自身、または存在する祖先ディレクトリまで `os.path.dirname()` で遡って返す。
+
+    worktree 内でまだ作成されていないネストしたディレクトリ配下に書き込もうとした場合、
+    `git -C <存在しないpath> rev-parse --show-toplevel` は exit 128 で失敗する（issue #24）。
+    worktree のルート自体は常に存在するため、存在するディレクトリまで遡ってから
+    `git -C` に渡せば正しく worktree のルートを解決できる。
+    """
+    if not dir_path:
+        return None
+    probe = dir_path
+    while probe and not os.path.isdir(probe):
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            # ルートまで遡っても見つからない（ほぼ起こらない）場合は諦める
+            return None
+        probe = parent
+    return probe or None
+
+
 def git_toplevel(dir_path):
     """dir_path から `git rev-parse --show-toplevel` を試みる。
 
     worktree 内から呼ばれた場合はその worktree のルートを返す。非 git・取得失敗時は None
     （呼び出し側で既存のフォールバック順に進む＝fail-open）。
     """
+    if not dir_path:
+        return None
+    dir_path = existing_ancestor(dir_path)
     if not dir_path:
         return None
     try:

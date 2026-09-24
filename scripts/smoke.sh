@@ -129,6 +129,16 @@ expect_guard "planner が vault/todo.md に Edit → 拒否" deny \
   "$(run_guard '{"agent_type":"planner","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/vault/todo.md"}}')"
 expect_guard "メインエージェントが README.md に Edit → 許可" allow \
   "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+expect_guard "gh api で vault/rules/ へ PUT → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api -X PUT repos/o/r/contents/vault/rules/common/roles.md -f message=m -f content=Zm9v -f sha=abc"}}')"
+expect_guard "gh api で -X 指定なしでも vault/rules/ を対象に -f content → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api repos/o/r/contents/vault/rules/common/roles.md -f content=Zm9v -f message=m"}}')"
+expect_guard "curl で api.github.com の vault/rules/ へ PUT → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"curl -X PUT -H \"Authorization: token x\" https://api.github.com/repos/o/r/contents/vault/rules/common/roles.md"}}')"
+expect_guard "vault/rules/ を含まない gh api issues 一覧 → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api repos/o/r/issues"}}')"
+expect_guard "vault/rules/ を含まない curl コマンド → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"curl https://api.github.com/repos/o/r/contents/README.md"}}')"
 
 make_plan_task T-0001 doing 1
 expect_guard "(a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否" deny \

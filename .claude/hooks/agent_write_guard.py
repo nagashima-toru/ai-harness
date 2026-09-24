@@ -12,6 +12,10 @@
 ルール変更を成果物とするタスクは、実パスではなく vault/tasks/<計画ID>/<id>-proposal.md に
 下書きし、verifier はそこを検証する。実体（vault/rules/ 配下）への反映は人が手作業で行う
 （docs/vault-spec.md 第12節）。
+
+上記の拒否は、Write 系ツールのパス判定に加え、Bash 経由で `gh api` や GitHub Contents API
+（api.github.com / raw.githubusercontent.com 等）へ直接 curl するリモート書き込み経路も対象にする
+（issue #6）。
 """
 import json
 import os
@@ -20,6 +24,7 @@ import subprocess
 import sys
 
 GIT_COMMIT_PATTERN = r"\bgit\s+commit\b"
+GITHUB_API_HOSTS = ("api.github.com", "raw.githubusercontent.com", "githubusercontent.com")
 
 ALLOWED = {
     "verifier": ["vault/verdicts/"],
@@ -68,6 +73,23 @@ def current_branch(root):
     return branch or None
 
 
+def targets_vault_rules_remote(cmd):
+    """gh api / curl で GitHub Contents API を直接叩き vault/rules/ を書き換えようとしていないか判定する。
+
+    gh api の contents パスは "repos/<owner>/<repo>/contents/vault/rules/..." のように
+    先頭に接頭辞が付き、normalize() では "vault/rules/" 始まりと判定できない。そのため
+    既存の path 正規化とは別に、コマンド文字列に "vault/rules/" というリテラルが
+    含まれるかを直接見る（誤検知より見逃しを避ける方針。D-002 の設計思想を踏襲）。
+    """
+    if "vault/rules/" not in cmd:
+        return False
+    if re.search(r"\bgh\s+api\b", cmd):
+        return True
+    if re.search(r"\bcurl\b", cmd) and any(h in cmd for h in GITHUB_API_HOSTS):
+        return True
+    return False
+
+
 def targets_vault_rules(tool, tool_input, root):
     """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。"""
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
@@ -75,6 +97,8 @@ def targets_vault_rules(tool, tool_input, root):
         return normalize(path, root).startswith("vault/rules/")
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
+        if targets_vault_rules_remote(cmd):
+            return True
         if not any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
             return False
         redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)

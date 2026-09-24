@@ -1,0 +1,29 @@
+{
+  "task": "P-20260924-gh-api-write-guard/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 13:05",
+  "criteria": [
+    {
+      "text": "第12節に、Bash 経由の `vault/rules/` 書き込み検知が `gh api` および GitHub Contents API への直接 `curl` を含むことが明記されている。確認：`grep -n 'gh api' docs/vault-spec.md` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'gh api' docs/vault-spec.md` / 出力: 187行目に見出し「検知範囲：`gh api` / `curl` によるリモート直叩き（issue #6）」、189行目に `gh api`（`-X` の指定有無を問わない）と GitHub Contents API 宛 `curl`（`api.github.com`/`raw.githubusercontent.com`/`githubusercontent.com`）を検知対象とする旨の説明文。計3行ヒットし基準を満たす。"
+    },
+    {
+      "text": "同節に、拒否リスト方式である以上未知のコマンド経路を完全には列挙できないという残存リスクが明記されている",
+      "ok": true,
+      "note": "確認方法: docs/vault-spec.md 191行目を Read で確認（機械確認コマンドの指定なし）。「この判定は拒否リスト方式（危険な経路をパターンで列挙してブロックする方式）であり、その理想への完全な到達ではない」「未知のコマンド経路（例：他の CLI や言語ランタイムから GitHub API を叩く、別のホスト名を使うプロキシ経由など）を完全に列挙することはできないという残存リスクがある」と明記されている。"
+    },
+    {
+      "text": "第11節・第12節の既存の記述（「常に拒否」「提案ファイル方式」等）が削除・書き換えられていない。確認：`git diff docs/vault-spec.md | grep -E '^-.*(提案ファイル方式|常に拒否)'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff b2fe0b0..HEAD -- docs/vault-spec.md | grep -E '^-.*(提案ファイル方式|常に拒否)'`（起点コミット b2fe0b0 と HEAD の範囲で確認。作業ツリーは既にコミット済みでワーキングツリー差分は空のため範囲指定した） / 出力: なし（exit 1）。既存記述の削除・書き換えなし。"
+    },
+    {
+      "text": "`HARNESS_ALLOW_RULES_WRITE` という文字列が新たに追加されていない（廃止済みの仕組みを復活させない）。確認：`git diff docs/vault-spec.md | grep -c '^+.*HARNESS_ALLOW_RULES_WRITE'` が0",
+      "ok": true,
+      "note": "実行コマンド: `git diff b2fe0b0..HEAD -- docs/vault-spec.md | grep -c '^+.*HARNESS_ALLOW_RULES_WRITE'` / 出力: `0`。追加なし。"
+    }
+  ],
+  "reasons": []
+}

@@ -3,3 +3,4 @@
 形式：`- YYYY-MM-DD HH:MM T-01 doing→review attempt=1 補足`
 
 - 2026-09-24 21:18 T-01 todo→doing attempt=1
+- 2026-09-24 21:21 T-01 doing→review attempt=1

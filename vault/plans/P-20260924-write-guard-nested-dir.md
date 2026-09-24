@@ -14,7 +14,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard: 未作成の祖先ディレクトリでも worktree root を解決する | |
+| T-01 | review | 1 | - | agent_write_guard: 未作成の祖先ディレクトリでも worktree root を解決する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

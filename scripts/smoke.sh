@@ -381,6 +381,66 @@ print(m == h('$ROOT/' + rel) and m != h('$NTMP/' + rel))")"
 expect_eq "(i) 編集した行はそのまま残る" "1" "$(grep -c '^- 独自ルール$' "$NTMP/vault/rules/common/roles.md")"
 rm -rf "$NTMP"
 
+echo "== discard_worktree.sh =="
+DWMAIN="$(mktemp -d)"
+git -C "$DWMAIN" init -q -b main
+git -C "$DWMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+dw_run() { ( cd "$DWMAIN" && bash "$ROOT/scripts/discard_worktree.sh" "$1" "$2" ) >/dev/null 2>&1; } # $1=path $2=branch
+
+D_A="$(mktemp -d)"; rmdir "$D_A"
+git -C "$DWMAIN" worktree add -q -b worktree-agent-test "$D_A"
+dw_run "$D_A" worktree-agent-test; rc_a=$?
+list_a="$(cd "$DWMAIN" && git worktree list --porcelain)"
+verify_rc=0
+(cd "$DWMAIN" && git rev-parse --verify worktree-agent-test) >/dev/null 2>&1; verify_rc=$?
+result_a="False"
+if [ "$rc_a" -eq 0 ] && ! printf '%s' "$list_a" | grep -q "$D_A" && [ "$verify_rc" -ne 0 ]; then result_a="True"; fi
+expect_eq "(a) discard_worktree.sh 正常系: worktree/ブランチとも削除されrc0（git worktree list から消え rev-parse --verify worktree-agent-test が失敗）" "True" "$result_a"
+
+D_B="$(mktemp -d)"; rmdir "$D_B"
+git -C "$DWMAIN" worktree add -q -b other-branch "$D_B"
+dw_run "$D_B" other-branch; rc_b=$?
+list_b="$(cd "$DWMAIN" && git worktree list --porcelain)"
+result_b="False"
+if [ "$rc_b" -ne 0 ] && printf '%s' "$list_b" | grep -q "$D_B" && [ -d "$D_B" ]; then result_b="True"; fi
+expect_eq "(b) discard_worktree.sh 拒否系: ブランチ名がworktree-agent-で始まらない場合は削除されずworktreeが残存" "True" "$result_b"
+git -C "$DWMAIN" worktree remove --force "$D_B" >/dev/null 2>&1
+git -C "$DWMAIN" branch -D other-branch >/dev/null 2>&1
+
+D_C="$(mktemp -d)"; rmdir "$D_C"
+dw_run "$D_C" worktree-agent-x; rc_c=$?
+list_c="$(cd "$DWMAIN" && git worktree list --porcelain)"
+result_c="False"
+if [ "$rc_c" -ne 0 ] && ! printf '%s' "$list_c" | grep -q "$D_C" && [ ! -d "$D_C" ]; then result_c="True"; fi
+expect_eq "(c) discard_worktree.sh 拒否系: 未登録パスは削除されず何も変更されない" "True" "$result_c"
+
+D_D="$(mktemp -d)"; rmdir "$D_D"
+git -C "$DWMAIN" worktree add -q -b worktree-agent-real "$D_D"
+dw_run "$D_D" worktree-agent-fake; rc_d=$?
+list_d="$(cd "$DWMAIN" && git worktree list --porcelain)"
+result_d="False"
+if [ "$rc_d" -ne 0 ] && printf '%s' "$list_d" | grep -q "$D_D" && [ -d "$D_D" ]; then result_d="True"; fi
+expect_eq "(d) discard_worktree.sh 拒否系: パスのブランチが指定と不一致の場合は削除されずworktreeが残存" "True" "$result_d"
+git -C "$DWMAIN" worktree remove --force "$D_D" >/dev/null 2>&1
+git -C "$DWMAIN" branch -D worktree-agent-real >/dev/null 2>&1
+
+rm -rf "$DWMAIN" "$D_A" "$D_B" "$D_C" "$D_D"
+
+D_E_TARGET="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$D_E_TARGET" >/dev/null 2>&1
+result_e_file="False"
+[ -f "$D_E_TARGET/scripts/discard_worktree.sh" ] && result_e_file="True"
+result_e_manifest="$(python3 -c "
+import json, re
+d = json.load(open('$D_E_TARGET/.claude/harness-manifest.json'))['files']
+v = d.get('scripts/discard_worktree.sh', '')
+print(bool(re.fullmatch('[0-9a-f]{64}', v)))
+")"
+result_e="False"
+if [ "$result_e_file" = "True" ] && [ "$result_e_manifest" = "True" ]; then result_e="True"; fi
+expect_eq "(e) discard_worktree.sh install先に配置されharness-manifest.jsonのfilesにハッシュ付きで載る" "True" "$result_e"
+rm -rf "$D_E_TARGET"
+
 echo "== install.sh --update =="
 UTMP="$(mktemp -d)"
 bash "$ROOT/scripts/install.sh" "$UTMP" >/dev/null 2>&1

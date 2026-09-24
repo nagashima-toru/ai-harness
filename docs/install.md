@@ -144,6 +144,27 @@ bash /path/to/ai-harness/scripts/install.sh --update .
 
 `merge_settings_json.py` は書き換える時だけ `.claude/settings.json.bak-<日時>` を残す。不要なら消してよい（`.gitignore` に `*.bak-*` を足しておくと楽）。
 
+## アンインストール
+複製したハーネスを取り除きたい時は `scripts/uninstall.sh`（`install.sh` の対になるスクリプト）を使う。
+
+```bash
+bash scripts/uninstall.sh /path/to/your-project
+```
+
+`.claude/harness-manifest.json` と照合し、記録済みハッシュが現状と一致する（＝未編集の）ハーネス本体ファイルだけを削除する。出力は `install.sh` の `copy`/`skip (exists)`/`skip (edited)` と対称で、次の3種類になる。
+
+| 出力 | 意味 | やること |
+|---|---|---|
+| `remove <path>` | 未編集のハーネス本体ファイルだったので自動で消した | 何もしなくてよい |
+| `skip (edited) <path>` | インストール後に編集済みだったので残した（利用者が手を入れたものは消さない） | 不要なら自分で消す |
+| `note ...` | 自動処理の対象外・案内のみ（`vault/` の利用者資産や `settings.json` の手動確認案内など） | note の内容に従う |
+
+`CLAUDE.md` は `scripts/unmerge_claude_md.py` が処理する。ハーネスのマーカーブロック（`<!-- ai-harness:begin ... -->` 〜 `<!-- ai-harness:end -->`）だけを取り除き、他の本文には触れない。ブロックを除いた残りが空白だけならファイルごと削除し、本文が残っていればブロックだけ除去してファイルは残す（`remove`/`delete` の時だけ `CLAUDE.md.bak-<日時>` を残す）。
+
+`.claude/settings.json` は `.claude/harness-manifest.json` の `settings_src` キーの内容をもとに `scripts/unmerge_settings_json.py` が処理する。`merge_settings_json.py` が足した hooks の command と `permissions.deny` の項目だけを取り除き、利用者が追加した `permissions.allow` やその他の項目には触れない。**この一致判定は command / deny 文字列の完全一致でしか行わない**ため、利用者がハーネスと偶然同じ文字列を独自に `.claude/settings.json` に追加していた場合、区別できずに一緒に消える可能性がある。これは仕様上の限界として許容している。また、`settings_src` キーが無い古いマニフェスト（`--update` を使う前に入れたインストール）では `settings.json` の自動処理そのものをスキップし、案内だけを出す。その場合は `.claude/settings.json` を開き、`hooks` と `permissions.deny` からハーネス由来のエントリ（`ai-harness.md` の `## スキル`・フック節や `docs/vault-spec.md` を見比べる）を手で見つけて削除する。
+
+`vault/` の利用者資産（`plans`/`tasks`/`verdicts`/`log`/`designs`/`archive` と、標準4本以外の `vault/rules/`）には一切触れない。これらは計画・タスク・検証結果・作業ログという利用者自身の作業成果であり、ハーネスを外しても消さずに残す。
+
 ## インストール後の次の一歩
 どちらのパターンでも、最初に打つのは `/plan <ゴール>` になる。
 人が日々やること（ゴールを入れる・計画を承認する・blocked に答える・月次で片づける）は `docs/runbook.md` にまとまっている。

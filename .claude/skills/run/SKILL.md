@@ -56,7 +56,7 @@ blocked ではない完了報告を受けたタスク全部について、status
    5. マージでコンフリクトが起きた場合：自己判断で解決しない（`vault/rules/common/git.md` の既存方針）。`git merge --abort` でマージを中断し、status を `blocked` にし question 列にコンフリクトの状況（コンフリクトしたファイル一覧、実行したコマンドとエラーの要点。例：`git status` の該当部分の要約）を書く。`vault/log/<計画ID>.md` に `- <日時> <id> review→blocked attempt=<n> マージコンフリクト` を追記する。この worktree は削除せず残す（人がコンフリクト解消の調査に使えるようにする）。他の対象タスクの処理は止めず、次のタスクへ進む
 3. `FAIL` の場合：
    1. 計画ブランチへはマージしない
-   2. attempt < 上限（`HARNESS_MAX_ATTEMPTS`、既定 3）なら、status を `doing`、attempt を +1 にし、`vault/log/<計画ID>.md` に `- <日時> <id> review→doing attempt=<n+1> 理由要約` を追記する。手順3の1から繰り返す（creator を再度呼ぶ。verdict の `reasons` を読んで直すのは creator の役目）。この時、対象タスクの worktree は**破棄して作り直す**方針を採る：`git worktree remove <worktree のパス> --force` と `git branch -D <ブランチ名>` で削除する（計画ブランチへ取り込んでいない不採用の変更なので破棄してよい）。次回手順3で creator を呼ぶ際に、その呼び出しが新しい worktree を作る
+   2. attempt < 上限（`HARNESS_MAX_ATTEMPTS`、既定 3）なら、status を `doing`、attempt を +1 にし、`vault/log/<計画ID>.md` に `- <日時> <id> review→doing attempt=<n+1> 理由要約` を追記する。手順3の1から繰り返す（creator を再度呼ぶ。verdict の `reasons` を読んで直すのは creator の役目）。この時、対象タスクの worktree は**破棄して作り直す**方針を採る：`bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>` で削除する（計画ブランチへ取り込んでいない不採用の変更なので破棄してよい）。次回手順3で creator を呼ぶ際に、その呼び出しが新しい worktree を作る
    3. attempt ≥ 上限なら、status を `blocked`、question 列に reasons の要約を書き、`vault/log/<計画ID>.md` に `- <日時> <id> review→blocked attempt=<n> 理由要約` を追記する。この場合 worktree は削除しなくてよい（人が blocked を解消する調査に使える可能性があるため、コンフリクト時の温存方針と揃える）
 4. 次の対象タスクがあれば同様に処理する。対象タスク全部の処理が終わったら手順7へ進む
 

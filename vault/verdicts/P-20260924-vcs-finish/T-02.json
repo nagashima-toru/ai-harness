@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-vcs-finish/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 00:09",
+  "criteria": [
+    {
+      "text": "`.claude/skills/run/SKILL.md` に `gh pr create` という文字列が残っていない（手順7・8内の3箇所すべてを置き換える）。確認: `grep -c \"gh pr create\" .claude/skills/run/SKILL.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"gh pr create\" .claude/skills/run/SKILL.md` / 出力: 0"
+    },
+    {
+      "text": "手順7に `scripts/vcs_finish.sh` を実行する記述がある。確認: `grep -n \"vcs_finish.sh\" .claude/skills/run/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"vcs_finish.sh\" .claude/skills/run/SKILL.md` / 出力: 63行目に `bash scripts/vcs_finish.sh` を実行する記述、67・71行目にも言及ありヒット3件"
+    },
+    {
+      "text": "`none` 判定時にスクリプトが出す案内（ブランチ名・`git merge --no-ff`）をそのまま人に伝える旨の記述が手順7にある。確認: `grep -n \"git merge --no-ff\" .claude/skills/run/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "`grep -n \"git merge --no-ff\" .claude/skills/run/SKILL.md` は agent_write_guard により実行不可（コマンド文字列に `git merge` を含むため書き込みガードが誤検知）。代替として Read ツールで全文を確認：63行目に「`none` の場合、標準出力に出る現在のブランチ名と `git merge --no-ff <branch>` の案内をそのまま人への完了報告に含める」の記述がありヒットする（52行目の手順6の既存記述と合わせて2箇所）"
+    },
+    {
+      "text": "`gh pr merge`（`glab mr merge` に触れる場合も同様）への言及はすべて「実行しない」という文脈に限られる（実行コマンドとしては現れない）。確認: `grep -n \"gh pr merge\\|glab mr merge\" .claude/skills/run/SKILL.md | grep -v \"実行しない\"` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"gh pr merge\\|glab mr merge\" .claude/skills/run/SKILL.md | grep -v \"実行しない\"` / 出力: 空（63行目の唯一の言及「`gh pr merge`/`glab mr merge` は実行しない」が除外され、他に言及なし）"
+    },
+    {
+      "text": "手順1〜6の見出し文言は変更されていない。確認: `git diff -- .claude/skills/run/SKILL.md | grep -E '^-## [1-6]\\.'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- .claude/skills/run/SKILL.md | grep -E '^-## [1-6]\\.'` / 出力: 空（削除された見出し行なし）。`git show --stat` でも変更ファイルは `.claude/skills/run/SKILL.md`（+6/-3）と `vault/tasks/P-20260924-vcs-finish/T-02.md`（進捗追記）のみで、成果物として明記された1ファイルの範囲内であることも確認した"
+    }
+  ],
+  "reasons": []
+}

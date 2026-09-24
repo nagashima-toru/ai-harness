@@ -152,6 +152,12 @@ expect_guard "vault/rules/ を含まない gh api issues 一覧 → 許可" allo
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api repos/o/r/issues"}}')"
 expect_guard "vault/rules/ を含まない curl コマンド → 許可" allow \
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"curl https://api.github.com/repos/o/r/contents/README.md"}}')"
+expect_guard "verifier が Bash で root 外（tmp）だけに mkdir/cp → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"mkdir -p /tmp/xxx && cp scripts/install.sh /tmp/xxx/install.sh"}}')"
+expect_guard "verifier が Bash で root 内の許可外パス（vault/rules/）へ cp → 拒否（既存挙動を維持）" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"}}')"
+expect_guard "verifier が Bash で root 外（tmp）と root 内の許可外パスが混在 → 拒否（root 外許可がバイパスの抜け穴にならない）" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"mkdir -p /tmp/xxx && cp vault/rules/common/a.md /tmp/xxx/"}}')"
 
 make_plan_task T-0001 doing 1
 expect_guard "(a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否" deny \

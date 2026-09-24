@@ -186,70 +186,76 @@ def main():
     with open(plan_path, encoding="utf-8") as f:
         tasks = parse_tasks(f.read())
 
-    active = next((t for t in tasks if t["status"] in ("doing", "review")), None)
-    if active is None:
+    active_tasks = [t for t in tasks if t["status"] in ("doing", "review")]
+    if not active_tasks:
         allow()
 
-    tid = active["id"]
-    status = active["status"]
-    try:
-        attempt = int(active["attempt"])
-    except ValueError:
-        attempt = 0
-
-    task_key = f"{plan_id}/{tid}"
-    task_path = os.path.join(root, "vault", "tasks", plan_id, tid + ".md")
-    verdict_path = os.path.join(root, "vault", "verdicts", plan_id, tid + ".json")
-    verdict = None
-    if os.path.isfile(verdict_path):
+    # doing/review は着手可能集合に限り複数件になりうる（2節）。タスク表の出現順（上から）に
+    # 1件ずつ検査し、最初に許可できないと判定した行が見つかった時点でその行の理由を block() で
+    # 返して以降の行は検査しない。全行が問題無ければループを最後まで回して allow() する。
+    for active in active_tasks:
+        tid = active["id"]
+        status = active["status"]
         try:
-            with open(verdict_path, encoding="utf-8") as f:
-                verdict = json.load(f)
-        except Exception:
-            verdict = None
+            attempt = int(active["attempt"])
+        except ValueError:
+            attempt = 0
 
-    stale = verdict is not None and (
-        verdict.get("task") != task_key or str(verdict.get("attempt")) != str(attempt)
-    )
-    if verdict is None or stale:
-        why = "verdict が古い（task/attempt が計画票のタスク表と不一致）" if stale else "verdict が無い"
+        task_key = f"{plan_id}/{tid}"
+        task_path = os.path.join(root, "vault", "tasks", plan_id, tid + ".md")
+        verdict_path = os.path.join(root, "vault", "verdicts", plan_id, tid + ".json")
+        verdict = None
+        if os.path.isfile(verdict_path):
+            try:
+                with open(verdict_path, encoding="utf-8") as f:
+                    verdict = json.load(f)
+            except Exception:
+                verdict = None
+
+        stale = verdict is not None and (
+            verdict.get("task") != task_key or str(verdict.get("attempt")) != str(attempt)
+        )
+        if verdict is None or stale:
+            why = "verdict が古い（task/attempt が計画票のタスク表と不一致）" if stale else "verdict が無い"
+            block(
+                f"[stop_gate] {task_key} は {status} ですが {why}。"
+                f"verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"
+                f"（attempt={attempt}）。"
+            )
+
+        problems = validate_verdict(verdict, task_key, task_path)
+        if problems:
+            block(
+                f"[stop_gate] {task_key} の verdict の形式が不正です: {'; '.join(problems)}。"
+                f"verifier サブエージェントを再実行して vault/verdicts/{task_key}.json を書き直すこと（attempt={attempt}）。"
+            )
+
+        result = str(verdict.get("result", "")).upper()
+        reasons = verdict.get("reasons") or []
+        reasons_text = " / ".join(str(r) for r in reasons) if reasons else "（理由なし）"
+
+        if result == "PASS":
+            if status == "done":
+                continue
+            block(
+                f"[stop_gate] {task_key} の verdict は PASS ですが status が {status} です。"
+                f"計画票（vault/plans/{plan_id}.md）のタスク表の status を done にし、vault/log/{plan_id}.md に1行追記すること。"
+            )
+
+        # FAIL（または不明な result は FAIL 扱い）
+        if attempt < MAX_ATTEMPTS:
+            block(
+                f"[stop_gate] {task_key} の verdict は FAIL（attempt={attempt}/{MAX_ATTEMPTS}）。理由: {reasons_text}。"
+                f"計画票（vault/plans/{plan_id}.md）のタスク表の status を doing に戻し attempt を {attempt + 1} にして修正し、"
+                f"タスク票の「進捗」に追記してから、再度 review にして verifier を実行すること。"
+            )
         block(
-            f"[stop_gate] {task_key} は {status} ですが {why}。"
-            f"verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"
-            f"（attempt={attempt}）。"
+            f"[stop_gate] {task_key} の verdict は FAIL で試行上限（{MAX_ATTEMPTS}）に達しました。理由: {reasons_text}。"
+            f"計画票（vault/plans/{plan_id}.md）のタスク表の status を blocked にし、question 列に人へ聞くこと（理由の要約）を書き、"
+            f"vault/log/{plan_id}.md に1行追記すること。"
         )
 
-    problems = validate_verdict(verdict, task_key, task_path)
-    if problems:
-        block(
-            f"[stop_gate] {task_key} の verdict の形式が不正です: {'; '.join(problems)}。"
-            f"verifier サブエージェントを再実行して vault/verdicts/{task_key}.json を書き直すこと（attempt={attempt}）。"
-        )
-
-    result = str(verdict.get("result", "")).upper()
-    reasons = verdict.get("reasons") or []
-    reasons_text = " / ".join(str(r) for r in reasons) if reasons else "（理由なし）"
-
-    if result == "PASS":
-        if status == "done":
-            allow()
-        block(
-            f"[stop_gate] {task_key} の verdict は PASS ですが status が {status} です。"
-            f"計画票（vault/plans/{plan_id}.md）のタスク表の status を done にし、vault/log/{plan_id}.md に1行追記すること。"
-        )
-
-    # FAIL（または不明な result は FAIL 扱い）
-    if attempt < MAX_ATTEMPTS:
-        block(
-            f"[stop_gate] {task_key} の verdict は FAIL（attempt={attempt}/{MAX_ATTEMPTS}）。理由: {reasons_text}。"
-            f"計画票（vault/plans/{plan_id}.md）のタスク表の status を doing に戻し attempt を {attempt + 1} にして修正し、"
-            f"タスク票の「進捗」に追記してから、再度 review にして verifier を実行すること。"
-        )
-    block(
-        f"[stop_gate] {task_key} の verdict は FAIL で試行上限（{MAX_ATTEMPTS}）に達しました。理由: {reasons_text}。"
-        f"計画票（vault/plans/{plan_id}.md）のタスク表の status を blocked にし、question 列に人へ聞くこと（理由の要約）を書き、"
-        f"vault/log/{plan_id}.md に1行追記すること。"
-    )
+    allow()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+{
+  "task": "P-20260924-vcs-finish/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 00:01",
+  "criteria": [
+    {"text": "スクリプトが存在し実行権限がある。確認: `test -x scripts/vcs_finish.sh && echo ok`", "ok": true, "note": "実行コマンド: `test -x scripts/vcs_finish.sh && echo ok` / 出力: ok"},
+    {"text": "`HARNESS_VCS_HOST=none` で実行すると終了コード0で終わり、標準出力に現在のブランチ名と `git merge --no-ff` の両方を含む。確認: `br=$(git rev-parse --abbrev-ref HEAD); out=$(HARNESS_VCS_HOST=none bash scripts/vcs_finish.sh); code=$?; echo \"exit=$code\"; printf '%s' \"$out\" | grep -F -- \"$br\" >/dev/null && echo has_branch; printf '%s' \"$out\" | grep -c 'git merge --no-ff'`", "ok": true, "note": "実行コマンド: 上記確認コマンドをそのまま実行 / 出力: exit=0, has_branch, 1（`git merge --no-ff` の一致数）"},
+    {"text": "`HARNESS_VCS_HOST=github` は `gh pr create \"$@\"` を、`HARNESS_VCS_HOST=gitlab` は `glab mr create \"$@\"` を呼ぶ記述がそれぞれ1箇所以上ある。確認: `grep -c 'gh pr create \"$@\"' scripts/vcs_finish.sh; grep -c 'glab mr create \"$@\"' scripts/vcs_finish.sh`（両方1以上）", "ok": true, "note": "実行コマンド: `/usr/bin/grep -c 'gh pr create \"$@\"' scripts/vcs_finish.sh` → 1、`/usr/bin/grep -c 'glab mr create \"$@\"' scripts/vcs_finish.sh` → 1（対話シェルの grep シム回避のため /usr/bin/grep を使用。ファイル内容を直接 Read でも該当行を目視確認済み）"},
+    {"text": "環境変数未指定・`auto` 時は `git remote get-url origin` を参照して判定するロジックがある。確認: `grep -n 'remote get-url origin' scripts/vcs_finish.sh` がヒットする", "ok": true, "note": "実行コマンド: `/usr/bin/grep -n 'remote get-url origin' scripts/vcs_finish.sh` / 出力: 10行目（コメント）と19行目（実処理 `origin_url=$(git remote get-url origin ...)`）でヒット"},
+    {"text": "`gh pr merge`・`glab mr merge` を実行するコードが無い。確認: `grep -c 'gh pr merge\\|glab mr merge' scripts/vcs_finish.sh` が0", "ok": true, "note": "実行コマンド: `/usr/bin/grep -c 'gh pr merge\\|glab mr merge' scripts/vcs_finish.sh` / 出力: 0（該当なしのため grep の終了コードは1だが、件数としてのカウント出力は0）"}
+  ],
+  "reasons": []
+}

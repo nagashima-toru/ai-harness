@@ -67,9 +67,9 @@ frontmatter は `id` と `status` の2つ。
 |---|---|
 | `draft` | planner が作った直後。人の承認待ちで、まだ着手しない |
 | `approved` | 人が承認した。このブランチで進行中の計画 |
-| `done` | 全タスクが `done` になり `gh pr create` 済み |
+| `done` | 全タスクが `done` になり `scripts/vcs_finish.sh` を実行済み |
 
-`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `gh pr create` までで `gh pr merge` は実行しない。
+`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。
 
 本文は `ゴール / 分割方針 / タスク一覧 / 計画の受け入れ基準`。このうち「タスク一覧」の表が状態の正本で、次の形にする。
 
@@ -227,7 +227,7 @@ D-002 の設計思想は「人の操作を前提にしない（エージェン�
 
 ### ブランチと PR
 - `/design` は `main` から `git checkout -b design/d-xxx`（`xxx` は D-ID の3桁を小文字化したもの。例：D-002 → `design/d-002`）でブランチを切り、設計文書をそのブランチ上でコミットする（`main` 上では `agent_write_guard.py` が `git commit` を拒否するため）
-- 設計文書は全フェーズ分を一括で1回の PR で `main` にマージする（フェーズ単位で分割マージしない）。`gh pr create` で PR を作り、人がレビューして `main` へマージする（`/plan` の `run` が最後に作る PR と同じ運用。`gh pr merge` はエージェントが実行しない。マージは人が行う）
+- 設計文書は全フェーズ分を一括で1回の PR で `main` にマージする（フェーズ単位で分割マージしない）。`scripts/vcs_finish.sh` を実行して PR/MR を作り（ホスティング無しの場合は案内を受け取り）、人がレビューして `main` へマージする（`/plan` の `run` が最後に作る PR と同じ運用。`gh pr merge`/`glab mr merge` はエージェントが実行しない。マージは人が行う）
 - マージのタイミングはフェーズ1の実装着手前。人が PR をレビュー・マージしてから、フェーズ1のゴール文を `/plan` に渡す
 
 ### `/plan` との関係

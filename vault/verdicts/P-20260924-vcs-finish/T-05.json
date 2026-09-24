@@ -1,0 +1,29 @@
+{
+  "task": "P-20260924-vcs-finish/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 00:14",
+  "criteria": [
+    {
+      "text": "`docs/runbook.md` に `gh pr create` という文字列が残っていない。確認: `grep -c \"gh pr create\" docs/runbook.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"gh pr create\" docs/runbook.md` / 出力: 0"
+    },
+    {
+      "text": "「3. キューを回す」節に `scripts/vcs_finish.sh` を実行する旨の記述がある。確認: `grep -n \"vcs_finish.sh\" docs/runbook.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"vcs_finish.sh\" docs/runbook.md` / 出力: 31行目に `bash scripts/vcs_finish.sh` を実行する旨、32行目に `scripts/vcs_finish.sh` の実行までしか行わない旨の記述がヒット（いずれも「## 3. キューを回す」節内）"
+    },
+    {
+      "text": "ホスティング無し（`none`）時の案内（ブランチ名・`git merge --no-ff`）を人に伝え、それを使って `main` へ取り込む旨の記述がある。確認: `grep -n \"git merge --no-ff\" docs/runbook.md` がヒットする",
+      "ok": true,
+      "note": "`grep -n \"git merge --no-ff\" docs/runbook.md` は agent_write_guard によりverifierのBashで実行不可（\"merge\"を含むgit系コマンドとして拒否）。代替としてReadツールで docs/runbook.md の該当節（20-38行）を確認したところ、31行目に「ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える」、32行目に「ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する」の記述があり、いずれも `main` への取り込み文脈で使われている"
+    },
+    {
+      "text": "マージ手順の記述が GitHub 限定（`gh pr merge` だけ）ではなく、GitLab またはホスティング無しにも触れている。確認: `grep -c \"glab\\|GitLab\\|ホスティング無し\" docs/runbook.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'glab\\|GitLab\\|ホスティング無し' docs/runbook.md` / 出力: 2（31・32行目でGitLab・ホスティング無しの両方に言及）"
+    }
+  ],
+  "reasons": []
+}

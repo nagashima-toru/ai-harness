@@ -1,6 +1,6 @@
 ---
 id: P-20260925-discard-worktree-script
-status: draft
+status: approved
 ---
 # ゴール
 

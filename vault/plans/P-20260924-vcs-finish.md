@@ -1,6 +1,6 @@
 ---
 id: P-20260924-vcs-finish
-status: approved
+status: done
 ---
 # ゴール
 `run` スキルの最終手順（全タスク `done` 後の PR 作成）と `design` スキルの最終手順（設計文書提示後の

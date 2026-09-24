@@ -194,6 +194,22 @@ expect_guard "creator が vault/log/ に Write → 拒否" deny \
 expect_guard "creator が README.md に Write → 許可" allow \
   "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
 
+WMAIN="$(mktemp -d)"
+git -C "$WMAIN" init -q -b main
+git -C "$WMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+WLEAF="$(mktemp -d)"; rmdir "$WLEAF"
+git -C "$WMAIN" worktree add -q -b work/p-wt "$WLEAF" >/dev/null 2>&1
+mkdir -p "$WLEAF/vault/verdicts"
+expect_guard "(worktree) verifier が worktree 内の vault/verdicts/ に Write（CLAUDE_PROJECT_DIR はメインチェックアウト側のまま）→ 許可" allow \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WLEAF"'/vault/verdicts/T-1.json"}}' | CLAUDE_PROJECT_DIR="$WMAIN" python3 "$GUARD_HOOK")"
+git -C "$WMAIN" worktree remove -q --force "$WLEAF" >/dev/null 2>&1
+rm -rf "$WMAIN" "$WLEAF"
+
+expect_guard "verifier が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
+expect_guard "planner が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
+
 echo "== plan_guard.py =="
 run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }
 

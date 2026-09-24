@@ -30,7 +30,7 @@ argument-hint: [task-id（省略時は先頭）]
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：
    `git -C <worktree のパス> merge-base --is-ancestor <PLAN_HEAD> HEAD`
    終了コードが `0` なら、その worktree は計画ブランチ（`PLAN_HEAD`）から分岐している。`git worktree list` でパスとブランチ名の対応も確認できる
-6. 直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合は、`isolation` オプションに起点を明示するフィールド（Agent ツールの呼び出しスキーマ上、起点ブランチ／コミットを指定するフィールド。呼び出し時の実際の定義に従い名称を確認する）へ現在のブランチ名（計画ブランチ）または `PLAN_HEAD` を指定し、対象タスクの creator 呼び出しをやり直す
+6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに対象タスクの計画票の該当行を `blocked` にし、question に「worktree の分岐元が計画ブランチと一致しない（手順5の確認コマンドの出力要点）」のように状況を書き、人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
 7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する
 8. blocked のタスクが1件以上あれば、それら全部について計画票の該当行の status を `blocked` にし、question 列に creator の質問文をそのまま書き写す（言い換えない）。この書き込みは対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→blocked attempt=<n> 理由要約` の形で追記する。選んだタスクの中に blocked 以外が無ければここで終わる
 

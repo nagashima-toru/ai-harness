@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-gh-api-write-guard/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 12:57",
+  "criteria": [
+    {
+      "text": "`gh api -X PUT repos/o/r/contents/vault/rules/x.md -f content=Zm9v -f message=m` 相当の Bash コマンドを `agent_write_guard.py` に渡すと deny になる。確認：`scripts/smoke.sh` に追加した該当ケースが `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh`（`== agent_write_guard.py ==` 節）/ 出力: `ok   gh api で vault/rules/ へ PUT → 拒否` および `ok   gh api で -X 指定なしでも vault/rules/ を対象に -f content → 拒否`。追加で `printf '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"gh api -X PUT repos/o/r/contents/vault/rules/x.md ...\"}}' | python3 .claude/hooks/agent_write_guard.py` を実行したところ、この文字列を含む Bash コマンド自体が verifier 自身の PreToolUse フックにも deny された（`vault/rules/ へは書き込めません`）ことで実動作を確認"
+    },
+    {
+      "text": "GitHub Contents API を直接叩く `curl`（例：`curl -X PUT -H 'Authorization: token x' https://api.github.com/repos/o/r/contents/vault/rules/x.md -d '{\"message\":\"m\",\"content\":\"Zm9v\"}'`）も deny になる。確認：同様に追加ケースが `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh`（`== agent_write_guard.py ==` 節）/ 出力: `ok   curl で api.github.com の vault/rules/ へ PUT → 拒否`"
+    },
+    {
+      "text": "`vault/rules/` に触れない `gh api repos/o/r/issues` や `vault/rules/` を含まない `curl` コマンドは引き続き allow のまま（回帰なし）。確認：追加ケースが `ok`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh`（`== agent_write_guard.py ==` 節）/ 出力: `ok   vault/rules/ を含まない gh api issues 一覧 → 許可`、`ok   vault/rules/ を含まない curl コマンド → 許可`。加えて `printf '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"gh api repos/o/r/issues\"}}' | python3 .claude/hooks/agent_write_guard.py` と curl 版を個別に実行し、いずれも出力なし（allow）を確認"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` の出力が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=103 fail=0`"
+    },
+    {
+      "text": "既存の `== agent_write_guard.py ==` セクションの全ケースが `ok` のまま。確認：`bash scripts/smoke.sh` の出力に `NG` を含む行が無い",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep -c 'NG'` / 出力: `0`。加えて `bash scripts/smoke.sh` の全出力を目視確認し、`stop_gate.py`〜`merge_settings_json.py` の全セクションで `NG` 行が無いことを確認。起点コミット 283459a との差分（`git diff --name-only 283459a..HEAD`）は `.claude/hooks/agent_write_guard.py`・`scripts/smoke.sh`（成果物に記載あり）と `vault/log/...`・`vault/plans/...`・`vault/tasks/.../T-01.md`（判定除外対象）のみで、成果物に無い未宣言ファイルは無かった"
+    }
+  ],
+  "reasons": []
+}

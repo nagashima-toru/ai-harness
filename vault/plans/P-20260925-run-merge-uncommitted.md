@@ -1,6 +1,6 @@
 ---
 id: P-20260925-run-merge-uncommitted
-status: approved
+status: done
 ---
 # ゴール
 

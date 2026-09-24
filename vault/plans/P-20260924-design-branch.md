@@ -1,6 +1,6 @@
 ---
 id: P-20260924-design-branch
-status: approved
+status: done
 ---
 # ゴール
 `/design` スキルはブランチを切らずに `vault/designs/D-xxx.md` を書くが、`agent_write_guard.py` は

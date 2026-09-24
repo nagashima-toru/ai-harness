@@ -1,0 +1,29 @@
+{
+  "task": "P-20260925-discard-worktree-script/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 07:19",
+  "criteria": [
+    {
+      "text": "`grep -n \"git branch -D\" .claude/skills/run/SKILL.md` がヒットしない",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"git branch -D\" .claude/skills/run/SKILL.md`（Grep ツール） / 出力: No matches found（ヒットなし、基準どおり）"
+    },
+    {
+      "text": "`grep -n \"bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>\" .claude/skills/run/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"bash scripts/discard_worktree\\.sh <worktree のパス> <ブランチ名>\" .claude/skills/run/SKILL.md`（Grep ツール） / 出力: 59行目に `bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>` を含む行がヒット"
+    },
+    {
+      "text": "PASS 時の片付け（手順6.3.1-4）は変更されていない。確認：`grep -n \"git branch -d <ブランチ名>\" .claude/skills/run/SKILL.md` が1件ヒットする（`-d` 小文字のまま）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"git branch -d <ブランチ名>\" .claude/skills/run/SKILL.md`（Grep ツール） / 出力: 55行目の1件のみヒット（`git branch -d <ブランチ名>` の小文字表記のまま、手順6.3.1-4は不変）"
+    },
+    {
+      "text": "旧記述の削除が該当1箇所に限られる。確認：`git diff -- .claude/skills/run/SKILL.md | grep -c '^-.*git worktree remove <worktree のパス> --force'` が `1`",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- .claude/skills/run/SKILL.md`（差分全体を確認） / 出力: 変更ハンクは59行目付近の1箇所のみで、削除行（`-`で始まる行）に `git worktree remove <worktree のパス> --force` が1回だけ含まれる（該当パターンの削除は1箇所に限られる）"
+    }
+  ],
+  "reasons": []
+}

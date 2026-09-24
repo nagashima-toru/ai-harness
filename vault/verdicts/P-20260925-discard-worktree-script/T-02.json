@@ -1,0 +1,29 @@
+{
+  "task": "P-20260925-discard-worktree-script/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 07:19",
+  "criteria": [
+    {
+      "text": "`manifest_paths()` 関数内の `for p in ...` 列挙に `scripts/discard_worktree.sh` が追加されている。確認：`grep -n 'scripts/discard_worktree.sh' scripts/install.sh` が2箇所以上ヒットする（`manifest_paths` の列挙と、通常複製ループの `copy_if_absent` 呼び出しの両方）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'scripts/discard_worktree.sh' scripts/install.sh` / 出力: 60行目（manifest_paths の for p in ... 列挙）と140行目（copy_if_absent \"$SRC/scripts/discard_worktree.sh\" \"$DST/scripts/discard_worktree.sh\"）の2箇所ヒット"
+    },
+    {
+      "text": "新規ディレクトリへ `bash scripts/install.sh <target>` を実行すると `<target>/scripts/discard_worktree.sh` が配置される。確認：`T=$(mktemp -d); bash scripts/install.sh \"$T\" >/dev/null 2>&1; test -f \"$T/scripts/discard_worktree.sh\" && echo ok` が `ok`",
+      "ok": true,
+      "note": "実行コマンド: `T=$(mktemp -d); bash scripts/install.sh \"$T\" >/dev/null 2>&1; test -f \"$T/scripts/discard_worktree.sh\" && echo ok` / 出力: ok"
+    },
+    {
+      "text": "同じ実行で `.claude/harness-manifest.json` の `files` に `scripts/discard_worktree.sh` がSHA256（64桁16進）の値付きで載る。確認：`python3 -c \"import json,re;d=json.load(open('$T/.claude/harness-manifest.json'))['files'];print(bool(re.fullmatch('[0-9a-f]{64}', d.get('scripts/discard_worktree.sh',''))))\"` が `True`",
+      "ok": true,
+      "note": "実行コマンド: 同じ $T（前行で install.sh 実行済み）に対し `python3 -c \"import json,re;d=json.load(open('$T/.claude/harness-manifest.json'))['files'];print(bool(re.fullmatch('[0-9a-f]{64}', d.get('scripts/discard_worktree.sh',''))))\"` / 出力: True"
+    },
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` が `fail=0` で終わる（既存の install/uninstall 系ケースを壊していない）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=132 fail=0。付記：タスク票「進捗」に `起点コミット: <短縮ハッシュ>` の記録が無いため、成果物外ファイル混入の diff 検査（git diff --name-only <起点コミット>..HEAD）は実施していない。"
+    }
+  ],
+  "reasons": []
+}

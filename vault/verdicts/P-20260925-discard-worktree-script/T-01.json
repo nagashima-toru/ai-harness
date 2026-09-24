@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-discard-worktree-script/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 07:16",
+  "criteria": [
+    {
+      "text": "引数が2つでない場合は何も削除せず非0で終了し使い方を標準エラーに出す。確認：`bash scripts/discard_worktree.sh onlyonearg; echo $?` の終了コードが0以外",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/discard_worktree.sh onlyonearg; echo $?` / 出力: stderr に `usage: bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>`、終了コード2"
+    },
+    {
+      "text": "ブランチ名が `worktree-agent-` で始まらない場合は削除せず非0で終わる。確認：一時リポジトリ（`git init` 後 `git commit --allow-empty` で初期コミット）で `git worktree add -q -b other-branch <path>` した上で `bash scripts/discard_worktree.sh <path> other-branch; echo $?` が0以外になり、直後の `git worktree list --porcelain` に `<path>` が残っている",
+      "ok": true,
+      "note": "実行コマンド: 一時リポジトリで `git worktree add -q -b other-branch <path>` 後 `bash scripts/discard_worktree.sh <path> other-branch; echo $?` / 出力: stderr に接頭辞不一致のエラー、終了コード1。直後の `git worktree list --porcelain | grep -F <path>` に該当行あり（残存確認）"
+    },
+    {
+      "text": "指定パスが `git worktree list --porcelain` に登録されていない場合は削除せず非0で終わる。確認：存在しない絶対パス（例 `/tmp/discard-worktree-notexist-$$`）に対し `bash scripts/discard_worktree.sh /tmp/discard-worktree-notexist-$$ worktree-agent-x; echo $?` が0以外",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/discard_worktree.sh /tmp/discard-worktree-notexist-1676 worktree-agent-x; echo $?` / 出力: stderr に未登録エラー、終了コード1"
+    },
+    {
+      "text": "指定パスに登録された worktree の実際のブランチが指定ブランチ名と一致しない場合は削除せず非0で終わる。確認：`git worktree add -q -b worktree-agent-real <path>` の後 `bash scripts/discard_worktree.sh <path> worktree-agent-fake; echo $?` が0以外で、`git worktree list --porcelain` に `<path>` が残っている",
+      "ok": true,
+      "note": "実行コマンド: `git worktree add -q -b worktree-agent-real <path>` 後 `bash scripts/discard_worktree.sh <path> worktree-agent-fake; echo $?` / 出力: stderr に「実際=worktree-agent-real 指定=worktree-agent-fake」のエラー、終了コード1。直後の `git worktree list --porcelain | grep -F <path>` に該当行あり（残存確認）"
+    },
+    {
+      "text": "上記すべて（引数2つ・`worktree-agent-` 接頭辞・パス登録済み・ブランチ一致）を満たす場合は `git worktree remove --force` と `git branch -D` が実行され終了コード0で終わる。確認：`git worktree add -q -b worktree-agent-test <path>` の後 `bash scripts/discard_worktree.sh <path> worktree-agent-test; echo $?` が0で、`git worktree list --porcelain` に `<path>` が無く `git rev-parse --verify worktree-agent-test` が非0で終わる",
+      "ok": true,
+      "note": "実行コマンド: `git worktree add -q -b worktree-agent-test <path>` 後 `bash scripts/discard_worktree.sh <path> worktree-agent-test; echo $?` / 出力: `Deleted branch worktree-agent-test (was 97d0fe8).`、終了コード0。直後の `git worktree list --porcelain | grep -F <path>` はヒットなし（REMOVED）、`git rev-parse --verify worktree-agent-test` は `fatal: Needed a single revision` で終了コード128（非0）。タスク票「進捗」の `起点コミット` 記載なしのため、成果物ファイル一覧の差分検査（手順9）は実施せず。代わりに `git status --porcelain`（worktree ルート）を確認したところ差分は `M vault/tasks/P-20260925-discard-worktree-script/T-01.md`（進捗欄、判定除外対象）と成果物として宣言済みの `scripts/discard_worktree.sh` のみで、宣言外ファイルの変更は無かった"
+    }
+  ],
+  "reasons": []
+}

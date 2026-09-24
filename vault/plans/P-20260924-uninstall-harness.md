@@ -1,6 +1,6 @@
 ---
 id: P-20260924-uninstall-harness
-status: approved
+status: done
 ---
 # ゴール
 
@@ -32,7 +32,7 @@ GitHub Issue #8。ハーネスを導入先から取り除く手順が無い（`s
 | T-03 | done | 1 | T-01,T-02 | scripts/uninstall.sh を作る（マニフェスト照合削除 + 3種報告） | |
 | T-04 | done | 1 | T-03 | scripts/install.sh を更新（新規3ファイルの配布対象追加 + manifest に settings_src を書く） | |
 | T-05 | done | 1 | T-04 | docs/install.md にアンインストール手順を追記する | |
-| T-06 | review | 1 | T-04 | scripts/smoke.sh に uninstall.sh の回帰テストを追加する | |
+| T-06 | done | 1 | T-04 | scripts/smoke.sh に uninstall.sh の回帰テストを追加する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

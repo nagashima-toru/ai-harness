@@ -28,8 +28,8 @@
 - 無人：`claude -p "/run"` を cron / CI から定期実行
   - 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）
   - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
-  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にし `gh pr create` する（`gh pr merge` はしない。マージは人が行う）
-  - PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `gh pr create` までしか行わない）。
+  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にし `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh` コマンドで、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
+  - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
 
 ## 4. blocked に答えて戻す
 1. 計画票（`vault/plans/<計画ID>.md`）のタスク表で `status=blocked` の行の `question` を読む

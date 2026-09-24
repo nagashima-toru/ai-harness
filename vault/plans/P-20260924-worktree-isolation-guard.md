@@ -1,6 +1,6 @@
 ---
 id: P-20260924-worktree-isolation-guard
-status: draft
+status: approved
 ---
 # ゴール
 

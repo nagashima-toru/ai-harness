@@ -1,0 +1,29 @@
+{
+  "task": "P-20260924-creator-subagent/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 16:12",
+  "criteria": [
+    {
+      "text": "`agent_type: creator` が `vault/plans/` へ Write → deny を期待するケースが、テスト名に「creator が vault/plans/ に Write → 拒否」という文字列で追加されている。確認コマンド: `grep -c 'creator が vault/plans/ に Write → 拒否' scripts/smoke.sh` の出力が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'creator が vault/plans/ に Write → 拒否' scripts/smoke.sh` / 出力: 1（190行目に `expect_guard \"creator が vault/plans/ に Write → 拒否\" deny ...` として存在）"
+    },
+    {
+      "text": "`agent_type: creator` が `vault/log/` へ Write → deny を期待するケースが、テスト名に「creator が vault/log/ に Write → 拒否」という文字列で追加されている。確認コマンド: `grep -c 'creator が vault/log/ に Write → 拒否' scripts/smoke.sh` の出力が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'creator が vault/log/ に Write → 拒否' scripts/smoke.sh` / 出力: 1（192行目に `expect_guard \"creator が vault/log/ に Write → 拒否\" deny ...` として存在）"
+    },
+    {
+      "text": "`agent_type: creator` が `README.md`（成果物パス）へ Write → allow を期待するケースが、テスト名に「creator が README.md に Write → 許可」という文字列で追加されている。確認コマンド: `grep -c 'creator が README.md に Write → 許可' scripts/smoke.sh` の出力が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'creator が README.md に Write → 許可' scripts/smoke.sh` / 出力: 1（194行目に `expect_guard \"creator が README.md に Write → 許可\" allow ...` として存在）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行すると、追加した3ケースを含め全件 pass する。確認コマンド: `bash scripts/smoke.sh | tail -1` の出力が `smoke: pass=N fail=0`（N は追加分を含む総数）の形式で `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=113 fail=0`。fail=0 を含み全件 pass。"
+    }
+  ],
+  "reasons": []
+}

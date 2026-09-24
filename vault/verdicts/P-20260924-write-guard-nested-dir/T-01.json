@@ -1,0 +1,29 @@
+{
+  "task": "P-20260924-write-guard-nested-dir/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 21:20",
+  "criteria": [
+    {
+      "text": "`resolve_root()`（または `git_toplevel()`）に、`probe_dir` が存在しない場合に存在する祖先ディレクトリまで `os.path.dirname()` で遡ってから `git -C` を呼ぶ処理が入っている。確認コマンド：`grep -n \"isdir\" .claude/hooks/agent_write_guard.py` に `probe_dir` 探索に関わる行が出力される",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"isdir\" .claude/hooks/agent_write_guard.py` / 出力: `79:    while probe and not os.path.isdir(probe):`。Read で該当箇所を確認したところ `existing_ancestor()` 関数が `os.path.isdir()` で存在判定しつつ `os.path.dirname()` で祖先へ遡り、`git_toplevel()` が冒頭でこれを呼んでから `git -C` を実行する構造になっている。"
+    },
+    {
+      "text": "worktree 内でまだ存在しないネストしたディレクトリ（例：`vault/verdicts/<新規計画ID>/`）配下への Write が、メインチェックアウトへのフォールバックによって誤って拒否されないことを確認する回帰テストが `scripts/smoke.sh` に追加されている。既存の197〜206行目のケースとは異なり、対象ディレクトリを事前に `mkdir -p` しないこと。確認コマンド：`grep -n \"nested\" scripts/smoke.sh`（追加したテスト名に `nested` を含める）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"nested\" scripts/smoke.sh` / 出力: 212行目にブランチ名 `work/p-wt-nested`、213行目にテスト名 `(worktree nested) verifier が worktree 内の未作成ネストディレクトリ vault/verdicts/P-NEW/ に Write（事前 mkdir なし）→ 許可` が出力される。Read で該当ブロック（207〜219行目）を確認し、新規 worktree 作成後に `mkdir -p` を呼ばず `vault/verdicts/P-NEW/T-1.json` への Write を verifier で試みて allow を確認する内容であることを確認した。既存197〜206行目のケース（`mkdir -p` あり）はそのまま残っている。"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行すると全件 pass する（追加したテストを含む）。確認コマンド：`bash scripts/smoke.sh | tail -1` の出力が `smoke: pass=<N> fail=0`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=117 fail=0`（fail=0 で全件 pass）。"
+    },
+    {
+      "text": "修正後も `resolve_root()` の最終フォールバック順序（`CLAUDE_PROJECT_DIR` → `payload.cwd` → `os.getcwd()`）は変更されていない。確認コマンド：`git diff -- .claude/hooks/agent_write_guard.py | grep -E '^[+-]\\s*fallback = '` の出力が空（フォールバック行自体は変更しない）",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- .claude/hooks/agent_write_guard.py | grep -E '^[+-]\\s*fallback = '` / 出力: なし（空）。フォールバック代入行に変更が無いことを確認した。なお本タスクの起点コミット（c00c1ab）は現在の HEAD と一致しており作業はすべて未コミットの working tree 差分として存在する。`git status --short` で変更ファイルを確認したところ `.claude/hooks/agent_write_guard.py`・`scripts/smoke.sh`・`vault/tasks/P-20260924-write-guard-nested-dir/T-01.md`（タスク票自身の進捗更新、除外対象）のみであり、成果物に書かれていないファイルへの変更は無い。"
+    }
+  ],
+  "reasons": []
+}

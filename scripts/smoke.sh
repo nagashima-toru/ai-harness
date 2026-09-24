@@ -205,6 +205,16 @@ expect_guard "(worktree) verifier が worktree 内の vault/verdicts/ に Write�
 git -C "$WMAIN" worktree remove -q --force "$WLEAF" >/dev/null 2>&1
 rm -rf "$WMAIN" "$WLEAF"
 
+WMAIN2="$(mktemp -d)"
+git -C "$WMAIN2" init -q -b main
+git -C "$WMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+WLEAF2="$(mktemp -d)"; rmdir "$WLEAF2"
+git -C "$WMAIN2" worktree add -q -b work/p-wt-nested "$WLEAF2" >/dev/null 2>&1
+expect_guard "(worktree nested) verifier が worktree 内の未作成ネストディレクトリ vault/verdicts/P-NEW/ に Write（事前 mkdir なし）→ 許可" allow \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WLEAF2"'/vault/verdicts/P-NEW/T-1.json"}}' | CLAUDE_PROJECT_DIR="$WMAIN2" python3 "$GUARD_HOOK")"
+git -C "$WMAIN2" worktree remove -q --force "$WLEAF2" >/dev/null 2>&1
+rm -rf "$WMAIN2" "$WLEAF2"
+
 expect_guard "verifier が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
 expect_guard "planner が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \

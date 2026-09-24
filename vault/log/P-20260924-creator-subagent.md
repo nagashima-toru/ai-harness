@@ -1,0 +1,17 @@
+- 2026-09-24 15:46 T-01 todo→doing attempt=1
+- 2026-09-24 16:03 T-01 doing→review attempt=1
+- 2026-09-24 16:04 T-01 review→done attempt=1
+- 2026-09-24 16:04 T-02 todo→doing attempt=1
+- 2026-09-24 16:06 T-02 doing→review attempt=1
+- 2026-09-24 16:09 T-02 review→done attempt=1
+- 2026-09-24 16:09 T-03 todo→doing attempt=1
+- 2026-09-24 16:11 T-03 doing→review attempt=1
+- 2026-09-24 16:12 T-03 review→done attempt=1
+- 2026-09-24 16:12 T-04 todo→doing attempt=1
+- 2026-09-24 16:17 T-04 doing→review attempt=1
+- 2026-09-24 16:28 T-04 review→done attempt=1
+- 2026-09-24 16:28 T-05 todo→doing attempt=1
+- 2026-09-24 16:30 T-05 doing→review attempt=1
+- 2026-09-24 16:31 T-05 review→doing attempt=2 末尾に実体パス記載が無くFAIL
+- 2026-09-24 16:32 T-05 doing→review attempt=2
+- 2026-09-24 16:38 T-05 review→done attempt=2

@@ -1,0 +1,39 @@
+{
+  "task": "P-20260924-creator-subagent/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 16:03",
+  "criteria": [
+    {
+      "text": "frontmatter に `name: creator` と `tools:` がある。確認コマンド: `grep -c '^name: creator$' .claude/agents/creator.md` の出力が1、かつ `grep -c '^tools:' .claude/agents/creator.md` の出力が1",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^name: creator$' .claude/agents/creator.md && grep -c '^tools:' .claude/agents/creator.md` / 出力: 1, 1"
+    },
+    {
+      "text": "「入力」相当の節に、タスク ID だけを受け取る旨が明記されている（verifier.md の「入力」節と同様の書き方）",
+      "ok": true,
+      "note": "確認方法: creator.md と verifier.md を Read で比較。creator.md 10〜11行目「呼び出し時にタスク ID（例：`<計画ID>/T-01`）を受け取る。それ以外の説明や会話は受け取らないし、作業の判断には使わない。」は verifier.md 10〜11行目「呼び出し時にタスク ID（例：`<計画ID>/T-01`）を受け取る。それ以外の説明や会話は受け取らないし、受け取っても採点に使わない。」と文型が一致している"
+    },
+    {
+      "text": "本文に、`bash scripts/rules.sh creator` を実行してルールを読む手順が含まれる。確認コマンド: `grep -c 'rules.sh creator' .claude/agents/creator.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'rules.sh creator' .claude/agents/creator.md` / 出力: 2（読むもの2番目と手順2番目の2箇所に記載）"
+    },
+    {
+      "text": "本文に、`vault/plans/` と `vault/log/` へは書き込まず、状態更新とログ追記はオーケストレーター（呼び出し元）の役目である旨が明記されている。確認コマンド: `grep -c 'vault/plans/' .claude/agents/creator.md` の出力が1以上、かつ `grep -c 'vault/log/' .claude/agents/creator.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/plans/' .claude/agents/creator.md && grep -c 'vault/log/' .claude/agents/creator.md` / 出力: 1, 1。「書き込まないもの」節（29〜30行目）に `vault/plans/<計画ID>.md` と `vault/log/<計画ID>.md` それぞれについて、状態更新・ログ追記はオーケストレーターの役目である旨が明記されている"
+    },
+    {
+      "text": "本文に、「決定済み」に答えが無い判断が必要になった場合は自分で `blocked` にせず、進捗に記録した上で質問を完了報告として返す旨が明記されている",
+      "ok": true,
+      "note": "確認方法: creator.md を Read で確認。手順5（22行目）に「自分で `blocked` を確定させない（計画票への書き込みはフックが常に拒否する）。代わりに「進捗」に判断できない理由を記録し、完了報告で「blocked: <質問文>」の形で返す」と明記されている"
+    },
+    {
+      "text": "本文に、完了報告として成果物のパスと確認コマンドの実行結果の要約（または blocked の場合は質問文）を返す旨が明記されている",
+      "ok": true,
+      "note": "確認方法: creator.md を Read で確認。「出力」節（40行目）に「完了報告として、成果物のパスと受け入れ基準の確認コマンドの実行結果の要約を返す。判断できない箇所があった場合は、それに代えて「blocked: <質問文>」を返す。」と明記されている"
+    }
+  ],
+  "reasons": []
+}

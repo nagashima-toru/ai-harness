@@ -1,0 +1,36 @@
+{
+  "task": "P-20260924-creator-subagent/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 16:27",
+  "criteria": [
+    {
+      "text": "手順2「取り出す」の末尾（status を `doing` にし log に `todo→doing` を追記する部分）がオーケストレーター自身の操作として残っている。確認コマンド: `grep -c 'todo→doing' .claude/skills/run/SKILL.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'todo→doing' .claude/skills/run/SKILL.md` / 出力: 1。`git diff a71878c..HEAD -- .claude/skills/run/SKILL.md` で確認すると手順2の当該行（5. 取った行の status を doing、attempt を1にする。log に todo→doing を追記）は変更されておらず、手順2末尾に残っている。"
+    },
+    {
+      "text": "手順3相当が「Agent ツールで `creator` をタスク ID だけ渡して1回呼ぶ」形に書き換わっている。確認コマンド: `grep -c 'creator' .claude/skills/run/SKILL.md` の出力が1以上、かつ `grep -c 'Agent ツール' .claude/skills/run/SKILL.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'creator' .claude/skills/run/SKILL.md` / 出力: 5、`grep -c 'Agent ツール' .claude/skills/run/SKILL.md` / 出力: 2。Read で手順3の1行目を確認すると『Agent ツールで creator サブエージェントを呼ぶ。prompt はタスク ID だけ（例：<計画ID>/<id> の成果物を作ってください）』となっており、基準の記述と一致する。"
+    },
+    {
+      "text": "creator の完了報告を受けた後、オーケストレーターが status を `review` にし log に `doing→review` を追記する手順が明記されている。確認コマンド: `grep -c 'doing→review' .claude/skills/run/SKILL.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'doing→review' .claude/skills/run/SKILL.md` / 出力: 1。手順4「review にする」の本文『creator から blocked ではない完了報告を受けたら、status を review にし、vault/log/<計画ID>.md に - <日時> <id> doing→review attempt=<n> を追記する。』で明記されている。"
+    },
+    {
+      "text": "creator が「決定済みに無い判断が必要」と報告（blocked 報告）した場合、オーケストレーターが status を `blocked` にし question 列に質問を書き log に追記する手順が明記されている",
+      "ok": true,
+      "note": "確認コマンドの指定なし。Read で手順3の3を確認：『blocked 報告を受けた場合、計画票の該当行の status を blocked にし、question 列に creator の質問文をそのまま書き写す（言い換えない）。vault/log/<計画ID>.md に - <日時> <id> doing→blocked attempt=<n> 理由要約 を追記して終わる』と明記されている。"
+    },
+    {
+      "text": "手順5「検証する」・手順6「verdict に従う」の verifier 呼び出し方（タスク ID だけを渡す）は変更されていない。確認コマンド: `grep -c 'サブエージェントを呼ぶ' .claude/skills/run/SKILL.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'サブエージェントを呼ぶ' .claude/skills/run/SKILL.md` / 出力: 2（手順3のcreator呼び出し行と手順5のverifier呼び出し行）。`git diff a71878c..HEAD -- .claude/skills/run/SKILL.md` で手順5の本文は無変更、verifier呼び出し方（タスク IDだけをpromptに渡す）は保持されている。ただし手順6は『reasonsを読んで修正し、手順3の3から繰り返す』→『手順3の1から繰り返す（creatorを再度呼ぶ。verdictのreasonsを読んで直すのはcreatorの役目）』に1行変更されており、決定済みの『手順6は内容を変更しない』という制約には反している。この変更はverifier呼び出し方自体には影響せず、当該基準の確認コマンドは通るが、決定済み事項との厳密な一致という観点では目的達成を完全には保証しない（手順3の再構成で3.3の意味がblocked分岐に変わったため参照先を修正する必要があったための対応と見られる）。"
+    }
+  ],
+  "reasons": [
+    "手順6「verdict に従う」のFAIL再試行時の記述（『手順3の3から繰り返す』→『手順3の1から繰り返す』）が1行変更されており、決定済み『手順1・5・6・7の内容は変更しない』と厳密には一致しない。ただしこれは手順3の再構成に伴うダングリング参照の是正であり、verifier呼び出し方自体（当該基準の主眼）には影響していない。"
+  ]
+}

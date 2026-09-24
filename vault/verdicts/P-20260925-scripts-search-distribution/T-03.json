@@ -1,0 +1,24 @@
+{
+  "task": "P-20260925-scripts-search-distribution/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 08:11",
+  "criteria": [
+    {
+      "text": "配布物の説明に `scripts/vcs_finish.sh`、または「`scripts/` 配下」に類する検索方式を反映した表現がある。確認：`grep -n \"vcs_finish\\|scripts/ 配下\" docs/install.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"vcs_finish\\|scripts/ 配下\" docs/install.md` / 出力: 34行目でヒット（`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）という文言）。この34行目は `scripts/install.sh` の複製物の説明箇所であり、決定済みの2つの表現案（`vcs_finish.sh` を含む個別列挙 or 検索方式の表現）のうち後者を反映しており、目的（配布物説明を実態に合わせる）を満たしている。"
+    },
+    {
+      "text": "116行目付近の `git add` 例が、個別列挙 `scripts/rules.sh scripts/smoke.sh` から `scripts/` へ置き換わっている。確認：`grep -c \"scripts/rules.sh scripts/smoke.sh\" docs/install.md` が `0`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"scripts/rules.sh scripts/smoke.sh\" docs/install.md` / 出力: 0。旧文言（個別列挙）が消えていることを確認した。"
+    },
+    {
+      "text": "置き換え後の `git add` 例に `scripts/` が含まれる。確認：`grep -c \"scripts/ docs/vault-spec.md\" docs/install.md` が `1`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"scripts/ docs/vault-spec.md\" docs/install.md` / 出力: 1。116行目の実際の文面は `git add vault/ .claude/ CLAUDE.md scripts/ docs/vault-spec.md && git commit -m \"ai-harness を導入\"` で、決定済みの書式（`vault/ .claude/ CLAUDE.md scripts/ docs/vault-spec.md`）と一致している。git diff --numstat HEAD -- docs/install.md は `2 2 docs/install.md` で成果物が docs/install.md のみに閉じていることも確認した。タスク票の進捗に『起点コミット』の記録が無いため、変更ファイル一覧との突合（手順9）は実施していない。"
+    }
+  ],
+  "reasons": []
+}

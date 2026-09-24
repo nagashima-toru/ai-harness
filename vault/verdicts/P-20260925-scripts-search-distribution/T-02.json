@@ -1,0 +1,13 @@
+{
+  "task": "P-20260925-scripts-search-distribution/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 08:16",
+  "criteria": [
+    {"text": "`scripts/smoke.sh` に参照チェックのケースがあり、ケース名に「参照される scripts」を含む。確認：`bash scripts/smoke.sh | grep -c '参照される scripts'` が1以上", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | grep -c '参照される scripts'` / 出力: 2（見出し行1件＋ケース行1件、1以上）。この基準単独では出現回数を数えるだけの緩い基準だが、2つ目・3つ目の基準（NGが無いこと／意図的にNGにできること）が組み合わさって実際の参照整合性を検証しており、目的（配布漏れの機械検出）の達成は担保されている。"},
+    {"text": "そのケースは新規インストール先で全件 ok になる。確認：`bash scripts/smoke.sh | grep '参照される scripts'` に `NG` を含む行が無い", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | grep '参照される scripts'` / 出力: `== 参照される scripts の存在チェック ==` と `  ok   新規インストール先で参照される scripts がすべて揃っている` の2行のみ。NGを含む行なし。"},
+    {"text": "`scripts/install.sh` の `SCRIPTS_EXCLUDE` に一時的に `vcs_finish.sh` を入れて `bash scripts/smoke.sh` を実行すると、そのケースが NG になる（確認後 `git restore scripts/install.sh` で元に戻す）", "ok": true, "note": "実行コマンド: `sed -i 's/^SCRIPTS_EXCLUDE=\"\"$/SCRIPTS_EXCLUDE=\"vcs_finish.sh\"/' scripts/install.sh && bash scripts/smoke.sh` / 出力: `  NG   新規インストール先で参照される scripts がすべて揃っている (want='' got='vcs_finish.sh')`、`smoke: pass=137 fail=1`。その後 `git restore scripts/install.sh` を実行し `git status --short scripts/install.sh` で差分なしを確認、復元済み。"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `fail=0` で終わる（新しいケースを含む全件）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=138 fail=0`"}
+  ],
+  "reasons": []
+}

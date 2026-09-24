@@ -1,0 +1,36 @@
+{
+  "task": "P-20260925-scripts-search-distribution/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 08:11",
+  "criteria": [
+    {
+      "text": "新規ディレクトリへ `bash scripts/install.sh <target>` を実行すると、リポジトリの `scripts/*.sh`・`scripts/*.py` がすべて `<target>/scripts/` に配置される。確認：`T=$(mktemp -d); bash scripts/install.sh \"$T\" >/dev/null; for f in scripts/*.sh scripts/*.py; do test -f \"$T/$f\" || echo \"missing $f\"; done` が何も出力しない",
+      "ok": true,
+      "note": "実行コマンド: `T=$(mktemp -d); bash scripts/install.sh \"$T\" >/dev/null; for f in scripts/*.sh scripts/*.py; do test -f \"$T/$f\" || echo missing $f; done` / 出力: なし（missing 行0件）。リポジトリの scripts/*.sh・*.py 全ファイルがインストール先に存在することを確認した"
+    },
+    {
+      "text": "同じ実行で `<target>/.claude/harness-manifest.json` の `files` に `scripts/vcs_finish.sh` が sha256 付きで載る。確認：`python3 -c \"import json,re;d=json.load(open('$T/.claude/harness-manifest.json'))['files'];print(bool(re.fullmatch('[0-9a-f]{64}',d.get('scripts/vcs_finish.sh',''))))\"` が `True`",
+      "ok": true,
+      "note": "実行コマンド: `python3 -c \"import json,re;d=json.load(open('$T/.claude/harness-manifest.json'))['files'];print(bool(re.fullmatch('[0-9a-f]{64}',d.get('scripts/vcs_finish.sh',''))))\"` / 出力: True"
+    },
+    {
+      "text": "`scripts/install.sh` から、スクリプト名を1つずつ書いた `copy_if_absent \"$SRC/scripts/<名前>\"` の行が無くなっている。確認：`grep -cE 'copy_if_absent \"\\$SRC/scripts/[a-z_]+\\.(sh|py)\"' scripts/install.sh` が `0`",
+      "ok": true,
+      "note": "実行コマンド: `grep -cE 'copy_if_absent \"\\$SRC/scripts/[a-z_]+\\.(sh|py)\"' scripts/install.sh` / 出力: 0。実装本体（145〜152行目付近）も確認し、`for rel in $(scripts_list); do copy_if_absent \"$SRC/$rel\" \"$DST/$rel\"; done` という検索結果に対するループに置き換わっていることを目視確認した"
+    },
+    {
+      "text": "冒頭コメントの「複製するもの」が個別列挙をやめ、検索方式を示す文言 `scripts/*.sh` を含む。確認：`grep -c 'scripts/\\*\\.sh' scripts/install.sh` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'scripts/\\*\\.sh' scripts/install.sh` / 出力: 1件（4行目の冒頭コメントのみ、他行に誤爆なし）。この確認コマンドは文字列の出現数を数えるだけの形式（grep -c '<語>' が1以上）であり、文字列がコメント中のどこに現れても通るため、本文が実際に個別列挙をやめたことまでは保証しない。ただし本件では4行目の該当コメントを実際に読み、個別のファイル名列挙が消え検索方式の説明に置き換わっていることを目視で確認済み"
+    },
+    {
+      "text": "変更後も既存の `scripts/smoke.sh`（T-02 が足す新ケースより前の状態）が全件 pass する。確認：`bash scripts/smoke.sh | tail -1` が `fail=0`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=137 fail=0"
+    }
+  ],
+  "reasons": [
+    "受け入れ基準4行目の確認コマンド `grep -c 'scripts/\\*\\.sh' scripts/install.sh` が1以上、は文字列の出現数を数えるだけの形式であり、文字列がどこにあっても通るため本文の書き換えを保証しない。ただし本件では実際に4行目の冒頭コメントを目視確認し、個別列挙が検索方式の説明に置き換わっていることを確認した"
+  ]
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>
-# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空ディレクトリ）、scripts/smoke.sh、scripts/rules.sh、scripts/merge_claude_md.py、scripts/merge_settings_json.py
+# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
 # 状態は vault/plans/<計画ID>.md が持つ（キューは無い）。既存ファイルは上書きしない。
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
 # permissions.deny の不足分だけを足す（インストール先が足した permissions.allow は消さない）。
@@ -44,27 +44,45 @@ copy_if_absent() { # $1=src $2=dst
   if [ -e "$2" ]; then echo "skip  (exists) $rel"; else mkdir -p "$(dirname "$2")"; cp "$1" "$2"; echo "copy  $rel"; fi
 }
 
+# scripts/ 直下で配らないファイル名（スペース区切り、当面は空）。manifest_paths() と
+# 通常複製の両方がこの変数を見る。
+SCRIPTS_EXCLUDE=""
+
+scripts_list() { # SRC の scripts/ 直下にある *.sh・*.py を SCRIPTS_EXCLUDE を除いて列挙する
+  (
+    cd "$SRC" || exit 0
+    find scripts -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null
+  ) | while read -r p; do
+    name="$(basename "$p")"
+    keep=1
+    for ex in $SCRIPTS_EXCLUDE; do
+      [ "$name" = "$ex" ] && keep=0
+    done
+    [ "$keep" -eq 1 ] && echo "$p"
+  done
+}
+
 # ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
 # 利用者の資産（vault/plans, tasks, verdicts, log, archive, designs の中身、標準4本以外の
 # vault/rules/、settings.local.json）は含めない。.claude/settings.json は専用マージャの対象。
 manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存在するものだけ）
-  (
-    cd "$SRC" || exit 0
-    find .claude/hooks -name '*.py' -type f 2>/dev/null
-    find .claude/agents -name '*.md' -type f 2>/dev/null
-    find .claude/skills -name 'SKILL.md' -type f 2>/dev/null
-    find vault/templates -name '*.md' -type f 2>/dev/null
-    for p in .claude/ai-harness.md scripts/smoke.sh scripts/rules.sh \
-             scripts/merge_claude_md.py scripts/merge_settings_json.py \
-             scripts/uninstall.sh scripts/unmerge_claude_md.py scripts/unmerge_settings_json.py \
-             scripts/install.sh scripts/discard_worktree.sh docs/vault-spec.md \
-             vault/rules/README.md vault/rules/common/roles.md \
-             vault/rules/common/git.md vault/rules/creator/creator.md \
-             vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md \
-             vault/rules/planner/planner.md; do
-      [ -f "$p" ] && echo "$p"
-    done
-  ) | sed 's|^\./||' | sort -u
+  {
+    (
+      cd "$SRC" || exit 0
+      find .claude/hooks -name '*.py' -type f 2>/dev/null
+      find .claude/agents -name '*.md' -type f 2>/dev/null
+      find .claude/skills -name 'SKILL.md' -type f 2>/dev/null
+      find vault/templates -name '*.md' -type f 2>/dev/null
+      for p in .claude/ai-harness.md docs/vault-spec.md \
+               vault/rules/README.md vault/rules/common/roles.md \
+               vault/rules/common/git.md vault/rules/creator/creator.md \
+               vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md \
+               vault/rules/planner/planner.md; do
+        [ -f "$p" ] && echo "$p"
+      done
+    ) | sed 's|^\./||'
+    scripts_list
+  } | sort -u
 }
 
 # --update：マニフェストと照合して、未編集なら上書き・編集済みならスキップして報告する。
@@ -128,16 +146,10 @@ for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep design
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 
-# scripts/smoke.sh、scripts/rules.sh、docs/vault-spec.md（エージェントが参照する正本）
-copy_if_absent "$SRC/scripts/smoke.sh" "$DST/scripts/smoke.sh"
-copy_if_absent "$SRC/scripts/rules.sh" "$DST/scripts/rules.sh"
-copy_if_absent "$SRC/scripts/merge_claude_md.py" "$DST/scripts/merge_claude_md.py"
-copy_if_absent "$SRC/scripts/merge_settings_json.py" "$DST/scripts/merge_settings_json.py"
-copy_if_absent "$SRC/scripts/uninstall.sh" "$DST/scripts/uninstall.sh"
-copy_if_absent "$SRC/scripts/unmerge_claude_md.py" "$DST/scripts/unmerge_claude_md.py"
-copy_if_absent "$SRC/scripts/unmerge_settings_json.py" "$DST/scripts/unmerge_settings_json.py"
-copy_if_absent "$SRC/scripts/install.sh" "$DST/scripts/install.sh"
-copy_if_absent "$SRC/scripts/discard_worktree.sh" "$DST/scripts/discard_worktree.sh"
+# scripts/ 直下の *.sh・*.py（SCRIPTS_EXCLUDE を除く）、docs/vault-spec.md（エージェントが参照する正本）
+for rel in $(scripts_list); do
+  copy_if_absent "$SRC/$rel" "$DST/$rel"
+done
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
 
 # .claude/settings.json（専用マージャ。--update の有無や既存の有無にかかわらず常に呼ぶ）

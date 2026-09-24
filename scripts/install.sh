@@ -57,7 +57,7 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
     for p in .claude/ai-harness.md scripts/smoke.sh scripts/rules.sh \
              scripts/merge_claude_md.py scripts/merge_settings_json.py \
              scripts/uninstall.sh scripts/unmerge_claude_md.py scripts/unmerge_settings_json.py \
-             scripts/install.sh docs/vault-spec.md \
+             scripts/install.sh scripts/discard_worktree.sh docs/vault-spec.md \
              vault/rules/README.md vault/rules/common/roles.md \
              vault/rules/common/git.md vault/rules/creator/creator.md \
              vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md \
@@ -137,6 +137,7 @@ copy_if_absent "$SRC/scripts/uninstall.sh" "$DST/scripts/uninstall.sh"
 copy_if_absent "$SRC/scripts/unmerge_claude_md.py" "$DST/scripts/unmerge_claude_md.py"
 copy_if_absent "$SRC/scripts/unmerge_settings_json.py" "$DST/scripts/unmerge_settings_json.py"
 copy_if_absent "$SRC/scripts/install.sh" "$DST/scripts/install.sh"
+copy_if_absent "$SRC/scripts/discard_worktree.sh" "$DST/scripts/discard_worktree.sh"
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
 
 # .claude/settings.json（専用マージャ。--update の有無や既存の有無にかかわらず常に呼ぶ）

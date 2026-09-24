@@ -23,14 +23,12 @@ argument-hint: [task-id（省略時は先頭）]
 5. 取った行の status を `doing`、attempt を `1` にする。`vault/log/<計画ID>.md` に `- <日時> <id> todo→doing attempt=1` を追記
 
 ## 3. 作る
-1. `vault/tasks/<計画ID>/<id>.md` の全見出しを読む。「決定済み」にある回答を優先し、質問はしない
-2. `bash scripts/rules.sh creator` を実行し、列挙されたファイルをすべて読み、以降の成果物作成でそれに従う（列挙が空なら何もしない）。読んだファイルがあれば「進捗」に「読んだルール: a.md, b.md」の形で1行記録する
-3. 「成果物」を作る。受け入れ基準の確認コマンドは自分でも実行して通しておく
-4. 進めながら「進捗」に箇条書きで追記する（セッションが切れても再開できる粒度）
-5. 判断が必要で「決定済み」に答えが無いことが出たら、status を `blocked` にし question 列に質問を書き、log に追記して終わる
+1. Agent ツールで `creator` サブエージェントを呼ぶ。prompt はタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）
+2. creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式なら手順3の3へ、そうでなければ手順4（review にする）へ進む
+3. blocked 報告を受けた場合、計画票の該当行の status を `blocked` にし、question 列に creator の質問文をそのまま書き写す（言い換えない）。`vault/log/<計画ID>.md` に `- <日時> <id> doing→blocked attempt=<n> 理由要約` を追記して終わる
 
 ## 4. review にする
-status を `review` にし、`vault/log/<計画ID>.md` に `- <日時> <id> doing→review attempt=<n>` を追記する。
+creator から blocked ではない完了報告を受けたら、status を `review` にし、`vault/log/<計画ID>.md` に `- <日時> <id> doing→review attempt=<n>` を追記する。
 
 ## 5. 検証する
 1. Agent ツールで `verifier` サブエージェントを呼ぶ。prompt はタスク ID だけ（例：`<計画ID>/<id> を検証して vault/verdicts/<計画ID>/<id>.json を書いてください`）。作業内容の説明や言い訳を渡さない
@@ -38,7 +36,7 @@ status を `review` にし、`vault/log/<計画ID>.md` に `- <日時> <id> doin
 
 ## 6. verdict に従う
 - `PASS` → status を `done` にし、`vault/log/<計画ID>.md` に `- <日時> <id> review→done attempt=<n>` を追記
-- `FAIL` かつ attempt < 上限（`HARNESS_MAX_ATTEMPTS`、既定 3） → status を `doing`、attempt を +1 にし、`vault/log/<計画ID>.md` に `review→doing attempt=<n+1> 理由要約` を追記。reasons を読んで修正し、手順3の3から繰り返す
+- `FAIL` かつ attempt < 上限（`HARNESS_MAX_ATTEMPTS`、既定 3） → status を `doing`、attempt を +1 にし、`vault/log/<計画ID>.md` に `review→doing attempt=<n+1> 理由要約` を追記。手順3の1から繰り返す（creator を再度呼ぶ。verdict の `reasons` を読んで直すのは creator の役目）
 - `FAIL` かつ attempt ≥ 上限 → status を `blocked`、question 列に reasons の要約を書き、`vault/log/<計画ID>.md` に `review→blocked attempt=<n> 理由要約` を追記して終わる
 
 ## 7. 次へ・完了

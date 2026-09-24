@@ -33,7 +33,7 @@ PR 作成案内）が直接呼んでいる `gh pr create` を、新しい共有�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | scripts/vcs_finish.sh を新規作成しホスティング判定とPR/MR作成を実装する | |
+| T-01 | review | 1 | - | scripts/vcs_finish.sh を新規作成しホスティング判定とPR/MR作成を実装する | |
 | T-02 | todo | 0 | T-01 | run スキルの最終手順を vcs_finish.sh 呼び出しに置き換える | |
 | T-03 | todo | 0 | T-01 | design スキルの最終手順を vcs_finish.sh 呼び出しに置き換える | |
 | T-04 | todo | 0 | T-01 | vault-spec.md の done 定義と設計文書のブランチ・PR 節を vcs_finish.sh 経由の記述に更新する | |

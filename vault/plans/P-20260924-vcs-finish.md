@@ -34,9 +34,9 @@ PR 作成案内）が直接呼んでいる `gh pr create` を、新しい共有�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | scripts/vcs_finish.sh を新規作成しホスティング判定とPR/MR作成を実装する | |
-| T-02 | todo | 0 | T-01 | run スキルの最終手順を vcs_finish.sh 呼び出しに置き換える | |
-| T-03 | todo | 0 | T-01 | design スキルの最終手順を vcs_finish.sh 呼び出しに置き換える | |
-| T-04 | todo | 0 | T-01 | vault-spec.md の done 定義と設計文書のブランチ・PR 節を vcs_finish.sh 経由の記述に更新する | |
+| T-02 | doing | 1 | T-01 | run スキルの最終手順を vcs_finish.sh 呼び出しに置き換える | |
+| T-03 | doing | 1 | T-01 | design スキルの最終手順を vcs_finish.sh 呼び出しに置き換える | |
+| T-04 | doing | 1 | T-01 | vault-spec.md の done 定義と設計文書のブランチ・PR 節を vcs_finish.sh 経由の記述に更新する | |
 | T-05 | todo | 0 | T-01 | runbook.md の PR 作成手順を vcs_finish.sh 経由の記述に更新する | |
 
 ## 計画の受け入れ基準

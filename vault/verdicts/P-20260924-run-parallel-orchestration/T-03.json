@@ -1,0 +1,41 @@
+{
+  "task": "P-20260924-run-parallel-orchestration/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 18:36",
+  "criteria": [
+    {
+      "text": "全 verifier 完了後、タスクを1件ずつ逐次処理する旨が明記されている。確認: `grep -n \"逐次\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"逐次\" .claude/skills/run/SKILL.md` / 出力: 28・46・47・67・74行目にヒット。47行目に『全 verifier の完了を待った上で...タスク表の上から並んだ順に逐次処理する。複数タスクが同時に PASS していても...1件ずつ完了させてから次のタスクに移る』と明記されており、目的（verifier完了後の逐次処理）に対応する内容を確認した。"
+    },
+    {
+      "text": "PASS 時に該当 worktree のブランチを `git merge --no-ff` で計画ブランチへ取り込み、成功したら `review→done` にしてログ追記し worktree を削除する手順が明記されている。確認: `grep -n -- \"--no-ff\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n -- \"--no-ff\" .claude/skills/run/SKILL.md` / 出力: 52行目『計画ブランチ（現在のブランチ）上で `git merge --no-ff <対象タスクの worktree のブランチ名>` を実行し...』。続く53行目に成功時のstatus review→done・ログ追記・`git worktree remove`／`git branch -d` による削除が明記されていることを目視確認した。"
+    },
+    {
+      "text": "マージでコンフリクトが起きた場合にタスクを `blocked` にし question にコンフリクトの状況を書き、worktree を削除せず残す手順が明記されている。確認: `grep -n \"コンフリクト\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"コンフリクト\" .claude/skills/run/SKILL.md` / 出力: 54・58・68・72行目にヒット。54行目に『自己判断で解決しない...`git merge --abort`...statusを`blocked`にし question 列にコンフリクトの状況を書く...この worktree は削除せず残す』と明記されていることを確認した。"
+    },
+    {
+      "text": "FAIL の場合は計画ブランチへマージせず、attempt が上限未満なら `doing`（attempt+1）、上限到達なら `blocked` にし、いずれもログに追記する手順が明記されている",
+      "ok": true,
+      "note": "確認方法: SKILL.md 55〜58行目を Read で確認。55行目『計画ブランチへはマージしない』、57行目『attempt < 上限（HARNESS_MAX_ATTEMPTS、既定3）なら...doing、attempt+1にし...ログに追記』、58行目『attempt ≥ 上限なら...blocked、question...ログに追記』が明記されていた。確認コマンドの指定は基準文になし。"
+    },
+    {
+      "text": "着手可能集合が1件だけの場合に、計画票・ログ・成果物の最終状態が `P-20260924-creator-subagent` で実施したフェーズ2までの逐次フローと同じ結果になることを確認する手順が明記されている",
+      "ok": true,
+      "note": "確認方法: SKILL.md 66〜74行目「## 回帰確認（着手可能集合が1件だけの場合）」を Read で確認。計画票のタスク表・ログ・成果物差分・verdict の attempt・worktree/作業ブランチの後始末の5観点が確認手順として明記されていた。決定済みにより『手順を文書として書く』ことが成果物であり実行までは必須ではないため、実行結果の提示は求めていない。"
+    },
+    {
+      "text": "`HARNESS_MAX_ATTEMPTS` による attempt 上限判定のロジック自体（既定値・比較条件）が変更されていない。確認: `grep -n \"HARNESS_MAX_ATTEMPTS\" .claude/skills/run/SKILL.md` の既存記述（既定 3）がそのまま残っていることを確認する",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"HARNESS_MAX_ATTEMPTS\" .claude/skills/run/SKILL.md` / 出力: 21・57行目にヒット。57行目『attempt < 上限（HARNESS_MAX_ATTEMPTS、既定 3）なら...doing...+1』は、T-02完了時点のコミット(8f16847)の旧版39行目『FAIL かつ attempt < 上限（HARNESS_MAX_ATTEMPTS、既定 3） → doing、attempt+1』と既定値・比較条件が同一であることを `git show 8f16847:.claude/skills/run/SKILL.md` との比較で確認した。"
+    }
+  ],
+  "reasons": [
+    "起点コミットの記録が無いため、T-03タスク票の「進捗」に基づく変更ファイル一覧の宣言外チェック（手順9）は実施しなかった。"
+  ]
+}

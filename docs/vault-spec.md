@@ -38,6 +38,8 @@
 
 `attempt` は「現在の試行回数」。`todo→doing` で 1 になり、`review→doing`（FAIL 後の再試行）で +1 する。上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）。上限に達して FAIL なら `blocked` にする。
 
+`todo→doing` で一度に選べるタスク数（着手可能集合のうち、実際に `doing` へ回す件数）の上限は環境変数 `HARNESS_MAX_PARALLEL`（既定 3。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）。着手可能集合は「`todo` かつ `after` の依存が全て `done`」なタスクの集合で、計画票のタスク表の上から順に並べ、その先頭から `HARNESS_MAX_PARALLEL` 件までを選ぶ。
+
 ## 3. ID・ファイル名・ブランチ名
 
 | 種別 | 形式 | 例 |

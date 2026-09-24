@@ -1,0 +1,38 @@
+{
+  "task": "P-20260924-run-parallel-orchestration/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 17:54",
+  "criteria": [
+    {
+      "text": "`run/SKILL.md` の手順2に「着手可能集合」という語があり、`after` が全て `done` である `todo` 行を列挙する説明が書かれている。確認: `grep -n \"着手可能集合\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"着手可能集合\" .claude/skills/run/SKILL.md` / 出力: 21:『無ければ、`todo` かつ `after` に列挙された全タスクの `status` が `done`（`after` が `-` なら無条件）である行を、タスク表の上から順に並べたものを「着手可能集合」とする。』Read で21行目全文を確認し、要求どおりの列挙ロジックの説明があることも確認した。基準は緩い：確認コマンドは語の出現有無しか見ないため、語だけが置かれ説明が伴わない状態でも通り得る（目的の達成を保証しない）。ただし今回の実物は説明を伴っており目的を満たしている。"
+    },
+    {
+      "text": "同手順に `HARNESS_MAX_PARALLEL` と既定値「3」が書かれ、着手可能集合の先頭からその上限までを選ぶ手順になっている。確認: `grep -n \"HARNESS_MAX_PARALLEL\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"HARNESS_MAX_PARALLEL\" .claude/skills/run/SKILL.md` / 出力: 21:『着手可能集合の先頭から環境変数 `HARNESS_MAX_PARALLEL`（既定 3。未設定時は3を使う。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）件までを選ぶ』。Read で21行目全文を確認し、既定値「3」と先頭から上限件数を選ぶ旨が明記されていることを確認した。基準は緩い：確認コマンドは語の出現有無しか見ないため、語だけが置かれ既定値や選び方の説明が伴わない状態でも通り得る（目的の達成を保証しない）。ただし今回の実物は既定値・選び方とも明記されており目的を満たしている。"
+    },
+    {
+      "text": "選んだタスク全部を `doing` にする計画票への書き込みが、タスクごとに分けず1回にまとまっている旨が明記されている。確認: 該当箇所を Read し「まとめて」「一括」等、複数タスクを同一手順内で連続して更新する旨の記述があることを確認する",
+      "ok": true,
+      "note": "確認方法: `.claude/skills/run/SKILL.md` を Read（1-52行）。出力: 23行目『選んだ行**全部**について、status を `doing`、attempt を `1` にする。この計画票への書き込みは、選んだタスクごとに分けず、他の処理を挟まず本手順の中でまとめて（一括で）行う。』とあり、要求どおり1回にまとめる旨が明記されている。"
+    },
+    {
+      "text": "ログ追記についても、選んだタスク分をこの手順の中でまとめて（1回、または連続して）追記する旨が明記されている",
+      "ok": true,
+      "note": "確認方法: `.claude/skills/run/SKILL.md` を Read（1-52行）。出力: 23行目『`vault/log/<計画ID>.md` への追記も同様に、選んだタスク全部について `- <日時> <id> todo→doing attempt=1` を本手順の中で連続してまとめて行う』とあり、要求どおりログ追記もまとめて行う旨が明記されている。"
+    },
+    {
+      "text": "`docs/vault-spec.md` に `HARNESS_MAX_PARALLEL`（既定 3）の記載がある。確認: `grep -n \"HARNESS_MAX_PARALLEL\" docs/vault-spec.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"HARNESS_MAX_PARALLEL\" docs/vault-spec.md` / 出力: 41:『`todo→doing` で一度に選べるタスク数（着手可能集合のうち、実際に `doing` へ回す件数）の上限は環境変数 `HARNESS_MAX_PARALLEL`（既定 3。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）。』既定値3の記載を確認した。基準は緩い：確認コマンドは語の出現有無しか見ないため、語だけが置かれ既定値の明記が伴わない状態でも通り得る（目的の達成を保証しない）。ただし今回の実物は既定値3が明記されており目的を満たしている。なお、タスク票の「進捗」に `起点コミット:` の記録が無いため、成果物外ファイルの混入検査（`git diff --name-only <起点コミット>..HEAD`）は実施していない。"
+    }
+  ],
+  "reasons": [
+    "基準は緩い：`grep -n \"着手可能集合\" .claude/skills/run/SKILL.md` は語の出現有無しか見ないため、語だけが置かれ説明が伴わない状態でも通り得る（目的の達成を保証しない）。",
+    "基準は緩い：`grep -n \"HARNESS_MAX_PARALLEL\" .claude/skills/run/SKILL.md` は語の出現有無しか見ないため、語だけが置かれ既定値や選び方の説明が伴わない状態でも通り得る（目的の達成を保証しない）。",
+    "基準は緩い：`grep -n \"HARNESS_MAX_PARALLEL\" docs/vault-spec.md` は語の出現有無しか見ないため、語だけが置かれ既定値の明記が伴わない状態でも通り得る（目的の達成を保証しない）。"
+  ]
+}

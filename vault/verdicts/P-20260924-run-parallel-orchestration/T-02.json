@@ -1,0 +1,39 @@
+{
+  "task": "P-20260924-run-parallel-orchestration/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 18:31",
+  "criteria": [
+    {
+      "text": "手順3に、選んだタスクそれぞれについて creator を `isolation: \"worktree\"` 付きで並行起動する旨（1メッセージで複数回の Agent 呼び出し）が明記されている。確認: `grep -n \"isolation\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"isolation\" .claude/skills/run/SKILL.md` / 出力: 27, 33, 41行目にヒット。手順3の27行目に「Agent ツールで creator サブエージェントを呼ぶ。呼び出しには isolation: \"worktree\" オプションを付ける」、28行目に「選んだタスクが複数件の場合、上記の呼び出しをタスクの数だけ1メッセージの中で行う（Agent ツールを複数回呼び、並行に実行させる）」と明記されている。"
+    },
+    {
+      "text": "同箇所に、各呼び出しの結果からタスクごとの worktree パス・ブランチを受け取り、後続の verifier 呼び出し・マージで使えるよう記録する手順が書かれている",
+      "ok": true,
+      "note": "Read で SKILL.md 手順3を確認: 29行目「各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する（vault/tasks/ 等ファイルへの永続化は不要）。この対応は後続の verifier 呼び出しと、T-03 で扱うマージ処理で使う」と明記されている。"
+    },
+    {
+      "text": "worktree の分岐元がこのリポジトリの計画ブランチになっていることを確認する手順（具体的な確認方法・コマンド例を含む）が明記されている。確認: `grep -n \"分岐元\\|EnterWorktree\" .claude/skills/run/SKILL.md` で該当記述の存在を確認する",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"分岐元\\|EnterWorktree\" .claude/skills/run/SKILL.md` / 出力: 30, 42行目にヒット。30〜32行目に具体的なコマンド例「git -C <worktree のパス> merge-base --is-ancestor <PLAN_HEAD> HEAD」と判定方法（終了コード0で分岐元一致）、33行目に不一致時の調整方法（isolation の起点指定フィールドへ PLAN_HEAD 等を指定して呼び出しをやり直す）が明記されている。"
+    },
+    {
+      "text": "手順5に、完了した creator それぞれについて verifier を並行起動する旨（通常の Agent 呼び出し、1メッセージで複数回）が明記されている",
+      "ok": true,
+      "note": "Read で SKILL.md 手順5を確認: 41行目「review にした（＝blocked ではなかった）タスクそれぞれについて、Agent ツールで verifier サブエージェントを呼ぶ。isolation オプションは付けない通常の呼び出しにする」、43行目「対象タスクが複数件の場合、上記の呼び出しをタスクの数だけ1メッセージの中で行う（並行実行）」と明記されている。"
+    },
+    {
+      "text": "同箇所に、verifier へのプロンプトがタスク ID と対象 worktree のパスだけであり、verifier が `EnterWorktree(path=...)` でその worktree に入ってから検証する旨が明記されている。確認: `grep -n \"EnterWorktree\" .claude/skills/run/SKILL.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"EnterWorktree\" .claude/skills/run/SKILL.md` / 出力: 42行目にヒット。41行目に「prompt はタスク ID と、手順3で保持した対象タスクの worktree のパスの2つだけ」、42行目に「verifier は渡された worktree のパスに対して EnterWorktree(path=<渡されたパス>) を実行し、その worktree に入ってから検証する（creator の呼び出しで作られた既存 worktree を再利用し、verifier 自身は新規に worktree を作らない）」と明記されている。"
+    },
+    {
+      "text": "着手可能集合が1件だけの場合も、同じ経路（creator/verifier の worktree 起動、Agent 呼び出しが1回になるだけ）を通す旨が明記されている（専用の逐次フォールバックを作らない）",
+      "ok": true,
+      "note": "Read で確認: 28行目「選んだタスクが1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする（専用の逐次フォールバックは作らない）」（creator側）、43行目「1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする」（verifier側）と両方に明記されている。補足: タスク票「進捗」に起点コミットの記録が無いため、宣言外ファイルの差分チェック（`git diff --name-only <起点コミット>..HEAD`）は実施していない。"
+    }
+  ],
+  "reasons": []
+}

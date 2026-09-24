@@ -1,6 +1,6 @@
 ---
 id: P-20260925-scripts-search-distribution
-status: draft
+status: approved
 ---
 # ゴール
 `scripts/install.sh` の `scripts/` 配布を、ファイル名の列挙から `scripts/*.sh`・`scripts/*.py` の検索方式に変える（`manifest_paths()` とマニフェストの対象、通常の複製 `copy_if_absent` の呼び出しの両方）。配らないスクリプトは install.sh 内の除外リスト（当面は空）で明示できるようにする。これにより現在配られていない `scripts/vcs_finish.sh` も配られるようになる。あわせて `scripts/smoke.sh` に、新規インストール先で導入先のスキル等（`.claude/`・`vault/rules/`・`vault/templates/`・`docs/vault-spec.md`・`CLAUDE.md`）に書かれた `scripts/<名前>` がすべて存在することを確かめるケースを足し、同じ種類の配布漏れを機械的に検出できるようにする。`scripts/install.sh` 冒頭の「複製するもの」コメントと `docs/install.md` の配布物の説明も実態に合わせる。設計文書 `vault/designs/D-007.md` のフェーズ1に対応する。

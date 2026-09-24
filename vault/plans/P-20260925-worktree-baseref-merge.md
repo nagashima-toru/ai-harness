@@ -12,7 +12,7 @@ D-007 フェーズ2の受け入れ基準の候補を、契約寄りの実装タ�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | merge_settings_json.py に worktree.baseRef のマージ処理を足す | |
+| T-01 | doing | 1 | - | merge_settings_json.py に worktree.baseRef のマージ処理を足す | |
 | T-02 | todo | 0 | T-01 | smoke.sh に worktree.baseRef の3ケースを足す | |
 | T-03 | todo | 0 | T-01 | docs/install.md と install.sh 冒頭コメントを worktree.baseRef の扱いに合わせて更新する | |
 

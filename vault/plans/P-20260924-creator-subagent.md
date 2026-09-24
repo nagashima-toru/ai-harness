@@ -1,6 +1,6 @@
 ---
 id: P-20260924-creator-subagent
-status: approved
+status: done
 ---
 # ゴール
 D-003（`vault/designs/D-003.md`）フェーズ2「creator のサブエージェント化」を実施する。`run` スキルの「3. 作る」「4. review にする」に相当するロジックを `.claude/agents/creator.md` という新しいサブエージェント定義に切り出す。creator はタスク ID だけを受け取り、タスク票を読み、`bash scripts/rules.sh creator` が列挙するルールを読み、成果物を作り、確認コマンドを実行し、タスク票の「進捗」に記録して完了を報告する。計画票のタスク表（`vault/plans/<計画ID>.md`）と `vault/log/<計画ID>.md` への書き込みは行わない（状態更新とログ追記はオーケストレーター側の役目にする）。`.claude/hooks/agent_write_guard.py` に `agent_type == "creator"` 向けの拒否リスト方式のハード制限（`vault/plans/`・`vault/log/` への書き込みを常に拒否）を追加し、`.claude/skills/run/SKILL.md` をオーケストレーターが状態・ログを扱い成果物作成だけを creator に委譲する形に書き換え、`vault/rules/creator/creator.md` の記述を新しい役割分担と矛盾しないよう更新する（提案ファイル方式）。並行実行（フェーズ3）はこの計画では扱わない。

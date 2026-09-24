@@ -1,3 +1,4 @@
 - 2026-09-25 06:34 T-01 todo→doing attempt=1
 - 2026-09-25 06:37 T-01 doing→review attempt=1
 - 2026-09-25 06:41 T-01 review→blocked attempt=1 受け入れ基準6が進捗欄更新と矛盾し達成不能
+- 2026-09-25 06:43 T-01 blocked→todo attempt=0 受け入れ基準6を修正（人の操作）

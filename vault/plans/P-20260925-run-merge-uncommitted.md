@@ -25,7 +25,7 @@ issue #32 の2つの対応案は、同じファイル（`.claude/skills/run/SKIL
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | blocked | 1 | - | run手順6: マージ前の未コミット差分回収と、新規コミット0件時のblocked化 | 受け入れ基準6「`.claude/skills/run/SKILL.md` 以外のファイルは変更されていない（確認: `git status --short` に SKILL.md 以外の行が無い）」が、creator が doing 中にタスク票自身の「進捗」を追記する標準動作（`docs/vault-spec.md` 5節）と必ず矛盾し、原理的に満たせない。verifier も他5基準はすべて ok、この1基準のみ不成立で FAIL と判定した（`vault/verdicts/P-20260925-run-merge-uncommitted/T-01.json` 参照）。creator を再試行しても `vault/tasks/.../T-01.md` の進捗更新は毎回発生するため同じ理由で FAIL する。基準6を「`.claude/skills/run/SKILL.md` とタスク票自身（`vault/tasks/P-20260925-run-merge-uncommitted/T-01.md`）以外は変更されていない」等に修正してから再開してほしい |
+| T-01 | todo | 0 | - | run手順6: マージ前の未コミット差分回収と、新規コミット0件時のblocked化 | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

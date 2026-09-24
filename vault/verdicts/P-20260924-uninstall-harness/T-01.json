@@ -1,0 +1,39 @@
+{
+  "task": "P-20260924-uninstall-harness/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 22:04",
+  "criteria": [
+    {
+      "text": "引数無しで実行すると usage を stderr に出し exit 2 する。確認：`python3 scripts/unmerge_claude_md.py; echo $?` の標準エラーに `usage` を含み、終了コードが `2`",
+      "ok": true,
+      "note": "実行コマンド: `python3 scripts/unmerge_claude_md.py; echo \"EXIT:$?\"` / 出力: `usage: python3 scripts/unmerge_claude_md.py <target_claude_md>`、`EXIT:2`"
+    },
+    {
+      "text": "マーカーブロックのみを持つ CLAUDE.md（ブロックの前後に他の本文が無い）に対して実行すると、ファイルごと削除され `delete <path>` と出力する。確認：一時ファイルに `merge_claude_md.py` が書くブロックのみを書き込み実行し、`[ ! -e <path> ]` が真になること",
+      "ok": true,
+      "note": "実行コマンド: mktemp で `/tmp/tmp.67IXA5ViSb.md` を作成しマーカーブロックのみを書き込んだ上で `python3 scripts/unmerge_claude_md.py <path>` を実行 / 出力: `delete /tmp/tmp.67IXA5ViSb.md`、実行後 `os.path.exists(path)` は `False`"
+    },
+    {
+      "text": "マーカーブロック＋他の本文を持つ CLAUDE.md に対しては、ブロックだけを除去し他の本文を残して `remove <path>` と出力する。確認：一時ファイルに他の本文＋ブロックを書いて実行し、実行後の内容に `ai-harness:begin` が含まれず、他の本文の行がそのまま残っていること",
+      "ok": true,
+      "note": "実行コマンド: 一時ファイル `/tmp/tmp.nzSaBhTBWl.md` に `# my project` の行＋マーカーブロックを書き込み `python3 scripts/unmerge_claude_md.py <path>` を実行 / 出力: `remove /tmp/tmp.nzSaBhTBWl.md`、実行後の内容は `# my project\\n\\n\\n`（`ai-harness:begin` を含まず `# my project` の行が残存）"
+    },
+    {
+      "text": "マーカーブロックが無い CLAUDE.md（またはファイルが存在しない）は変更せず `skip <path>` と出力する。確認：ブロックの無い一時ファイルで実行前後の内容が一致すること（`diff`）",
+      "ok": true,
+      "note": "実行コマンド: 一時ファイル `/tmp/tmp.fA4kK0fEpL.md` に `# nothing here\\njust text\\n` を書き込み、実行前後の内容を python で比較 / 出力: `skip /tmp/tmp.fA4kK0fEpL.md`、実行前後の内容が完全一致（`same: True`）、バックアップも作成されない（`backups: []`）"
+    },
+    {
+      "text": "ブロックを除去・ファイルを削除する時だけ `<path>.bak-<YYYYMMDDHHMMSS>` のバックアップを残す（`merge_claude_md.py` と同じ命名規則）。確認：バックアップファイルの存在と、その中身が実行前の内容と一致すること",
+      "ok": true,
+      "note": "実行コマンド: 基準2・3の検証時に生成されたバックアップを確認 / 出力: `delete` 時は `/tmp/tmp.67IXA5ViSb.md.bak-20260924130401` が存在しその内容が実行前の全文と一致、`remove` 時のバックアップ内容も実行前の全文と一致。基準4（`skip`）ではバックアップが作成されないことも確認済み（`backups: []`）"
+    },
+    {
+      "text": "マーカー検出の正規表現は `merge_claude_md.py` の `BLOCK_RE`（`<!-- ai-harness:begin.*?<!-- ai-harness:end -->` を `re.DOTALL` で検出）と同じパターンにする。確認：`grep -n 'ai-harness:begin.*ai-harness:end' scripts/unmerge_claude_md.py`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'ai-harness:begin.*ai-harness:end' scripts/unmerge_claude_md.py` / 出力: `20:BLOCK_RE = re.compile(r\"<!-- ai-harness:begin.*?<!-- ai-harness:end -->\", re.DOTALL)`（`merge_claude_md.py` の `BLOCK_RE` と同一パターン・同一フラグ）"
+    }
+  ],
+  "reasons": []
+}

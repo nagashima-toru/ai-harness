@@ -35,7 +35,7 @@ status: approved
 | T-01 | done | 1 | - | scripts/discard_worktree.sh を作る（対象検証つき worktree/ブランチ破棄スクリプト） | |
 | T-02 | done | 1 | T-01 | scripts/install.sh に discard_worktree.sh を配布対象・マニフェスト対象として追加する | |
 | T-03 | done | 1 | T-01 | .claude/skills/run/SKILL.md 手順6.3.2 を discard_worktree.sh 呼び出しに置き換える | |
-| T-04 | todo | 0 | T-01,T-02 | scripts/smoke.sh に discard_worktree.sh の動作確認ケース（正常系・拒否系3種・install配置確認）を追加する | |
+| T-04 | doing | 1 | T-01,T-02 | scripts/smoke.sh に discard_worktree.sh の動作確認ケース（正常系・拒否系3種・install配置確認）を追加する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

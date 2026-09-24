@@ -19,7 +19,7 @@ D-003（`vault/designs/D-003.md`）フェーズ2「creator のサブエージェ
 | T-01 | done | 1 | - | .claude/agents/creator.md の新設 | |
 | T-02 | done | 1 | - | agent_write_guard.py に creator 向け拒否ルールを追加 | |
 | T-03 | done | 1 | T-02 | smoke.sh に creator 向け expect_guard ケースを追加 | |
-| T-04 | todo | 0 | T-01 | run/SKILL.md を creator 呼び出し形に書き換える | |
+| T-04 | doing | 1 | T-01 | run/SKILL.md を creator 呼び出し形に書き換える | |
 | T-05 | todo | 0 | T-01,T-04 | vault/rules/creator/creator.md の整合性更新（提案ファイル） | |
 
 ## 計画の受け入れ基準

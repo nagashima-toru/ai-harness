@@ -32,7 +32,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | scripts/discard_worktree.sh を作る（対象検証つき worktree/ブランチ破棄スクリプト） | |
+| T-01 | done | 1 | - | scripts/discard_worktree.sh を作る（対象検証つき worktree/ブランチ破棄スクリプト） | |
 | T-02 | todo | 0 | T-01 | scripts/install.sh に discard_worktree.sh を配布対象・マニフェスト対象として追加する | |
 | T-03 | todo | 0 | T-01 | .claude/skills/run/SKILL.md 手順6.3.2 を discard_worktree.sh 呼び出しに置き換える | |
 | T-04 | todo | 0 | T-01,T-02 | scripts/smoke.sh に discard_worktree.sh の動作確認ケース（正常系・拒否系3種・install配置確認）を追加する | |

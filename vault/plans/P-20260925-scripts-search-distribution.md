@@ -15,7 +15,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | install.sh の scripts 配布を検索方式にする | |
-| T-02 | doing | 1 | T-01 | smoke.sh に参照される scripts の存在チェックを追加する | |
+| T-02 | review | 1 | T-01 | smoke.sh に参照される scripts の存在チェックを追加する | |
 | T-03 | done | 1 | - | docs/install.md の配布物説明を実態に合わせる | |
 
 ## 計画の受け入れ基準

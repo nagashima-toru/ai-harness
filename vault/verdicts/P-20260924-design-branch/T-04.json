@@ -1,0 +1,31 @@
+{
+  "task": "P-20260924-design-branch/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 11:19",
+  "criteria": [
+    {
+      "text": "一時 git リポジトリで `main` から `design/d-999` ブランチ（`main` ではない）を作り、そのブランチ上での `git commit` が `agent_write_guard.py` に許可されることを検証するテストケースが追加されている。確認コマンド：`grep -c 'design/d-999' scripts/smoke.sh` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'design/d-999' scripts/smoke.sh` / 出力: 3。`git diff 3c66c49..HEAD -- scripts/smoke.sh` で追加内容を確認：`git -C \"$GTMP\" checkout -q -b design/d-999` の後、`expect_guard \"(k) design/d-999 ブランチで git commit → 許可\" allow ...` が実行される実装で、grep のヒット件数だけでなくテストの意味的整合も確認した。"
+    },
+    {
+      "text": "同じブランチ上で `vault/designs/D-999.md` への Write（`agent_type` を指定しないメインエージェント想定）が `agent_write_guard.py` に許可されることを検証するテストケースが追加されている（`vault/rules/` 配下ではないため拒否されないことの確認）。確認コマンド： `grep -c 'vault/designs/D-999.md' scripts/smoke.sh` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/designs/D-999.md' scripts/smoke.sh` / 出力: 2。差分中の `expect_guard \"(l) design/d-999 ブランチで vault/designs/D-999.md へ Write → 許可\" allow \"$(printf '%s' '{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"'\"$GTMP\"'/vault/designs/D-999.md\"}}' | CLAUDE_PROJECT_DIR=\"$GTMP\" python3 \"$GUARD_HOOK\")\"` が該当し、agent_type 未指定・vault/rules/配下でないWriteの許可検証になっている。"
+    },
+    {
+      "text": "追加したテストケースを含め `bash scripts/smoke.sh` がすべて成功する。確認コマンド： `bash scripts/smoke.sh | tail -1` の出力が `smoke: pass=<N> fail=0` の形式（`fail=0`）になっている",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=98 fail=0`"
+    },
+    {
+      "text": "既存のテストケースを削除・改変していない。確認コマンド： `git diff scripts/smoke.sh | grep -E '^-.*(expect|expect_guard) '` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff scripts/smoke.sh | grep -E '^-.*(expect|expect_guard) '` / 出力: 空（作業ツリーがコミット済みでクリーンなため、このコマンドは常に空を返す緩い基準である。目的の達成（既存ケース無改変）は、起点コミットとの差分 `git diff 3c66c49..HEAD -- scripts/smoke.sh | grep -E '^-.*(expect|expect_guard) '` で確認し、こちらも空（既存の(i)(j)ケースはそのまま残り、(k)(l)が追記のみされている）。基準に書かれた確認コマンドは緩く目的の達成を保証しないと判断したが、実際の差分内容から目的は達成されていることを確認した。"
+    }
+  ],
+  "reasons": [
+    "基準4の確認コマンド `git diff scripts/smoke.sh | grep -E '^-.*(expect|expect_guard) '` は、作業ツリーが常にコミット済みでクリーンな状態で実行されるため常に空を返し、既存テストケースが途中のコミットで削除・改変されていないことを保証しない緩い基準である。起点コミット（3c66c49）との差分で別途確認し、既存ケースは無改変で(k)(l)が追記のみされていることを確認した。"
+  ]
+}

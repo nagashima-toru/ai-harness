@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-design-branch/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 09:56",
+  "criteria": [
+    {
+      "text": "第13節に `design/d-xxx` ブランチを `main` から切って運用することが明記されている。確認コマンド： `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c 'design/d-'` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c 'design/d-'` / 出力: 1。第13節に「`/design` は `main` から `git checkout -b design/d-xxx`...でブランチを切り」の記述を確認"
+    },
+    {
+      "text": "第13節に PR は `gh pr create` で作成し人がレビュー後に `main` へマージする運用（`/plan` の `run` が最後に作る PR と同じ運用）が明記されている。確認コマンド： `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c 'gh pr create'` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c 'gh pr create'` / 出力: 1。「`gh pr create` で PR を作り、人がレビューして `main` へマージする（`/plan` の `run` が最後に作る PR と同じ運用...）」の記述を確認"
+    },
+    {
+      "text": "設計文書は全フェーズ分を1回の PR で一括して `main` にマージする（フェーズ単位で分割マージしない）ことが明記されている。確認コマンド： `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c '一括'` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c '一括'` / 出力: 1。「設計文書は全フェーズ分を一括で1回の PR で `main` にマージする（フェーズ単位で分割マージしない）」の記述を確認"
+    },
+    {
+      "text": "「受け入れ基準の候補」の説明に、そのフェーズだけが単体で `main` にマージされてもシステムが動作する状態を保証する内容にする旨が明記されている。確認コマンド： `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c '単体'` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 13\\. /,$p' docs/vault-spec.md | grep -c '単体'` / 出力: 1。「『受け入れ基準の候補』は、そのフェーズだけが単体で `main` にマージされてもシステムが動作する状態を保証する内容にする」の記述を確認"
+    },
+    {
+      "text": "4点セットの見出し名（ゴール文 / 受け入れ基準の候補 / 決定済み / 依存）と ID 採番規則の記述が変わっていない。確認コマンド： `git diff -- docs/vault-spec.md | grep -E '^-.*(ゴール文|受け入れ基準の候補|決定済み|依存)'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- docs/vault-spec.md | grep -E '^-.*(ゴール文|受け入れ基準の候補|決定済み|依存)'` / 出力: なし（exit 1、空）。既存の4点セット見出し・ID採番規則の行は削除されていない"
+    }
+  ],
+  "reasons": []
+}

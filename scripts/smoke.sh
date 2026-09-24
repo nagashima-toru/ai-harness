@@ -156,6 +156,12 @@ expect_guard "(i) main で git commit → 拒否" deny \
 git -C "$GTMP" checkout -q -b work/p-test
 expect_guard "(j) work ブランチで git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+git -C "$GTMP" checkout -q main
+git -C "$GTMP" checkout -q -b design/d-999
+expect_guard "(k) design/d-999 ブランチで git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(l) design/d-999 ブランチで vault/designs/D-999.md へ Write → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$GTMP"'/vault/designs/D-999.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 rm -rf "$GTMP"
 
 echo "== plan_guard.py =="

@@ -1,0 +1,24 @@
+{
+  "task": "P-20260924-design-branch/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 10:51",
+  "criteria": [
+    {
+      "text": "「受け入れ基準の候補」節の説明に、フェーズ単体で `main` にマージされてもシステムが動作する状態を保証する旨が追記されている。確認コマンド：`grep -cF '単体で' vault/templates/design.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -cF '単体で' vault/templates/design.md` / 出力: 1。Read で該当箇所を確認すると、フェーズ1の「### 受け入れ基準の候補」説明行（25行目）に決定済みの文言例どおり「そのフェーズだけが単体で `main` にマージされてもシステムが動作する状態を保証する内容にする」が追記されており、単なる語の出現ではなく正しい節・位置に置かれていることを確認した。なお、この確認コマンド自体は出現回数を数えるだけで位置までは保証しないため、Read による目視確認を根拠に加えた。"
+    },
+    {
+      "text": "既存の見出し語（ゴール / 決定事項 / 依存関係 / ゴール文 / 受け入れ基準の候補 / 決定済み / 依存 / 今回やらないこと）がすべて残っている。確認コマンド：`for w in ゴール 決定事項 依存関係 ゴール文 受け入れ基準の候補 決定済み 依存 今回やらないこと; do grep -qF \"$w\" vault/templates/design.md || echo \"missing:$w\"; done` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `for w in ゴール 決定事項 依存関係 ゴール文 受け入れ基準の候補 決定済み 依存 今回やらないこと; do grep -qF \"$w\" vault/templates/design.md || echo \"missing:$w\"; done` / 出力: なし（空）。全見出し語が残存していることを確認。"
+    },
+    {
+      "text": "frontmatter（`id: D-001` のみで `status` を持たない1行構成）が変わっていない。確認コマンド：`sed -n '1,3p' vault/templates/design.md` が `---` / `id: D-001` / `---` の3行のままである",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '1,3p' vault/templates/design.md` / 出力: `---` / `id: D-001` / `---` の3行で一致。"
+    }
+  ],
+  "reasons": []
+}

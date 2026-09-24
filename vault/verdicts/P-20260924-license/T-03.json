@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-license/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 19:13",
+  "criteria": [
+    {
+      "text": "`docs/third-party-notices.md` が存在する。確認コマンド: `test -f docs/third-party-notices.md && echo exists`",
+      "ok": true,
+      "note": "実行コマンド: `test -f docs/third-party-notices.md && echo exists` / 出力: exists"
+    },
+    {
+      "text": "`.claude` という文字列を含む行があり、`.claude/` 配下の確認結果（外部由来なし、または出典一覧）が記載されている。確認コマンド: `grep -n \".claude\" docs/third-party-notices.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \".claude\" docs/third-party-notices.md` / 出力: 11行ヒット（21行目「## `.claude` 配下の確認結果」、25〜34行目に対象ファイル一覧、36行目「確認結果：該当なし。」を含む）。`find .claude/skills .claude/hooks .claude/agents -type f` および settings.json の実在を確認し、記載の対象ファイル一覧（10ファイル）と一致することを確認した"
+    },
+    {
+      "text": "`vault/rules` という文字列を含む行があり、`vault/rules/` 配下の確認結果が記載されている。確認コマンド: `grep -n \"vault/rules\" docs/third-party-notices.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"vault/rules\" docs/third-party-notices.md` / 出力: 4行ヒット（15行目の対象範囲記載、42行目「## `vault/rules` 配下の確認結果」、46〜56行目の対象ファイル一覧、64行目の結論を含む）。`find vault/rules -type f` の実結果（11ファイル、.gitkeep含む）と記載の対象ファイル一覧が一致することを確認した"
+    },
+    {
+      "text": "外部由来のコード・雛形が見つからない場合は「該当なし」、見つかった場合は出典URL・元ライセンス名・選定ライセンスとの互換性判断が記載されている。確認コマンド: 目視で `docs/third-party-notices.md` を確認する",
+      "ok": true,
+      "note": "Read ツールで docs/third-party-notices.md 全文を確認。`.claude` 配下・`vault/rules` 配下の両セクションで「確認結果：該当なし。」と明記され、判断理由（本リポジトリ固有のオリジナル記述であること）も記載されている。結論セクションで該当なしのため互換性判断（出典URL等）は不要である旨も明記されている"
+    },
+    {
+      "text": "`docs/third-party-notices.md` 以外のファイルを変更していない。確認コマンド: `git status --porcelain | grep -v ' vault/' | grep -v 'docs/third-party-notices.md$'` の出力が空（`vault/` 配下の進捗・log 更新は除く）",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -v ' vault/' | grep -v 'docs/third-party-notices.md$'` / 出力: なし（exit 1）。`git status --porcelain` の生出力は ` M vault/tasks/P-20260924-license/T-03.md` と `?? docs/third-party-notices.md` の2件のみ。起点コミット（進捗欄記載の b649ecf）は現HEADと一致しコミット差分は0件のため、`git diff --name-only b649ecf..HEAD` は空。作業ツリーの未コミット変更も上記2件のみで、成果物欄に無いファイルの変更は無い"
+    }
+  ],
+  "reasons": []
+}

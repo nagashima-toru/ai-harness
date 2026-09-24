@@ -1,0 +1,14 @@
+{
+  "task": "P-20260924-license/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 19:12",
+  "criteria": [
+    {"text": "`LICENSE` がリポジトリルートに存在する。確認コマンド: `test -f LICENSE && echo exists`", "ok": true, "note": "実行コマンド: `test -f LICENSE && echo exists` / 出力: exists"},
+    {"text": "`LICENSE` の1行目に決定済みのライセンス名（例: MIT なら `MIT License`）が含まれる。確認コマンド: `head -1 LICENSE`", "ok": true, "note": "実行コマンド: `head -1 LICENSE` / 出力: MIT License（決定済みのライセンス名と一致）"},
+    {"text": "`LICENSE` 内に決定済みの著作権者表記（年・名義）を含む `Copyright` 行がある。確認コマンド: `grep -n \"Copyright\" LICENSE`", "ok": true, "note": "実行コマンド: `grep -n \"Copyright\" LICENSE` / 出力: 3:Copyright (c) 2026 nagashima-toru（決定済みの表記と一致）"},
+    {"text": "`LICENSE` の本文が選定したライセンスの公式原文と一致する（改変・要約をしない）。確認コマンド: 該当ライセンスの公式原文（例 https://opensource.org/licenses/MIT ）と目視で比較し差異が無いことを確認する", "ok": true, "note": "`curl https://opensource.org/license/mit` は verifier の権限で拒否され実行不可（作成側も進捗欄でサンドボックスの curl 拒否を報告済み）。代替として LICENSE 本文を Read で全文確認し、SPDX/opensource.org が公開する標準 MIT License 定型文（本文20行・改行位置含む）と記憶に基づき目視比較したところ、著作権表記行以外に差異は見当たらなかった。ネットワーク経由での公式原文との直接比較はできていない点に留意"},
+    {"text": "`LICENSE` 追加によって他の既存ファイルへの変更が発生していない。確認コマンド: `git status --porcelain | grep -v ' vault/' | grep -v '^?? LICENSE$'` の出力が空（`vault/` 配下の進捗・log 更新は除く）", "ok": true, "note": "実行コマンド: `git status --porcelain | grep -v ' vault/' | grep -v '^?? LICENSE$'` / 出力: 空（`git status --porcelain` の生出力は ` M vault/tasks/P-20260924-license/T-01.md` と `?? LICENSE` のみで、vault/ 以外・LICENSE 以外の変更は無い）。なお起点コミットがタスク票の進捗に記録されていないため、`git diff --name-only <起点コミット>..HEAD` による変更ファイル一覧の検査（手順9）は実施していない"}
+  ],
+  "reasons": []
+}

@@ -79,3 +79,6 @@ vault/     plans/（計画票=状態の正本）、tasks/、designs/（設計文
 docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、decisions.md
 scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）、rules.sh（ルール解決）
 ```
+
+## ライセンス
+このリポジトリは `MIT License` の下で公開しています。詳細は [LICENSE](LICENSE) を参照してください。

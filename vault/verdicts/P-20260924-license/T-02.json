@@ -1,0 +1,14 @@
+{
+  "task": "P-20260924-license/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 19:19",
+  "criteria": [
+    {"text": "`README.md` に `## ライセンス` という見出しが存在する。確認コマンド: `grep -n \"^## ライセンス\" README.md`", "ok": true, "note": "実行コマンド: `grep -n \"^## ライセンス\" README.md`（対象 worktree: /home/user/ai-harness/.claude/worktrees/agent-a02a4aba98c3f383f） / 出力: `83:## ライセンス`（ヒットあり）"},
+    {"text": "その節の直後5行以内に `LICENSE` という文字列（ファイルへの参照）が含まれる。確認コマンド: `grep -A5 \"^## ライセンス\" README.md | grep -n \"LICENSE\"`", "ok": true, "note": "実行コマンド: `grep -A5 \"^## ライセンス\" README.md | grep -n \"LICENSE\"` / 出力: `2:このリポジトリは \\`MIT License\\` の下で公開しています。詳細は [LICENSE](LICENSE) を参照してください。`（[LICENSE](LICENSE) というファイル参照リンクを含む実質的なヒット）"},
+    {"text": "その節の直後5行以内に決定済みのライセンス名（例: `MIT License`）が明記されている。確認コマンド: `grep -A5 \"^## ライセンス\" README.md | grep -n \"MIT License\"`", "ok": true, "note": "実行コマンド: `grep -A5 \"^## ライセンス\" README.md | grep -n \"MIT License\"` / 出力: `2:このリポジトリは \\`MIT License\\` の下で公開しています。詳細は [LICENSE](LICENSE) を参照してください。`（T-01 決定済みの表記と一致）"},
+    {"text": "既存の他の見出し（`## 目的`・`## セットアップ`等）が削除されていない。確認コマンド: `git diff README.md | grep -E '^-## '` の出力が空", "ok": true, "note": "実行コマンド: `git diff a2ef95d -- README.md | grep -E '^-## '`（起点コミット a2ef95d と比較。作業ツリーは未コミットのため `git diff README.md` と等価） / 出力: なし（既存見出しの削除行は無い）。差分は末尾への `## ライセンス` 節の追加のみ"},
+    {"text": "`README.md` 以外のファイルを変更していない。確認コマンド: `git status --porcelain | grep -v ' vault/' | grep -v ' README.md$'` の出力が空（`vault/` 配下の進捗・log 更新は除く）", "ok": true, "note": "実行コマンド: `git status --porcelain | grep -v ' vault/' | grep -v ' README.md$'` / 出力: なし。加えて起点コミット a2ef95d からの変更ファイル一覧を `git diff --name-only a2ef95d` で確認したところ README.md と vault/tasks/P-20260924-license/T-02.md の2件で、後者はタスク票の「進捗」節への追記のみ（除外対象）"}
+  ],
+  "reasons": []
+}

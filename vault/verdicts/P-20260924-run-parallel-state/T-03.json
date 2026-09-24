@@ -1,0 +1,39 @@
+{
+  "task": "P-20260924-run-parallel-state/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 14:38",
+  "criteria": [
+    {
+      "text": "`stop_gate.py` に `next((t for t in tasks if t[\"status\"] in (\"doing\", \"review\")), None)` という単一行取得のコードが無い。確認: `grep -c 'next((t for t in tasks' .claude/hooks/stop_gate.py` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'next((t for t in tasks' .claude/hooks/stop_gate.py` / 出力: 0。当該箇所は `active_tasks = [t for t in tasks if t[\"status\"] in (\"doing\", \"review\")]` というリスト内包表記に置き換わっている（.claude/hooks/stop_gate.py 189行目）。"
+    },
+    {
+      "text": "doing/review の行が複数ある計画票で、いずれか1件でも verdict が無い・不正な場合にブロックする（1件目に verdict があっても2件目に無ければ見落とさずブロックする）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep 複数行` / 出力: `ok   (複数行-1) 1件目 verdict あり(PASS)・2件目 verdict 無し → ブロック（見落とさず検査。1件目の理由で block）`。smoke.sh の該当ケース（T-0001 review+PASSのverdictあり、T-0002 doingでverdict無し）でブロックし出力に T-0001 が含まれることを確認済み。"
+    },
+    {
+      "text": "doing/review の行が複数あり、全行の verdict が PASS だが status が done でない場合、いずれかの行について「done にすること」のブロックを返す（全行が正常終了条件を満たしていない限り許可しない）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | grep 複数行` / 出力: `ok   (複数行-2) 複数行が全て PASS だが done でない → ブロック（done にする指示）`。smoke.sh の該当ケース（T-0001/T-0002ともreview・PASS）でブロックし出力に done が含まれることを確認済み。"
+    },
+    {
+      "text": "doing/review の行が無い場合は従来どおり許可する（この分岐は変更しない）",
+      "ok": true,
+      "note": "コード確認: stop_gate.py 189-191行目 `active_tasks = [...]; if not active_tasks: allow()` は変更前の `active = next(...); if active is None: allow()` と同等のロジック。実行コマンド: `bash scripts/smoke.sh | grep 複数行` / 出力: `ok   (複数行-3) doing/review 行が無い（複数 todo）→ 許可` に加え、単一行版の既存ケース「doing/review なし → 許可」もsmoke.sh内に残存し通過。"
+    },
+    {
+      "text": "単一の doing/review 行のみの既存シナリオ（`scripts/smoke.sh` 既存の4ケース：doing・verdict無し、FAIL・attempt<上限、FAIL・attempt=上限、doing/review無し）の判定結果が変更前と同じである",
+      "ok": true,
+      "note": "実行コマンド: `diff <(git show e9e3210:scripts/smoke.sh) scripts/smoke.sh` / 出力: 既存の `== stop_gate.py ==` セクションの行（例の4ケースを含む全11ケース）はバイト単位で変更が無く、複数行ケース3件が追記されているのみ（80行目の後に挿入）。実行コマンド: `bash scripts/smoke.sh | grep NG` / 出力: なし（該当行がゼロ、全ケース ok）。stop_gate.py 側も1行処理ロジック自体（verdict読込・validate_verdict・PASS/FAIL判定・attempt上限）は変更されておらず、ループでラップされただけであることを diff で確認。"
+    },
+    {
+      "text": "上記の複数行ケース・単一行の回帰ケースはいずれも `scripts/smoke.sh` に反映されており、`bash scripts/smoke.sh | tail -1` の出力で fail=0 になる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: `smoke: pass=110 fail=0`。実行コマンド: `bash scripts/smoke.sh | grep NG` / 出力: なし。"
+    }
+  ],
+  "reasons": []
+}

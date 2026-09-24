@@ -25,12 +25,14 @@
 | status | 意味 | 誰が付けるか |
 |---|---|---|
 | `todo` | 着手可。上から順に取る | planner / 人 |
-| `doing` | 作業中。**計画内で常に1件だけ** | 作成エージェント |
+| `doing` | 作業中。**`after` 依存の無い集合（着手可能集合）に限り複数件になりうる** | 作成エージェント |
 | `review` | 作成完了、検証待ち | 作成エージェント |
 | `blocked` | 人の判断待ち。question 必須 | 作成エージェント / フック |
 | `done` | 完了。以後編集禁止 | 作成エージェント（verdict が PASS の時のみ） |
 
 この5つは計画票のタスク表の中の状態で、状態を数える単位もその表の中に閉じる。別のブランチで別の計画が `doing` のタスクを持っていても干渉しない。
+
+同時に `doing`/`review` になれるのは、着手可能集合（`todo` かつ `after` の依存が全て `done` なタスクの集合）のうち、互いに `after` で依存し合わないものに限る。計画票・`vault/log/<計画ID>.md` への書き込みは、並行して作業していても常にオーケストレーター（`run` のメインセッション）1プロセスに集約し、複数プロセスが同じファイルへ同時に書き込むことは無い。
 
 遷移：`todo→doing→review→(done | doing[attempt+1] | blocked)`。`blocked→todo` は人のみ。
 
@@ -132,7 +134,7 @@ frontmatter は `id` と `status` の2つ。
 
 ## 9. Stop フックの判定
 
-`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。
+`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。
 
 | 状況 | 判定 |
 |---|---|
@@ -147,7 +149,7 @@ frontmatter は `id` と `status` の2つ。
 
 ## 10. plan_guard フックの判定
 
-`.claude/hooks/plan_guard.py` は PostToolUse（`Write|Edit|MultiEdit|Bash`）で、自分のブランチの計画票のタスク表を検査し、doing が2件以上・blocked なのに question が空・status が5値以外・id の重複・データ行の列数が6でない、のいずれかならブロックして直し方を示す。計画票が無い場合とデータ行が無い場合は何もしない。
+`.claude/hooks/plan_guard.py` は PostToolUse（`Write|Edit|MultiEdit|Bash`）で、自分のブランチの計画票のタスク表を検査し、doing/review の集合内に `after` 依存関係が張られている（doing/review のいずれかの行の `after` 列に、まだ `done` でない他の doing/review 行の id が含まれる）・blocked なのに question が空・status が5値以外・id の重複・データ行の列数が6でない、のいずれかならブロックして直し方を示す。計画票が無い場合とデータ行が無い場合は何もしない。
 
 ## 11. ルール（`vault/rules/`）
 

@@ -10,7 +10,7 @@
 
 ## 状態遷移（5つで固定）
 `todo → doing → review → (done | doing[attempt+1] | blocked)`。`blocked → todo` は人だけ。
-- `doing` は計画内で常に1件だけ。2件目を取らない
+- `doing`/`review` は `after` 依存の無い集合（着手可能集合）に限り複数件になりうる。計画票・log への書き込みは常にオーケストレーター1プロセス（run のメインセッション）に集約する
 - `done` にできるのは `vault/verdicts/<計画ID>/<id>.json` が PASS で、`attempt` が計画票のタスク表と一致する時だけ
 - 状態を変えたら `vault/log/<計画ID>.md` に1行追記する（`- YYYY-MM-DD HH:MM T-01 doing→review attempt=1 補足`）
 - 日時は JST：`TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'`

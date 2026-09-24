@@ -1,0 +1,2 @@
+- 2026-09-24 19:43 T-01 todo→doing attempt=1
+- 2026-09-24 19:43 T-02 todo→doing attempt=1

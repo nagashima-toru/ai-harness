@@ -16,7 +16,7 @@ D-003（`vault/designs/D-003.md`）フェーズ2「creator のサブエージェ
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | .claude/agents/creator.md の新設 | |
+| T-01 | doing | 1 | - | .claude/agents/creator.md の新設 | |
 | T-02 | todo | 0 | - | agent_write_guard.py に creator 向け拒否ルールを追加 | |
 | T-03 | todo | 0 | T-02 | smoke.sh に creator 向け expect_guard ケースを追加 | |
 | T-04 | todo | 0 | T-01 | run/SKILL.md を creator 呼び出し形に書き換える | |

@@ -44,7 +44,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | vault-spec.md 第13節に design ブランチと PR 運用・単体マージ保証を明記する | |
+| T-01 | review | 1 | - | vault-spec.md 第13節に design ブランチと PR 運用・単体マージ保証を明記する | |
 | T-02 | todo | 0 | - | design スキルにブランチ作成・コミット・PR 提示手順を追記する | |
 | T-03 | todo | 0 | - | design.md テンプレートの見出し構成を確認し必要な追記をする | |
 | T-04 | todo | 0 | - | smoke.sh に design ブランチのフック非阻害を検証するケースを追加する | |

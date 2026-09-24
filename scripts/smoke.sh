@@ -78,6 +78,19 @@ make_plan_task T-0001 review 2; make_verdict T-0001 1 PASS; expect "PASS だが 
 make_plan_task T-0001 review 1; rm -f "$TMP/vault/verdicts/P-TEST/T-0001.json"; expect "stop_hook_active=true → 許可（既定）" allow "$(run_stop '{"hook_event_name":"Stop","stop_hook_active":true}')"
 make_plan_task T-0001 review 1; expect "stop_hook_active=true + HARNESS_STRICT_STOP=1 → ブロック" block "$(printf '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$TMP" HARNESS_STRICT_STOP=1 python3 "$STOP_HOOK")" "verifier"
 make_plan_task T-0001 review 2; make_verdict T-0001 2 FAIL; expect "HARNESS_MAX_ATTEMPTS=2 で attempt=2 FAIL → blocked 指示" block "$(HARNESS_MAX_ATTEMPTS=2 run_stop)" "blocked"
+
+rm -rf "$TMP/vault/verdicts"; mkdir -p "$TMP/vault/verdicts/P-TEST"
+make_plan "P-TEST" "approved" "| T-0001 | review | 1 | - | A | |" "| T-0002 | doing | 1 | - | B | |"
+make_verdict T-0001 1 PASS
+expect "(複数行-1) 1件目 verdict あり(PASS)・2件目 verdict 無し → ブロック（見落とさず検査。1件目の理由で block）" block "$(run_stop)" "T-0001"
+rm -rf "$TMP/vault/verdicts"; mkdir -p "$TMP/vault/verdicts/P-TEST"
+make_plan "P-TEST" "approved" "| T-0001 | review | 1 | - | A | |" "| T-0002 | review | 1 | - | B | |"
+make_verdict T-0001 1 PASS; make_verdict T-0002 1 PASS
+expect "(複数行-2) 複数行が全て PASS だが done でない → ブロック（done にする指示）" block "$(run_stop)" "done"
+rm -rf "$TMP/vault/verdicts"; mkdir -p "$TMP/vault/verdicts/P-TEST"
+make_plan "P-TEST" "approved" "| T-0001 | todo | 0 | - | A | |" "| T-0002 | todo | 0 | - | B | |"
+expect "(複数行-3) doing/review 行が無い（複数 todo）→ 許可" allow "$(run_stop)"
+
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 make_plan "P-A" "approved" "| T-0001 | doing | 1 | - | A | |"; make_plan "P-B" "approved" "| T-0001 | doing | 1 | - | B | |"
 expect "approved な計画票が2件以上 → ブロック" block "$(run_stop)" "approved"
@@ -179,7 +192,15 @@ run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}'
 
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 make_plan "P-TEST" "approved" "| T-0001 | doing | 1 | - | A | |" "| T-0002 | doing | 1 | - | B | |"
-expect "(a) doing が2件 → ブロック" block "$(run_plan_guard)" "doing"
+expect "(a-1) doing が2件、依存無し → 許可（着手可能集合なら複数可）" allow "$(run_plan_guard)"
+make_plan "P-TEST" "approved" "| T-0001 | todo | 0 | - | A | |" "| T-0002 | doing | 1 | T-0001 | B | |"
+expect "(a-2) doing の after が未完了の他タスクを指す → ブロック" block "$(run_plan_guard)" "未完了の依存"
+make_plan "P-TEST" "approved" "| T-0001 | doing | 1 | T-0002 | A | |" "| T-0002 | doing | 1 | T-0001 | B | |"
+expect "(a-3) doing 同士が相互に after で参照し合う → ブロック" block "$(run_plan_guard)" "未完了の依存"
+make_plan "P-TEST" "approved" "| T-0001 | doing | 1 | - | A | |"
+expect "(a-4) doing が単一（依存無し）→ 許可（既存シナリオの回帰確認）" allow "$(run_plan_guard)"
+make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0002 | doing | 1 | T-0001 | B | |"
+expect "(a-5) doing の after が done なタスクを指す → 許可" allow "$(run_plan_guard)"
 make_plan "P-TEST" "approved" "| T-0001 | blocked | 1 | - | A | |"
 expect "(b) blocked なのに question が空 → ブロック" block "$(run_plan_guard)" "question"
 make_plan "P-TEST" "approved" "| T-0001 | pending | 0 | - | A | |"

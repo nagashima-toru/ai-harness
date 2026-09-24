@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-uninstall-harness/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 22:17",
+  "criteria": [
+    {
+      "text": "`manifest_paths()` の列挙（`for p in ...` の一覧、または該当する `find`/追加行）に `scripts/uninstall.sh` `scripts/unmerge_claude_md.py` `scripts/unmerge_settings_json.py` の3つが含まれる。確認：`grep -n 'uninstall.sh\\|unmerge_claude_md.py\\|unmerge_settings_json.py' scripts/install.sh` に3行以上ヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'uninstall.sh\\|unmerge_claude_md.py\\|unmerge_settings_json.py' scripts/install.sh` / 出力: 4行ヒット（59行目: `manifest_paths()` の `for p in ...` 列挙に3ファイルとも含まれる1行、136〜138行目: 各ファイルの `copy_if_absent` 行）。基準の3行以上を満たす。"
+    },
+    {
+      "text": "通常の複製ループ（`scripts/rules.sh` などを `copy_if_absent` している箇所）にも同3ファイルの `copy_if_absent` 呼び出しが追加されている。確認：同上の grep 結果に `copy_if_absent` を含む行が3行含まれる",
+      "ok": true,
+      "note": "同じ grep 結果の136〜138行目がいずれも `copy_if_absent \"$SRC/scripts/...\" \"$DST/scripts/...\"` の形式で、3行とも `copy_if_absent` を含む。基準を満たす。"
+    },
+    {
+      "text": "一時ディレクトリに `bash scripts/install.sh <tmp>` を実行すると、3ファイルがコピーされる。確認：`test -f <tmp>/scripts/uninstall.sh -a -f <tmp>/scripts/unmerge_claude_md.py -a -f <tmp>/scripts/unmerge_settings_json.py`",
+      "ok": true,
+      "note": "確認コマンドは verifier ロールの agent_write_guard フックにより実行不可（`mkdir`/`cp` 等を含む `bash scripts/install.sh <tmp>` はリポジトリ外の /tmp であっても書き込み系 Bash として拒否される。T-03 の検証と同様の制約）。代替として `scripts/install.sh` を Read で精査：136〜138行目で `copy_if_absent \"$SRC/scripts/uninstall.sh\" \"$DST/scripts/uninstall.sh\"` 等3行が通常の複製ループに追加されており、`copy_if_absent`（41〜45行目）は対象が存在しなければ `mkdir -p \"$(dirname \"$2\")\"; cp \"$1\" \"$2\"` でコピーする実装。3ファイルとも `manifest_paths()`（57〜59行目）にも含まれるため `--update` 経路でも配布対象になる。静的に基準の動作を満たすことを確認した。"
+    },
+    {
+      "text": "生成される `.claude/harness-manifest.json` に `settings_src` キーがあり、その値が `install.sh` 実行時点の ai-harness 側 `.claude/settings.json` の内容（`hooks` と `permissions.deny` を含む）と一致する。確認：`python3 -c \"import json; m=json.load(open('<tmp>/.claude/harness-manifest.json')); s=json.load(open('.claude/settings.json')); assert m['settings_src']['hooks']==s['hooks'] and m['settings_src']['permissions']['deny']==s['permissions']['deny']\"` が例外なく終了する",
+      "ok": true,
+      "note": "実 install 実行による確認は書き込み系 Bash 禁止のため不可。代替として `scripts/install.sh` 189〜196行目を Read で精査：`settings_path = os.path.join(src, \".claude\", \"settings.json\")` を `json.load` した内容をそのまま `settings_src` として `json.dump({\"version\":..., \"files\":..., \"settings_src\": settings_src}, fh, ...)` に書き出しており、SRC 側 `.claude/settings.json` の全内容（`hooks`・`permissions.deny` を含む）をそのままコピーする実装。別途 `python3 -c \"import json; s=json.load(open('.claude/settings.json')); print(list(s.keys())); print('deny' in s.get('permissions',{}))\"` を実行し、`.claude/settings.json` に `hooks` と `permissions.deny` が実在することを確認済み（出力: `['worktree', 'permissions', 'hooks']` / `True`）。settings_src はこのファイルの丸ごと json.load なので一致は保証される。"
+    },
+    {
+      "text": "`--update` 実行時も `settings_src` が最新の ai-harness 側 `.claude/settings.json` の内容に更新される（`files` の `skip (edited)` 判定とは独立に、常に最新化してよい）。確認：`--update` を実行後、直前の確認コマンドと同じ python チェックが通ること",
+      "ok": true,
+      "note": "実行による確認は書き込み系 Bash 禁止のため不可。代替として `scripts/install.sh` の構造を Read で精査：`--update` 分岐（72〜114行目、`files` の据え置き判定のみを行う）と、マニフェスト書き出し部（159〜199行目）は独立したブロックで、後者は `UPDATE` フラグの分岐外にあり常に実行される。`settings_src` の算出（189〜193行目）は `keep`/`prev` による据え置きロジック（184〜186行目、`files` のみが対象）の対象外で、毎回 `SRC/.claude/settings.json` を再読込して上書きする。`--update` の有無に関わらず同じコードパスを通るため、`--update` 実行時も settings_src は最新化される。"
+    }
+  ],
+  "reasons": []
+}

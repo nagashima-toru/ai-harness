@@ -4,3 +4,4 @@
 - 2026-09-25 06:43 T-01 blocked→todo attempt=0 受け入れ基準6を修正（人の操作）
 - 2026-09-25 06:43 T-01 todo→doing attempt=1
 - 2026-09-25 06:46 T-01 doing→review attempt=1
+- 2026-09-25 06:51 T-01 review→done attempt=1

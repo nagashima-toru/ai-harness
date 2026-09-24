@@ -25,7 +25,7 @@ issue #32 の2つの対応案は、同じファイル（`.claude/skills/run/SKIL
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | run手順6: マージ前の未コミット差分回収と、新規コミット0件時のblocked化 | |
+| T-01 | done | 1 | - | run手順6: マージ前の未コミット差分回収と、新規コミット0件時のblocked化 | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

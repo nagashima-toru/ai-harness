@@ -1,0 +1,37 @@
+{
+  "task": "P-20260924-vcs-finish/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 00:10",
+  "criteria": [
+    {
+      "text": "`docs/vault-spec.md` に `gh pr create` という文字列が残っていない。確認: `grep -c \"gh pr create\" docs/vault-spec.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `/usr/bin/grep -c \"gh pr create\" docs/vault-spec.md` / 出力: 0"
+    },
+    {
+      "text": "4節の `done` の説明に `scripts/vcs_finish.sh` を実行済みという趣旨の記述がある。確認: `sed -n '/^## 4\\./,/^## 5\\./p' docs/vault-spec.md | grep -c \"vcs_finish.sh\"` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 4\\./,/^## 5\\./p' docs/vault-spec.md | /usr/bin/grep -c \"vcs_finish.sh\"` / 出力: 2。Read で4節本文を確認すると、`done` の表の行が「全タスクが `done` になり `scripts/vcs_finish.sh` を実行済み」、直後の本文が「エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない」となっており、実際に趣旨も反映されていた。基準が緩いと判断：この確認コマンドは節内の文字列出現数を数えるだけ（`grep -c` が1以上の形式）で、`vcs_finish.sh` という語が「実行済みという趣旨」と無関係な文脈（例：本スクリプトの詳細は別文書を参照、といった否定的・無関係な言及）で出現しても基準は通ってしまうため、目的（4節の done 説明が実行済みという趣旨を持つこと）の達成を保証しない。"
+    },
+    {
+      "text": "13節の「ブランチと PR」節にも `scripts/vcs_finish.sh` を使う旨の記述がある。確認: `grep -n \"vcs_finish.sh\" docs/vault-spec.md | wc -l | tr -d ' '` が2以上（4節・13節の両方に出現）",
+      "ok": true,
+      "note": "実行コマンド: `/usr/bin/grep -n \"vcs_finish.sh\" docs/vault-spec.md | wc -l | tr -d ' '` / 出力: 3（4節に2箇所、13節1箇所）。Read で13節「ブランチと PR」を確認すると「`scripts/vcs_finish.sh` を実行して PR/MR を作り（ホスティング無しの場合は案内を受け取り）」という記述があり、実際に13節にも反映されていた。基準が緩いと判断：この確認コマンドはファイル全体での出現回数の合計が2以上かのみを見ており、4節・13節それぞれに出現しているかを個別に確認していない。理論上は4節だけに2回出現し13節に0回でも基準を満たしてしまい、目的（13節にも記述がある）の達成を保証しない。"
+    },
+    {
+      "text": "`gh pr merge`（`glab mr merge` に触れる場合も同様）への言及はすべて「実行しない」という文脈に限られる。確認: `grep -n \"gh pr merge\\|glab mr merge\" docs/vault-spec.md | grep -v \"実行しない\"` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `/usr/bin/grep -n \"gh pr merge\\|glab mr merge\" docs/vault-spec.md | /usr/bin/grep -v \"実行しない\"` / 出力: なし（空）"
+    },
+    {
+      "text": "「マージは人が行う」という既存方針の記述は維持されている。確認: `grep -c \"マージは人が行う\" docs/vault-spec.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `/usr/bin/grep -c \"マージは人が行う\" docs/vault-spec.md` / 出力: 1（13節「ブランチと PR」に既存）。宣言外ファイルの検査：タスク票「進捗」に `起点コミット:` の記録が無いため、この検査（`git diff --name-only <起点コミット>..HEAD`）は実施していない。"
+    }
+  ],
+  "reasons": [
+    "基準が緩い：4節の確認コマンド（`sed -n '/^## 4\\./,/^## 5\\./p' docs/vault-spec.md | grep -c \"vcs_finish.sh\"` が1以上）は節内の文字列出現数を数えるだけで、`vcs_finish.sh` という語が「実行済みという趣旨」と無関係な文脈で出現しても通るため、目的（4節の done 説明が実行済みという趣旨を持つこと）の達成を保証しない。",
+    "基準が緩い：13節の確認コマンド（`grep -n \"vcs_finish.sh\" docs/vault-spec.md | wc -l` が2以上）はファイル全体での出現回数の合計しか見ておらず、4節・13節それぞれへの出現を個別に確認していないため、13節に記述が無くても4節だけで2回出現すれば通ってしまい、目的（13節にも記述がある）の達成を保証しない。"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "task": "P-20260924-uninstall-harness/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 22:05",
+  "criteria": [
+    {
+      "text": "`src` の hooks に含まれる `command` 文字列が `dst` の同じ event の hooks エントリに存在する場合、その command だけを除去する。利用者が追加した別の command は残す。確認：テスト用 dst に「src と同じ command」＋「利用者が追加した別 command」を同じ event の別エントリとして用意して実行し、後者だけが残ること（`python3 -c \"import json; ...\"` で dst を読んで検証）",
+      "ok": true,
+      "note": "実行方法: Python から `subprocess.run([\"python3\", \"scripts/unmerge_settings_json.py\", src, dst])` で unmerge_settings_json.py を呼び出し（agent_write_guard の制約により scratchpad へのファイル作成は tempfile.mkdtemp 経由・heredoc python から実施）。src=hooks.PreToolUse に matcher Bash（command=\"echo harness-hook\"）1件、dst に同じ Bash エントリ＋利用者追加の Edit エントリ（command=\"echo user-hook\"）を用意して実行。出力: `unmerge <dst>`。実行後の dst.hooks.PreToolUse は matcher=Edit（echo user-hook）の1件のみで、Bash エントリは除去された。"
+    },
+    {
+      "text": "hooks 除去の結果、あるエントリの `hooks` 配列が空になったら、そのエントリ自体を event の配列から削除する。確認：除去後の JSON にそのエントリ（matcher）が残っていないこと",
+      "ok": true,
+      "note": "実行方法: src/dst 双方に matcher=Bash・command=\"echo only-harness-cmd\" の1エントリのみを用意して実行。出力: `unmerge <dst>`。実行後の dst.hooks.PreToolUse は `[]`（空配列）となり、matcher エントリ自体が削除されたことを確認した。"
+    },
+    {
+      "text": "`src` の `permissions.deny` に含まれる文字列のうち `dst` にも存在するものだけを除去し、`dst` 独自の deny 項目は残す。確認：`python3 -c` で dst の `permissions.deny` を読み、src 由来の項目が無く利用者項目が残ることを確認",
+      "ok": true,
+      "note": "実行方法: src.permissions.deny=[\"Bash(wipeall:*)\"]、dst.permissions.deny=[\"Bash(wipeall:*)\",\"Bash(curl:*)\"]で実行。実行後の dst.permissions.deny は [\"Bash(curl:*)\"] のみとなり、src由来の項目が除去され利用者項目が残ることを確認した。"
+    },
+    {
+      "text": "`permissions.allow` は一切変更しない。確認：実行前後で `dst` の `permissions.allow` が完全に一致すること（`python3 -c \"import json;print(json.load(open(p))['permissions'].get('allow'))\"` を前後で比較）",
+      "ok": true,
+      "note": "実行方法: dst.permissions.allow=[\"Bash(git:*)\",\"Bash(npm:*)\"]で上記テストを実行し、実行後の同フィールドを比較。結果: 実行前後で [\"Bash(git:*)\", \"Bash(npm:*)\"] のまま完全一致した。"
+    },
+    {
+      "text": "除去対象が無い時は書き換えず `skip <dst>` と出力する。確認：src の内容が dst に一つも含まれない状態で実行し、出力に `skip` を含み、実行前後で dst の mtime とバイト内容が変わらないこと",
+      "ok": true,
+      "note": "実行方法: src/dst で互いに一致しない command（\"echo not-present\" vs \"echo unrelated\"）・deny（\"Bash(zzz:*)\" vs \"Bash(yyy:*)\"）を用意し、実行前後の `os.stat().st_mtime_ns` と生バイト列を比較（間に1.1秒 sleep）。出力: `skip <dst>`。結果: bytes_unchanged=True, mtime_unchanged=True。"
+    },
+    {
+      "text": "書き換えが発生した時だけ `<dst>.bak-<YYYYMMDDHHMMSS>` のバックアップを作る（`merge_settings_json.py` と同じ命名規則）。確認：バックアップファイルの存在と、その中身が実行前の dst 内容と一致すること",
+      "ok": true,
+      "note": "実行方法: 1つ目のテスト（hooks/deny 除去が発生するケース）の実行後、テンポラリディレクトリを `os.listdir` して `dst1.json.bak-YYYYMMDDHHMMSS` 形式のファイルが存在することを確認し、その内容を JSON として読み込み、実行前の dst1 の内容と等しいことを比較した。結果: backup files=['dst1.json.bak-20260924130515']、backup matches original dst1: True。また「除去対象が無い」ケース（基準5のテスト）では `os.listdir` にバックアップファイルが存在せず、dstが不変だったことも確認済み。"
+    }
+  ],
+  "reasons": []
+}

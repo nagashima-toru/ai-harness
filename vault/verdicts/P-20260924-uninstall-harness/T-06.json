@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-uninstall-harness/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 22:21",
+  "criteria": [
+    {
+      "text": "`scripts/smoke.sh` に `== uninstall.sh ==` の見出しを持つ新しいテスト節が追加されている。確認：`grep -n '== uninstall.sh ==' scripts/smoke.sh`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '== uninstall.sh ==' scripts/smoke.sh` / 出力: 452:echo \"== uninstall.sh ==\""
+    },
+    {
+      "text": "install → 1ファイル編集 → uninstall の流れをテストし、未編集のマニフェスト記録ファイルが削除され、編集したファイルが残ることを `expect_eq` 等で検証するアサーションが含まれる。確認：`bash scripts/smoke.sh` を実行し、この節に対応する PASS 行がありFAILが無い",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh; echo EXIT:$?` / 出力: `== uninstall.sh ==` 節に (q) 未編集ファイル(stop_gate.py)は削除される、(q) 編集済みファイル(roles.md)は残る、(q) 編集した行は保持される、(q) skip (edited) が報告される が全て ok。全体 smoke: pass=129 fail=0、EXIT:0"
+    },
+    {
+      "text": "`vault/plans` にダミーファイルを置いた状態で uninstall した後もそのファイルが残っていることを検証するアサーションが含まれる。確認：同上の実行結果にこのケースの PASS 行がある",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: (r) vault/plans のダミーファイルは無傷、(r) ダミーファイルの内容は変わらない が ok（scripts/smoke.sh 456-457行目でダミーファイルを事前配置していることをコード確認）"
+    },
+    {
+      "text": "`CLAUDE.md`（マーカーブロックの除去）と `.claude/settings.json`（`settings_src` を使った逆処理）のいずれもこの節でテストされている。確認：`grep -n 'unmerge_claude_md\\|unmerge_settings_json' scripts/smoke.sh`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'unmerge_claude_md|unmerge_settings_json' scripts/smoke.sh` / 出力: 466-470行目に unmerge_claude_md.py と unmerge_settings_json.py それぞれの報告を検証する行があり、bash scripts/smoke.sh 実行結果では (s)(t) の各アサーションが ok"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行した時、追加した節を含め全体が PASS のみで終了する。確認：`bash scripts/smoke.sh; echo $?` の終了コードが `0` で、出力に `FAIL` を含む行が無い",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh; echo $?` / 出力: 全129行が ok、末尾 `smoke: pass=129 fail=0`、終了コード 0、出力全体に FAIL を含む行なし"
+    }
+  ],
+  "reasons": []
+}

@@ -1,0 +1,34 @@
+{
+  "task": "P-20260924-uninstall-harness/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 22:21",
+  "criteria": [
+    {
+      "text": "`## アンインストール` の見出しが追加され、`bash scripts/uninstall.sh <target-dir>` のコマンド例が書かれている。確認：`grep -n '^## アンインストール' docs/install.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '^## アンインストール' docs/install.md` / 出力: 147:## アンインストール。同節内150〜152行にコードブロックで `bash scripts/uninstall.sh /path/to/your-project` の例あり。"
+    },
+    {
+      "text": "`install.sh` の `copy`/`skip (exists)`/`skip (edited)` と対称に、`uninstall.sh` の出力（`remove`・`skip (edited)`・`note`）の意味を表または箇条書きで説明している。確認：`grep -n 'remove\\|skip (edited)' docs/install.md` がアンインストール節内にヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'remove\\|skip (edited)' docs/install.md` / 出力: 158,159行がアンインストール節（147〜166行）内にヒット（`remove <path>` / `skip (edited) <path>` の表形式説明、154行に `copy`/`skip (exists)`/`skip (edited)` と対称である旨の文あり）。"
+    },
+    {
+      "text": "`settings.json` の自動除去が「command/deny 文字列の完全一致」でのみ判定するため、利用者が同一文字列を独自に追加していた場合は区別できず一緒に消える可能性がある旨を明記している。確認：`grep -n '完全一致' docs/install.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '完全一致' docs/install.md` / 出力: 164行「この一致判定は command / deny 文字列の完全一致でしか行わない」に続けて「利用者がハーネスと偶然同じ文字列を独自に...追加していた場合、区別できずに一緒に消える可能性がある」と明記。"
+    },
+    {
+      "text": "`CLAUDE.md` のアンインストール（マーカーブロックのみ除去、ブロックだけの内容なら削除、他の本文は残る）を説明している。確認：`grep -n 'マーカー' docs/install.md` がアンインストール節内にヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'マーカー' docs/install.md` / 出力: 162行がアンインストール節内にヒット。同行で「マーカーブロック（...）だけを取り除き、他の本文には触れない」「残りが空白だけならファイルごと削除し、本文が残っていればブロックだけ除去してファイルは残す」と説明あり。"
+    },
+    {
+      "text": "`vault/` の利用者資産（`plans/tasks/verdicts/log/designs/archive`、標準4本以外の `vault/rules/`）には一切触れないことを明記している。確認：`grep -n 'plans/tasks/verdicts' docs/install.md` またはそれに相当する記述がアンインストール節内にある",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'plans/tasks/verdicts' docs/install.md` / 出力: 一致なし。基準が許容する「相当する記述」として166行（アンインストール節内）に「`vault/` の利用者資産（`plans`/`tasks`/`verdicts`/`log`/`designs`/`archive` と、標準4本以外の `vault/rules/`）には一切触れない」の記述を確認。加えて、タスク票『進捗』に『起点コミット: <短縮ハッシュ>』の記載が無いため、成果物欄との照合検査（受け入れ基準9番）は実施していない。"
+    }
+  ],
+  "reasons": []
+}

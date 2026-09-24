@@ -56,6 +56,7 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
     find vault/templates -name '*.md' -type f 2>/dev/null
     for p in .claude/ai-harness.md scripts/smoke.sh scripts/rules.sh \
              scripts/merge_claude_md.py scripts/merge_settings_json.py \
+             scripts/uninstall.sh scripts/unmerge_claude_md.py scripts/unmerge_settings_json.py \
              scripts/install.sh docs/vault-spec.md \
              vault/rules/README.md vault/rules/common/roles.md \
              vault/rules/common/git.md vault/rules/creator/creator.md \
@@ -132,6 +133,9 @@ copy_if_absent "$SRC/scripts/smoke.sh" "$DST/scripts/smoke.sh"
 copy_if_absent "$SRC/scripts/rules.sh" "$DST/scripts/rules.sh"
 copy_if_absent "$SRC/scripts/merge_claude_md.py" "$DST/scripts/merge_claude_md.py"
 copy_if_absent "$SRC/scripts/merge_settings_json.py" "$DST/scripts/merge_settings_json.py"
+copy_if_absent "$SRC/scripts/uninstall.sh" "$DST/scripts/uninstall.sh"
+copy_if_absent "$SRC/scripts/unmerge_claude_md.py" "$DST/scripts/unmerge_claude_md.py"
+copy_if_absent "$SRC/scripts/unmerge_settings_json.py" "$DST/scripts/unmerge_settings_json.py"
 copy_if_absent "$SRC/scripts/install.sh" "$DST/scripts/install.sh"
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"
 
@@ -182,9 +186,14 @@ with open(listfile, encoding="utf-8") as fh:
             continue
         with open(p, "rb") as g:
             files[rel] = hashlib.sha256(g.read()).hexdigest()
+settings_src = None
+settings_path = os.path.join(src, ".claude", "settings.json")
+if os.path.isfile(settings_path):
+    with open(settings_path, encoding="utf-8") as fh:
+        settings_src = json.load(fh)
 os.makedirs(os.path.dirname(out), exist_ok=True)
 with open(out, "w", encoding="utf-8") as fh:
-    json.dump({"version": version, "files": files}, fh, ensure_ascii=False, indent=2)
+    json.dump({"version": version, "files": files, "settings_src": settings_src}, fh, ensure_ascii=False, indent=2)
     fh.write("\n")
 print("manifest  .claude/harness-manifest.json (%d files)" % len(files))
 ' "$SRC" "$MANIFEST_FILE" "$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')" "$MANIFEST_LIST" "$SKIPPED_LIST"

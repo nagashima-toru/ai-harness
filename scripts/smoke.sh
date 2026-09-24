@@ -381,6 +381,26 @@ print(m == h('$ROOT/' + rel) and m != h('$NTMP/' + rel))")"
 expect_eq "(i) 編集した行はそのまま残る" "1" "$(grep -c '^- 独自ルール$' "$NTMP/vault/rules/common/roles.md")"
 rm -rf "$NTMP"
 
+echo "== 参照される scripts の存在チェック =="
+RSTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$RSTMP" >/dev/null 2>&1
+missing_referenced_scripts() { # $1=target dir。参照されているが <target>/scripts/ に無い名前を1行1つで返す（無ければ空）
+  local target="$1" f name
+  {
+    find "$target/.claude" -type f 2>/dev/null
+    find "$target/vault/rules" -type f 2>/dev/null
+    find "$target/vault/templates" -type f 2>/dev/null
+    [ -f "$target/docs/vault-spec.md" ] && echo "$target/docs/vault-spec.md"
+    [ -f "$target/CLAUDE.md" ] && echo "$target/CLAUDE.md"
+  } | while read -r f; do
+    grep -Eo 'scripts/[A-Za-z0-9_.-]+\.(sh|py)' "$f" 2>/dev/null
+  done | sed 's#^scripts/##' | sort -u | while read -r name; do
+    [ -f "$target/scripts/$name" ] || echo "$name"
+  done
+}
+expect_eq "新規インストール先で参照される scripts がすべて揃っている" "" "$(missing_referenced_scripts "$RSTMP")"
+rm -rf "$RSTMP"
+
 echo "== discard_worktree.sh =="
 DWMAIN="$(mktemp -d)"
 git -C "$DWMAIN" init -q -b main

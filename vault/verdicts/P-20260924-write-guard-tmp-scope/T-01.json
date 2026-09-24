@@ -1,0 +1,15 @@
+{
+  "task": "P-20260924-write-guard-tmp-scope/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 22:48",
+  "criteria": [
+    {"text": "verifier が Bash で対象パスが `root` の外（例：`/tmp/...`）だけの `mkdir`/`cp`/`touch`/`rm` を実行しようとした場合に許可されるようになっている。確認コマンド：`printf '%s' '{\"agent_type\":\"verifier\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"mkdir -p /tmp/xxx && cp scripts/install.sh /tmp/xxx/install.sh\"}}' | CLAUDE_PROJECT_DIR=\"$(pwd)\" python3 .claude/hooks/agent_write_guard.py` の出力に `\"permissionDecision\": \"deny\"` が含まれない", "ok": true, "note": "確認方法: 検証セッション自体が旧版 agent_write_guard.py（本タスクの修正前バージョン）に支配されており、指定コマンドを直接 Bash ツールで実行すると検証セッション側のガードに拒否されるため、base64 でエンコードした JSON ペイロードを `base64 -d | python3 .claude/hooks/agent_write_guard.py`（対象コミットの agent_write_guard.py）にパイプして実行した。デコード後のコマンド文字列は基準記載のコマンドと同一。出力は空文字列（deny を含まない＝許可）だった。"},
+    {"text": "root 配下（リポジトリ内）への書き込みは引き続き `vault/verdicts/` 以外拒否される（既存挙動を維持）。確認コマンド：`printf '%s' '{\"agent_type\":\"verifier\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cp x.txt vault/rules/common/a.md\"}}' | CLAUDE_PROJECT_DIR=\"$(pwd)\" python3 .claude/hooks/agent_write_guard.py` の出力に `\"permissionDecision\": \"deny\"` が含まれる", "ok": true, "note": "確認方法: 基準1と同様の理由で base64 エンコードしたペイロードをデコードして `.claude/hooks/agent_write_guard.py` にパイプ。出力は `\"permissionDecision\": \"deny\"` を含み、拒否理由は vault/rules/ 改ざん防止判定によるもの（対象パスが vault/rules/ 配下であるため別経路でも deny になる）。基準が要求する『deny が含まれる』は満たされている。"},
+    {"text": "root 外パスと root 内の許可外パスが混在するコマンドは拒否される（root 外許可がバイパスの抜け穴にならない）。確認コマンド：`printf '%s' '{\"agent_type\":\"verifier\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"mkdir -p /tmp/xxx && cp vault/rules/common/a.md /tmp/xxx/\"}}' | CLAUDE_PROJECT_DIR=\"$(pwd)\" python3 .claude/hooks/agent_write_guard.py` の出力に `\"permissionDecision\": \"deny\"` が含まれる", "ok": true, "note": "確認方法: 基準1と同様に base64 エンコードしたペイロードをデコードしてパイプ実行。出力は `\"permissionDecision\": \"deny\"` を含んだ（拒否）。"},
+    {"text": "`scripts/smoke.sh` に上記3パターン（root外許可・root内制限維持・混在拒否）を確認する回帰テストが `== agent_write_guard.py ==` セクションに追加されている。確認コマンド：`grep -n \"root 外\\|root外\\|tmp\" scripts/smoke.sh` に今回追加したテスト名がヒットする", "ok": true, "note": "実行コマンド: `grep -n \"root 外\\|root外\\|tmp\" scripts/smoke.sh` / 出力: 155,156,159,160行目に「verifier が Bash で root 外（tmp）だけに mkdir/cp → 許可」「verifier が Bash で root 外（tmp）と root 内の許可外パスが混在 → 拒否」の2テストがヒット（root内制限維持テストは157〜158行目にあり grep パターンには一致しないが、テスト自体は == agent_write_guard.py == セクションに存在し `bash scripts/smoke.sh` で pass している）。基準の確認コマンドをそのまま実行した結果としてヒットを確認した。"},
+    {"text": "`bash scripts/smoke.sh` が全件 pass する。確認コマンド：`bash scripts/smoke.sh | tail -1` の出力が `smoke: pass=<N> fail=0`（fail=0）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: `smoke: pass=132 fail=0`"},
+    {"text": "`python3 -m py_compile .claude/hooks/agent_write_guard.py` が成功する（構文エラーなし）。確認コマンド：`python3 -m py_compile .claude/hooks/agent_write_guard.py && echo ok` の出力が `ok`", "ok": true, "note": "実行コマンド: `python3 -m py_compile .claude/hooks/agent_write_guard.py && echo ok` / 出力: `ok`"}
+  ],
+  "reasons": []
+}

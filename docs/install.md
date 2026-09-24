@@ -31,7 +31,7 @@ git init
 ```bash
 bash /path/to/ai-harness/scripts/install.sh .
 ```
-複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと標準ルールと `vault/{plans,tasks,verdicts,log,designs,archive,templates,rules}` の空ディレクトリ、`scripts/smoke.sh`、`scripts/rules.sh`、`scripts/merge_claude_md.py`、`scripts/merge_settings_json.py`、`docs/vault-spec.md`、`CLAUDE.md`）。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
+複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと標準ルールと `vault/{plans,tasks,verdicts,log,designs,archive,templates,rules}` の空ディレクトリ、`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）、`docs/vault-spec.md`、`CLAUDE.md`）。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
 
 あわせて `.claude/harness-manifest.json` が作られる。配ったハーネス本体ファイルの sha256 を記録したもので、次の「ハーネスを更新する」で使う。`.claude/settings.json` は複製ではなく `scripts/merge_settings_json.py` によるマージで用意される。
 
@@ -113,7 +113,7 @@ bash /path/to/ai-harness/scripts/install.sh --no-claude-md /path/to/your-project
 
 ### 3. git 管理に入れる
 ```bash
-git add vault/ .claude/ CLAUDE.md scripts/rules.sh scripts/smoke.sh docs/vault-spec.md && git commit -m "ai-harness を導入"
+git add vault/ .claude/ CLAUDE.md scripts/ docs/vault-spec.md && git commit -m "ai-harness を導入"
 ```
 `vault/` は追跡するのを勧める。ai-harness 自身が `vault/` 全体（`plans/` / `tasks/` / `verdicts/` / `log/` / `designs/` / `archive/` / `rules/`）を git 管理しており、作業の履歴がそのまま残る。`.gitignore` に `.claude/settings.local.json` を追加しておく。
 

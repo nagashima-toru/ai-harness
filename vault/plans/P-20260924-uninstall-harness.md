@@ -27,8 +27,8 @@ GitHub Issue #8。ハーネスを導入先から取り除く手順が無い（`s
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | scripts/unmerge_claude_md.py を作る（CLAUDE.md からマーカーブロックのみ除去） | |
-| T-02 | doing | 1 | - | scripts/unmerge_settings_json.py を作る（settings.json からハーネス由来のエントリのみ除去） | |
+| T-01 | review | 1 | - | scripts/unmerge_claude_md.py を作る（CLAUDE.md からマーカーブロックのみ除去） | |
+| T-02 | review | 1 | - | scripts/unmerge_settings_json.py を作る（settings.json からハーネス由来のエントリのみ除去） | |
 | T-03 | todo | 0 | T-01,T-02 | scripts/uninstall.sh を作る（マニフェスト照合削除 + 3種報告） | |
 | T-04 | todo | 0 | T-03 | scripts/install.sh を更新（新規3ファイルの配布対象追加 + manifest に settings_src を書く） | |
 | T-05 | todo | 0 | T-04 | docs/install.md にアンインストール手順を追記する | |

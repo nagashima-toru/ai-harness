@@ -150,6 +150,40 @@ def current_branch(root):
     return branch or None
 
 
+DESTRUCTIVE_BASH_PATTERN = (
+    r"\b(rm|mv|cp|git\s+(add|commit|push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)"
+    r"|sed\s+-i|tee)\b"
+)
+
+
+def extract_bash_write_targets(cmd):
+    """コマンド文字列からリダイレクト先と mkdir/cp/touch/rm/mv の書き込み対象パスを抽出する。
+
+    フラグ（`-` で始まるトークン）は対象パスに含めない。コマンド区切り（`;`/`&`/`|`）は
+    またいで拾わない。`cp`/`mv` は読み取り元（先行する非フラグ引数）を書き込み対象に含めず、
+    最後の非フラグ引数（コピー・移動先）だけを対象にする。`mkdir`/`touch`/`rm` は全ての
+    非フラグ引数がそれぞれ書き込み（作成・削除）対象になる。抽出できたパスが1つも無ければ
+    呼び出し側で fail-closed（拒否）とする。
+    """
+    targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
+    for m in re.finditer(r"\b(mkdir|cp|touch|rm|mv)\b([^;&|]*)", cmd):
+        verb = m.group(1)
+        args = [tok for tok in m.group(2).split() if not tok.startswith("-")]
+        if not args:
+            continue
+        if verb in ("cp", "mv"):
+            targets.append(args[-1])
+        else:
+            targets.extend(args)
+    return targets
+
+
+def is_outside_root(path, root):
+    """正規化したパスが root の外（root 配下でない）かどうかを返す。"""
+    rel = normalize(path, root)
+    return rel == ".." or rel.startswith("../")
+
+
 def targets_vault_rules_remote(cmd):
     """gh api / curl で GitHub Contents API を直接叩き vault/rules/ を書き換えようとしていないか判定する。
 
@@ -261,10 +295,18 @@ def main():
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
         if any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
+            write_targets = extract_bash_write_targets(cmd)
+            # 対象パスがすべて root（リポジトリ）の外なら許可する（issue #27）。
+            # トレードオフ：/etc/passwd のようなシステムファイルへの書き込みも root 外である以上
+            # 許可してしまうが、root 外を一律許可する方式を選んだ結果として受け入れる
+            # （過度に複雑な許可リスト方式にはしない）。対象パスが1つも抽出できない場合や、
+            # root 内のパスが1つでも混ざる場合はこの許可を適用せず、既存どおり fail-closed に倒す。
+            if write_targets and all(is_outside_root(t, root) for t in write_targets):
+                sys.exit(0)
             # 許可ディレクトリだけを対象にしたリダイレクトは通す
             targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
             if targets and all(normalize(t, root).startswith(tuple(allowed)) for t in targets) \
-                    and not re.search(r"\b(rm|mv|cp|git\s+(add|commit|push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)|sed\s+-i|tee)\b", cmd):
+                    and not re.search(DESTRUCTIVE_BASH_PATTERN, cmd):
                 sys.exit(0)
             deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
     sys.exit(0)

@@ -449,6 +449,28 @@ expect_eq "(p) --update で欠落 hooks が足される" "True" \
   "$(python3 -c "import json;d=json.load(open('$WTMP/.claude/settings.json'));print(any('plan_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
 rm -rf "$WTMP"
 
+echo "== uninstall.sh =="
+UNTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$UNTMP" >/dev/null 2>&1
+printf -- '- 独自ルール3\n' >> "$UNTMP/vault/rules/common/roles.md"
+mkdir -p "$UNTMP/vault/plans"
+echo "dummy" > "$UNTMP/vault/plans/P-DUMMY.md"
+uout="$(bash "$ROOT/scripts/uninstall.sh" "$UNTMP" 2>&1)"; urc=$?
+expect_eq "(q) uninstall.sh の終了コードが0" "0" "$urc"
+expect_eq "(q) 未編集ファイル(stop_gate.py)は削除される" "0" "$([ -f "$UNTMP/.claude/hooks/stop_gate.py" ] && echo 1 || echo 0)"
+expect_eq "(q) 編集済みファイル(roles.md)は残る" "1" "$([ -f "$UNTMP/vault/rules/common/roles.md" ] && echo 1 || echo 0)"
+expect_eq "(q) 編集した行は保持される" "1" "$(grep -c '^- 独自ルール3$' "$UNTMP/vault/rules/common/roles.md")"
+expect_eq "(q) skip (edited) が報告される" "1" "$(echo "$uout" | grep -c '^skip (edited) vault/rules/common/roles\.md$')"
+expect_eq "(r) vault/plans のダミーファイルは無傷" "1" "$([ -f "$UNTMP/vault/plans/P-DUMMY.md" ] && echo 1 || echo 0)"
+expect_eq "(r) ダミーファイルの内容は変わらない" "dummy" "$(cat "$UNTMP/vault/plans/P-DUMMY.md")"
+expect_eq "(s) CLAUDE.md はブロックのみの内容だったため削除される（unmerge_claude_md.py）" "0" "$([ -f "$UNTMP/CLAUDE.md" ] && echo 1 || echo 0)"
+expect_eq "(s) unmerge_claude_md.py の remove/delete 報告がある" "1" "$(echo "$uout" | grep -Ec '^(remove|delete) .*CLAUDE\.md$')"
+expect_eq "(t) settings.json からハーネス由来の hooks が除去される（unmerge_settings_json.py）" "False" \
+  "$(python3 -c "import json;d=json.load(open('$UNTMP/.claude/settings.json'));print(any('plan_guard.py' in h.get('command','') for e in d.get('hooks',{}).get('PostToolUse',[]) for h in e.get('hooks',[])))")"
+expect_eq "(t) unmerge_settings_json.py の unmerge 報告がある" "1" "$(echo "$uout" | grep -c '^unmerge .*settings\.json$')"
+expect_eq "(u) マニフェストファイル自体も削除される" "0" "$([ -f "$UNTMP/.claude/harness-manifest.json" ] && echo 1 || echo 0)"
+rm -rf "$UNTMP"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

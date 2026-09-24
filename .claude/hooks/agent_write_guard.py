@@ -16,6 +16,12 @@
 上記の拒否は、Write 系ツールのパス判定に加え、Bash 経由で `gh api` や GitHub Contents API
 （api.github.com / raw.githubusercontent.com 等）へ直接 curl するリモート書き込み経路も対象にする
 （issue #6）。
+
+creator（run から呼ばれる作成エージェント）向けの拒否リスト：creator は成果物パス（repo 全体に
+及びうる）と vault/tasks/ への書き込みは許可されるが、vault/plans/・vault/log/ への書き込みは
+agent_type を問わない他の判定と同じく常に拒否する。計画票のタスク表の状態更新とログ追記は、
+呼び出し元のオーケストレーター（run のメインセッション）に一本化するための制限（D-003 フェーズ2）。
+ALLOWED の許可リスト方式とは異なり、拒否リスト方式で実装する。
 """
 import json
 import os
@@ -30,6 +36,7 @@ ALLOWED = {
     "verifier": ["vault/verdicts/"],
     "planner": ["vault/plans/", "vault/tasks/"],
 }
+DENIED_FOR_CREATOR = ("vault/plans/", "vault/log/")
 BASH_WRITE_PATTERNS = [
     r"(^|[^<>])>{1,2}\s*\S",          # リダイレクト（<> や >& を含む単純な誤検知は許容）
     r"\btee\b",
@@ -108,6 +115,27 @@ def targets_vault_rules(tool, tool_input, root):
     return False
 
 
+def targets_creator_denied_paths(tool, tool_input, root):
+    """creator が vault/plans/・vault/log/ へ書き込もうとしていないか判定する（拒否リスト方式）。
+
+    creator の成果物パスは repo 全体になりうるため ALLOWED の許可リスト方式は使わず、
+    vault/rules/ の改ざん防止判定（targets_vault_rules）と同じ考え方で、書き込んではいけない
+    2パスだけを直接判定する。
+    """
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        return normalize(path, root).startswith(DENIED_FOR_CREATOR)
+    if tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        if not any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
+            return False
+        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
+        path_like = re.findall(r"[^\s'\"]*vault/(?:plans|log)/[^\s'\"]*", cmd)
+        candidates = redirect_targets + path_like
+        return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for t in candidates)
+    return False
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -138,6 +166,15 @@ def main():
         )
 
     agent = payload.get("agent_type") or ""
+
+    # creator 向けの拒否リスト：計画票・ログへの書き込みはオーケストレーターに一本化する
+    # （ALLOWED の許可リストには creator を加えない。成果物パスは repo 全体になりうるため）
+    if agent == "creator" and targets_creator_denied_paths(tool, tool_input, root):
+        deny(
+            "[agent_write_guard] creator は vault/plans/・vault/log/ に書き込めません。"
+            "計画票の状態更新とログ追記は呼び出し元のオーケストレーター（run のメインセッション）が行います。"
+        )
+
     if agent not in ALLOWED:
         sys.exit(0)
 

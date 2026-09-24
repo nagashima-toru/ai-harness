@@ -1,6 +1,6 @@
 ---
 id: P-20260924-run-harness-retro
-status: draft
+status: approved
 ---
 # ゴール
 `vault/designs/D-004.md`（単一フェーズ）の内容を実装する。`run` スキルが計画のタスクを全部 `done` にして PR を作った後、その計画実行を通して気づいたハーネス自体（`.claude/` のスキル・エージェント定義・フック、`vault/rules/`）への構造的な改善点があれば、オーケストレーターが1回だけ振り返り、`gh issue create` で起票する仕組みを `.claude/skills/run/SKILL.md` に追加する（issue #16）。

@@ -1,0 +1,32 @@
+{
+  "task": "P-20260924-vcs-finish/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 00:10",
+  "criteria": [
+    {
+      "text": "`.claude/skills/design/SKILL.md` に `gh pr create` という文字列が残っていない。確認: `grep -c \"gh pr create\" .claude/skills/design/SKILL.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"gh pr create\" .claude/skills/design/SKILL.md` / 出力: 0"
+    },
+    {
+      "text": "手順8で、エージェントが `scripts/vcs_finish.sh` を実行する記述に書き換わっている（人が `gh pr create` を実行する記述のままではない）。確認: `grep -n \"vcs_finish.sh\" .claude/skills/design/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"vcs_finish.sh\" .claude/skills/design/SKILL.md` / 出力: 29:...`bash scripts/vcs_finish.sh` を実行する。... 。Read で29行目全文を確認すると「人が」の主語は無く、手順1〜7と同様にスキルの手順としてエージェントが実行する記述になっている。ただし確認コマンド自体は文字列の存在を数えるだけで、どの主体が実行するかまでは保証しない緩い基準であり、文字列がコメント等どこにあっても通り得る点は目的の達成を機械的には保証しない。基準が緩く目的の達成を保証しない：確認コマンドは文字列の有無しか見ておらず、実行主体がエージェントであることまでは保証しない"
+    },
+    {
+      "text": "`none` 判定時にスクリプトが出す案内（ブランチ名・`git merge --no-ff`）をそのまま人に伝えて止まる旨の記述がある。確認: `grep -n \"git merge --no-ff\" .claude/skills/design/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "`grep -n \"git merge --no-ff\" .claude/skills/design/SKILL.md` は agent_write_guard（verifier の Bash 制限：「git merge」を含む文字列でブロック）により実行不可。代替として同ファイルを Read ツールで確認し、29行目に「`none`（ホスティング無し）ならスクリプトが出力するブランチ名と `git merge --no-ff <branch>` の案内をそのまま人に伝える（マージは実行しない）」という記述があることを確認した。この確認コマンドも文字列の存在のみを見る緩い基準であり、文脈（そのまま人に伝えて止まる旨）まで機械的には保証しない。基準が緩く目的の達成を保証しない：確認コマンドは文字列の有無しか見ておらず、Read による目視確認で意味的な整合を別途確認した"
+    },
+    {
+      "text": "`gh pr merge` を実行する記述は追加していない（マージは人が行うという既存方針を維持する）。確認: `grep -c \"gh pr merge\" .claude/skills/design/SKILL.md` が0",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"gh pr merge\" .claude/skills/design/SKILL.md` / 出力: 0"
+    }
+  ],
+  "reasons": [
+    "基準が緩く目的の達成を保証しない：確認コマンドは文字列の有無しか見ておらず、実行主体がエージェントであることまでは保証しない（2行目の基準）",
+    "基準が緩く目的の達成を保証しない：確認コマンドは文字列の有無しか見ておらず、Read による目視確認で意味的な整合を別途確認した（3行目の基準）"
+  ]
+}

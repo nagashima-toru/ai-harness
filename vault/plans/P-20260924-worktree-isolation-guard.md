@@ -1,6 +1,6 @@
 ---
 id: P-20260924-worktree-isolation-guard
-status: approved
+status: done
 ---
 # ゴール
 
@@ -22,7 +22,7 @@ GitHub Issue #20（nagashima-toru/ai-harness）の不具合を修正する。`P-
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | agent_write_guard.py の worktree root 解決と 2>&1 誤検知を修正する | |
-| T-02 | review | 1 | - | worktree.baseRef を head にし run/SKILL.md 手順3.6を実態に合わせる | |
+| T-02 | done | 1 | - | worktree.baseRef を head にし run/SKILL.md 手順3.6を実態に合わせる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

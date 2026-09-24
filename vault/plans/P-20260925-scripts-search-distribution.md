@@ -14,7 +14,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | install.sh の scripts 配布を検索方式にする | |
+| T-01 | done | 1 | - | install.sh の scripts 配布を検索方式にする | |
 | T-02 | todo | 0 | T-01 | smoke.sh に参照される scripts の存在チェックを追加する | |
 | T-03 | review | 1 | - | docs/install.md の配布物説明を実態に合わせる | |
 

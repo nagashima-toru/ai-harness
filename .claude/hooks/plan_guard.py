@@ -3,7 +3,9 @@
 のタスク表の整合性を検査する。
 
 検出する壊れ方：
-  (a) status が doing の行が2件以上
+  (a) doing/review の行の `after` 列に、まだ done でない他の doing/review 行の id が含まれる
+      （依存の無い集合＝着手可能集合に限り doing/review は複数件になりうるが、依存が残ったまま
+      doing/review になっている行があってはならない）
   (b) status が blocked なのに question 列が空
   (c) status が todo / doing / review / blocked / done 以外
   (d) 「## タスク表」に id の重複がある
@@ -95,6 +97,26 @@ def parse_tasks(plan_text):
     return tasks
 
 
+def dependency_violations(tasks):
+    """doing/review の行のうち、`after` が指す依存先がまだ done でないものを [(id, dep_id, dep_status), ...] で返す。
+
+    `after` はカンマ区切りの id リスト（`-` は依存無し）。依存先の id がタスク表に無い場合は
+    無視する（存在しない id を参照する不整合は別の検査の対象ではないため、ここではブロックしない）。
+    """
+    by_id = {t["id"]: t for t in tasks}
+    violations = []
+    for t in tasks:
+        if t["status"] not in ("doing", "review"):
+            continue
+        for dep_id in (a.strip() for a in t["after"].split(",")):
+            if not dep_id or dep_id == "-":
+                continue
+            dep = by_id.get(dep_id)
+            if dep is not None and dep["status"] != "done":
+                violations.append((t["id"], dep_id, dep["status"]))
+    return violations
+
+
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -149,11 +171,12 @@ def main():
                 f"todo/doing/review/blocked/done のいずれかにしてください。"
             )
 
-    doing = [t["id"] for t in tasks if t["status"] == "doing"]
-    if len(doing) >= 2:
+    violations = dependency_violations(tasks)
+    if violations:
+        detail = ", ".join(f"{tid}→{dep_id}({dep_status})" for tid, dep_id, dep_status in violations)
         block(
-            f"[plan_guard] {plan_id} で doing の行が{len(doing)}件あります（{', '.join(doing)}）。"
-            f"doing は常に1件です。1件だけ残し、他は todo か review に戻してください。"
+            f"[plan_guard] {plan_id} で doing/review の行に未完了の依存があります（{detail}）。"
+            f"doing/review にできるのは after の依存が全て done な行（着手可能集合）だけです。"
         )
 
     for t in tasks:

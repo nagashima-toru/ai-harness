@@ -1,6 +1,6 @@
 ---
 id: P-20260924-gh-api-write-guard
-status: draft
+status: approved
 ---
 # ゴール
 `.claude/hooks/agent_write_guard.py` の `BASH_WRITE_PATTERNS`（`targets_vault_rules` が Bash 呼び出しに対して発火するかどうかを決めるパターン一覧）は、`rm`/`mv`/`cp`/`tee`/リダイレクト/`git ...`/`sed -i` 系のコマンド文字列にしか一致しない。`gh api -X PUT repos/<owner>/<repo>/contents/vault/rules/...` のように GitHub Contents API を直接叩けば、これらのパターンのどれにも一致せず `targets_vault_rules` の検査自体が呼ばれないため、`vault/rules/` への書き込み拒否（D-002 で導入した不変条件）をすり抜けられる（issue #6）。curl で GitHub API を直接叩く経路も同様の抜け穴になる。この計画では、`gh api` と GitHub API への直接 `curl` を新たに「リモート書き込みになり得るコマンド」として検知対象に加え、`docs/vault-spec.md` にその検知範囲と残存リスクを明記する。

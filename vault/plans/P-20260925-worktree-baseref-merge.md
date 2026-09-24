@@ -1,6 +1,6 @@
 ---
 id: P-20260925-worktree-baseref-merge
-status: draft
+status: approved
 ---
 # ゴール
 `scripts/merge_settings_json.py` に、ハーネス側 settings.json の `worktree.baseRef` を導入先にマージする処理を足す。導入先に `worktree.baseRef` が無ければハーネス側の値（`"head"`）を足してマージ扱いにする。同じ値が既にあれば何もしない。別の値が入っていれば上書きせず、標準出力に `note` 行で「`worktree.baseRef` が `<値>` のため `run` の worktree が計画ブランチから分岐せず blocked になる。`"head"` にすること」という趣旨の案内を出す。`scripts/unmerge_settings_json.py` は変更しない（`worktree.baseRef` は uninstall で残す）。`scripts/smoke.sh` にこの3通りのケースを足し、`docs/install.md` の settings.json の説明（109行目・142行目・164行目付近）と `scripts/install.sh` 冒頭コメントを更新する。

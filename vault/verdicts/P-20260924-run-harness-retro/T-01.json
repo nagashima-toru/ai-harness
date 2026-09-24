@@ -1,0 +1,36 @@
+{
+  "task": "P-20260924-run-harness-retro/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-24 20:47",
+  "criteria": [
+    {
+      "text": "`grep -n \"ハーネス振り返り\" .claude/skills/run/SKILL.md` がヒットし、その行番号が手順7（`## 7. 次へ・完了`）の見出し行の行番号より大きい",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"ハーネス振り返り\" .claude/skills/run/SKILL.md` / 出力: 66:## 8. ハーネス振り返り。`grep -n \"^## 7. 次へ・完了\" .claude/skills/run/SKILL.md` / 出力: 61:## 7. 次へ・完了。66 > 61 で条件を満たす。"
+    },
+    {
+      "text": "`grep -n \"gh issue create\" .claude/skills/run/SKILL.md` と `grep -n \"フックの誤検知\" .claude/skills/run/SKILL.md` が両方ヒットする（「構造的な改善点があれば `gh issue create` で起票し、無ければ何もしない」という条件と、対象の具体例が明記されていることの確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"gh issue create\" .claude/skills/run/SKILL.md` / 出力: 71,72行目でヒット。`grep -n \"フックの誤検知\" .claude/skills/run/SKILL.md` / 出力: 69行目でヒット。69行目は『気づきが無ければ何もしない』（70行目）と対になっており条件記述も確認できた。"
+    },
+    {
+      "text": "`grep -n \"harness-improvements\" .claude/skills/run/SKILL.md` がヒットする（`gh issue create` 失敗時に `vault/harness-improvements/<計画ID>.md` へ提案内容を書き残し、成功時はこのファイルを作らないことが明記されていることの確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"harness-improvements\" .claude/skills/run/SKILL.md` / 出力: 72行目でヒット。同行に『issue 化に成功した場合はこのファイルを作らない』と明記されている。"
+    },
+    {
+      "text": "`grep -n \"オーケストレーター\" .claude/skills/run/SKILL.md` がヒットし（実施主体の明記）、`git diff main -- .claude/agents/creator.md vault/rules/` の出力が空である（creator・verifier の役割・書き込み制約を変更していないことの確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"オーケストレーター\" .claude/skills/run/SKILL.md` / 出力: 67行目でヒット（『オーケストレーター（run のメインセッション）自身』）。`git diff main -- .claude/agents/creator.md vault/rules/` / 出力: 空（差分なし）。"
+    },
+    {
+      "text": "`git diff main -- .claude/skills/run/SKILL.md | grep -E '^-[^-]'` の出力が空である（既存の手順1〜7・PR 作成手順を削除・書き換えず、追記のみであることの確認）",
+      "ok": true,
+      "note": "実行コマンド: `git diff main -- .claude/skills/run/SKILL.md | grep -E '^-[^-]'` / 出力: 空（削除行なし、追記のみ）。"
+    }
+  ],
+  "reasons": [
+    "起点コミットの記録が無いため手順9のファイルスコープ検査（起点コミットとの差分でのタスク外ファイル混入確認）は実施できなかった。代わりに `git status --short` で変更ファイルを確認したところ `.claude/skills/run/SKILL.md`（成果物）と `vault/tasks/P-20260924-run-harness-retro/T-01.md`（進捗記録、検査対象外）のみであり、タスク外ファイルへの混入は見られなかった。"
+  ]
+}

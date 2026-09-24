@@ -187,6 +187,13 @@ expect_guard "(l) design/d-999 ブランチで vault/designs/D-999.md へ Write 
   "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$GTMP"'/vault/designs/D-999.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 rm -rf "$GTMP"
 
+expect_guard "creator が vault/plans/ に Write → 拒否" deny \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/plans/P-X.md"}}')"
+expect_guard "creator が vault/log/ に Write → 拒否" deny \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/log/P-X.md"}}')"
+expect_guard "creator が README.md に Write → 許可" allow \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+
 echo "== plan_guard.py =="
 run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }
 

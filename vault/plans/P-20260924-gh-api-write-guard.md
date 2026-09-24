@@ -15,7 +15,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard.py に gh api / curl 経由の GitHub Contents API 直叩き検知を追加する | |
+| T-01 | review | 1 | - | agent_write_guard.py に gh api / curl 経由の GitHub Contents API 直叩き検知を追加する | |
 | T-02 | todo | 0 | T-01 | vault-spec.md 12節に gh api / curl の検知範囲と残存リスクを明記する | |
 
 ## 計画の受け入れ基準

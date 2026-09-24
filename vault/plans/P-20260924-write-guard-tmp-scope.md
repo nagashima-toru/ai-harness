@@ -1,6 +1,6 @@
 ---
 id: P-20260924-write-guard-tmp-scope
-status: draft
+status: approved
 ---
 # ゴール
 

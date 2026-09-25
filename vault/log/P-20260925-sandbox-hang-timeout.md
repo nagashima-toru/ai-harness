@@ -10,3 +10,4 @@
 - 2026-09-25 22:05 T-02 review→done attempt=1
 - 2026-09-25 22:12 T-01 blocked→todo 人が受け入れ基準5を修正（タスク票自身のパスも除外対象に追加）して解除
 - 2026-09-25 22:12 T-01 todo→doing attempt=1
+- 2026-09-25 22:13 T-01 doing→review attempt=1

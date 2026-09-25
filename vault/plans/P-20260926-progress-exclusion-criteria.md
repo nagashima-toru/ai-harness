@@ -1,6 +1,6 @@
 ---
 id: P-20260926-progress-exclusion-criteria
-status: draft
+status: approved
 ---
 # ゴール
 

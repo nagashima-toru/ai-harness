@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-worktree-baseref-merge/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 09:04",
+  "criteria": [
+    {
+      "text": "`bash scripts/smoke.sh | tail -1` の出力が `fail=0` で終わる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=141 fail=0"
+    },
+    {
+      "text": "`worktree` キーを持たない dst に実行すると `worktree.baseRef` が `\"head\"` になり出力が `merge` になることを検証する `expect_eq` を、ラベル `(v)` で追加している。確認：`grep -c 'expect_eq \"(v)' scripts/smoke.sh` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'expect_eq \"(v)' scripts/smoke.sh` / 出力: 1。加えて scripts/smoke.sh 522-523行目を確認: `worktree` キーを削除した v.json に対しマージ実行し、出力1語目が `merge` かつ `v.json` の `worktree.baseRef` が `head` になることを実際に検証している。確認コマンドは語数のみを数える grep -c 形式だが、実体の expect_eq は merge/baseRef の値そのものを比較しており、基準が意図する目的の達成を実質的に保証する内容だった"
+    },
+    {
+      "text": "`worktree.baseRef` が `\"fresh\"` の dst に実行すると値が変わらず `note` 行が出ることを検証する `expect_eq` を、ラベル `(w)` で追加している。確認：`grep -c 'expect_eq \"(w)' scripts/smoke.sh` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'expect_eq \"(w)' scripts/smoke.sh` / 出力: 1。scripts/smoke.sh 531-533行目を確認: `worktree.baseRef` が `fresh` の w.json に対しマージ実行し、`note` で始まり `worktree.baseRef` を含む行が1件出ること、かつ w.json の baseRef が `fresh` のまま変わらないことを検証している。確認コマンドは語数のみを数える grep -c 形式だが、実体の expect_eq は note 行の有無と値不変を両方確認しており目的の達成を実質的に保証する内容だった"
+    },
+    {
+      "text": "`worktree.baseRef` が既に `\"head\"` で hooks・deny も揃っている dst に実行すると出力が `skip` になることを検証する `expect_eq` を、ラベル `(x)` で追加している。確認：`grep -c 'expect_eq \"(x)' scripts/smoke.sh` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'expect_eq \"(x)' scripts/smoke.sh` / 出力: 1。scripts/smoke.sh 535-537行目を確認: `.claude/settings.json` をそのまま複製した x.json に対しマージ実行し、出力1語目が `skip` になることを検証している。確認コマンドは語数のみを数える grep -c 形式だが、実体の expect_eq は出力値そのものを比較しており目的の達成を実質的に保証する内容だった"
+    },
+    {
+      "text": "既存の `expect_eq` 行（ラベル (a)〜(u)）を削除・変更していない。確認：`git diff main -- scripts/smoke.sh | grep -E '^-.*expect_eq \"\\([a-u]\\)'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff main -- scripts/smoke.sh | grep -E '^-.*expect_eq \"\\([a-u]\\)'` / 出力: なし（該当行なし、grep 終了コード1）。起点コミット 7c7510a を確認したが、`git diff --name-only 7c7510a..HEAD` は空（このタスクの作業は未コミットで作業ツリーの変更として残っている）。代替として `git status --porcelain` を確認したところ変更は `scripts/smoke.sh` と `vault/tasks/P-20260925-worktree-baseref-merge/T-02.md`（進捗欄・除外対象）のみで、成果物に書かれていないファイルの変更は無かった"
+    }
+  ],
+  "reasons": []
+}

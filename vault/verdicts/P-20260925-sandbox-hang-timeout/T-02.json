@@ -1,0 +1,39 @@
+{
+  "task": "P-20260925-sandbox-hang-timeout/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 20:57",
+  "criteria": [
+    {
+      "text": "`.claude/skills/run/SKILL.md` に「ハング」という語を含む新しい `## ` 見出し行が追加されている。確認コマンド：`grep -c '^## .*ハング' .claude/skills/run/SKILL.md` の出力が `1`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## .*ハング' .claude/skills/run/SKILL.md` / 出力: 1（`## ハング時の復旧（手順3・5の Agent 呼び出しが応答しない場合）` の1行）"
+    },
+    {
+      "text": "追加した節に、応答なしとみなす目安時間が具体的な分数で書かれている。確認コマンド：`grep -E -c '[0-9]+分' .claude/skills/run/SKILL.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -E -c '[0-9]+分' .claude/skills/run/SKILL.md` / 出力: 1。該当行「**応答なしとみなす目安は15分**とする」を Read で確認済み"
+    },
+    {
+      "text": "追加した節に、ハング検知後の worktree の扱いとして `discard_worktree.sh` への言及がある（既存の手順6.3.2の1件に加えて新規の1件、計2件以上になる）。確認コマンド：`grep -c 'discard_worktree.sh' .claude/skills/run/SKILL.md` の出力が `2` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'discard_worktree.sh' .claude/skills/run/SKILL.md` / 出力: 2（既存の手順6.3.2の1件＋新設節の1件）"
+    },
+    {
+      "text": "追加した節に「ハング」という語が2箇所以上ある（見出しだけでなく本文にも説明がある）。確認コマンド：`grep -c 'ハング' .claude/skills/run/SKILL.md` の出力が `2` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'ハング' .claude/skills/run/SKILL.md` / 出力: 5（見出し1件＋本文4件、Read で本文にも「ハング」の語による説明があることを確認済み）"
+    },
+    {
+      "text": "既存の見出し（`## 0.` 〜 `## 8.`）の行がすべてそのまま残っている。確認コマンド：`grep -c '^## [0-8]\\.' .claude/skills/run/SKILL.md` の出力が `9`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## [0-8]\\.' .claude/skills/run/SKILL.md` / 出力: 9。Read で `## 0.` 〜 `## 8.` の各見出しと本文が変更されていないことも確認済み"
+    },
+    {
+      "text": "成果物は `.claude/skills/run/SKILL.md` のみで、他ファイルは変更していない。確認コマンド：`git status --porcelain | grep -v 'SKILL.md'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -v 'SKILL.md'` / 出力: 空（`git status --porcelain` の全出力は ` M .claude/skills/run/SKILL.md` の1行のみ）。タスク票の「進捗」節が空で起点コミットの記録が無いため、手順9の起点コミットとの差分比較（`git diff --name-only <起点コミット>..HEAD`）による成果物外ファイルの検査は実施せず、代わりに `git status --porcelain` で作業ツリー全体の変更が SKILL.md のみであることを確認した"
+    }
+  ],
+  "reasons": []
+}

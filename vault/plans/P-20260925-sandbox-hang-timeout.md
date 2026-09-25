@@ -22,7 +22,7 @@ GitHub issue #48（トリアージ済み）に対応する。`P-20260925-accepta
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | planner.md に確認コマンドで複合コマンドを避ける指針を追記する提案を書く（issue #48） | |
+| T-01 | doing | 2 | - | planner.md に確認コマンドで複合コマンドを避ける指針を追記する提案を書く（issue #48） | |
 | T-02 | review | 1 | - | run スキルに creator/verifier 呼び出しハング時の復旧手順を追加する（issue #48） | |
 
 ## 計画の受け入れ基準

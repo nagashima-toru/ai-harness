@@ -29,6 +29,10 @@
 - 他タスクの成果物ファイルを変更していないことを確認する受け入れ基準の確認コマンドは、`git diff main -- <path>` ではなく `git status --porcelain`（成果物パス以外に変更が無いことを確認する形）で書く。
   `run`/`vault/rules/common/git.md` の運用は1計画=1ブランチに複数タスクを完了順に `git merge --no-ff` で逐次マージしていくため、後続タスクの検証時点では先行タスクの変更が既に計画ブランチに含まれている。この状態で `git diff main` を使うと、後続タスクが変更していないファイルまで（先行タスク由来の差分として）非空になり誤検知する。
   `P-20260925-worktree-baseref-merge` の T-01・T-03 では、この形（`git diff main -- ...` が空）で書かれた基準が字句どおり機能せず、過去2回 verifier が自力に `git status --porcelain` 等の代替確認に切り替えて正しく PASS 判定した（issue #42）。
+- 機能テストの受け入れ基準で、一時ディレクトリの後片付けに `rm -rf` を使うことを前提にしない。
+  `.claude/settings.json` の `permissions.deny` に `Bash(rm -rf *)` 系パターンがあり、`mktemp -d` で作った一時ディレクトリを確認コマンドの中で `rm -rf` で消す書き方は実行できない。
+  `mktemp -d` で毎回新しい場所を作る代わりに、`/tmp/<計画ID>-<タスクID>` のように計画・タスク ID を含む固定パスにし、テスト開始時に `mkdir -p` で作り直す（既存内容を無条件に使う前提にしない）ことで、後片付け無しでも安全に運用できる。
+  `P-20260925-vcs-finish-push-and-diff-criteria` の T-01 では、タスク票の確認コマンドが `$(mktemp -d)` と事前の `rm -rf` 前提で書かれていたため、verifier が `.claude/settings.json` の `permissions.deny`（`Bash(rm -rf *)`）に阻まれ、その場で固定パス `/tmp/vftest_a`・`/tmp/vftest_b`・`/tmp/vftest_c` に書き換えて回避した（issue #46）。
 
 ## 確認方法
 - 各受け入れ基準の確認コマンドを planner 自身が読み取り専用で実行でき、期待値が一意に決まるか。
@@ -38,3 +42,4 @@
 - 各タスクの成果物が1つに特定できるか（「〜を改善」のような書き方になっていないか）。
 - ルール変更が成果物のタスクで、成果物欄を実体パスではなく `vault/tasks/<計画ID>/<id>-proposal.md` にしているか。
 - 他ファイル不変の基準が `git status --porcelain` ベース（成果物パス以外に変更が無いこと）になっているか。
+- 機能テストの後片付けが `rm -rf` 前提になっていないか（固定パス＋`mkdir -p` 上書き運用になっているか）。

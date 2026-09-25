@@ -22,7 +22,7 @@ issue は「原因切り分けは未実施」「対応方針は人の判断に�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | settings.json の rm -rf deny パターン見直しの提案を書く（issue #46） | |
-| T-02 | review | 1 | - | grep 誤検知（issue #42 時の事象）の原因が hook かサンドボックスかを切り分ける（issue #46） | |
+| T-02 | doing | 2 | - | grep 誤検知（issue #42 時の事象）の原因が hook かサンドボックスかを切り分ける（issue #46） | |
 | T-03 | review | 1 | - | planner ルールに rm -rf 前提にしない機能テスト指針を追記する提案を書く（issue #46） | |
 
 ## 計画の受け入れ基準

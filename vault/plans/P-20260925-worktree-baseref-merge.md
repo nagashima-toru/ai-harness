@@ -13,7 +13,7 @@ D-007 フェーズ2の受け入れ基準の候補を、契約寄りの実装タ�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | merge_settings_json.py に worktree.baseRef のマージ処理を足す | |
-| T-02 | review | 1 | T-01 | smoke.sh に worktree.baseRef の3ケースを足す | |
+| T-02 | done | 1 | T-01 | smoke.sh に worktree.baseRef の3ケースを足す | |
 | T-03 | review | 1 | T-01 | docs/install.md と install.sh 冒頭コメントを worktree.baseRef の扱いに合わせて更新する | |
 
 ## 計画の受け入れ基準

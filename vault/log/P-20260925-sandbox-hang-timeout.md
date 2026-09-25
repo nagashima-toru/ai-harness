@@ -4,3 +4,5 @@
 - 2026-09-25 19:04 T-02 doing→review attempt=1
 - 2026-09-25 21:00 T-01 review→doing attempt=2 タスク票の進捗欄の未コミット差分でFAIL
 - 2026-09-25 21:02 T-01 doing→review attempt=2
+- 2026-09-25 21:37 T-01 review→doing attempt=3 タスク票の進捗欄の未コミット差分でFAIL（attempt=2と同一理由）
+- 2026-09-25 21:39 T-01 doing→review attempt=3

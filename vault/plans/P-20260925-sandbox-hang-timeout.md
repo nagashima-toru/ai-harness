@@ -1,6 +1,6 @@
 ---
 id: P-20260925-sandbox-hang-timeout
-status: approved
+status: done
 ---
 # ゴール
 GitHub issue #48（トリアージ済み）に対応する。`P-20260925-acceptance-test-sandbox-fp`（issue #46対応）の run 実行中、T-02 タスクの creator・verifier がパイプ・コマンド置換等の複合コマンドを実行しようとした際、issue #46で報告された「即時拒否」ではなく、Bash ツール呼び出しが無応答のままハングする事象を複数回（creator側2回、verifier側1回）観測した。orchestrator 側で都度 TaskStop による強制終了 → worktree の状態確認 → 再試行という手動介入が必要になり、1タスクの処理に実時間で1時間以上を要した。

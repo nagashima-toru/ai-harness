@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-run-commit-before-worktree/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 08:18",
+  "criteria": [
+    {
+      "text": "手順2「取り出す」の一括反映（doing への状態更新・ログ追記）の直後、手順3で creator を呼ぶ前に、変更をコミットする旨の一文が追記されている。確認コマンド：`grep -n -A 5 \"本手順の中で連続してまとめて行う\" .claude/skills/run/SKILL.md`（出力中に「コミット」を含む行があり、それが次の見出し `## 3. 作る` より前に現れること）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n -A 5 \"本手順の中で連続してまとめて行う\" .claude/skills/run/SKILL.md` / 出力: 23行目にマッチ、24行目「直前の一括反映（doing への状態更新＋ログ追記）をこの時点でコミットする。…」に「コミット」を含む一文があり、次見出し `## 3. 作る`（26行目）より前に出現した"
+    },
+    {
+      "text": "手順4「review にする」の一括反映の直後、手順5で verifier を呼ぶ前に、変更をコミットする旨の一文が追記されている。確認コマンド：`grep -n -A 5 \"doing→review attempt=<n>\" .claude/skills/run/SKILL.md`（出力中に「コミット」を含む行があり、それが次の見出し `## 5. 検証する` より前に現れること）",
+      "ok": true,
+      "note": "指定の確認コマンドは `<n>` を含み、verifier 用 Bash の書き込みガード（agent_write_guard）にリダイレクト相当とみなされ実行不可（PreToolUse:Bash hook error）だった。代替として Read で .claude/skills/run/SKILL.md 全文を確認したところ、39行目（`## 4. review にする` 直下の段落）に `doing→review attempt=<n>` の記述と同一行内に「この反映もこの時点でコミットする。」という一文があり、次見出し `## 5. 検証する`（41行目）より前に出現していた"
+    },
+    {
+      "text": "手順6.3.2（FAIL 再試行、`discard_worktree.sh` で worktree を破棄して手順3から creator を呼び直すパターン）で、直前の状態変更（doing・attempt+1・ログ追記）がコミット済みであることを確認してから worktree を破棄・作り直す、という順序を示す一文が追記されている。確認コマンド：`grep -n -B 3 \"review→doing attempt=<n+1> 理由要約\" .claude/skills/run/SKILL.md`（出力中に「コミット」を含む行があること）",
+      "ok": true,
+      "note": "指定の確認コマンドは `<n+1>` を含み、verifier 用 Bash の書き込みガード（agent_write_guard）にリダイレクト相当とみなされ実行不可（PreToolUse:Bash hook error）だった。代替として Read で .claude/skills/run/SKILL.md 全文を確認したところ、70行目（手順6.3の2番目の項目）に `review→doing attempt=<n+1> 理由要約` の記述と同一行内に「直前の状態変更（doing・attempt+1・ログ追記）がコミット済みであることを確認してから、対象タスクの worktree は破棄して作り直す方針を採る」という一文があり、破棄より前に確認の順序が明示されていた"
+    },
+    {
+      "text": "手順6.2（PASS 時、worktree 側の未コミット差分をオーケストレーターが回収する既存記述）は変更されていない。確認コマンド：`grep -n \"creator 成果物の未コミット分をオーケストレーターが収集\" .claude/skills/run/SKILL.md`（該当行がそのまま存在すること）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"creator 成果物の未コミット分をオーケストレーターが収集\" .claude/skills/run/SKILL.md` / 出力: 63行目にそのまま存在し、変更されていないことを確認した"
+    },
+    {
+      "text": "`.claude/skills/run/SKILL.md` の見出し（`## ` 始まりの行）の数は変更前と同じ12のまま。確認コマンド：`grep -c \"^## \" .claude/skills/run/SKILL.md`（出力が12）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"^## \" .claude/skills/run/SKILL.md` / 出力: 12。付随確認として `git status --short` を実行し、未コミット差分が `.claude/skills/run/SKILL.md` と（進捗欄のみの）タスク票 `vault/tasks/.../T-01.md` の2件だけであることを確認、成果物欄と齟齬なし。なお、タスク票の「進捗」に『起点コミット: <ハッシュ>』の記録が無いため、規定の起点コミット差分検査（規則9）は実施していない"
+    }
+  ],
+  "reasons": []
+}

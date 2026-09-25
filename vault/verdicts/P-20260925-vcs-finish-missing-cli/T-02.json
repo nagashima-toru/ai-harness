@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-vcs-finish-missing-cli/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 12:21",
+  "criteria": [
+    {
+      "text": "`scripts/vcs_finish.sh` が「コマンドが見つからない」旨のエラー（exit 127、または T-01 で追加した明示エラー）で失敗した場合に GitHub MCP ツールで代替してよい旨の記述がある。確認：`grep -n \"MCP\" .claude/skills/run/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"MCP\" .claude/skills/run/SKILL.md` / 出力: 66行目にヒット。内容は「`gh`/`glab` コマンド自体が無いことによる失敗（exit 127 または明示エラー）で終了した場合、GitHub MCP ツールで同内容の PR を作成してよい」という記述"
+    },
+    {
+      "text": "具体的なツール名の例が書かれている。確認：`grep -n \"mcp__github\" .claude/skills/run/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"mcp__github\" .claude/skills/run/SKILL.md` / 出力: 66行目にヒット。「`mcp__github__create_pull_request` 等」という具体名の例あり"
+    },
+    {
+      "text": "`gh pr create` に渡すはずだった情報（ブランチ名・PR タイトル・本文）を MCP ツール呼び出しに引き継ぐ旨が書かれている。確認：`grep -n \"引き継\" .claude/skills/run/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"引き継\" .claude/skills/run/SKILL.md` / 出力: 66行目にヒット。「`gh pr create \"$@\"` に渡すはずだったブランチ名・PR タイトル・本文は、そのまま MCP ツールの引数に引き継ぐ」と明記"
+    },
+    {
+      "text": "GitLab（`glab`）についても、MCP 等の代替手段があれば使ってよい旨と、無ければ人に案内して止まる旨の両方が書かれている。確認：`grep -n \"glab\" .claude/skills/run/SKILL.md` がヒットし、かつ `grep -n \"人\" .claude/skills/run/SKILL.md` の該当追記箇所にも言及がある（目視で同じ節内にあることを確認する）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"glab\" .claude/skills/run/SKILL.md` / 出力: 65,66行目にヒット。`grep -n \"人\" .claude/skills/run/SKILL.md` の出力にも66行目が含まれ、同一の追記段落（1つの箇条書き）内に「GitLab（`glab`）が同様の理由で失敗した場合も…使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる」とあり、両旨が同じ節内にあることを目視確認した"
+    },
+    {
+      "text": "`gh pr merge`/`glab mr merge` を**実行してよい**という記述が追加されていない。確認：`grep -n \"gh pr merge\\|glab mr merge\" .claude/skills/run/SKILL.md` に実行を指示する記述が無いことを目視確認する（既存の「実行しない」という方針説明への言及は可）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"gh pr merge\\\\|glab mr merge\" .claude/skills/run/SKILL.md` / 出力: 65行目（既存）と66行目（今回の追記）の両方とも「`gh pr merge`/`glab mr merge` は実行しない」という方針説明のみで、実行を指示する記述は無いことを目視確認した"
+    }
+  ],
+  "reasons": []
+}

@@ -1,6 +1,6 @@
 ---
 id: P-20260925-vcs-finish-push-and-diff-criteria
-status: approved
+status: done
 ---
 # ゴール
 GitHub issue #44 と issue #42 に対応する。2つは触るファイルが重ならず依存も無いため、1計画にまとめて2タスクとして並行に完了できるようにする。
@@ -18,7 +18,7 @@ GitHub issue #44 と issue #42 に対応する。2つは触るファイルが重
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vcs_finish.sh に PR/MR 作成前の自動 push を追加する（issue #44） | |
-| T-02 | review | 1 | - | planner ルールに「他ファイル不変」基準を git status --porcelain ベースにする提案を書く（issue #42） | |
+| T-02 | done | 1 | - | planner ルールに「他ファイル不変」基準を git status --porcelain ベースにする提案を書く（issue #42） | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

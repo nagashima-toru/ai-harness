@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-vcs-finish-push-and-diff-criteria/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 14:15",
+  "criteria": [
+    {
+      "text": "upstream の無いブランチで `HARNESS_VCS_HOST=github` を指定して実行すると、`gh pr create` が呼ばれる前に `git push -u origin <ブランチ>` が実行され、テスト用のローカル bare リポジトリにそのブランチの ref ができる。確認：SCRIPT=...の出力に `OK` が含まれる",
+      "ok": true,
+      "note": "タスク票記載のコマンドは `$(mktemp -d)` を使うが、verifier の Bash では agent_write_guard.py が `mkdir`/`rm -rf` を含むコマンドを静的パターンで判定するため、変数展開されたパスを解析できず（例：`2>/dev/null` を rm の対象パスと誤認する等）、原文どおりの実行はガードに拒否された。同じロジックを維持したまま `$(mktemp -d)` を固定パス `/tmp/vftest_a` に置き換え、`rm -rf` による事前クリーンアップを外して実行した。実行コマンド（要点）: `mkdir -p /tmp/vftest_a; ...; git -C /tmp/vftest_a/r checkout -q -b work/test; ...; HARNESS_VCS_HOST=github bash \"$SCRIPT\" ...; git ls-remote /tmp/vftest_a/o.git refs/heads/work/test | grep -q work/test && grep -q called /tmp/vftest_a/out && echo OK` / 出力: `OK`"
+    },
+    {
+      "text": "gitlab 側でも同様に、upstream の無いブランチで `HARNESS_VCS_HOST=gitlab` を指定すると push してから `glab mr create` を呼ぶ。確認：上記と同じ手順で `gh`/`github` を `glab`/`gitlab` に差し替えて実行し、出力に `OK` が含まれる",
+      "ok": true,
+      "note": "criteria 1 と同じ理由で `$(mktemp -d)` を固定パス `/tmp/vftest_b` に置き換えて実行した。実行コマンド（要点）: 同様の手順を `gh`→`glab`、`HARNESS_VCS_HOST=github`→`gitlab` に差し替え、`git ls-remote /tmp/vftest_b/o.git refs/heads/work/test | grep -q work/test && grep -q called /tmp/vftest_b/out && echo OK` / 出力: `OK`"
+    },
+    {
+      "text": "push 自体が失敗する場合（例：存在しないパスを `origin` に指定）、その失敗がそのままスクリプトの終了コードに伝播し、`gh`/`glab` は呼ばれない。確認：SCRIPT=...の出力に `OK` が含まれる",
+      "ok": true,
+      "note": "同じ理由で `$(mktemp -d)` を固定パス `/tmp/vftest_c` に置き換えて実行した。実行コマンド（要点）: `git -C /tmp/vftest_c/r remote add origin /tmp/vftest_c/does-not-exist.git; ...; HARNESS_VCS_HOST=github bash \"$SCRIPT\" ...; code=$?; echo exit=$code; [ -f /tmp/vftest_c/out ]` / 出力: `exit=128` かつ `OUT_MISSING`（$w/out が作られておらず gh が呼ばれていない）で、原文の判定式 `[ \"$code\" -ne 0 ] && [ ! -f \"$w/out\" ] && echo OK` に相当する条件をいずれも満たす"
+    },
+    {
+      "text": "upstream の確認と push の呼び出しは、`github`/`gitlab` 各分岐で `gh pr create`/`glab mr create`（既存の `command -v` チェックより後）を呼ぶ直前に置かれている。確認：`scripts/vcs_finish.sh` を読み、`gh pr create \"$@\"` および `glab mr create \"$@\"` それぞれの直前に upstream 確認・push の処理があることを目視で確認する",
+      "ok": true,
+      "note": "実行方法: Read で scripts/vcs_finish.sh を確認。github 分岐では `command -v gh` チェックの後、`git rev-parse --abbrev-ref --symbolic-full-name @{u}` による upstream 確認と失敗時の `git push -u origin \"$current_branch\"` が `gh pr create \"$@\"` の直前に置かれている。gitlab 分岐も同様に `command -v glab` チェックの後、同じ処理が `glab mr create \"$@\"` の直前に置かれている。目視確認により基準を満たすことを確認した"
+    },
+    {
+      "text": "`git status --porcelain -- scripts/` の出力が `scripts/vcs_finish.sh` の変更行以外を含まない（このタスクで変更するのは `scripts/vcs_finish.sh` だけ）。確認：`git status --porcelain -- scripts/` の出力が `?? `/` M` などの接頭辞を除き `scripts/vcs_finish.sh` 以外を含まない",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain -- scripts/` / 出力: ` M scripts/vcs_finish.sh` のみで、他ファイルは含まれない。なお、タスク票「進捗」に起点コミットの記録（`起点コミット: <短縮ハッシュ>`）が無いため、`git diff --name-only <起点コミット>..HEAD` による変更ファイル一覧の検査（手順9）は実施していない"
+    }
+  ],
+  "reasons": []
+}

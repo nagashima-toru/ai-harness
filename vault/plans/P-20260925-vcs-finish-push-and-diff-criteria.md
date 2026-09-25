@@ -1,6 +1,6 @@
 ---
 id: P-20260925-vcs-finish-push-and-diff-criteria
-status: draft
+status: approved
 ---
 # ゴール
 GitHub issue #44 と issue #42 に対応する。2つは触るファイルが重ならず依存も無いため、1計画にまとめて2タスクとして並行に完了できるようにする。

@@ -1,0 +1,33 @@
+{
+  "task": "P-20260925-acceptance-test-sandbox-fp/T-02",
+  "attempt": 3,
+  "result": "PASS",
+  "checked_at": "2026-09-25 18:17",
+  "criteria": [
+    {
+      "text": "次のコマンドを実行し、出力（deny の JSON が出たか、何も出なかったか）を `T-02-findings.md` に記録している。確認コマンド：`echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"grep -c \\\"git diff main\\\" /tmp/dummy.md\"},\"agent_type\":\"creator\",\"cwd\":\"'$(pwd)'\"}' | python3 .claude/hooks/agent_write_guard.py` を実行すると出力が空になる",
+      "ok": true,
+      "note": "実行コマンド: `python3 .claude/hooks/agent_write_guard.py < /tmp/t02-verify-payload.json`（払い出しJSONは受け入れ基準1と同一内容、cwdのみworktree絶対パスに固定） / 出力: 空、終了コード0。これは T-02-findings.md の「受け入れ基準1の実行結果」節に記録された出力（空・終了コード0）と一致する。"
+    },
+    {
+      "text": "`T-02-findings.md` に `## 結論` の見出しがあり、原因が `agent_write_guard.py` かどうか（yes/no）を明記している。確認コマンド：`grep -c '^## 結論' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-02-findings.md` の出力が `1`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## 結論' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-02-findings.md` / 出力: 1。この確認コマンドは見出し行の存在数を数えるのみで、本文が実際に yes/no を明記しているかは保証しない基準の緩さがある。Read で本文を確認したところ「原因は `agent_write_guard.py`（PreToolUse フック）ではない（no）」と明記されており、目的（yes/no の明記）は実際に達成されている。"
+    },
+    {
+      "text": "`T-02-findings.md` に `## 次の一手（未決定）` の見出しがあり、対応候補を2つ以上、優先順位を付けずに列挙している。確認コマンド：`grep -c '^## 次の一手（未決定）' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-02-findings.md` の出力が `1`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## 次の一手（未決定）' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-02-findings.md` / 出力: 1。この確認コマンドは見出しの存在数のみを数えており、候補が実際に2つ以上・優先順位なしで列挙されているかは保証しない基準の緩さがある。Read で本文を確認したところ「以下は対応候補の列挙であり、優先順位は付けていない」との前置きの後、箇条書きで4件の候補（人への再現条件共有／planner指針提案／vault/rules指針検討／他語での再現有無の確認）が列挙されており、目的は実際に達成されている。"
+    },
+    {
+      "text": "成果物は `T-02-findings.md` のみで、他ファイルは変更していない。確認コマンド：`git status --porcelain | grep -v 'T-02-findings.md'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -v 'T-02-findings.md'` / 出力: 空（変更・未追跡ファイルは T-02-findings.md のみ）。"
+    }
+  ],
+  "reasons": [
+    "`## 結論` の確認コマンドは見出しの存在数を数えるのみで、本文が実際に yes/no を明記しているかを保証しない緩い基準。ただし本文は実際に yes/no（no）を明記しており目的は達成されている。",
+    "`## 次の一手（未決定）` の確認コマンドは見出しの存在数を数えるのみで、対応候補が2つ以上・優先順位なしで列挙されているかを保証しない緩い基準。ただし本文は実際に4件の候補を優先順位なく列挙しており目的は達成されている。",
+    "タスク票（vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-02.md）の「進捗」節は空で `起点コミット:` の記録が無いため、成果物ファイル外変更の検査（手順9）は実施していない。"
+  ]
+}

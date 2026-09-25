@@ -22,7 +22,7 @@ GitHub issue #48（トリアージ済み）に対応する。`P-20260925-accepta
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 3 | - | planner.md に確認コマンドで複合コマンドを避ける指針を追記する提案を書く（issue #48） | |
+| T-01 | blocked | 3 | - | planner.md に確認コマンドで複合コマンドを避ける指針を追記する提案を書く（issue #48） | 受け入れ基準5（他ファイル不変）が3回連続でFAIL。タスク票の「進捗」節への必須追記自体が未コミットのまま `git status --porcelain` に残るため、`grep -v 'T-01-proposal.md'` が非空になる構造的な問題。creator は git-workflow.md の方針上「受け入れ基準に含まれる場合だけコミットする」を厳密に適用し、進捗欄の変更をコミットしていない |
 | T-02 | review | 1 | - | run スキルに creator/verifier 呼び出しハング時の復旧手順を追加する（issue #48） | |
 
 ## 計画の受け入れ基準

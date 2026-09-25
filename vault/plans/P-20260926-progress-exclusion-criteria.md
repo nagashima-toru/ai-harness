@@ -1,6 +1,6 @@
 ---
 id: P-20260926-progress-exclusion-criteria
-status: approved
+status: done
 ---
 # ゴール
 
@@ -21,7 +21,7 @@ issue #51 の「提案」節にある次の2案のどちらを採用するか（
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | planner.md に「成果物以外の変更が無いこと」の恒久指針を追記する提案を書く（issue #51） | |
+| T-01 | done | 1 | - | planner.md に「成果物以外の変更が無いこと」の恒久指針を追記する提案を書く（issue #51） | |
 
 ## 計画の受け入れ基準
 - タスクに成果物と受け入れ基準が1つずつある

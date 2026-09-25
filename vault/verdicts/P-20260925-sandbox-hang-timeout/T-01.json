@@ -1,0 +1,39 @@
+{
+  "task": "P-20260925-sandbox-hang-timeout/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 07:16",
+  "criteria": [
+    {
+      "text": "成果物ファイルの冒頭付近に、追記対象ファイルとして `vault/rules/planner/planner.md` と明記している。確認コマンド：`grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` / 出力: 3（1以上でOK）。Read で本文3行目「対象ファイル: `vault/rules/planner/planner.md`」を確認、冒頭近くに明記されている。基準が判定不能：この基準は語の出現回数のみを数える形式（`grep -c '<語>' が1以上）で、典型的な緩い基準であり単独では『冒頭付近に明記』を保証しない。本件は目視確認（Read）で内容面でも満たしていることを別途確認した。"
+    },
+    {
+      "text": "追記案の本文に「パイプ」という語がある。確認コマンド：`grep -c 'パイプ' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'パイプ' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` / 出力: 3（1以上でOK）。基準が判定不能：語を数えるだけの確認コマンド（`grep -c '<語>'` が1以上）は緩い基準の典型で、単独では『複合コマンドを避ける』という目的の達成を保証しない。Read で本文10行目に『パイプ・`&&`・コマンド置換（`$(...)` 等）で組み合わせた複合コマンドにしない』という具体的な指針文があることを確認し、内容面でも目的を満たしている。"
+    },
+    {
+      "text": "追記案の本文に「コマンド置換」という語がある。確認コマンド：`grep -c 'コマンド置換' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'コマンド置換' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` / 出力: 3（1以上でOK）。基準が判定不能：同上の語数カウント型の緩い基準。Read で本文10行目に『コマンド置換（`$(...)` 等）』の語が具体的な指針文脈で使われていることを確認済み。"
+    },
+    {
+      "text": "追記案の本文に issue #48 への参照がある。確認コマンド：`grep -c '#48' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '#48' vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` / 出力: 4（1以上でOK）。基準が判定不能：同上の語数カウント型の緩い基準。Read で本文11・12行目に『issue #46, #48』『issue #48 では、`&&` 連結や…』という具体的根拠付きの参照であることを確認済み。"
+    },
+    {
+      "text": "成果物は `T-01-proposal.md` のみで、他ファイルは変更していない（このタスク票 `T-01.md` 自身の「進捗」節への追記は対象外とする）。確認コマンド：`git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` / 出力: なし（空、OK）。生の `git status --porcelain` は ` M vault/tasks/P-20260925-sandbox-hang-timeout/T-01.md` と `?? vault/tasks/P-20260925-sandbox-hang-timeout/T-01-proposal.md` の2件のみで、除外基準と一致した。なお、タスク票『進捗』に『起点コミット』の記録が見当たらなかったため、起点コミットとの差分による他タスク由来ファイル混入チェック（手順9）は実施していない。"
+    }
+  ],
+  "reasons": [
+    "基準が判定不能：語を数えるだけの確認コマンド（`grep -c '<語>'` が1以上の形式）は緩い基準の典型であり、成果物ファイルの冒頭付近への明記を保証しない（受け入れ基準1行目）。Read による目視確認で内容面は満たしていた。",
+    "基準が判定不能：語を数えるだけの確認コマンド（`grep -c 'パイプ'` が1以上）は緩い基準の典型であり、複合コマンドを避ける指針の内容そのものを保証しない（受け入れ基準2行目）。Read による目視確認で内容面は満たしていた。",
+    "基準が判定不能：語を数えるだけの確認コマンド（`grep -c 'コマンド置換'` が1以上）は緩い基準の典型であり、内容そのものを保証しない（受け入れ基準3行目）。Read による目視確認で内容面は満たしていた。",
+    "基準が判定不能：語を数えるだけの確認コマンド（`grep -c '#48'` が1以上）は緩い基準の典型であり、issue #48 への実質的な参照を保証しない（受け入れ基準4行目）。Read による目視確認で内容面は満たしていた。"
+  ]
+}

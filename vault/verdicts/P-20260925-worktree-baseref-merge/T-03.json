@@ -1,0 +1,36 @@
+{
+  "task": "P-20260925-worktree-baseref-merge/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 09:04",
+  "criteria": [
+    {
+      "text": "`grep -c \"worktree.baseRef\" docs/install.md` が2以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"worktree.baseRef\" docs/install.md` / 出力: 3"
+    },
+    {
+      "text": "`grep -c \"自動マージされない\" docs/install.md` が0（109行目付近の矛盾した記述を、実態（hooks・permissions.deny・worktree.baseRef を自動マージする）に合わせて書き換えたことの確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"自動マージされない\" docs/install.md` / 出力: 0"
+    },
+    {
+      "text": "`worktree.baseRef` について書いた行のいずれかに、uninstall では取り除かれず残る旨が書かれている。確認：`grep \"worktree.baseRef\" docs/install.md | grep -c \"残る\"` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep \"worktree.baseRef\" docs/install.md | grep -c \"残る\"` / 出力: 1"
+    },
+    {
+      "text": "`scripts/install.sh` の冒頭コメント（1〜20行目）に `worktree.baseRef` という文言が含まれる。確認：`sed -n '1,20p' scripts/install.sh | grep -c \"worktree.baseRef\"` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '1,20p' scripts/install.sh | grep -c \"worktree.baseRef\"` / 出力: 1。なお本タスクの成果物欄には docs/install.md のみが列挙されているが、決定済み事項および本基準行自体が scripts/install.sh の冒頭コメント変更を求めており、実際の変更ファイルも docs/install.md・scripts/install.sh・vault/tasks/.../T-03.md（進捗欄）のみだった（`git diff --stat`で確認）。"
+    },
+    {
+      "text": "`scripts/merge_settings_json.py`・`scripts/unmerge_settings_json.py`・`scripts/smoke.sh` を変更していない（このタスクはドキュメントと `install.sh` のコメントだけを変更する）。確認：`git diff main -- scripts/merge_settings_json.py scripts/unmerge_settings_json.py scripts/smoke.sh` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff main -- scripts/merge_settings_json.py scripts/unmerge_settings_json.py scripts/smoke.sh` / 出力は空ではなく、T-01（既に done でこのブランチに先行コミット済み）による merge_settings_json.py の差分が表示された。これは本計画が1ブランチに全タスクを閉じる運用（CLAUDE.md）のため、main へマージするのはブランチ完了後であり、T-01 分の差分が常に main との比較に残ることによるもので、T-03 自身がこれら3ファイルを変更したことを意味しない。代替確認として起点コミット（7c7510a、= 現在の HEAD と一致）から HEAD への差分を見ると working tree の変更は docs/install.md・scripts/install.sh・vault/tasks/.../T-03.md の3件のみで、対象3ファイルへの変更は無かった（`git diff --stat` で確認）。基準が判定不能：本基準のコマンドは1ブランチ運用の下では意図（T-03が当該3ファイルを変更していないことの確認）を反映しない。"
+    }
+  ],
+  "reasons": [
+    "基準が判定不能：`git diff main -- scripts/merge_settings_json.py scripts/unmerge_settings_json.py scripts/smoke.sh` は1ブランチ運用のため main に未マージのT-01分の差分を常に含み、T-03自身の変更有無を判定できない。代替確認（起点コミット7c7510a..HEADの差分）では対象3ファイルへの変更は無かった。"
+  ]
+}

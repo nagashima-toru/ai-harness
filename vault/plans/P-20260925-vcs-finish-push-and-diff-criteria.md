@@ -17,8 +17,8 @@ GitHub issue #44 と issue #42 に対応する。2つは触るファイルが重
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | vcs_finish.sh に PR/MR 作成前の自動 push を追加する（issue #44） | |
-| T-02 | doing | 1 | - | planner ルールに「他ファイル不変」基準を git status --porcelain ベースにする提案を書く（issue #42） | |
+| T-01 | review | 1 | - | vcs_finish.sh に PR/MR 作成前の自動 push を追加する（issue #44） | |
+| T-02 | review | 1 | - | planner ルールに「他ファイル不変」基準を git status --porcelain ベースにする提案を書く（issue #42） | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

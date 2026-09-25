@@ -21,9 +21,9 @@ issue は「原因切り分けは未実施」「対応方針は人の判断に�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | settings.json の rm -rf deny パターン見直しの提案を書く（issue #46） | |
-| T-02 | todo | 0 | - | grep 誤検知（issue #42 時の事象）の原因が hook かサンドボックスかを切り分ける（issue #46） | |
-| T-03 | todo | 0 | - | planner ルールに rm -rf 前提にしない機能テスト指針を追記する提案を書く（issue #46） | |
+| T-01 | doing | 1 | - | settings.json の rm -rf deny パターン見直しの提案を書く（issue #46） | |
+| T-02 | doing | 1 | - | grep 誤検知（issue #42 時の事象）の原因が hook かサンドボックスかを切り分ける（issue #46） | |
+| T-03 | doing | 1 | - | planner ルールに rm -rf 前提にしない機能テスト指針を追記する提案を書く（issue #46） | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

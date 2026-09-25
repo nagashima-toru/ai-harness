@@ -1,6 +1,6 @@
 ---
 id: P-20260925-write-guard-placeholder
-status: draft
+status: approved
 ---
 # ゴール
 

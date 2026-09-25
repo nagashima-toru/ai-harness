@@ -511,6 +511,31 @@ expect_eq "(n) 欠落した hooks エントリが復元される" "True" \
 expect_eq "(n) 欠落した deny 要素が復元される" "True" \
   "$(python3 -c "import json;print('Bash(sudo *)' in json.load(open('$STMP/settings.json'))['permissions']['deny'])")"
 expect_eq "(n) バックアップが1つできる" "1" "$(ls "$STMP" | grep -c '^settings\.json\.bak-')"
+
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+del d['worktree']
+pathlib.Path('$STMP/v.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/v.json")"
+expect_eq "(v) worktree キー無し → merge かつ baseRef が head になる" "merge True" \
+  "${out%% *} $(python3 -c "import json;print(json.load(open('$STMP/v.json'))['worktree']['baseRef'] == 'head')")"
+
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+d['worktree'] = {'baseRef': 'fresh'}
+pathlib.Path('$STMP/w.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/w.json")"
+expect_eq "(w) baseRef が別の値 → note 行が出て値は変わらない" "1 fresh" \
+  "$(echo "$out" | grep -c '^note.*worktree\.baseRef') $(python3 -c "import json;print(json.load(open('$STMP/w.json'))['worktree']['baseRef'])")"
+
+cp "$ROOT/.claude/settings.json" "$STMP/x.json"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/x.json")"
+expect_eq "(x) baseRef が既に head で hooks・deny も揃っている → skip" "skip" "${out%% *}"
+
 rm -rf "$STMP"
 
 echo "== install.sh の settings.json 扱い =="

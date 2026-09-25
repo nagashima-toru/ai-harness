@@ -19,7 +19,7 @@ GitHub issue #54 に対応する。`.claude/hooks/agent_write_guard.py` の `Pre
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | agent_write_guard: 山括弧プレースホルダー内の `>` をリダイレクト誤検知から除外する（issue #54） | |
+| T-01 | doing | 1 | - | agent_write_guard: 山括弧プレースホルダー内の `>` をリダイレクト誤検知から除外する（issue #54） | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

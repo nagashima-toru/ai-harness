@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-vcs-finish-push-and-diff-criteria/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 13:56",
+  "criteria": [
+    {
+      "text": "提案ファイルの対象が `vault/rules/planner/planner.md` であると明記されている。確認：`grep -c \"対象ファイル\" vault/tasks/P-20260925-vcs-finish-push-and-diff-criteria/T-02-proposal.md` が1以上、かつ `grep -c \"vault/rules/planner/planner.md\" vault/tasks/P-20260925-vcs-finish-push-and-diff-criteria/T-02-proposal.md` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"対象ファイル\" T-02-proposal.md` → 1、`grep -c \"vault/rules/planner/planner.md\" T-02-proposal.md` → 3。ファイル冒頭に「対象ファイル: `vault/rules/planner/planner.md`」の明記あり。"
+    },
+    {
+      "text": "追記内容が、新方式として `git status --porcelain` を、置き換え対象の旧方式として `git diff main` をどちらも具体的に言及している。確認：`grep -c \"git status --porcelain\" ...` が1以上、かつ `grep -c \"git diff main\" ...` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"git status --porcelain\" T-02-proposal.md` → 5、`grep -c \"git diff main\" T-02-proposal.md` → 6。追記段落・反映後全文の両方に両語句が具体的な文脈（理由説明）とともに出現しており、語数を満たすだけでなく趣旨説明も伴っている。"
+    },
+    {
+      "text": "見直しの理由として、`run`/`vault/rules/common/git.md` の運用（1計画=1ブランチに複数タスクを完了順に `git merge --no-ff` で逐次マージする）に触れている。確認：`grep -c -- \"merge --no-ff\" ...` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -- \"merge --no-ff\" T-02-proposal.md` → 2。追記段落・反映後全文の双方で「1計画=1ブランチに複数タスクを完了順に `git merge --no-ff` で逐次マージ」する運用に具体的に言及している。"
+    },
+    {
+      "text": "「反映後の該当ファイル全文」に相当するセクションがあり、`vault/rules/planner/planner.md` の既存見出し3つ（`## 目的`・`## ルール`・`## 確認方法`）をすべて含む。確認：`for h in \"## 目的\" \"## ルール\" \"## 確認方法\"; do grep -qF \"$h\" ... || echo \"missing: $h\"; done` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: 上記forループを実行 → 出力なし（欠落なし）。ファイル内に「## 反映後の該当ファイル全文（参考）」相当の見出しとコードブロックがあり、目的・ルール・確認方法の3見出しを含む全文が再掲されている。"
+    },
+    {
+      "text": "`vault/rules/` 配下、および `done` 済みの過去タスク票 `vault/tasks/P-20260925-worktree-baseref-merge/` 配下のいずれも変更していない。確認：`git status --porcelain -- vault/rules/ vault/tasks/P-20260925-worktree-baseref-merge/` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain -- vault/rules/ vault/tasks/P-20260925-worktree-baseref-merge/` / 出力: なし（空）。`vault/rules/` 実体、および参照専用とされた過去タスク票は変更されていない。"
+    }
+  ],
+  "reasons": []
+}

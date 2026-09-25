@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-vcs-finish-missing-cli/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 10:27",
+  "criteria": [
+    {
+      "text": "`HARNESS_VCS_HOST=github` で `gh` が見つからない状態（例: `PATH` に `gh` を含めない）で実行すると、終了コードが0以外になり、標準エラー出力に「gh」「見つかりません」「MCP」の3語を含むメッセージが出る。確認：`out=$(HARNESS_VCS_HOST=github PATH=/usr/bin:/bin bash scripts/vcs_finish.sh 2>&1 1>/dev/null); code=$?; echo \"$out\" | grep -q \"gh\" && echo \"$out\" | grep -q \"見つかりません\" && echo \"$out\" | grep -q \"MCP\" && [ \"$code\" -ne 0 ] && echo OK` の出力が `OK`",
+      "ok": true,
+      "note": "実行コマンド: `HARNESS_VCS_HOST=github PATH=/usr/bin:/bin bash scripts/vcs_finish.sh 2>&1 1>/dev/null` / 出力: 「vcs_finish.sh: gh コマンドが見つかりません（GitHub は検出済みです）。GitHub CLI をインストールするか、GitHub MCP 等の代替手段で PR を作成してください。」exit code=127。判定コマンドの出力は OK"
+    },
+    {
+      "text": "`HARNESS_VCS_HOST=gitlab` で `glab` が見つからない場合も同様に、終了コードが0以外になり、標準エラー出力に「glab」「見つかりません」「MCP」の3語を含むメッセージが出る。確認：上記と同じ形で `HARNESS_VCS_HOST=gitlab` に差し替えて実行し、出力が `OK`",
+      "ok": true,
+      "note": "実行コマンド: `HARNESS_VCS_HOST=gitlab PATH=/usr/bin:/bin bash scripts/vcs_finish.sh 2>&1 1>/dev/null` / 出力: 「vcs_finish.sh: glab コマンドが見つかりません（GitLab は検出済みです）。GitLab CLI をインストールするか、GitLab MCP 等の代替手段で MR を作成してください。」exit code=127。判定コマンドの出力は OK"
+    },
+    {
+      "text": "存在チェックは `gh pr create`／`glab mr create` を呼ぶ前に `command -v` で行っている。確認：`grep -n \"command -v gh\" scripts/vcs_finish.sh` と `grep -n \"command -v glab\" scripts/vcs_finish.sh` の両方がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"command -v gh\" scripts/vcs_finish.sh` / 出力: 35行目にヒット。`grep -n \"command -v glab\" scripts/vcs_finish.sh` / 出力: 43行目にヒット。scripts/vcs_finish.sh を Read で確認し、35行目のチェックは39行目の `gh pr create` の前、43行目のチェックは47行目の `glab mr create` の前に配置されている"
+    },
+    {
+      "text": "追加したエラーメッセージは `none` 判定時の既存案内文（「ホスティングサービス（GitHub/GitLab）は検出されませんでした」）とは異なる文面で、意味も「ホスティングは検出できたが CLI が無い」ことを表している。確認：`grep -n \"検出されませんでした\" scripts/vcs_finish.sh` の行が既存の `none` 分岐の1箇所のみで、新規追加したメッセージ側には出現しないことを目視で確認する",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"検出されませんでした\" scripts/vcs_finish.sh` / 出力: 53行目（none分岐）の1箇所のみ。scripts/vcs_finish.sh を Read で目視確認：github分岐(36行目)・gitlab分岐(44行目)のメッセージは「〜は検出済みです」で始まり、「検出されませんでした」は出現せず、文面・意味ともにnone分岐と区別されている"
+    },
+    {
+      "text": "`gh pr merge`/`glab mr merge` を呼ぶコードが追加されていない。確認：`grep -c \"pr merge\\|mr merge\" scripts/vcs_finish.sh` の出力が `0`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"pr merge\\|mr merge\" scripts/vcs_finish.sh` / 出力: 0"
+    }
+  ],
+  "reasons": []
+}

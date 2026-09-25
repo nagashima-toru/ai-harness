@@ -32,10 +32,18 @@ fi
 
 case "$host" in
   github)
+    if ! command -v gh >/dev/null 2>&1; then
+      echo "vcs_finish.sh: gh コマンドが見つかりません（GitHub は検出済みです）。GitHub CLI をインストールするか、GitHub MCP 等の代替手段で PR を作成してください。" >&2
+      exit 127
+    fi
     gh pr create "$@"
     exit $?
     ;;
   gitlab)
+    if ! command -v glab >/dev/null 2>&1; then
+      echo "vcs_finish.sh: glab コマンドが見つかりません（GitLab は検出済みです）。GitLab CLI をインストールするか、GitLab MCP 等の代替手段で MR を作成してください。" >&2
+      exit 127
+    fi
     glab mr create "$@"
     exit $?
     ;;

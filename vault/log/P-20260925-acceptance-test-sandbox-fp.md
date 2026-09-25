@@ -8,3 +8,5 @@
 - 2026-09-25 16:27 T-02 review→doing attempt=2 成果物以外(T-02.md)が未コミットで残っていたためFAIL
 - 2026-09-25 16:34 T-02 doing→review attempt=2
 - 2026-09-25 17:56 T-02 review→doing attempt=3 タスク票の進捗欄の未コミット差分でFAIL（再々試行）
+- 2026-09-25 18:18 T-02 doing→review attempt=3 サンドボックスのハングでcreatorが完了報告できなかったため成果物を直接確認しverifierを起動
+- 2026-09-25 18:18 T-02 review→done attempt=3

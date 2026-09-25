@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-vcs-finish-missing-cli/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 12:21",
+  "criteria": [
+    {
+      "text": "`scripts/vcs_finish.sh` が「コマンドが見つからない」旨のエラー（exit 127、または T-01 で追加した明示エラー）で失敗した場合に GitHub MCP ツールで代替してよい旨の記述がある。確認：`grep -n \"MCP\" .claude/skills/design/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"MCP\" .claude/skills/design/SKILL.md` / 出力: 30, 31行目でヒット。30行目に「`bash scripts/vcs_finish.sh` が `command not found`（exit 127 相当）、または同スクリプトが出す『gh/glab が見つからない』旨の明示エラーで失敗した場合、GitHub MCP ツールで同内容の PR を作成してよい」と明記されている。"
+    },
+    {
+      "text": "具体的なツール名の例が書かれている。確認：`grep -n \"mcp__github\" .claude/skills/design/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"mcp__github\" .claude/skills/design/SKILL.md` / 出力: 30行目に `mcp__github__create_pull_request` の例がヒット。"
+    },
+    {
+      "text": "`gh pr create` に渡すはずだった情報（ブランチ名・PR タイトル・本文）を MCP ツール呼び出しに引き継ぐ旨が書かれている。確認：`grep -n \"引き継\" .claude/skills/design/SKILL.md` がヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"引き継\" .claude/skills/design/SKILL.md` / 出力: 30行目に「`gh pr create` に渡すはずだったブランチ名・タイトル・本文などの情報を、MCP ツールの引数にそのまま引き継ぐ」とヒット。"
+    },
+    {
+      "text": "GitLab（`glab`）についても、MCP 等の代替手段があれば使ってよい旨と、無ければ人に案内して止まる旨の両方が書かれている。確認：`grep -n \"glab\" .claude/skills/design/SKILL.md` がヒットし、かつ同じ追記箇所に「人」への言及があることを目視で確認する",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"glab\" .claude/skills/design/SKILL.md` / 出力: 30, 31, 32行目でヒット。31行目に「GitLab（glab）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段があればそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる」とあり、同一行で「人」への言及も確認できた。"
+    },
+    {
+      "text": "`gh pr merge`/`glab mr merge` を**実行してよい**という記述が追加されていない。確認：`grep -n \"gh pr merge\\|glab mr merge\" .claude/skills/design/SKILL.md` に実行を指示する記述が無いことを目視確認する（既存の「実行しない」という方針説明への言及は可）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"gh pr merge\\|glab mr merge\" .claude/skills/design/SKILL.md` / 出力: 32行目のみヒット。「この代替経路を使った場合でも gh pr merge/glab mr merge は実行しない（マージは人が行う）」という既存方針の言及のみで、実行を指示する記述は無い。"
+    }
+  ],
+  "reasons": []
+}

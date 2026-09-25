@@ -27,6 +27,9 @@ argument-hint: [ゴール（自然文）]
 6. **書く**：`vault/designs/D-xxx.md` に `vault/templates/design.md` の見出し構成で書く。ID は `vault/designs/` の既存最大値 +1（`D-` + 3桁）
 7. **コミットする**：`vault/designs/D-xxx.md` を `git add` してコミットする（`design/d-xxx` ブランチ上のため `main` 直接コミット拒否には引っかからない）
 8. **PR/MR を作って提示し、止まる**：`bash scripts/vcs_finish.sh` を実行する。GitHub/GitLab なら作成された PR/MR の URL を、`none`（ホスティング無し）ならスクリプトが出力するブランチ名と `git merge --no-ff <branch>` の案内をそのまま人に伝える（マージは実行しない。マージは常に人が行う）。あわせて設計文書の ID、フェーズの一覧（順序・タイトル・依存）、決定事項の要約を報告し、この設計文書がレビューされ `main` にマージされてから、フェーズ1のゴール文を `/plan` に渡す運用にする、と伝えて**止まる**
+   - `bash scripts/vcs_finish.sh` が `command not found`（exit 127 相当）、または同スクリプトが出す「`gh`/`glab` が見つからない」旨の明示エラーで失敗した場合、GitHub MCP ツール（例：`mcp__github__create_pull_request` 等、実行環境で使える GitHub MCP ツール）で同内容の PR を作成してよい。その際、`gh pr create` に渡すはずだったブランチ名・タイトル・本文などの情報を、MCP ツールの引数にそのまま引き継ぐ
+   - GitLab（`glab`）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段があればそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる
+   - この代替経路を使った場合でも `gh pr merge`/`glab mr merge` は実行しない（マージは人が行う。design スキルは元々マージを実行しない）。`gh`/`glab` が認証エラー・ネットワークエラー等、コマンド自体が無い以外の理由で失敗する場合は本項の対象外であり、通常どおり止まって人に判断を仰ぐ
 
 ## 注意
 - planner サブエージェントは呼ばない。このスキルの出力は設計文書だけで、計画票・タスク票は作らない。人が設計文書を確認してから、フェーズのゴール文を1つずつ `/plan` に渡す

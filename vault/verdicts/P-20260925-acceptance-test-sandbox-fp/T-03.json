@@ -1,0 +1,33 @@
+{
+  "task": "P-20260925-acceptance-test-sandbox-fp/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-25 16:17",
+  "criteria": [
+    {
+      "text": "`T-03-proposal.md` に、`planner.md` の「やらないこと」節へ追記する形の文面（見出し1行＋説明2〜3行、既存項目と同じ体裁）を1件含む。確認コマンド：`grep -c '^- ' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^- ' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md` / 出力: 24（1以上）。Read で本文を確認したところ、末尾の「やらないこと」節に見出し1行＋説明3行（固定パス言及・permissions.deny言及・issue #46実例）の項目が既存項目と同じ体裁（`- 見出し。` の後に2スペース字下げの説明行）で1件追加されていた。ただしこの確認コマンドは語（行頭 `- `）を数えるだけで、新規追記項目が実際に1件含まれているかや体裁の一致は検証しない。文書中に `- ` で始まる行が1つでもあれば（追記が無くても既存の引用文だけで）通ってしまうため、目的の達成を保証しない緩い基準。"
+    },
+    {
+      "text": "追記文面が、後片付けに `rm -rf` を使わずに済む具体的な回避策として「固定パス」への言及を含む。確認コマンド：`grep -c '固定パス' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '固定パス' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md` / 出力: 5（1以上）。Read で確認したところ、新規追加項目の説明文中に「固定パスにし、テスト開始時に `mkdir -p` で作り直す」という具体的な回避策の記述があった。ただしこのコマンドは「固定パス」という語の出現回数を数えるだけで、その語が新規追記項目内にあるか無関係な箇所にあるだけかは区別せず、目的の達成を保証しない緩い基準。"
+    },
+    {
+      "text": "追記文面が、`rm -rf` を後片付けの前提にしない理由として `.claude/settings.json` の `permissions.deny` に触れている。確認コマンド：`grep -c 'permissions.deny' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'permissions.deny' vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md` / 出力: 4（1以上）。Read で確認したところ、新規追加項目の説明文中に「`.claude/settings.json` の `permissions.deny` に `Bash(rm -rf *)` 系パターンがあり」という記述があり、理由として明記されていた。ただしこのコマンドは語の出現回数を数えるだけで、その語が新規追記項目内で理由として使われているかは区別せず、目的の達成を保証しない緩い基準。"
+    },
+    {
+      "text": "`vault/rules/planner/planner.md` の実体は変更しない。確認コマンド：`git status --porcelain -- vault/rules/planner/planner.md` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain -- vault/rules/planner/planner.md` / 出力: 空。実体ファイルへの変更が無いことを確認した。また `git status --porcelain` 全体でも変更は `vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03.md`（進捗更新、成果物には非該当）と新規ファイル `vault/tasks/P-20260925-acceptance-test-sandbox-fp/T-03-proposal.md`（成果物）のみで、タスク票の成果物に書かれていないファイルの変更は無かった。なおタスク票「進捗」に起点コミットの記録が無いため、`git diff --name-only <起点コミット>..HEAD` による変更ファイル一覧の検査は実施しなかった。"
+    }
+  ],
+  "reasons": [
+    "確認コマンドは語（行頭 `- `）を数えるだけで、`T-03-proposal.md` に追記対象の1件が実際に含まれているか、既存項目と同じ体裁かは検証しない。ファイルに `- ` で始まる行が1つでもあれば（例えば無関係な既存引用文のみでも）通ってしまうため、目的の達成（追記文面を1件含むこと）を保証しない。",
+    "確認コマンドは「固定パス」という語の出現回数を数えるだけで、その語が新規追記項目の説明文中にあるか、無関係な箇所（例えば引用された既存文書内）にあるだけかは区別しない。今回は Read で新規項目内にあることを確認できたが、基準自体は目的の達成を保証しない緩い形式。",
+    "確認コマンドは「permissions.deny」という語の出現回数を数えるだけで、その語が新規追記項目内で理由として使われているかは区別しない。今回は Read で理由として明記されていることを確認できたが、基準自体は目的の達成を保証しない緩い形式。"
+  ]
+}

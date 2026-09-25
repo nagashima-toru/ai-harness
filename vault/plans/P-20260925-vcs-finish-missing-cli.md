@@ -46,7 +46,7 @@ D-005 フェーズ1（`P-20260924-vcs-finish`、完了済み）が意図的に�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | vcs_finish.sh に gh/glab の存在チェックとエラーメッセージを追加する | |
+| T-01 | done | 1 | - | vcs_finish.sh に gh/glab の存在チェックとエラーメッセージを追加する | |
 | T-02 | todo | 0 | T-01 | run スキルに GitHub/GitLab MCP 代替手順を明記する | |
 | T-03 | todo | 0 | T-01 | design スキルに GitHub/GitLab MCP 代替手順を明記する | |
 

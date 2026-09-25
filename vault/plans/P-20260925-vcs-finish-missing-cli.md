@@ -1,6 +1,6 @@
 ---
 id: P-20260925-vcs-finish-missing-cli
-status: draft
+status: approved
 ---
 # ゴール
 GitHub issue #37 の対応。`scripts/vcs_finish.sh` は `HARNESS_VCS_HOST=auto`（既定）で

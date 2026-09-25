@@ -1,0 +1,13 @@
+- 2026-09-25 15:52 T-01 todo→doing attempt=1
+- 2026-09-25 15:52 T-02 todo→doing attempt=1
+- 2026-09-25 15:52 T-03 todo→doing attempt=1
+- 2026-09-25 16:02 T-01 doing→review attempt=1
+- 2026-09-25 16:02 T-02 doing→review attempt=1
+- 2026-09-25 16:02 T-03 doing→review attempt=1
+- 2026-09-25 16:19 T-01 review→done attempt=1
+- 2026-09-25 16:27 T-02 review→doing attempt=2 成果物以外(T-02.md)が未コミットで残っていたためFAIL
+- 2026-09-25 16:34 T-02 doing→review attempt=2
+- 2026-09-25 17:56 T-02 review→doing attempt=3 タスク票の進捗欄の未コミット差分でFAIL（再々試行）
+- 2026-09-25 18:18 T-02 doing→review attempt=3 サンドボックスのハングでcreatorが完了報告できなかったため成果物を直接確認しverifierを起動
+- 2026-09-25 18:18 T-02 review→done attempt=3
+- 2026-09-25 18:19 T-03 review→done attempt=1

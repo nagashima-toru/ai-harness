@@ -1,6 +1,6 @@
 ---
 id: P-20260925-run-commit-before-worktree
-status: draft
+status: approved
 ---
 # ゴール
 

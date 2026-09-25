@@ -1,0 +1,40 @@
+{
+  "task": "P-20260926-progress-exclusion-criteria/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 07:42",
+  "criteria": [
+    {
+      "text": "追記案の対象ファイルとして `vault/rules/planner/planner.md` を明記している。確認コマンド：`grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` / 出力: 3（1以上）。T-01-proposal.md 冒頭に「対象ファイル: `vault/rules/planner/planner.md`」と明記されており、目的（対象ファイルの明記）に対応する内容が実際にある。ただしこの確認コマンドは語の出現回数を数えるだけの形式（grep -c '<語>' が1以上）であり、対象ファイルへの言及があることを保証するのみで、その言及が妥当な文脈で使われていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。"
+    },
+    {
+      "text": "追記案の本文が、「成果物以外の変更が無いこと」を確認する受け入れ基準の除外パスにタスク票自身のパスも含めるよう明記している（選択肢A）。確認コマンド：`grep -c 'タスク票自身' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'タスク票自身' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` / 出力: 5（1以上）。実際の本文にも「確認コマンドの除外パスに成果物だけでなく**タスク票自身のパス**（`vault/tasks/<計画ID>/<id>.md`）も含める」という趣旨の記述があり、目的（選択肢Aの明記）に対応している。ただしこの確認コマンドは語の出現回数を数えるだけの形式（grep -c '<語>' が1以上）であり、語が出現することのみを保証し、除外パスへの含め方が正しい文脈で書けていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。"
+    },
+    {
+      "text": "追記案の本文が、この形の受け入れ基準自体を書かず verifier 組み込みの起点コミットベースの検査に委ねる代替（選択肢B）にも触れている。確認コマンド：`grep -c '起点コミット' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '起点コミット' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` / 出力: 3（1以上）。実際の本文にも「代替として…`vault/rules/verifier/verifier.md` に既にある**起点コミット**ベースの検査…に委ねることも検討してよい」という選択肢Bの記述があり、目的に対応している。ただしこの確認コマンドは語の出現回数を数えるだけの形式（grep -c '<語>' が1以上）であり、語が出現することのみを保証し、選択肢Bの説明が妥当な内容になっていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。"
+    },
+    {
+      "text": "追記案の本文が issue #51 を参照している。確認コマンド：`grep -c '#51' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '#51' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` / 出力: 2（1以上）。本文に「（issue #51）」という参照が実際にあり、目的に対応している。ただしこの確認コマンドは語の出現回数を数えるだけの形式（grep -c '<語>' が1以上）であり、文字列が出現することのみを保証し、issue #51 の内容と整合した参照になっていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。"
+    },
+    {
+      "text": "成果物は `T-01-proposal.md` のみで、他ファイルは変更していない（このタスク票 `T-01.md` 自身の「進捗」節への追記は対象外とする）。確認コマンド：`git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` / 出力: 空（`git status --porcelain` の生出力は ` M vault/tasks/.../T-01.md` と `?? vault/tasks/.../T-01-proposal.md` の2行のみで、いずれも除外パターンに一致し除外された）。補足として、この確認コマンドは未コミットの差分（git status）のみを見る形式であり、creator が doing 中に作業ステップごとにコミットする運用（`vault/rules/common/git.md`）のもとでは、既にコミット済みの余分なファイル変更があっても検出できない構造的な弱さがある（この弱さ自体が本タスクの提案内容が扱う問題の一種であり、verifier 手順の起点コミット差分検査が別途これを補っている）。基準が緩く目的の達成を厳密には保証しない。手順9に基づき起点コミット（ecc83f5）からの差分も別途確認：実行コマンド `git diff --name-only ecc83f5..HEAD` / 出力: `vault/log/P-20260926-progress-exclusion-criteria.md`, `vault/plans/P-20260926-progress-exclusion-criteria.md`（いずれも計画票・`vault/log/` のため除外対象）。成果物欄に無いファイルの混入は無かった。"
+    }
+  ],
+  "reasons": [
+    "実行コマンド: `grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の確認コマンドは語の出現回数を数えるだけの形式（grep -c '<語>' が1以上）であり、対象ファイルへの言及があることを保証するのみで、その言及が妥当な文脈で使われていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。",
+    "実行コマンド: `grep -c 'タスク票自身' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の確認コマンドは語の出現回数を数えるだけの形式であり、語が出現することのみを保証し、除外パスへの含め方が正しい文脈で書けていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。",
+    "実行コマンド: `grep -c '起点コミット' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の確認コマンドは語の出現回数を数えるだけの形式であり、語が出現することのみを保証し、選択肢Bの説明が妥当な内容になっていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。",
+    "実行コマンド: `grep -c '#51' vault/tasks/P-20260926-progress-exclusion-criteria/T-01-proposal.md` の確認コマンドは語の出現回数を数えるだけの形式であり、文字列が出現することのみを保証し、issue #51 の内容と整合した参照になっていることまでは機械的に保証しない。基準が緩く目的の達成を厳密には保証しない。",
+    "確認コマンド `git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` は未コミットの差分のみを見る形式であり、creator が作業ステップごとにコミットする運用のもとでは、既にコミット済みの余分なファイル変更を検出できない構造的な弱さがある。基準が緩く目的の達成を厳密には保証しない（今回、起点コミットからの差分を別途確認した結果、実際の余分なファイル混入は無かった）。"
+  ]
+}

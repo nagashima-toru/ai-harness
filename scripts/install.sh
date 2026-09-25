@@ -4,7 +4,8 @@
 # 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
 # 状態は vault/plans/<計画ID>.md が持つ（キューは無い）。既存ファイルは上書きしない。
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
-# permissions.deny の不足分だけを足す（インストール先が足した permissions.allow は消さない）。
+# permissions.deny の不足分、worktree.baseRef（導入先に無ければ足す。別の値が入っていれば
+# 上書きせず note で案内する）を足す（インストール先が足した permissions.allow は消さない）。
 # 複製の最後に .claude/harness-manifest.json を書く。記録するのは「この install で配った内容」＝
 # src 側の実ファイルの sha256 であり、dst の現状ではない（dst を記録すると、利用者が編集済みの
 # ファイルが「未編集」と誤判定され、次の更新で編集が黙って上書きされるため）。

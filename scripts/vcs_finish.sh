@@ -36,6 +36,14 @@ case "$host" in
       echo "vcs_finish.sh: gh コマンドが見つかりません（GitHub は検出済みです）。GitHub CLI をインストールするか、GitHub MCP 等の代替手段で PR を作成してください。" >&2
       exit 127
     fi
+    if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+      current_branch="$(git rev-parse --abbrev-ref HEAD)"
+      git push -u origin "$current_branch"
+      push_status=$?
+      if [ "$push_status" -ne 0 ]; then
+        exit "$push_status"
+      fi
+    fi
     gh pr create "$@"
     exit $?
     ;;
@@ -43,6 +51,14 @@ case "$host" in
     if ! command -v glab >/dev/null 2>&1; then
       echo "vcs_finish.sh: glab コマンドが見つかりません（GitLab は検出済みです）。GitLab CLI をインストールするか、GitLab MCP 等の代替手段で MR を作成してください。" >&2
       exit 127
+    fi
+    if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+      current_branch="$(git rev-parse --abbrev-ref HEAD)"
+      git push -u origin "$current_branch"
+      push_status=$?
+      if [ "$push_status" -ne 0 ]; then
+        exit "$push_status"
+      fi
     fi
     glab mr create "$@"
     exit $?

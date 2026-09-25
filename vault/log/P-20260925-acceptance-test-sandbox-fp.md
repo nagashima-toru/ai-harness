@@ -6,3 +6,4 @@
 - 2026-09-25 16:02 T-03 doing→review attempt=1
 - 2026-09-25 16:19 T-01 review→done attempt=1
 - 2026-09-25 16:27 T-02 review→doing attempt=2 成果物以外(T-02.md)が未コミットで残っていたためFAIL
+- 2026-09-25 16:34 T-02 doing→review attempt=2

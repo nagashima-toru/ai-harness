@@ -1,6 +1,6 @@
 ---
 id: P-20260925-acceptance-test-sandbox-fp
-status: draft
+status: approved
 ---
 # ゴール
 GitHub issue #46 に対応する。`P-20260925-vcs-finish-push-and-diff-criteria`（issue #44, #42、PR #45）の run 実行で、creator・verifier が受け入れ基準の確認コマンドをそのまま実行できず、その場で代替コマンドに書き換えて回避した2件について、原因の特定と対応案（実際の反映方針は人が判断する）をまとめる。

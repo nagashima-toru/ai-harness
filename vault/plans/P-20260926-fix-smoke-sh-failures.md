@@ -32,7 +32,7 @@ T-05 は issue の提案3（planner 向け指針の追記）。`vault/rules/` �
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | agent_write_guard.py のパス比較でシンボリックリンクを解決し worktree 誤 deny を無くす | |
+| T-01 | done | 1 | - | agent_write_guard.py のパス比較でシンボリックリンクを解決し worktree 誤 deny を無くす | |
 | T-02 | review | 1 | - | discard_worktree.sh のパス比較でシンボリックリンクを解決し worktree 削除判定を安定させる | |
 | T-03 | review | 1 | - | install.sh の複製対象から .claude/worktrees/ を除外する | |
 | T-04 | todo | 0 | - | smoke.sh の missing_referenced_scripts が .claude/worktrees/ 配下を誤検知しないようにする | |

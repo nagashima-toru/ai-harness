@@ -1,0 +1,36 @@
+{
+  "task": "P-20260926-fix-smoke-sh-failures/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 18:12",
+  "criteria": [
+    {
+      "text": ".claude/ の複製ループが .claude/worktrees を除外している。確認コマンド: `grep -n \"worktrees\" scripts/install.sh` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"worktrees\" scripts/install.sh` / 出力: 136:for f in $(cd \"$SRC/.claude\" && find . -path './worktrees' -prune -o -type f ! -name 'settings.local.json' ! -name 'settings.json' -print | sed 's|^\\./||'); do。ただしこの確認コマンドは「worktrees」という語の出現回数のみを見る緩い基準（語を数えるだけの grep）であり、単独では複製ループが実際に .claude/worktrees を除外していることを保証しない。今回は直後の基準（criteria[1]）で実際に複製結果を検証し除外が機能していることを確認したため、目的は達成されている。"
+    },
+    {
+      "text": "`RSTMP=$(mktemp -d); bash scripts/install.sh \"$RSTMP\" >/dev/null 2>&1` を実行した後、`$RSTMP/.claude/worktrees` が作られていない。確認コマンド: `find \"$RSTMP/.claude/worktrees\" 2>&1` の出力が `No such file or directory` を含む（`$RSTMP` は直前のコマンドで作った一時ディレクトリを使う）",
+      "ok": true,
+      "note": "実行コマンド: `RSTMP=$(mktemp -d); bash scripts/install.sh \"$RSTMP\" >/dev/null 2>&1; find \"$RSTMP/.claude/worktrees\" 2>&1` / 出力: `bfs: error: .../.claude/worktrees: No such file or directory.`（No such file or directory を含む、基準を満たす）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行した時、`新規インストール先で参照される scripts がすべて揃っている` の行が `ok` から始まる。確認コマンド: `bash scripts/smoke.sh`（`== 参照される scripts の存在チェック ==` セクションの行が `ok` で始まることを出力で確認する）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -n -A2 \"参照される scripts の存在チェック\"` / 出力: `126:== 参照される scripts の存在チェック ==` / `127-  ok   新規インストール先で参照される scripts がすべて揃っている`"
+    },
+    {
+      "text": "同じ実行で `install.sh` に関する既存ケース（`(f)`〜`(l)` 等）に新規の `NG` が発生していない。確認コマンド: 同じ出力中、`== install.sh` を含むセクション見出し配下の行がいずれも `ok` で始まることを確認する",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | sed -n '105,160p'` / 出力: `== install.sh の CLAUDE.md 扱い ==`（e,f,g）、`== install.sh のマニフェスト ==`（h,i）、`== install.sh --update ==`（j,k,l）、`== install.sh の settings.json 扱い ==`（o,p）は全行 `ok` で始まり NG なし。同出力中 `discard_worktree.sh (a)` に NG が1件あるが install.sh のセクションではなく本基準の対象外"
+    },
+    {
+      "text": "同じ実行の末尾 `smoke: pass=<N> fail=<M>` の `pass` が着手前HEAD時点の実行結果（152）より1件以上増えている（今回直した1ケース分。他タスクの完了状況によってはさらに増えていてもよい）。確認コマンド: 同じ実行結果の末尾行を読む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -5` / 出力: `smoke: pass=153 fail=3`（着手前HEAD時点の152より1件増、基準を満たす）"
+    }
+  ],
+  "reasons": [
+    "criteria[0]: 確認コマンド `grep -n \"worktrees\" scripts/install.sh` は語の出現回数のみを見る緩い基準で、単独では複製ループの実際の除外動作を保証しない。ただし直後の criteria[1] で実際の複製結果（$RSTMP/.claude/worktrees が作られない）を検証しており、目的は達成されていることを確認した。"
+  ]
+}

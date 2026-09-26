@@ -122,6 +122,69 @@ expect "(g) 未コミットの変更が無い → 許可（既存判定へ進む
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
 rm -rf "$SGTMP"
 
+# worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テスト・
+# plan_guard.py の (delegate plan_guard) テストと同じ型：一時 worktree に判定結果が変わる
+# 差し替えスクリプトを置き、cwd をその worktree に向けたペイロードをメインリポジトリ側の
+# stop_gate.py に渡す。stop_gate.py は has_uncommitted_changes() を持つため、ローカル判定に
+# フォールバックさせるテスト（二重委譲防止・委譲失敗）では、CLAUDE_PROJECT_DIR 側のリポジトリを
+# 事前に commit してクリーンな状態にしておく（さもないと未コミット変更ブロックが先に発火する）。
+DWSMAIN="$(mktemp -d)"
+git -C "$DWSMAIN" init -q -b main
+git -C "$DWSMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+mkdir -p "$DWSMAIN/vault/plans"
+{
+  echo "---"; echo "id: P-TEST"; echo "status: approved"; echo "---"
+  echo "# ゴール"; echo; echo "## タスク表（状態の正本）"
+  echo "| id | status | attempt | after | title | question |"
+  echo "|---|---|---|---|---|---|"
+  echo "| T-0001 | done | 1 | - | A | |"
+} > "$DWSMAIN/vault/plans/P-TEST.md"
+git -C "$DWSMAIN" add -A
+git -C "$DWSMAIN" -c user.email=t@example.com -c user.name=t commit -q -m plan
+DWSLEAF="$(mktemp -d)"; rmdir "$DWSLEAF"
+git -C "$DWSMAIN" worktree add -q -b work/p-delegate-stop "$DWSLEAF" >/dev/null 2>&1
+mkdir -p "$DWSLEAF/.claude/hooks"
+cat > "$DWSLEAF/.claude/hooks/stop_gate.py" <<'PYEOF'
+#!/usr/bin/env python3
+import json, sys
+json.load(sys.stdin)
+print(json.dumps({"decision": "block", "reason": "(delegate stop_gate) worktree override"}))
+PYEOF
+expect "(delegate stop_gate) worktree 側が常に block を返す差し替え → 通常なら許可される正常な計画票でも委譲先の判定（block）が採用される" block \
+  "$(printf '%s' '{"cwd":"'"$DWSLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWSMAIN" python3 "$STOP_HOOK")" "(delegate stop_gate)"
+
+expect "(delegate stop_gate) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（正常な計画票は許可）" allow \
+  "$(printf '%s' '{"cwd":"'"$DWSLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWSMAIN" _HOOK_DELEGATED=1 python3 "$STOP_HOOK")"
+
+git -C "$DWSMAIN" worktree remove -q --force "$DWSLEAF" >/dev/null 2>&1
+rm -rf "$DWSMAIN" "$DWSLEAF"
+
+DWSMAIN2="$(mktemp -d)"
+git -C "$DWSMAIN2" init -q -b main
+git -C "$DWSMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+mkdir -p "$DWSMAIN2/vault/plans"
+{
+  echo "---"; echo "id: P-TEST"; echo "status: approved"; echo "---"
+  echo "# ゴール"; echo; echo "## タスク表（状態の正本）"
+  echo "| id | status | attempt | after | title | question |"
+  echo "|---|---|---|---|---|---|"
+  echo "| T-0001 | doing | 1 | - | A | |"
+} > "$DWSMAIN2/vault/plans/P-TEST.md"
+git -C "$DWSMAIN2" add -A
+git -C "$DWSMAIN2" -c user.email=t@example.com -c user.name=t commit -q -m plan
+DWSLEAF2="$(mktemp -d)"; rmdir "$DWSLEAF2"
+git -C "$DWSMAIN2" worktree add -q -b work/p-delegate-stop-fail "$DWSLEAF2" >/dev/null 2>&1
+mkdir -p "$DWSLEAF2/.claude/hooks"
+cat > "$DWSLEAF2/.claude/hooks/stop_gate.py" <<'PYEOF'
+#!/usr/bin/env python3
+import sys
+sys.exit(1)
+PYEOF
+expect "(delegate stop_gate) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（verdict 無しのブロックが引き続き効く）" block \
+  "$(printf '%s' '{"cwd":"'"$DWSLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWSMAIN2" python3 "$STOP_HOOK")" "verifier"
+git -C "$DWSMAIN2" worktree remove -q --force "$DWSLEAF2" >/dev/null 2>&1
+rm -rf "$DWSMAIN2" "$DWSLEAF2"
+
 echo "== agent_write_guard.py =="
 run_guard() { printf '%s' "$1" | CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
 expect_guard() { # $1=name $2=deny|allow $3=output

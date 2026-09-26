@@ -1,0 +1,36 @@
+{
+  "task": "P-20260926-planner-criteria-verification-guard/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 22:00",
+  "criteria": [
+    {
+      "text": "追記案の対象ファイルとして `vault/rules/planner/planner.md` を明記している。確認コマンド：`grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'vault/rules/planner/planner.md' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` / 出力: 3。この確認コマンドは対象語の出現回数を数えるだけの形式（`grep -c '<語>' が1以上`）だが、目的は「対象ファイルパスを明記している」という単純な存在確認であり、実際に T-01-proposal.md を Read で読み、冒頭『対象ファイル: `vault/rules/planner/planner.md`』の行で明記されていることを直接確認した。"
+    },
+    {
+      "text": "追記案の本文が、「単語の出現有無・出現回数だけを唯一の確認コマンドにしない」という趣旨を明記している。確認コマンド：`grep -c '出現' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '出現' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` / 出力: 8。基準が判定不能：この確認コマンドは語の出現回数のみを数える緩い形式で、単独では『趣旨を明記している』ことまでは保証しない（本タスクの提案内容そのものが警告する典型パターンと一致する）。ただし本文を Read で確認し、実際に『grep 等による単語の出現有無・出現回数だけを唯一の確認コマンドにしない』という文が明記されていることを独自に検証したため、目的は達成されている。"
+    },
+    {
+      "text": "追記案の本文が、代替として実際の入出力・実行結果を確認するコマンドを併記する必要があることを明記している。確認コマンド：`grep -c '実行結果' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '実行結果' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` / 出力: 3。基準が判定不能：語の出現回数のみを数える緩い確認コマンドで、単独では趣旨の明記までは保証しない。本文を Read で確認し、『対象コマンドを実際に実行し期待どおりの動作・実行結果になることを確認する基準を必ず併記する』という文が実在することを独自に検証し、目的達成を確認した。"
+    },
+    {
+      "text": "追記案の本文が issue #68 と、根拠となった `P-20260926-fix-smoke-sh-failures`/T-03・T-04 の実例を参照している。確認コマンド：`grep -c '#68' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` の出力が `1` 以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '#68' vault/tasks/P-20260926-planner-criteria-verification-guard/T-01-proposal.md` / 出力: 2。基準が判定不能：語の出現回数のみを数える緩い確認コマンドで、単独では実例参照の妥当性までは保証しない。本文を Read で確認し、`P-20260926-fix-smoke-sh-failures`/T-03・T-04 の受け入れ基準1（`grep -n \"worktrees\" <file>` の出力が1行以上）と verifier の指摘内容が具体的に引用されていることを独自に検証し、目的達成を確認した。"
+    },
+    {
+      "text": "成果物は `T-01-proposal.md` のみで、他ファイルは変更していない（このタスク票 `T-01.md` 自身の「進捗」節への追記は対象外とする）。確認コマンド：`git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain | grep -v -e 'T-01-proposal.md' -e 'T-01.md'` / 出力: 空（grep 該当なしで終了コード1）。加えて起点コミット 537f9d8 との `git diff --name-only 537f9d8..HEAD` を実行した結果、変更ファイルは `T-01-proposal.md` と `T-01.md` の2つのみで、`T-01.md` の差分は `git diff 537f9d8..HEAD -- .../T-01.md` により「## 進捗」節への追記のみ（既存の見出し・受け入れ基準行は無変更）であることを確認した。検証ルール（vault/rules/verifier/verifier.md）の起点コミット検査でもタスク票の「進捗」は除外対象であり、宣言外ファイルの変更は無い。"
+    }
+  ],
+  "reasons": [
+    "基準が判定不能：受け入れ基準2・3・4の確認コマンド（`grep -c '<語>' が1以上`）は語の出現回数のみを数える緩い形式で、単独では明記している趣旨・参照の妥当性までは保証しない。本文を Read で直接確認し、いずれも実際に該当する文が存在することを検証したうえで目的達成と判断した。"
+  ]
+}

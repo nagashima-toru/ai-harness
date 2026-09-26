@@ -2,3 +2,4 @@
 - 2026-09-26 10:19 T-01 doing→blocked attempt=1 creatorがscripts/smoke.shの全件PASS基準を満たせず（既存の環境依存失敗3件の扱いが決定済みに無い）
 - 2026-09-26 11:03 T-01 blocked→doing attempt=1 人が判断：既存の環境依存failはスコープ外
 - 2026-09-26 11:03 T-01 doing→review attempt=1 既存worktreeの成果物をそのまま検証へ
+- 2026-09-26 11:09 T-01 review→done attempt=1

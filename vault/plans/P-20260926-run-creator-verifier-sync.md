@@ -1,6 +1,6 @@
 ---
 id: P-20260926-run-creator-verifier-sync
-status: approved
+status: done
 ---
 # ゴール
 issue #63（本文＋統合コメント #65）に基づき、`/run` スキルの Agent ツール呼び出しまわりの2つの不具合を修正する。

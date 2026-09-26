@@ -560,7 +560,7 @@ bash "$ROOT/scripts/install.sh" "$RSTMP" >/dev/null 2>&1
 missing_referenced_scripts() { # $1=target dir。参照されているが <target>/scripts/ に無い名前を1行1つで返す（無ければ空）
   local target="$1" f name
   {
-    find "$target/.claude" -type f 2>/dev/null
+    find "$target/.claude" -path "$target/.claude/worktrees" -prune -o -type f -print 2>/dev/null
     find "$target/vault/rules" -type f 2>/dev/null
     find "$target/vault/templates" -type f 2>/dev/null
     [ -f "$target/docs/vault-spec.md" ] && echo "$target/docs/vault-spec.md"

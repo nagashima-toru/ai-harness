@@ -1,0 +1,34 @@
+{
+  "task": "P-20260926-verifier-verdict-worktree-path/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 14:45",
+  "criteria": [
+    {
+      "text": "`grep -n \"vault/rules/verifier/verifier.md\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` の出力が1行以上ある（対象ルールファイルのパスを明記している）",
+      "ok": true,
+      "note": "実行コマンド（対象 worktree /Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a181c86f02bf7bd7f 内で実行）: `grep -n \"vault/rules/verifier/verifier.md\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` / 出力: 4行ヒット（1行目・4行目・31行目・33行目）。Read で全文を確認し、単なるキーワード出現ではなく「対象ファイル」節と挿入位置の説明で実質的に参照されていることを確認した"
+    },
+    {
+      "text": "`grep -nE \"EnterWorktree|ExitWorktree\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` の出力が1行以上ある",
+      "ok": true,
+      "note": "実行コマンド: `grep -nE \"EnterWorktree|ExitWorktree\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` / 出力: 16行目・26行目の2箇所にヒット。内容は `EnterWorktree(path=<path>)` で入った場合は `ExitWorktree(action: \"keep\")` で戻ってから書く、という具体的な手順を記述しており、決定済み事項（T-01 と同じ2点を含める）を満たしている"
+    },
+    {
+      "text": "`grep -n \"メインリポジトリ\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` の出力が1行以上ある",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"メインリポジトリ\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` / 出力: 16行目・26行目にヒット。「メインリポジトリ側の working directory に戻ってから書く」という具体的文脈で使われている"
+    },
+    {
+      "text": "`grep -n \"書き込むのは\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` の出力が1行以上ある（既存ルールの該当箇条書きへの追記であることが分かる）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"書き込むのは\" vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md` / 出力: 10行目・25行目にヒット。10行目は挿入位置の引用、25行目は「反映後のイメージ」節での再掲であり、既存の「書き込むのは `vault/verdicts/<id>.json` だけ。」の行の直後に追記する構成になっていることを確認した"
+    },
+    {
+      "text": "`git status --porcelain -- . ':!vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02-proposal.md' ':!vault/tasks/P-20260926-verifier-verdict-worktree-path/T-02.md'` の出力が空（提案ファイルとタスク票以外に変更が無い。`vault/rules/` 配下は編集していない）",
+      "ok": true,
+      "note": "実行コマンド（worktree /Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a181c86f02bf7bd7f 内）: `git status --porcelain -- . ':!.../T-02-proposal.md' ':!.../T-02.md'` / 出力: 空。vault/rules/verifier/verifier.md 自体への変更も無い（`git status` の全体出力は modified: T-02.md と untracked: T-02-proposal.md の2件のみ）。なお進捗欄に「起点コミット: <ハッシュ>」の記録が無いため、起点コミットとの差分による宣言外ファイル検査（手順9）は実施していない"
+    }
+  ],
+  "reasons": []
+}

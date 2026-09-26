@@ -1,6 +1,6 @@
 ---
 id: P-20260927-current-plan-detector
-status: draft
+status: approved
 ---
 # ゴール
 `vault/plans/*.md` のうち frontmatter（ファイル先頭の `---` から次の `---` まで）の `status` が `approved` の計画票の計画 ID を1行1件で出力する `scripts/current_plan.sh` を新規作成する。本文中に `status: approved` という文字列があっても検出しない。`.claude/skills/run/SKILL.md` の手順1を、このスクリプトの出力行数（0件／1件／2件以上）で判定する手順に書き換える。`docs/vault-spec.md` 1節の「自分のブランチの計画票」の説明に、このスクリプトを使うことを追記する。`scripts/smoke.sh` にこのスクリプトのテストを足す（issue #72、`vault/designs/D-010.md` フェーズ1）。

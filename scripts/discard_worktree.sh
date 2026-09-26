@@ -29,7 +29,7 @@ case "$BRANCH_NAME" in
     ;;
 esac
 
-TARGET_PATH="$(python3 -c "import os,sys;print(os.path.abspath(sys.argv[1]))" "$WORKTREE_ARG")"
+TARGET_PATH="$(python3 -c "import os,sys;print(os.path.realpath(sys.argv[1]))" "$WORKTREE_ARG")"
 
 FOUND=0
 MATCHING=0

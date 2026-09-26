@@ -1,6 +1,6 @@
 ---
 id: P-20260926-fix-smoke-sh-failures
-status: approved
+status: done
 ---
 # ゴール
 

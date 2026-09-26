@@ -1,0 +1,13 @@
+{
+  "task": "P-20260927-current-plan-detector/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-27 06:05",
+  "criteria": [
+    {"text": "手順1が `scripts/current_plan.sh` を使う記述になっている。確認：`grep -c 'current_plan.sh' .claude/skills/run/SKILL.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'current_plan.sh' .claude/skills/run/SKILL.md` / 出力: 1"},
+    {"text": "0件の場合の既存の案内文言が残っている。確認：`grep -c '承認済みの計画が見つかりません' .claude/skills/run/SKILL.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '承認済みの計画が見つかりません' .claude/skills/run/SKILL.md` / 出力: 1"},
+    {"text": "2件以上の場合の既存の案内文言が残っている。確認：`grep -c 'approved な計画票が複数' .claude/skills/run/SKILL.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'approved な計画票が複数' .claude/skills/run/SKILL.md` / 出力: 1"},
+    {"text": "手順1以外の見出し（`## 0.`・`## 2.`〜`## 8.` 等）は変更されていない。確認：`git diff -- .claude/skills/run/SKILL.md > /tmp/P-20260927-current-plan-detector-T-03-diff.txt` を実行した後、`grep -E '^[+-]## ' /tmp/P-20260927-current-plan-detector-T-03-diff.txt` の出力が空", "ok": true, "note": "実行コマンド: `git diff -- .claude/skills/run/SKILL.md > /tmp/...-diff.txt && grep -E '^[+-]## ' /tmp/...-diff.txt` / 出力: 空（マッチ無し、grep終了コード1）。git diff の内容も目視確認し、変更は「## 1. 計画票を見つける」節の4行のみで他見出しは無変更。起点コミットの記録がタスク票「進捗」に無いため、成果物外ファイルの混入検査は実施していない（`git status --porcelain` では .claude/skills/run/SKILL.md と本タスク票 vault/tasks/.../T-03.md（進捗の追記のみ、除外対象）のみが変更されていた）"}
+  ],
+  "reasons": []
+}

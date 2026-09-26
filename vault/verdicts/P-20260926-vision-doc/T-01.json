@@ -1,0 +1,41 @@
+{
+  "task": "P-20260926-vision-doc/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 23:00",
+  "criteria": [
+    {
+      "text": "`docs/vision.md` が存在し、`## 目的`・`## 原則`・`## 非ゴール` の3見出しをこの順で含む。確認コマンド：`grep -n '^## ' docs/vision.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n '^## ' docs/vision.md` / 出力: `3:## 目的` `10:## 原則` `30:## 非ゴール`（この順で3見出しが存在）"
+    },
+    {
+      "text": "「目的」「原則」「非ゴール」の各項目が、本タスク票「決定済み」に列挙した内容と意味の上で一致し、過不足が無い（目的の3観点・原則10件・非ゴール3件を1件ずつ目視確認する）",
+      "ok": true,
+      "note": "確認方法: docs/vision.md をRead し、決定済みの目的1文＋3観点（安い実行・安定・汎用）、原則10件（安定のため1-5、安い実行のため6、汎用基盤のため7-8、共通9-10のグループ分け含む）、非ゴール3件を1件ずつ照合。文言・グループ分けとも決定済みと一致し、過不足は無かった。"
+    },
+    {
+      "text": "「非ゴール」の3件がいずれも記述されている。確認コマンド：`grep -n -e 'SaaS' -e '特化' -e 'Claude Code 以外' -e 'Claude Code以外' docs/vision.md`（3件それぞれに対応する行が見つかること）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n -e 'SaaS' -e '特化' -e 'Claude Code 以外' -e 'Claude Code以外' docs/vision.md` / 出力: 31行目にSaaS化、32行目に特化、33行目にClaude Code 以外の行がそれぞれ該当し3件確認できた（8・23行目にも「特化」の関連記述あり）"
+    },
+    {
+      "text": "`docs/vision.md` に具体的なモデル名が書かれていない。確認コマンド：`grep -c -i -e 'sonnet' -e 'haiku' -e 'opus' -e 'fable' docs/vision.md` が `0`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -i -e 'sonnet' -e 'haiku' -e 'opus' -e 'fable' docs/vision.md` / 出力: `0`"
+    },
+    {
+      "text": "README.md の「目的」節に `docs/vision.md` へのリンクが1行追加されている。確認コマンド：`grep -n 'docs/vision.md' README.md`",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'docs/vision.md' README.md` / 出力: `12:ハーネス全体の目的・原則・非ゴールは [docs/vision.md](docs/vision.md) にまとめている。`。加えてREADME.mdをReadし、この行が「目的」節の既存4行の直後・独立した1行として置かれていることを確認した。なおこの確認コマンド自体はファイル全体を対象にした文字列検索であり、リンクが「目的」節内にあることまでは保証しない（節外に置かれても通る）。目的達成は上記のRead確認で別途担保した。"
+    },
+    {
+      "text": "README.md の既存行が変更・削除されていない。確認コマンド：`git diff main -- README.md > /tmp/P-20260926-vision-doc-T01-readme.diff` を実行した後、`grep -c '^-[^-]' /tmp/P-20260926-vision-doc-T01-readme.diff` が `0`（削除行が無い＝追加のみ）",
+      "ok": true,
+      "note": "実行コマンド: `git diff main -- README.md > /tmp/... && grep -c '^-[^-]' /tmp/...` / 出力: `0`（diff本文は+2行のみで削除行なし、既存4行は変更されていない）。起点コミット(0f9ac03)からHEADまでのコミットは無く（`git diff --name-only 0f9ac03..HEAD` は空、`git status --porcelain` で README.md/docs/vision.md/タスク票T-01.mdのみが変更対象と確認）、成果物に無いファイルの混入は無かった。"
+    }
+  ],
+  "reasons": [
+    "README.mdへのリンク確認コマンド`grep -n 'docs/vision.md' README.md`はファイル全体を対象にした検索であり、「目的」節内に追加されていることまでは保証しない基準だが、実物をReadで確認し目的節内に正しく配置されていることを別途確認した。"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "task": "P-20260926-verifier-verdict-worktree-path/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 14:44",
+  "criteria": [
+    {
+      "text": "`grep -n \"配下の同じ相対パス\" .claude/skills/run/SKILL.md` の出力が1行以上ある（worktree 側の同一相対パスを確認するフォールバックが追記されている）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"配下の同じ相対パス\" .claude/skills/run/SKILL.md`（worktree内） / 出力: 61行目に1件ヒット。文脈も確認し、`vault/verdicts/<計画ID>/<id>.json` が存在しない場合に worktree のパス配下の同じ相対パスを確認する記述だった"
+    },
+    {
+      "text": "`grep -n \"worktree側からコピー\" .claude/skills/run/SKILL.md` の出力が1行以上ある（コピー後にログへ記録する手順が追記されている）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"worktree側からコピー\" .claude/skills/run/SKILL.md`（worktree内） / 出力: 61行目に1件ヒット。`vault/log/<計画ID>.md` に「verdictをworktree側からコピー」の形で1行追記する旨の文だった"
+    },
+    {
+      "text": "`grep -n \"vault/verdicts/<計画ID>/<id>.json.*が存在しない場合\" .claude/skills/run/SKILL.md` の出力が1行以上ある（既存の手順6.1の直前または直後に、verdict 不在時の分岐が明記されている）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"vault/verdicts/<計画ID>/<id>.json.*が存在しない場合\" .claude/skills/run/SKILL.md`（worktree内） / 出力: 61行目に1件ヒット。手順6の新しい「1.」として、既存の（振り直された）「2. verdictを読み...」の直前に挿入されていることを目視でも確認した"
+    },
+    {
+      "text": "`git status --porcelain -- . ':!.claude/skills/run/SKILL.md' ':!vault/tasks/P-20260926-verifier-verdict-worktree-path/T-03.md'` の出力が空（成果物とタスク票以外に変更が無い）",
+      "ok": true,
+      "note": "実行コマンド: 上記コマンドをworktree内で実行 / 出力: 空。`git status --porcelain`（除外なし）の全体出力も ` M .claude/skills/run/SKILL.md` と ` M vault/tasks/.../T-03.md` の2件のみで、成果物とタスク票以外の変更は無いことを確認した。なお、タスク票の「進捗」に起点コミットの記録が無かったため、成果物ファイル一覧の照合検査（手順9）は行っていない"
+    }
+  ],
+  "reasons": []
+}

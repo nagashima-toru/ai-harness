@@ -1,0 +1,29 @@
+{
+  "task": "P-20260926-verifier-verdict-worktree-path/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 14:45",
+  "criteria": [
+    {
+      "text": "`grep -n \"EnterWorktree\" .claude/agents/verifier.md` の出力が1行以上ある（プロンプトで渡された worktree に入る手順が明記されている）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"EnterWorktree\" .claude/agents/verifier.md`（対象 worktree 内）/ 出力: 23行目に1件（対象 worktree に入る手順を新設の手順1として明記）。ヒットするだけの確認コマンドではあるが、実際の23行の内容は決定済み事項どおり具体的に手順を記述しており目的を達成している"
+    },
+    {
+      "text": "`grep -n \"ExitWorktree\" .claude/agents/verifier.md` の出力が1行以上ある（verdict を書く前にメインリポジトリ側へ戻る、または絶対パスで書く手順が明記されている）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"ExitWorktree\" .claude/agents/verifier.md`（対象 worktree 内）/ 出力: 33行目に1件。内容は決定済み事項どおり `ExitWorktree(action: \"keep\")` またはメインリポジトリ基準の絶対パス直書きを明記し、verdict 書き込み手順（12）の直前に配置されている。単語の存在確認コマンドではあるが実文言を確認した結果、目的（issue #61 再発防止）を達成する記述になっている"
+    },
+    {
+      "text": "`grep -c '^## ' .claude/agents/verifier.md` の出力が `5`（既存の見出し「入力/読むもの/手順/禁止/出力」が維持されている）",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^## ' .claude/agents/verifier.md`（対象 worktree 内）/ 出力: 5。ファイル全文を Read して見出し名を確認したところ「入力・読むもの・手順・禁止・出力」の5つで、括弧内に書かれた目的（既存見出しの維持）とも一致する。ただし確認コマンド自体は見出しの個数のみを数えるため、見出し名を変えたまま個数だけ5を保つ変更でも通過してしまう緩さがある"
+    },
+    {
+      "text": "`git status --porcelain -- . ':!.claude/agents/verifier.md' ':!vault/tasks/P-20260926-verifier-verdict-worktree-path/T-01.md'` の出力が空（成果物とタスク票以外に変更が無い）",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain -- . ':!.claude/agents/verifier.md' ':!vault/tasks/P-20260926-verifier-verdict-worktree-path/T-01.md'`（対象 worktree 内）/ 出力: 空。追加で、起点コミット（進捗欄記載 c5e024e）が現在の HEAD と同一のため `git diff --name-only c5e024e..HEAD` は空（コミットがまだ行われていない状態）。この場合はコミット差分でなく作業ツリーの git status 結果が実質的な確認手段であり、上記の通り成果物2ファイル以外の変更は無いことを確認した"
+    }
+  ],
+  "reasons": []
+}

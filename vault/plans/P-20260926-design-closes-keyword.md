@@ -1,6 +1,6 @@
 ---
 id: P-20260926-design-closes-keyword
-status: draft
+status: approved
 ---
 # ゴール
 

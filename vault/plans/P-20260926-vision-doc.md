@@ -15,7 +15,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | docs/vision.md の作成とREADMEへのリンク追加 | |
+| T-01 | doing | 1 | - | docs/vision.md の作成とREADMEへのリンク追加 | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

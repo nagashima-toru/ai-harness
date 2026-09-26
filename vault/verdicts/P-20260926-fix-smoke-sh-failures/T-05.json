@@ -1,0 +1,29 @@
+{
+  "task": "P-20260926-fix-smoke-sh-failures/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 18:18",
+  "criteria": [
+    {
+      "text": "提案ファイルが存在し、`vault/rules/planner/planner.md` のどこに何を追記するか（追記先の見出し名、追記する具体的な文章）が読み取れる。確認コマンド: `test -f vault/tasks/P-20260926-fix-smoke-sh-failures/T-05-proposal.md && echo exists` の出力が `exists`",
+      "ok": true,
+      "note": "実行コマンド: `test -f vault/tasks/P-20260926-fix-smoke-sh-failures/T-05-proposal.md && echo exists` / 出力: exists。ファイル内容をReadで確認し、追記先見出し「やらないこと（このリポジトリで実際に起きた失敗から）」と追記する具体文章（着手前HEADベースライン運用）が明記されていた。"
+    },
+    {
+      "text": "提案の中身に、`bash scripts/smoke.sh`（または類似の網羅的なスクリプトテスト）の「全件PASS」を確認コマンドにする時は、着手前 HEAD 時点の実行結果をベースラインとして記録し、新規追加分のPASSと既存失敗の非悪化（新たな失敗が増えていないこと）を基準にする、という趣旨の文が含まれる。確認コマンド: `grep -c \"着手前\" vault/tasks/P-20260926-fix-smoke-sh-failures/T-05-proposal.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"着手前\" vault/tasks/P-20260926-fix-smoke-sh-failures/T-05-proposal.md` / 出力: 2（1以上）。単なる語数一致に留まらず、10行目に『着手時（doing開始時）に着手前HEADで一度実行し...受け入れ基準は新規追加分がすべてok・既存の失敗件数内容が着手前から悪化していない』という趣旨の具体文が実際に含まれていることをReadで確認した。"
+    },
+    {
+      "text": "提案の中身が、今回の issue #59 の経緯（`P-20260926-write-guard-worktree-delegate/T-01` が blocked になった実例）を根拠として挙げている。確認コマンド: `grep -c \"issue #59\\|write-guard-worktree-delegate\" vault/tasks/P-20260926-fix-smoke-sh-failures/T-05-proposal.md` の出力が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"issue #59\\|write-guard-worktree-delegate\" vault/tasks/P-20260926-fix-smoke-sh-failures/T-05-proposal.md` / 出力: 2（1以上）。11行目に『P-20260926-write-guard-worktree-delegateのT-01では...blockedにせざるを得なくなった（issue #59）』という具体的経緯が記載されていることをReadで確認した。"
+    },
+    {
+      "text": "提案ファイル以外（`vault/rules/` 配下の実体ファイル）を変更していない。確認コマンド: `git status --porcelain -- vault/rules/` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain -- vault/rules/`（worktree内） / 出力: 空。手順10の起点コミット確認（起点コミット: 0d46ef7）として `git diff --name-only 0d46ef7`（未コミット差分のため追跡ファイル分）に加え `git status --porcelain --untracked-files=all` で未追跡ファイルも確認した結果、変更ファイルは T-05.md（進捗節の更新のみ、除外対象）と成果物である T-05-proposal.md のみで、成果物に書かれていない余分なファイルは含まれていなかった。"
+    }
+  ],
+  "reasons": []
+}

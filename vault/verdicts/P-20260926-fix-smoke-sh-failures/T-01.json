@@ -1,0 +1,29 @@
+{
+  "task": "P-20260926-fix-smoke-sh-failures/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 18:10",
+  "criteria": [
+    {
+      "text": "`normalize()` 関数がパス比較の前にシンボリックリンクを解決している（`os.path.abspath` だけでなく `os.path.realpath` を使っている）。確認コマンド: `grep -n \"os.path.realpath\" .claude/hooks/agent_write_guard.py` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"os.path.realpath\" .claude/hooks/agent_write_guard.py`（worktree内） / 出力: 2行ヒット（74行目 `ap = os.path.realpath(ap)`、75行目 `root = os.path.realpath(root)`）。normalize() 内で path 側・root 側の両方に適用されている。"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行した時、`(worktree)` を含むテスト名の行が `ok` から始まる。確認コマンド: `bash scripts/smoke.sh`（`== agent_write_guard.py ==` セクション内の `(worktree)` を含む2行がいずれも `ok` で始まることを出力で確認する）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh`（worktree内で実行） / 出力: `ok   (worktree) verifier が worktree 内の vault/verdicts/ に Write（CLAUDE_PROJECT_DIR はメインチェックアウト側のまま）→ 許可` と `ok   (worktree nested) verifier が worktree 内の未作成ネストディレクトリ vault/verdicts/P-NEW/ に Write（事前 mkdir なし）→ 許可` の2行がいずれも ok から開始していた。"
+    },
+    {
+      "text": "同じ実行で、`(delegate)` を含む既存のテスト名の行に新規の `NG` が発生していない（今回の変更で委譲まわりの挙動を壊していない）。確認コマンド: 同じ `bash scripts/smoke.sh` の出力中、`(delegate)` を含む行がすべて `ok` で始まることを確認する",
+      "ok": true,
+      "note": "同じ実行の出力を確認 / `agent_write_guard.py` セクション内の `(delegate)` を含む3行（差し替え allow、二重委譲防止、subprocess非0フェイルオープン）はすべて ok で始まっていた。他セクション（stop_gate.py・plan_guard.py）の (delegate ...) 行も全て ok。"
+    },
+    {
+      "text": "同じ実行の末尾 `smoke: pass=<N> fail=<M>` の `pass` が着手前HEAD時点の実行結果（152）より2件以上増えている（今回直した2ケース分。他タスクの完了状況によってはさらに増えていてもよい）。確認コマンド: 同じ実行結果の末尾行を読む",
+      "ok": true,
+      "note": "同じ実行の末尾行 / `smoke: pass=155 fail=1`。152 からの増分は +3 で「2件以上増」を満たす。残る唯一の NG は `(a) discard_worktree.sh 正常系`（T-02 の対象、別ファイル）で、本タスクの対象ケースではない。"
+    }
+  ],
+  "reasons": []
+}

@@ -133,7 +133,7 @@ with open(skipped, "w", encoding="utf-8") as fh:
 fi
 
 # .claude/（settings.json は専用マージャで扱うのでこのループから外す）
-for f in $(cd "$SRC/.claude" && find . -type f ! -name 'settings.local.json' ! -name 'settings.json' | sed 's|^\./||'); do
+for f in $(cd "$SRC/.claude" && find . -path './worktrees' -prune -o -type f ! -name 'settings.local.json' ! -name 'settings.json' -print | sed 's|^\./||'); do
   copy_if_absent "$SRC/.claude/$f" "$DST/.claude/$f"
 done
 chmod +x "$DST"/.claude/hooks/*.py

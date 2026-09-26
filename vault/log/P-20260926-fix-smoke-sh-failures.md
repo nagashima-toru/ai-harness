@@ -1,0 +1,15 @@
+- 2026-09-26 18:02 T-01 todo→doing attempt=1
+- 2026-09-26 18:02 T-02 todo→doing attempt=1
+- 2026-09-26 18:02 T-03 todo→doing attempt=1
+- 2026-09-26 18:11 T-01 doing→review attempt=1
+- 2026-09-26 18:11 T-02 doing→review attempt=1
+- 2026-09-26 18:11 T-03 doing→review attempt=1
+- 2026-09-26 18:15 T-01 review→done attempt=1
+- 2026-09-26 18:18 T-02 review→done attempt=1
+- 2026-09-26 18:21 T-03 review→done attempt=1
+- 2026-09-26 18:15 T-04 todo→doing attempt=1
+- 2026-09-26 18:15 T-05 todo→doing attempt=1
+- 2026-09-26 18:17 T-04 doing→review attempt=1
+- 2026-09-26 18:17 T-05 doing→review attempt=1
+- 2026-09-26 18:20 T-04 review→done attempt=1
+- 2026-09-26 18:20 T-05 review→done attempt=1

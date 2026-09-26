@@ -1,6 +1,6 @@
 ---
 id: P-20260926-hook-worktree-delegate-phase2
-status: draft
+status: approved
 ---
 # ゴール
 

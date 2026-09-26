@@ -1,0 +1,34 @@
+{
+  "task": "P-20260925-write-guard-placeholder/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 09:03",
+  "criteria": [
+    {
+      "text": "山括弧プレースホルダー（`<...>`、内部に空白を含まない）の区間をリダイレクト判定から除外するマスク処理が実装されている。確認コマンド：`grep -n \"def mask_angle_placeholders\" .claude/hooks/agent_write_guard.py` が1行ヒットする",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"def mask_angle_placeholders\" .claude/hooks/agent_write_guard.py` / 出力: `49:def mask_angle_placeholders(text):`（1行のみヒット）"
+    },
+    {
+      "text": "issue #54 の再現コマンドがもう誤って拒否されない。確認コマンド：`grep -n -A 5 \"doing→review attempt=<n>\" .claude/skills/run/SKILL.md > /tmp/P-20260925-write-guard-placeholder-T-01-repro.txt` を実行するとツール呼び出しが deny されずに成功し、続けて `wc -l < /tmp/P-20260925-write-guard-placeholder-T-01-repro.txt` を実行すると `0` より大きい行数が出力される",
+      "ok": true,
+      "note": "実行不可・代替確認：verifier である自分自身の PreToolUse フックは `${CLAUDE_PROJECT_DIR}`（メインリポジトリ /home/user/ai-harness）の未修正の `.claude/hooks/agent_write_guard.py` を参照するため、worktree 側の修正の有無に関わらず、この確認コマンド（リダイレクト無しの素の再現 grep すら）を自分の Bash 呼び出しとして実行すると `verifier の Bash では書き込み・破壊的操作を行えません` で deny された（メインリポジトリの未修正スクリプトで同一ペイロードを再現しても同じ deny を確認済み）。これは verifier 自身の役割制限の対象がメインリポジトリのスクリプトに固定される環境上の制約であり、worktree 側の修正の可否とは無関係。代替として、worktree の `.claude/hooks/agent_write_guard.py` を直接 subprocess 実行し、実際の PreToolUse payload（`tool_name=Bash`, `agent_type=verifier`, `command=` 再現コマンドそのもの）を模擬して確認：agent_type=verifier で readonly な再現コマンド（プレースホルダーのみ、実リダイレクト無し）は出力なし（ALLOW）。同一 payload をメインリポジトリの未修正スクリプトに通すと `[agent_write_guard] verifier の Bash では書き込み・破壊的操作を行えません: grep -n -A 5 \"doing→review attempt=<n>\" .claude/skills/run/SKILL.md` で deny され、修正前後で挙動が異なることを確認した。さらに実リダイレクト（`> /tmp/repro_test_out.txt`）を追加した場合も worktree 側は ALLOW。実コマンドは `.claude/skills/run/SKILL.md` の実在する `doing→review attempt=<n>` 行にマッチする（1件・6行分の `-A 5` 出力）ため、実行できれば `wc -l` は0より大きくなる。"
+    },
+    {
+      "text": "本来のリダイレクト検出・破壊的操作検出は維持されている。確認コマンド：`bash scripts/smoke.sh` に追加した新規ケース（(a) プレースホルダーを含むだけの読み取り専用コマンドは allow になる、(b) 実際のリダイレクト（`>` 実体）とプレースホルダーが同じコマンド文字列に混在しても実リダイレクト側は正しく deny される、(c) 既存の `rm`/`git commit` 等の破壊的操作検出はプレースホルダーの有無に関係なく変わらず deny される、の3件）がいずれも `ok` になる",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` の出力を issue #54 関連行で確認。出力：`ok (issue #54 placeholder) verifier が山括弧プレースホルダーを含むだけの読み取り専用 grep → 許可`／`ok (issue #54 placeholder) planner が <計画ID> プレースホルダーを含むだけの読み取り専用 grep → 許可`／`ok (issue #54 placeholder) verifier がプレースホルダーと実リダイレクト（許可外パス）が混在するコマンド → 実リダイレクトは拒否`／`ok (issue #54 placeholder) verifier がプレースホルダーと実リダイレクト（許可ディレクトリ内）が混在するコマンド → 許可`／`ok (issue #54 placeholder) verifier が <n> を含む rm コマンド → 破壊的操作として拒否`／`ok (issue #54 placeholder) verifier が <n> を含む git commit → 破壊的操作として拒否` の計6件がすべて ok。加えて自分でも worktree の agent_write_guard.py を subprocess 実行し同種のケース（agent_type=verifier での rm・git commit・実リダイレクト混在）を模擬し、いずれも deny/allow が期待どおりであることを直接確認した。"
+    },
+    {
+      "text": "`scripts/smoke.sh` の既存ケースを含む全件が pass する（回帰なし）。確認コマンド：`bash scripts/smoke.sh > /tmp/P-20260925-write-guard-placeholder-T-01-smoke.txt` を実行後、`tail -1 /tmp/P-20260925-write-guard-placeholder-T-01-smoke.txt` の出力に `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh > /tmp/P-20260925-write-guard-placeholder-T-01-smoke-verify.txt 2>&1` / `tail -1 /tmp/P-20260925-write-guard-placeholder-T-01-smoke-verify.txt` / 出力: `smoke: pass=147 fail=0`（`fail=0` を含む）"
+    },
+    {
+      "text": "修正は `.claude/hooks/agent_write_guard.py` と `scripts/smoke.sh` の2ファイルに閉じる。確認コマンド：`git status --porcelain` の出力が、この2ファイルと `vault/tasks/P-20260925-write-guard-placeholder/T-01.md`（進捗追記分）以外の行を含まない",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain` / 出力: ` M .claude/hooks/agent_write_guard.py` / ` M scripts/smoke.sh` / ` M vault/tasks/P-20260925-write-guard-placeholder/T-01.md` の3行のみで、これ以外のファイルは含まれない。追加確認：タスク票の起点コミット `77a4910` は現在の HEAD と一致しており（`git log` で HEAD が `77a4910`）、`git diff --name-only 77a4910..HEAD` は空（作業はまだコミットされておらず作業ツリー上の変更のみ）。このため起点コミット基準での追加ファイル検出はできないが、`git status --porcelain` による確認（本基準の確認コマンド）では宣言外のファイルは見つからなかった。"
+    }
+  ],
+  "reasons": []
+}

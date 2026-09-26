@@ -10,10 +10,10 @@ argument-hint: [task-id（省略時は先頭）]
 `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で取る。ログ・verdict の日時はこれを使う。
 
 ## 1. 計画票を見つける
-1. `vault/plans/*.md` を走査し、frontmatter の `status` が `approved` の計画票を探す
-2. 0件なら「承認済みの計画が見つかりません。`/plan approve <計画ID>` を実行してください」と報告して終わる
-3. 2件以上なら「approved な計画票が複数あります（異常）。人に確認してください」と報告して終わる（`plan_guard.py` が書き込み時に検出しているはずだが、念のためここでも扱う。修復はしない）
-4. 見つかった1件を計画票、その frontmatter の `id` を計画 ID とする
+1. `bash scripts/current_plan.sh` を実行する（frontmatter の `status` が `approved` の計画票の計画 ID を1行1件で出力する）
+2. 出力が0行なら「承認済みの計画が見つかりません。`/plan approve <計画ID>` を実行してください」と報告して終わる
+3. 出力が2行以上なら「approved な計画票が複数あります（異常）。人に確認してください」と報告して終わる（`plan_guard.py` が書き込み時に検出しているはずだが、念のためここでも扱う。修復はしない）
+4. 出力が1行なら、その行を計画 ID とし、`vault/plans/<計画ID>.md` をこの手順の計画票とする
 
 ## 2. 取り出す
 1. 計画票の「タスク表」を読む

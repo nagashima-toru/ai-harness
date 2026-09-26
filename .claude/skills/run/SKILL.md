@@ -25,7 +25,7 @@ argument-hint: [task-id（省略時は先頭）]
 
 ## 3. 作る
 1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う
-2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）
+2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）。この呼び出しは `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順4のreview化・手順6のverdict判定が呼び出し結果に依存するため）
 3. 選んだタスクが複数件の場合、上記の呼び出しをタスクの数だけ**1メッセージの中で**行う（Agent ツールを複数回呼び、並行に実行させる）。選んだタスクが1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする（専用の逐次フォールバックは作らない）
 4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する（`vault/tasks/` 等ファイルへの永続化は不要）。この対応は後続の verifier 呼び出しと、T-03 で扱うマージ処理で使う
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：
@@ -39,7 +39,7 @@ argument-hint: [task-id（省略時は先頭）]
 blocked ではない完了報告を受けたタスク全部について、status を `review` にする。この計画票への書き込みは、手順2の一括反映と同様に、対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→review attempt=<n>` の形で追記する。この反映もこの時点でコミットする。手順5で verifier が対象タスクの worktree に `EnterWorktree` で入るため、コミットされていない変更はその worktree には反映されず verifier から見えない。
 
 ## 5. 検証する
-1. review にした（＝blocked ではなかった）タスクそれぞれについて、Agent ツールで `verifier` サブエージェントを呼ぶ。`isolation` オプションは付けない通常の呼び出しにする。prompt はタスク ID と、手順3で保持した対象タスクの worktree のパスの2つだけ（例：`<計画ID>/<id> を検証して vault/verdicts/<計画ID>/<id>.json を書いてください。対象 worktree: <worktree のパス>`）。作業内容の説明や言い訳は渡さない
+1. review にした（＝blocked ではなかった）タスクそれぞれについて、Agent ツールで `verifier` サブエージェントを呼ぶ。`isolation` オプションは付けない通常の呼び出しにする。prompt はタスク ID と、手順3で保持した対象タスクの worktree のパスの2つだけ（例：`<計画ID>/<id> を検証して vault/verdicts/<計画ID>/<id>.json を書いてください。対象 worktree: <worktree のパス>`）。作業内容の説明や言い訳は渡さない。この呼び出しも `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順6のverdict判定が呼び出し結果に依存するため）
 2. verifier は渡された worktree のパスに対して `EnterWorktree(path=<渡されたパス>)` を実行し、その worktree に入ってから検証する（creator の呼び出しで作られた既存 worktree を再利用し、verifier 自身は新規に worktree を作らない）
 3. 対象タスクが複数件の場合、上記の呼び出しをタスクの数だけ1メッセージの中で行う（並行実行）。1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする
 4. 全ての verifier の完了を待ち、それぞれの `vault/verdicts/<計画ID>/<id>.json` を読む（verifier の返答文ではなくファイルを根拠にする）
@@ -64,7 +64,7 @@ blocked ではない完了報告を受けたタスク全部について、status
    1. 対象タスクの worktree に未コミットの変更が残っていないか確認し、残っていればオーケストレーターがコミットする：`git status --porcelain`（対象 worktree に対して実行するには `git -C <worktree のパス> status --porcelain` の形にする）を実行し、出力が空でなければ（＝staged/unstaged/untracked のいずれかで1件でも変更があれば）`git -C <worktree のパス> add -A` の後 `git -C <worktree のパス> commit -m "<計画ID>/<id>: creator 成果物の未コミット分をオーケストレーターが収集"` でコミットする。このコミットはオーケストレーターが行うものであり、creator 側の「コミットは受け入れ基準に含まれている場合だけ行う」方針（`vault/rules/common/git.md`）自体は変更しない
    2. 直前のコミット処理を経てもなお、対象タスクの worktree のブランチ先端が `PLAN_HEAD`（手順3.1で控えた値）からの新規コミットを持たないままかどうかを検知する：`git rev-list <PLAN_HEAD>..<対象タスクの worktree のブランチ名>`（ブランチ名は手順3.4で保持したもの）の行数を確認し、`| wc -l` の結果が `0` なら新規コミット無しと判定する。新規コミットが無い場合はこのタスクのマージ処理に進まず異常として扱う：status を `blocked` にし、question に「worktree に新規コミットが無い（マージ対象の差分が無い）：<確認コマンドの出力>」のように状況を書く。`vault/log/<計画ID>.md` に `- <日時> <id> review→blocked attempt=<n> 新規コミット無し` を追記する。この worktree は削除せず残す（人が調査に使えるようにする）。他の対象タスクの処理は止めず、次のタスクへ進む
    3. 新規コミットがある場合、計画ブランチ（現在のブランチ）上で `git merge --no-ff <対象タスクの worktree のブランチ名>` を実行し、worktree 上の変更を計画ブランチへ取り込む
-   4. マージが衝突なく成功したら、status を `review` から `done` にし、`vault/log/<計画ID>.md` に `- <日時> <id> review→done attempt=<n>` を追記する。続けて `git worktree remove <worktree のパス>` で worktree を削除し、不要になった作業ブランチも `git branch -d <ブランチ名>`（計画ブランチへ取り込み済みなので安全に削除できる）で削除する
+   4. マージが衝突なく成功したら、status を `review` から `done` にし、`vault/log/<計画ID>.md` に `- <日時> <id> review→done attempt=<n>` を追記する。続けて、計画票のタスク表の更新・`vault/log/<計画ID>.md` への追記・`vault/verdicts/<計画ID>/<id>.json` を `git add` し、この時点でコミットする（次のタスクの doing 反映時のコミットに委ねない）。このコミットが完了してから `git worktree remove <worktree のパス>` で worktree を削除し、不要になった作業ブランチも `git branch -d <ブランチ名>`（計画ブランチへ取り込み済みなので安全に削除できる）で削除する
    5. マージでコンフリクトが起きた場合：自己判断で解決しない（`vault/rules/common/git.md` の既存方針）。`git merge --abort` でマージを中断し、status を `blocked` にし question 列にコンフリクトの状況（コンフリクトしたファイル一覧、実行したコマンドとエラーの要点。例：`git status` の該当部分の要約）を書く。`vault/log/<計画ID>.md` に `- <日時> <id> review→blocked attempt=<n> マージコンフリクト` を追記する。この worktree は削除せず残す（人がコンフリクト解消の調査に使えるようにする）。他の対象タスクの処理は止めず、次のタスクへ進む
 4. `FAIL` の場合：
    1. 計画ブランチへはマージしない

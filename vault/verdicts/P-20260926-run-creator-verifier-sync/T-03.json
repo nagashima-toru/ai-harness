@@ -1,0 +1,27 @@
+{
+  "task": "P-20260926-run-creator-verifier-sync/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 16:35",
+  "criteria": [
+    {
+      "text": "「## A. 計画を作る」節の手順4（planner 呼び出し）に `run_in_background: false` が明記されている。確認：`sed -n '/^## A\\. 計画を作る/,/^## B\\. 承認する/p' .claude/skills/plan/SKILL.md > /tmp/P-20260926-run-creator-verifier-sync-T03-secA.txt` を実行後、`grep -c 'run_in_background: false' /tmp/P-20260926-run-creator-verifier-sync-T03-secA.txt` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## A\\. 計画を作る/,/^## B\\. 承認する/p' .claude/skills/plan/SKILL.md > /tmp/...-secA.txt && grep -c 'run_in_background: false' /tmp/...-secA.txt` / 出力: 1（該当文字列は項目4の行内にあることを sed 出力の目視でも確認）。ただし本確認コマンドは節A全体を対象にした語数カウント（`grep -c '<語>' が1以上`）であり、項目4以外の行に置かれていても通ってしまうため、目的（項目4への明記）の達成を厳密には保証しない緩い基準。今回は実際の配置を目視確認し項目4内にあることを確認した"
+    },
+    {
+      "text": "同箇所に、同期的に待つ理由（後続手順が結果に依存すること）の説明がある。確認：`grep -c -E '結果に依存|同期的' /tmp/P-20260926-run-creator-verifier-sync-T03-secA.txt` が1以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c -E '結果に依存|同期的' /tmp/...-secA.txt` / 出力: 1。項目4の行に「同期的に完了を待つこと（手順5以降で生成物を読んで判定するため、結果に依存する）」の記述があることを sed 出力の目視で確認。ただし本確認コマンドも節A全体を対象にした語（2語のいずれか）の出現数カウントであり、項目4以外の箇所に単語が出現しても通ってしまうため、目的（同期的に待つ理由の説明が項目4にあること）の達成を厳密には保証しない緩い基準。今回は実際の配置が項目4内にあることを目視確認した"
+    },
+    {
+      "text": "変更ファイルが `.claude/skills/plan/SKILL.md` とこのタスク票自身以外に無い。確認：`git status --porcelain > /tmp/P-20260926-run-creator-verifier-sync-T03-status.txt` を実行後、中身が `.claude/skills/plan/SKILL.md` と `vault/tasks/P-20260926-run-creator-verifier-sync/T-03.md` の2行のみ",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain > /tmp/...-status.txt` / 出力: ` M .claude/skills/plan/SKILL.md` と ` M vault/tasks/P-20260926-run-creator-verifier-sync/T-03.md` の2行のみで、他の変更ファイルは無い。追加確認：起点コミット記録（4a2faf7）から `git diff --name-only 4a2faf7..HEAD` を実行したところ、HEAD が起点コミットと同一のため差分は空（変更は未コミットのまま作業ツリーに残っている）。よって成果物の未宣言ファイルは検出されなかった"
+    }
+  ],
+  "reasons": [
+    "確認コマンドが節A全体を対象にした語数カウント（`grep -c 'run_in_background: false' が1以上`）であり、項目4以外の行に置かれていても通るため、目的（手順4への明記）の達成を厳密には保証しない。今回は目視で項目4内の配置を確認した",
+    "確認コマンドが節A全体を対象にした語（『結果に依存』または『同期的』のいずれか）の出現数カウントであり、項目4以外の箇所に単語が出現しても通るため、目的（同期的に待つ理由の説明が項目4にあること）の達成を厳密には保証しない。今回は目視で項目4内の配置を確認した"
+  ]
+}

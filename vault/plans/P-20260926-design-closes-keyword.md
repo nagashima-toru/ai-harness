@@ -21,7 +21,7 @@ GitHub issue #15 への対応。`/design` スキル（`.claude/skills/design/SKI
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | design/SKILL.md 手順8に PR 本文の非クローズキーワード運用を追記する（issue #15） | |
+| T-01 | review | 1 | - | design/SKILL.md 手順8に PR 本文の非クローズキーワード運用を追記する（issue #15） | |
 
 ## 計画の受け入れ基準
 - タスクに成果物と受け入れ基準が1つずつある

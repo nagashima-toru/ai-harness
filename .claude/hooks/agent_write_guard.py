@@ -253,10 +253,62 @@ def targets_creator_denied_paths(tool, tool_input, root):
     return False
 
 
+def delegate_to_worktree(payload):
+    """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
+    `.claude/hooks/agent_write_guard.py` へ判定を委譲する（issue #56 / D-008 フェーズ1）。
+
+    委譲に成功した場合は委譲先の stdout をそのまま文字列で返す（呼び出し側はそれをそのまま
+    自分の stdout として出し exit 0 する）。委譲しない・できない場合は None を返し、
+    呼び出し側は通常どおりメインリポジトリ側のローカル判定に進む（fail-open）。
+
+    二重委譲防止：委譲先プロセスの環境変数に `_HOOK_DELEGATED=1` をセットして呼び出す。
+    自分自身の環境で既に `_HOOK_DELEGATED` が設定されている場合は委譲せず、必ず
+    ローカル判定にフォールバックする（委譲は1段まで）。
+    """
+    if os.environ.get("_HOOK_DELEGATED"):
+        return None
+
+    cwd = payload.get("cwd") or ""
+    if not cwd:
+        return None
+    worktree_root = git_toplevel(cwd)
+    if not worktree_root:
+        return None
+
+    self_root = os.environ.get("CLAUDE_PROJECT_DIR") or git_toplevel(os.path.dirname(os.path.abspath(__file__)))
+    if not self_root:
+        return None
+    if os.path.abspath(worktree_root) == os.path.abspath(self_root):
+        return None
+
+    delegate_script = os.path.join(worktree_root, ".claude", "hooks", "agent_write_guard.py")
+    if not os.path.isfile(delegate_script):
+        return None
+
+    env = os.environ.copy()
+    env["_HOOK_DELEGATED"] = "1"
+    try:
+        result = subprocess.run(
+            ["python3", delegate_script],
+            input=json.dumps(payload),
+            capture_output=True, text=True, timeout=20, env=env,
+        )
+    except Exception:
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
     except Exception:
+        sys.exit(0)
+
+    delegated_stdout = delegate_to_worktree(payload)
+    if delegated_stdout is not None:
+        sys.stdout.write(delegated_stdout)
         sys.exit(0)
 
     tool = payload.get("tool_name", "")

@@ -23,7 +23,7 @@ issue #63（本文＋統合コメント #65）に基づき、`/run` スキルの
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | run/SKILL.md 手順3・5に run_in_background: false を明記する | |
-| T-02 | review | 1 | T-01 | run/SKILL.md 手順6の review→done 遷移に verdict の git add・コミットを明記する | |
+| T-02 | done | 1 | T-01 | run/SKILL.md 手順6の review→done 遷移に verdict の git add・コミットを明記する | |
 | T-03 | done | 1 | - | plan/SKILL.md 手順A.4に run_in_background: false を明記する | |
 
 ## 計画の受け入れ基準

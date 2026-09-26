@@ -1,0 +1,32 @@
+{
+  "task": "P-20260926-fix-smoke-sh-failures/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 18:19",
+  "criteria": [
+    {
+      "text": "missing_referenced_scripts() 内の .claude 配下の find が worktrees 配下を除外している。確認コマンド: grep -n \"worktrees\" scripts/smoke.sh の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"worktrees\" scripts/smoke.sh` / 出力: 563行目 `find \"$target/.claude\" -path \"$target/.claude/worktrees\" -prune -o -type f -print 2>/dev/null` の1行がヒットし、-prune で worktrees 配下を除外する実装になっている。ただしこの確認コマンド自体は文字列 \"worktrees\" の出現有無しか見ておらず、コメント等に書くだけでも通ってしまう緩い基準（目的達成の保証にはならない）。基準3（実行時の ok 判定）と合わせて初めて目的達成が確認できる。"
+    },
+    {
+      "text": "missing_referenced_scripts() 以外の関数・テストケースの行数・内容が変わっていない。確認コマンド: git diff -- scripts/smoke.sh | grep -E '^[+-]expect' の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- scripts/smoke.sh | grep -E '^[+-]expect'` / 出力: なし（該当行なし）。expect行の追加・削除が無いことを確認した。"
+    },
+    {
+      "text": "bash scripts/smoke.sh を実行した時、新規インストール先で参照される scripts がすべて揃っている の行が ok から始まる。確認コマンド: bash scripts/smoke.sh（== 参照される scripts の存在チェック == セクションの行が ok で始まることを出力で確認する）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `== 参照される scripts の存在チェック ==` の直後に `ok   新規インストール先で参照される scripts がすべて揃っている` が出力された。"
+    },
+    {
+      "text": "同じ実行の末尾 smoke: pass=<N> fail=<M> の pass が着手前HEAD時点の実行結果（152）より1件以上増えている（今回直した1ケース分。他タスクの完了状況によってはさらに増えていてもよい）。確認コマンド: 同じ実行結果の末尾行を読む",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` の末尾行 / 出力: `smoke: pass=156 fail=0`（152から4増加、基準の1件以上増加を満たす）。ただしこの基準は合計件数の増減しか見ておらず、増加分がこのタスクの対象ケース自体によるものかは保証しない緩い基準。基準3で対象ケースが ok であることを個別に確認済みのため、目的達成自体は確認できている。"
+    }
+  ],
+  "reasons": [
+    "基準1の確認コマンドは文字列 \"worktrees\" の出現有無しか見ておらず、コメント等でも通り得る緩い基準（目的達成の保証にはならない）が、実コードは -prune による実装であることを直接確認済み。",
+    "基準4の確認コマンドは合計pass件数の増減しか見ておらず、増加分が対象ケース自体によるものかは保証しない緩い基準だが、基準3で対象ケースの ok を個別に確認済み。"
+  ]
+}

@@ -35,7 +35,7 @@ T-05 は issue の提案3（planner 向け指針の追記）。`vault/rules/` �
 | T-01 | done | 1 | - | agent_write_guard.py のパス比較でシンボリックリンクを解決し worktree 誤 deny を無くす | |
 | T-02 | done | 1 | - | discard_worktree.sh のパス比較でシンボリックリンクを解決し worktree 削除判定を安定させる | |
 | T-03 | done | 1 | - | install.sh の複製対象から .claude/worktrees/ を除外する | |
-| T-04 | review | 1 | - | smoke.sh の missing_referenced_scripts が .claude/worktrees/ 配下を誤検知しないようにする | |
+| T-04 | done | 1 | - | smoke.sh の missing_referenced_scripts が .claude/worktrees/ 配下を誤検知しないようにする | |
 | T-05 | review | 1 | - | smoke.sh の全件PASSを基準にする際の指針を planner ルールへ追記する提案を書く | |
 
 ## 計画の受け入れ基準

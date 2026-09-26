@@ -18,7 +18,7 @@ D-008 のフェーズ2（`plan_guard.py`・`stop_gate.py` への同パターン�
 
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | agent_write_guard.py に worktree 委譲ロジックを追加する | |
+| T-01 | doing | 1 | - | agent_write_guard.py に worktree 委譲ロジックを追加する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

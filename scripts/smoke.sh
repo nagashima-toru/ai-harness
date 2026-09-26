@@ -221,6 +221,48 @@ expect_guard "(worktree nested) verifier が worktree 内の未作成ネスト�
 git -C "$WMAIN2" worktree remove -q --force "$WLEAF2" >/dev/null 2>&1
 rm -rf "$WMAIN2" "$WLEAF2"
 
+# 委譲判定を確認するテストでは、Bash + 相対パスの vault/rules/ ターゲット（cp x.txt vault/rules/...）を
+# ローカル判定の目印として使う（既存の「root 内の許可外パスへ cp」テストと同じ相対パス方式）。
+# Write/Edit + 絶対 file_path 方式だと、mktemp が返す tmp パスと git rev-parse --show-toplevel が
+# 返す解決済みパス（macOS では /var/... が /private/var/... に解決される）が食い違い、
+# normalize() の prefix 比較が環境依存で崩れてしまうため使わない。
+DWTMAIN="$(mktemp -d)"
+git -C "$DWTMAIN" init -q -b main
+git -C "$DWTMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+DWTLEAF="$(mktemp -d)"; rmdir "$DWTLEAF"
+git -C "$DWTMAIN" worktree add -q -b work/p-delegate "$DWTLEAF" >/dev/null 2>&1
+mkdir -p "$DWTLEAF/.claude/hooks"
+cat > "$DWTLEAF/.claude/hooks/agent_write_guard.py" <<'PYEOF'
+#!/usr/bin/env python3
+import json, sys
+json.load(sys.stdin)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
+PYEOF
+expect_guard "(delegate) worktree 側が常に allow を返す差し替え → 通常なら拒否される vault/rules/ への書き込みも委譲先の判定（allow）が採用される" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" python3 "$GUARD_HOOK")"
+
+expect_guard "(delegate) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（vault/rules/ 拒否が効く）" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" _HOOK_DELEGATED=1 python3 "$GUARD_HOOK")"
+
+git -C "$DWTMAIN" worktree remove -q --force "$DWTLEAF" >/dev/null 2>&1
+rm -rf "$DWTMAIN" "$DWTLEAF"
+
+DWTMAIN2="$(mktemp -d)"
+git -C "$DWTMAIN2" init -q -b main
+git -C "$DWTMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+DWTLEAF2="$(mktemp -d)"; rmdir "$DWTLEAF2"
+git -C "$DWTMAIN2" worktree add -q -b work/p-delegate-fail "$DWTLEAF2" >/dev/null 2>&1
+mkdir -p "$DWTLEAF2/.claude/hooks"
+cat > "$DWTLEAF2/.claude/hooks/agent_write_guard.py" <<'PYEOF'
+#!/usr/bin/env python3
+import sys
+sys.exit(1)
+PYEOF
+expect_guard "(delegate) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（vault/rules/ 拒否が引き続き効く）" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"},"cwd":"'"$DWTLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN2" python3 "$GUARD_HOOK")"
+git -C "$DWTMAIN2" worktree remove -q --force "$DWTLEAF2" >/dev/null 2>&1
+rm -rf "$DWTMAIN2" "$DWTLEAF2"
+
 expect_guard "verifier が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
 expect_guard "planner が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \

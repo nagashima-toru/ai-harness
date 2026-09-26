@@ -14,9 +14,9 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | current_plan.sh で承認済み計画票を検出するスクリプトを作る | |
-| T-02 | todo | 0 | T-01 | smoke.sh に current_plan.sh のテストを追加する | |
-| T-03 | todo | 0 | T-01 | run スキルの手順1を current_plan.sh 判定に書き換える | |
-| T-04 | todo | 0 | T-01 | vault-spec.md 1節に current_plan.sh の利用を追記する | |
+| T-02 | doing | 1 | T-01 | smoke.sh に current_plan.sh のテストを追加する | |
+| T-03 | doing | 1 | T-01 | run スキルの手順1を current_plan.sh 判定に書き換える | |
+| T-04 | doing | 1 | T-01 | vault-spec.md 1節に current_plan.sh の利用を追記する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

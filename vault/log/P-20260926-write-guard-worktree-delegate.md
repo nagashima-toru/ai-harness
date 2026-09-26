@@ -1,1 +1,2 @@
 - 2026-09-26 10:01 T-01 todo→doing attempt=1
+- 2026-09-26 10:19 T-01 doing→blocked attempt=1 creatorがscripts/smoke.shの全件PASS基準を満たせず（既存の環境依存失敗3件の扱いが決定済みに無い）

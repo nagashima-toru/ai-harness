@@ -18,7 +18,7 @@ D-008 のフェーズ2（`plan_guard.py`・`stop_gate.py` への同パターン�
 
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard.py に worktree 委譲ロジックを追加する | |
+| T-01 | blocked | 1 | - | agent_write_guard.py に worktree 委譲ロジックを追加する | 受け入れ基準「既存ケース・新規ケースを含め `bash scripts/smoke.sh` が全件PASSし終了コードが0である（回帰が無い）」について、今回の変更前（HEAD時点）から存在する環境依存の3件の失敗（`(worktree)`・`(worktree nested)`・discard_worktree.sh の `(a)`。いずれも今回のタスクの成果物とは無関係）により、字義通りには rc=0・全件PASSを満たせていません。この3件を本タスクのスコープ外として無視してよいか（＝追加した3件の `(delegate)` ケースがPASSし、既存の失敗3件がHEAD時点と変わらない状態で受け入れ可とするか）、それとも別の対応が必要かは「決定済み」に記載が無く、自分で判断できません。人の判断を仰ぎたいです。 |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

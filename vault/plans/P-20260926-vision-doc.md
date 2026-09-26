@@ -1,6 +1,6 @@
 ---
 id: P-20260926-vision-doc
-status: approved
+status: done
 ---
 # ゴール
 

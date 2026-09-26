@@ -1,0 +1,29 @@
+{
+  "task": "P-20260926-fix-smoke-sh-failures/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 18:10",
+  "criteria": [
+    {
+      "text": "`TARGET_PATH` の算出にシンボリックリンク解決（`os.path.realpath`）を使っている。確認コマンド: `grep -n \"os.path.realpath\" scripts/discard_worktree.sh` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"os.path.realpath\" scripts/discard_worktree.sh`（worktree /Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a13046fc2b20e3807 内） / 出力: `32:TARGET_PATH=\"$(python3 -c \"import os,sys;print(os.path.realpath(sys.argv[1]))\" \"$WORKTREE_ARG\")\"`（1行ヒット）。diffでも `os.path.abspath` から `os.path.realpath` への1行変更のみであることを確認した。"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行した時、`(a) discard_worktree.sh 正常系` を含むテスト名の行が `ok` から始まる。確認コマンド: `bash scripts/smoke.sh`（`== discard_worktree.sh ==` セクション内の `(a)` の行が `ok` で始まることを出力で確認する）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh`（worktree内で実行） / 出力: `== discard_worktree.sh ==` セクション内 `ok   (a) discard_worktree.sh 正常系: worktree/ブランチとも削除されrc0（...）` が `ok` から始まっていた。"
+    },
+    {
+      "text": "同じ実行で `(b)`・`(c)`・`(d)`・`(e)`（`discard_worktree.sh` の他の既存ケース）に新規の `NG` が発生していない。確認コマンド: 同じ出力中、`discard_worktree.sh` セクションの `(b)`〜`(e)` の行がいずれも `ok` で始まることを確認する",
+      "ok": true,
+      "note": "同じ `bash scripts/smoke.sh` 実行の出力より、`== discard_worktree.sh ==` セクションの (b)(c)(d)(e) 行はすべて `ok` から始まっていた（NGなし）。"
+    },
+    {
+      "text": "同じ実行の末尾 `smoke: pass=<N> fail=<M>` の `pass` が着手前HEAD時点の実行結果（152）より1件以上増えている（今回直した1ケース分。他タスクの完了状況によってはさらに増えていてもよい）。確認コマンド: 同じ実行結果の末尾行を読む",
+      "ok": true,
+      "note": "同じ実行結果の末尾行: `smoke: pass=154 fail=2`。着手前HEAD時点の152から+2で、1件以上増加している条件を満たす（残る2件のNGは `(worktree)`/`(worktree nested)` のWrite許可判定でありT-01スコープ、discard_worktree.sh関連のNGは無い）。"
+    }
+  ],
+  "reasons": []
+}

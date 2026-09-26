@@ -1,6 +1,6 @@
 ---
 id: P-20260926-verifier-verdict-worktree-path
-status: draft
+status: approved
 ---
 # ゴール
 

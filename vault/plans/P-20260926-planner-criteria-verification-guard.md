@@ -1,6 +1,6 @@
 ---
 id: P-20260926-planner-criteria-verification-guard
-status: approved
+status: done
 ---
 # ゴール
 

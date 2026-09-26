@@ -20,9 +20,9 @@ verifier が `EnterWorktree` で対象 worktree に入った状態のまま `vau
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | verifier エージェント定義に worktree からメインリポジトリへの書き込み先明記を追加する | |
-| T-02 | doing | 1 | - | verifier ルール文書への同趣旨の追記を提案ファイルとして下書きする | |
-| T-03 | doing | 1 | - | run スキルの verdict 読み取り手順に worktree 側フォールバックを追記する | |
+| T-01 | review | 1 | - | verifier エージェント定義に worktree からメインリポジトリへの書き込み先明記を追加する | |
+| T-02 | review | 1 | - | verifier ルール文書への同趣旨の追記を提案ファイルとして下書きする | |
+| T-03 | review | 1 | - | run スキルの verdict 読み取り手順に worktree 側フォールバックを追記する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

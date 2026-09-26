@@ -71,6 +71,8 @@ def normalize(path, root):
     if not path:
         return ""
     ap = os.path.abspath(os.path.join(root, path)) if not os.path.isabs(path) else os.path.abspath(path)
+    ap = os.path.realpath(ap)
+    root = os.path.realpath(root)
     rel = os.path.relpath(ap, root)
     return rel.replace(os.sep, "/")
 

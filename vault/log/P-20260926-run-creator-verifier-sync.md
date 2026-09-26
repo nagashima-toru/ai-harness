@@ -4,3 +4,4 @@
 - 2026-09-26 16:34 T-03 doing→review attempt=1
 - 2026-09-26 16:38 T-01 review→done attempt=1
 - 2026-09-26 16:38 T-03 review→done attempt=1
+- 2026-09-26 16:39 T-02 todo→doing attempt=1

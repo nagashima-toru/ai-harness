@@ -225,6 +225,18 @@ expect_guard "verifier が Bash で 2>&1 を含む非書き込みコマンド �
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
 expect_guard "planner が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
   "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
+expect_guard "(issue #54 placeholder) verifier が山括弧プレースホルダーを含むだけの読み取り専用 grep → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"grep -n -A 5 \"doing\\u2192review attempt=<n>\" .claude/skills/run/SKILL.md"}}')"
+expect_guard "(issue #54 placeholder) planner が <計画ID> プレースホルダーを含むだけの読み取り専用 grep → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"grep -n \"vault/tasks/<計画ID>/<id>.md\" docs/vault-spec.md"}}')"
+expect_guard "(issue #54 placeholder) verifier がプレースホルダーと実リダイレクト（許可外パス）が混在するコマンド → 実リダイレクトは拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo \"doing\\u2192review attempt=<n>\" > README.md"}}')"
+expect_guard "(issue #54 placeholder) verifier がプレースホルダーと実リダイレクト（許可ディレクトリ内）が混在するコマンド → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo \"doing\\u2192review attempt=<n>\" > '"$TMP"'/vault/verdicts/T-1.json"}}')"
+expect_guard "(issue #54 placeholder) verifier が <n> を含む rm コマンド → 破壊的操作として拒否（プレースホルダー有無に関係なく維持）" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"rm attempt=<n>.txt"}}')"
+expect_guard "(issue #54 placeholder) verifier が <n> を含む git commit → 破壊的操作として拒否（プレースホルダー有無に関係なく維持）" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git commit -m \"attempt=<n>\""}}')"
 
 echo "== plan_guard.py =="
 run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }

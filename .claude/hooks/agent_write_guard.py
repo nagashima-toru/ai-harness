@@ -46,6 +46,16 @@ BASH_WRITE_PATTERNS = [
 ]
 
 
+def mask_angle_placeholders(text):
+    """`<...>`（`<`・`>`・空白を含まない区間）を同じ文字数の空白に置換したテキストを返す。
+
+    `<n>`・`<計画ID>` のような plan/task 票の山括弧プレースホルダーの閉じ `>` を、
+    シェルのリダイレクトと誤認しないようにするための前処理（issue #54）。書き込み判定にのみ使い、
+    deny() のエラーメッセージ表示には元のテキストを使うこと（マスクすると空白だらけで読みにくくなる）。
+    """
+    return re.sub(r"<[^<>\s]+>", lambda m: " " * len(m.group(0)), text)
+
+
 def deny(reason):
     print(json.dumps({
         "hookSpecificOutput": {
@@ -165,6 +175,7 @@ def extract_bash_write_targets(cmd):
     非フラグ引数がそれぞれ書き込み（作成・削除）対象になる。抽出できたパスが1つも無ければ
     呼び出し側で fail-closed（拒否）とする。
     """
+    cmd = mask_angle_placeholders(cmd)
     targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
     for m in re.finditer(r"\b(mkdir|cp|touch|rm|mv)\b([^;&|]*)", cmd):
         verb = m.group(1)
@@ -210,9 +221,10 @@ def targets_vault_rules(tool, tool_input, root):
         cmd = tool_input.get("command") or ""
         if targets_vault_rules_remote(cmd):
             return True
-        if not any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
+        masked = mask_angle_placeholders(cmd)
+        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
             return False
-        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
+        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked)
         path_like = re.findall(r"[^\s'\"]*vault/rules/[^\s'\"]*", cmd)
         candidates = redirect_targets + path_like
         return any(normalize(t, root).startswith("vault/rules/") for t in candidates)
@@ -231,9 +243,10 @@ def targets_creator_denied_paths(tool, tool_input, root):
         return normalize(path, root).startswith(DENIED_FOR_CREATOR)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        if not any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
+        masked = mask_angle_placeholders(cmd)
+        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
             return False
-        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
+        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked)
         path_like = re.findall(r"[^\s'\"]*vault/(?:plans|log)/[^\s'\"]*", cmd)
         candidates = redirect_targets + path_like
         return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for t in candidates)
@@ -294,7 +307,8 @@ def main():
 
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        if any(re.search(p, cmd) for p in BASH_WRITE_PATTERNS):
+        masked_cmd = mask_angle_placeholders(cmd)
+        if any(re.search(p, masked_cmd) for p in BASH_WRITE_PATTERNS):
             write_targets = extract_bash_write_targets(cmd)
             # 対象パスがすべて root（リポジトリ）の外なら許可する（issue #27）。
             # トレードオフ：/etc/passwd のようなシステムファイルへの書き込みも root 外である以上
@@ -304,7 +318,7 @@ def main():
             if write_targets and all(is_outside_root(t, root) for t in write_targets):
                 sys.exit(0)
             # 許可ディレクトリだけを対象にしたリダイレクトは通す
-            targets = re.findall(r">{1,2}\s*([^\s;&|]+)", cmd)
+            targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked_cmd)
             if targets and all(normalize(t, root).startswith(tuple(allowed)) for t in targets) \
                     and not re.search(DESTRUCTIVE_BASH_PATTERN, cmd):
                 sys.exit(0)

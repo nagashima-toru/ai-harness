@@ -19,7 +19,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | plan_guard.py に worktree 委譲ロジックを追加する | |
+| T-01 | done | 1 | - | plan_guard.py に worktree 委譲ロジックを追加する | |
 | T-02 | todo | 0 | T-01 | stop_gate.py に worktree 委譲ロジックを追加する | |
 
 ## 計画の受け入れ基準

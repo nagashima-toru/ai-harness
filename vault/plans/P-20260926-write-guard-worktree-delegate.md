@@ -1,6 +1,6 @@
 ---
 id: P-20260926-write-guard-worktree-delegate
-status: draft
+status: approved
 ---
 # ゴール
 

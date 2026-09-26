@@ -1,0 +1,37 @@
+{
+  "task": "P-20260926-write-guard-worktree-delegate/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 11:08",
+  "criteria": [
+    {
+      "text": "`delegate_to_worktree` という名前の関数が実装されている。確認コマンド: `grep -n \"def delegate_to_worktree\" .claude/hooks/agent_write_guard.py` の出力が1行",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"def delegate_to_worktree\" .claude/hooks/agent_write_guard.py`（worktree: .claude/worktrees/agent-a37b80526a27f5258）/ 出力: `256:def delegate_to_worktree(payload):` の1行のみ"
+    },
+    {
+      "text": "二重委譲防止に環境変数 `_HOOK_DELEGATED` を使い、委譲先呼び出し前にセットする箇所と、委譲するかどうかの判定でこれを参照する箇所の両方がある。確認コマンド: `grep -c \"_HOOK_DELEGATED\" .claude/hooks/agent_write_guard.py` の出力が2以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"_HOOK_DELEGATED\" .claude/hooks/agent_write_guard.py` / 出力: 4件ヒット（264, 265行はdocstring、268行目 `if os.environ.get(\"_HOOK_DELEGATED\"):` が判定箇所、289行目 `env[\"_HOOK_DELEGATED\"] = \"1\"` が委譲先呼び出し前のセット箇所）。count=4で基準の2以上を満たし、判定・セットの両方の実体も確認できた。ただし確認コマンド自体は文字列の出現回数を数えるだけで、判定箇所とセット箇所が実在することまでは保証しない（すべてコメント中の言及でも通ってしまう）ため、基準としては緩い"
+    },
+    {
+      "text": "委譲先呼び出しの `subprocess.run` のタイムアウトが20秒（`timeout=20`）に固定されている。確認コマンド: `grep -n \"timeout=20\" .claude/hooks/agent_write_guard.py` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"timeout=20\" .claude/hooks/agent_write_guard.py` / 出力: `294:            capture_output=True, text=True, timeout=20, env=env,` の1行（`subprocess.run` の呼び出し引数内）"
+    },
+    {
+      "text": "worktree 委譲・委譲失敗時のフェイルオープン・二重委譲防止の3シナリオを検証する `scripts/smoke.sh` のテストケースが、テスト名の先頭に `(delegate)` を付けて追加されている。確認コマンド: `grep -c \"(delegate)\" scripts/smoke.sh` の出力が3以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"(delegate)\" scripts/smoke.sh` / 出力: 3行（241行目「(delegate) worktree側が常に allow を返す差し替え→委譲先の判定が採用される」、244行目「(delegate) 呼び出し前に _HOOK_DELEGATED が既にセット済み→二重委譲防止でローカル判定にフォールバック」、261行目「(delegate) 委譲先 subprocess が非0で終了→フェイルオープンでローカル判定にフォールバック」）。決定済みで指定された3シナリオ（委譲成功・二重委譲防止・委譲失敗時フェイルオープン）を個別にカバーしていることを目視で確認した。確認コマンド自体は `(delegate)` という文字列の出現回数を数えるだけで、3件が実際に異なるシナリオを検証しているかまでは保証しないため、基準としては緩い"
+    },
+    {
+      "text": "既存ケース・新規ケースを含め `bash scripts/smoke.sh` が全件PASSし終了コードが0である（回帰が無い）。確認コマンド: `bash scripts/smoke.sh; echo \"rc=$?\"` の出力末尾が `smoke: pass=<N> fail=0` と `rc=0`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh; echo \"rc=$?\"`（worktree内）/ 出力: `smoke: pass=147 fail=3` `rc=1`。字義通りの `fail=0`・`rc=0` は満たしていない。決定済み（2026-09-26 人の判断・blocked解消）により、判定は「新規追加の (delegate) 3件が全て ok」「既存失敗が起点コミット時点から悪化していないこと」の2点で行うとされている。NGの内訳は (worktree)・(worktree nested)・discard_worktree.sh (a) の3件のみで、新規追加の (delegate) 3件は全てokだった。比較のため起点コミット acc5de6 を一時 worktree（/tmp/verify_baseline_acc5de6_2、検証後 `git worktree remove --force` で削除済み）にチェックアウトして `bash scripts/smoke.sh` を実行したところ `pass=144 fail=3` で、NGの内訳（(worktree)・(worktree nested)・discard_worktree.sh (a)）が完全に一致し、新たな失敗の増加は無いことを確認した。決定済みの判定基準を満たすため ok:true とする"
+    }
+  ],
+  "reasons": [
+    "二重委譲防止に環境変数 `_HOOK_DELEGATED` を使い、委譲先呼び出し前にセットする箇所と、委譲するかどうかの判定でこれを参照する箇所の両方がある。確認コマンド: `grep -c \"_HOOK_DELEGATED\" .claude/hooks/agent_write_guard.py` の出力が2以上：確認コマンド自体は文字列の出現回数を数えるだけで、判定箇所とセット箇所が実在することまでは保証しない（すべてコメント中の言及でも通ってしまう）ため、基準としては緩い",
+    "worktree 委譲・委譲失敗時のフェイルオープン・二重委譲防止の3シナリオを検証する `scripts/smoke.sh` のテストケースが、テスト名の先頭に `(delegate)` を付けて追加されている。確認コマンド: `grep -c \"(delegate)\" scripts/smoke.sh` の出力が3以上：確認コマンド自体は `(delegate)` という文字列の出現回数を数えるだけで、3件が実際に異なるシナリオを検証しているかまでは保証しないため、基準としては緩い"
+  ]
+}

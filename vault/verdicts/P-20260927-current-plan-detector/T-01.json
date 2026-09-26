@@ -1,0 +1,29 @@
+{
+  "task": "P-20260927-current-plan-detector/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-27 06:00",
+  "criteria": [
+    {
+      "text": "構文が正しい。確認：`bash -n scripts/current_plan.sh`（出力なし・終了コード0）",
+      "ok": true,
+      "note": "実行コマンド: `bash -n scripts/current_plan.sh` / 出力: 標準出力・標準エラーとも無し、終了コード0"
+    },
+    {
+      "text": "frontmatter の `status` が `approved` の計画票の id だけをファイル名順で1行1件出力し、id が無ければファイル名（`.md` を除いたもの）を使い、本文中（frontmatter の外）の `status: approved` という文字列は無視する。確認：下記「決定済み」のフィクスチャ手順で `/tmp/P-20260927-current-plan-detector-T-01/vault/plans` を作った上で `CLAUDE_PROJECT_DIR=/tmp/P-20260927-current-plan-detector-T-01 bash scripts/current_plan.sh` を実行すると、出力が `approved-no-id` の行、`P-FIX-A` の行の2行（この順）になる",
+      "ok": true,
+      "note": "決定済みのフィクスチャ手順どおり approved-with-id.md / approved-no-id.md / not-approved-body-trap.md（本文に status: approved を含むが frontmatter 外）の3ファイルを作成し確認済み。実行コマンド: `CLAUDE_PROJECT_DIR=/tmp/P-20260927-current-plan-detector-T-01 bash scripts/current_plan.sh` / 出力: `approved-no-id`\\n`P-FIX-A`（この2行、この順）、終了コード0。not-approved-body-trap.md 由来の出力は無し"
+    },
+    {
+      "text": "approved な計画票が0件のディレクトリでは何も出力せず終了コードが0になる。確認：`mkdir -p /tmp/P-20260927-current-plan-detector-T-01-empty/vault/plans` を実行した後、`CLAUDE_PROJECT_DIR=/tmp/P-20260927-current-plan-detector-T-01-empty bash scripts/current_plan.sh` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `mkdir -p /tmp/P-20260927-current-plan-detector-T-01-empty/vault/plans` の後 `CLAUDE_PROJECT_DIR=/tmp/P-20260927-current-plan-detector-T-01-empty bash scripts/current_plan.sh` / 出力: 空、終了コード0"
+    },
+    {
+      "text": "現在の `main` ブランチの `vault/plans` を対象に実行すると何も出力しない（現時点の `main` には approved な計画票が無いため）。確認：下記「決定済み」の main 抽出手順で `/tmp/P-20260927-current-plan-detector-T-01-main-dir` を作った上で `CLAUDE_PROJECT_DIR=/tmp/P-20260927-current-plan-detector-T-01-main-dir bash scripts/current_plan.sh` の出力が空",
+      "ok": true,
+      "note": "決定済みの main 抽出手順（`git archive -o ...tar main -- vault/plans` → `mkdir -p ...main-dir` → `tar -xf ... -C ...main-dir`）を1コマンドずつ実行後、実行コマンド: `CLAUDE_PROJECT_DIR=/tmp/P-20260927-current-plan-detector-T-01-main-dir bash scripts/current_plan.sh` / 出力: 空、終了コード0。追加確認：起点コミット 2efd0ba を用いて `git diff --name-only 2efd0ba..HEAD` を worktree で実行したが出力は空（HEAD がまだ起点コミットのまま、成果物・進捗ともに未コミットのため差分検出不可）。代替として `git status --porcelain` を確認したところ、変更は `M vault/tasks/P-20260927-current-plan-detector/T-01.md`（タスク票の進捗、検査対象外）と `?? scripts/current_plan.sh`（宣言済みの成果物）のみで、成果物に書かれていない余分なファイルは無かった"
+    }
+  ],
+  "reasons": []
+}

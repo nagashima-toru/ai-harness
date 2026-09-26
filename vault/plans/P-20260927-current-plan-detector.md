@@ -13,7 +13,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | current_plan.sh で承認済み計画票を検出するスクリプトを作る | |
+| T-01 | done | 1 | - | current_plan.sh で承認済み計画票を検出するスクリプトを作る | |
 | T-02 | todo | 0 | T-01 | smoke.sh に current_plan.sh のテストを追加する | |
 | T-03 | todo | 0 | T-01 | run スキルの手順1を current_plan.sh 判定に書き換える | |
 | T-04 | todo | 0 | T-01 | vault-spec.md 1節に current_plan.sh の利用を追記する | |

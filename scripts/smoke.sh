@@ -7,6 +7,7 @@ STOP_HOOK="$ROOT/.claude/hooks/stop_gate.py"
 PLAN_GUARD_HOOK="$ROOT/.claude/hooks/plan_guard.py"
 GUARD_HOOK="$ROOT/.claude/hooks/agent_write_guard.py"
 RULES_SH="$ROOT/scripts/rules.sh"
+CURRENT_PLAN_SH="$ROOT/scripts/current_plan.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS_N=0; FAIL_N=0
@@ -732,6 +733,56 @@ expect_eq "(p) --update 後も独自の allow が残る" "True" \
 expect_eq "(p) --update で欠落 hooks が足される" "True" \
   "$(python3 -c "import json;d=json.load(open('$WTMP/.claude/settings.json'));print(any('plan_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
 rm -rf "$WTMP"
+
+echo "== current_plan.sh =="
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+make_plan "P-CUR" "approved"
+out="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
+expect_eq "current_plan.sh: (a) approved 1件 → id が1行" "P-CUR" "$out"
+
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+{
+  echo "---"
+  echo "id: P-CUR-DONE"
+  echo "status: done"
+  echo "---"
+  echo "# 本文"
+  echo "status: approved"
+} > "$TMP/vault/plans/P-CUR-DONE.md"
+out="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
+expect_eq "current_plan.sh: (b) 本文中の status: approved は無視される" "" "$out"
+
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+{
+  echo "---"
+  echo "status: approved"
+  echo "---"
+  echo "# 本文"
+} > "$TMP/vault/plans/noidplan.md"
+out="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
+expect_eq "current_plan.sh: (c) id 無し → ファイル名フォールバック" "noidplan" "$out"
+
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+out="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
+expect_eq "current_plan.sh: (d) approved が0件 → 出力なし" "" "$out"
+
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+{
+  echo "---"
+  echo "id: P-CUR-AA"
+  echo "status: approved"
+  echo "---"
+} > "$TMP/vault/plans/p-aa.md"
+{
+  echo "---"
+  echo "id: P-CUR-BB"
+  echo "status: approved"
+  echo "---"
+} > "$TMP/vault/plans/p-bb.md"
+out="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
+expect_eq "current_plan.sh: (e) approved が2件以上 → ファイル名順に複数行" "$(printf 'P-CUR-AA\nP-CUR-BB')" "$out"
+
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 echo "== uninstall.sh =="
 UNTMP="$(mktemp -d)"

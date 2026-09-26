@@ -1,0 +1,29 @@
+{
+  "task": "P-20260926-design-closes-keyword/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 13:40",
+  "criteria": [
+    {
+      "text": "`.claude/skills/design/SKILL.md` に `Relates to #N` という文字列が含まれる。確認コマンド: `grep -n \"Relates to #N\" .claude/skills/design/SKILL.md`（出力が1行以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"Relates to #N\" .claude/skills/design/SKILL.md` / 出力: 33行目に該当行あり（`Relates to #N` を含む文）"
+    },
+    {
+      "text": "同ファイルに、`Closes #N`・`Fixes #N`・`Resolves #N` などの自動クローズキーワードを使わない旨を明示する文がある。確認コマンド: `grep -n \"自動クローズキーワード\" .claude/skills/design/SKILL.md`（出力が1行以上）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"自動クローズキーワード\" .claude/skills/design/SKILL.md` / 出力: 33行目に該当行あり（`Closes #N`・`Fixes #N`・`Resolves #N` などの自動クローズキーワードは使わない、と明示）。なお本基準は語の出現有無のみを見る `grep` であるため単独では緩いが、Read で当該行を確認したところ、対象語（Closes/Fixes/Resolves）・代替語（Relates to）・使わない旨の意味関係がすべて同一の一文中に自然な日本語で書かれており、目的（自動クローズを避ける運用の明文化）を実質的に満たしている"
+    },
+    {
+      "text": "追記は手順8（`8. **PR/MR を作って提示し、止まる**`）の段落内にあり、既存の手順1〜7・「## 注意」節の見出しと文言は変わっていない。確認コマンド: `git diff -- .claude/skills/design/SKILL.md` を実行し、出力中の削除行（`-` で始まる行）が無く、追加行（`+` で始まる行）が手順8の段落内に収まっていることを目視確認する",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- .claude/skills/design/SKILL.md` / 出力: 削除行（`-` で始まる行）は無く、追加行は `+   - PR/MR の本文で issue 番号に触れる場合は...` の1行のみ。Read で前後を確認し、この行は手順8のサブ箇条書きの最後（手順8内の3つ目の `   -` 箇条書きの直後、`## 注意` 見出しの直前）に位置しており、手順1〜7・「## 注意」節の本文は diff に現れず変更なし"
+    },
+    {
+      "text": "変更ファイルが `.claude/skills/design/SKILL.md` と、doing 中に自身へ追記されるタスク票 (`vault/tasks/P-20260926-design-closes-keyword/T-01.md`) 以外に及んでいない。確認コマンド: `git status --porcelain` を実行し、出力にこの2パス以外が含まれないことを目視確認する",
+      "ok": true,
+      "note": "実行コマンド: `git status --porcelain` / 出力: ` M .claude/skills/design/SKILL.md` と ` M vault/tasks/P-20260926-design-closes-keyword/T-01.md` の2行のみで、他のパスは含まれない。追加で `git diff --name-only 9605b78..HEAD`（起点コミット）も実行したが、変更が未コミットのため出力は空。作業ツリーの変更（上記2ファイルのみ）と合わせて範囲外ファイルへの波及は無いことを確認した。なお T-01.md の diff は `## 進捗` 節への追記のみであり、進捗欄の変更は検査対象外として扱った"
+    }
+  ],
+  "reasons": []
+}

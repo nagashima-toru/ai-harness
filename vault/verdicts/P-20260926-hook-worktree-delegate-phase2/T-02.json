@@ -1,0 +1,34 @@
+{
+  "task": "P-20260926-hook-worktree-delegate-phase2/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-26 12:56",
+  "criteria": [
+    {
+      "text": "`delegate_to_worktree` という名前の関数が実装されている。確認コマンド: `grep -n \"def delegate_to_worktree\" .claude/hooks/stop_gate.py` の出力が1行",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"def delegate_to_worktree\" .claude/hooks/stop_gate.py` / 出力: `70:def delegate_to_worktree(payload):` の1行のみ"
+    },
+    {
+      "text": "二重委譲防止に環境変数 `_HOOK_DELEGATED` を使い、委譲先呼び出し前にセットする箇所と、委譲するかどうかの判定でこれを参照する箇所の両方がある。確認コマンド: `grep -c \"_HOOK_DELEGATED\" .claude/hooks/stop_gate.py` の出力が2以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"_HOOK_DELEGATED\" .claude/hooks/stop_gate.py` / 出力: 4（2以上）。Read で該当箇所を確認：82行目 `if os.environ.get(\"_HOOK_DELEGATED\"):` で参照、103行目 `env[\"_HOOK_DELEGATED\"] = \"1\"` でセット、の両方が存在する"
+    },
+    {
+      "text": "委譲先呼び出しの `subprocess.run` のタイムアウトが20秒（`timeout=20`）に固定されている。確認コマンド: `grep -n \"timeout=20\" .claude/hooks/stop_gate.py` の出力が1行以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -n \"timeout=20\" .claude/hooks/stop_gate.py` / 出力: `108:            capture_output=True, text=True, timeout=20, env=env,` の1行（該当 subprocess.run は delegate_to_worktree 内の委譲先呼び出し）"
+    },
+    {
+      "text": "worktree 委譲・二重委譲防止によるフォールバック・委譲失敗時のフェイルオープンの3シナリオを検証する `scripts/smoke.sh` のテストケースが、テスト名に一意な文字列 `(delegate stop_gate)` を付けて3件以上追加されている。確認コマンド: `grep -c \"(delegate stop_gate)\" scripts/smoke.sh` の出力が3以上",
+      "ok": true,
+      "note": "実行コマンド: `grep -c \"(delegate stop_gate)\" scripts/smoke.sh` / 出力: 5（3以上）。文字列一致だけでなく Read で125〜186行目を確認し、実際に3件の `expect` テストケース（153行目=worktree委譲でblock採用、156行目=`_HOOK_DELEGATED`既設定でローカル判定にフォールバック、183行目=委譲先rc!=0でフェイルオープン）が存在し、3シナリオそれぞれに対応することを確認した。`bash scripts/smoke.sh` 実行でもこの3件が `ok` であることを確認済み（次項参照）"
+    },
+    {
+      "text": "`bash scripts/smoke.sh` を実行した時、新規追加した `(delegate stop_gate)` のテストケースが全て `ok` であり、既存ケースの失敗が着手前HEAD時点（T-01 完了済みの状態）で同コマンドを実行した結果と比べて増えていない（回帰が無い）。確認コマンド: `bash scripts/smoke.sh`（出力の `NG` 行一覧と末尾の `smoke: pass=<N> fail=<M>` を、着手前HEAD時点での同コマンドの実行結果と比較する）",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `smoke: pass=153 fail=3`、新規3件の `(delegate stop_gate)` はすべて `ok`。NG は `(worktree)`・`(worktree nested)`・`discard_worktree.sh (a)` の3件のみ。比較のため `git archive 33892de` を一時ディレクトリに展開し同コマンドを実行した結果は `smoke: pass=150 fail=3` で、NG は同じ3件（`(worktree)`・`(worktree nested)`・`discard_worktree.sh (a)`）であることを確認した。回帰なし"
+    }
+  ],
+  "reasons": []
+}

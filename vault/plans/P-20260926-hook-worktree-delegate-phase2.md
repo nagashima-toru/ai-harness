@@ -20,7 +20,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | plan_guard.py に worktree 委譲ロジックを追加する | |
-| T-02 | review | 1 | T-01 | stop_gate.py に worktree 委譲ロジックを追加する | |
+| T-02 | done | 1 | T-01 | stop_gate.py に worktree 委譲ロジックを追加する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

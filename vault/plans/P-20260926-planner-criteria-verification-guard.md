@@ -22,7 +22,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | planner.md に「grepの単語出現チェック単独禁止」の恒久指針を追記する提案を書く（issue #68） | |
+| T-01 | review | 1 | - | planner.md に「grepの単語出現チェック単独禁止」の恒久指針を追記する提案を書く（issue #68） | |
 
 ## 計画の受け入れ基準
 - タスクに成果物と受け入れ基準が1つずつある

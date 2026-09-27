@@ -14,8 +14,8 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | agent_write_guard.py に done タスクへの書き込み拒否判定を追加し smoke.sh にテストを足す | |
-| T-02 | todo | 0 | T-01 | vault-spec.md 12節に done タスク書き込み拒否判定を1行追記する | |
-| T-03 | todo | 0 | T-01 | ai-harness.md の禁止節にフックで拒否される旨を追記する | |
+| T-02 | doing | 1 | T-01 | vault-spec.md 12節に done タスク書き込み拒否判定を1行追記する | |
+| T-03 | doing | 1 | T-01 | ai-harness.md の禁止節にフックで拒否される旨を追記する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

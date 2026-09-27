@@ -1,6 +1,6 @@
 ---
 id: P-20260927-done-write-guard
-status: draft
+status: approved
 ---
 # ゴール
 `.claude/hooks/agent_write_guard.py` に、`agent_type` を問わず（メインセッション含む）適用する判定を追加する。書き込み先が `vault/tasks/<計画ID>/<id>.md` または `vault/verdicts/<計画ID>/<id>.json` で、かつ `vault/plans/<計画ID>.md` のタスク表でその id の status が `done` の場合は拒否する。計画票が見つからない・その id の行が無い・読めない場合は許可する（fail-open）。`docs/vault-spec.md` 12節に判定を1行追加し、`.claude/ai-harness.md` の「禁止」に「フックで拒否される」旨を追記する。`scripts/smoke.sh` にテストを足す（issue #76、`vault/designs/D-010.md` フェーズ2）。

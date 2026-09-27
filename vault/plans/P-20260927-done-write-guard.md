@@ -13,7 +13,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard.py に done タスクへの書き込み拒否判定を追加し smoke.sh にテストを足す | |
+| T-01 | review | 1 | - | agent_write_guard.py に done タスクへの書き込み拒否判定を追加し smoke.sh にテストを足す | |
 | T-02 | todo | 0 | T-01 | vault-spec.md 12節に done タスク書き込み拒否判定を1行追記する | |
 | T-03 | todo | 0 | T-01 | ai-harness.md の禁止節にフックで拒否される旨を追記する | |
 

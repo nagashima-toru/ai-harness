@@ -20,7 +20,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard.py の done 判定から git add / git commit のみのコマンドを除外し smoke.sh にテストを足す | |
+| T-01 | review | 1 | - | agent_write_guard.py の done 判定から git add / git commit のみのコマンドを除外し smoke.sh にテストを足す | |
 | T-02 | todo | 0 | T-01 | vault-spec.md 12節の done 判定の行に git add / git commit のみは対象外である旨を足す | |
 
 ## 計画の受け入れ基準

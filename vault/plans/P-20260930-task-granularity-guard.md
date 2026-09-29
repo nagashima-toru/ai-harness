@@ -16,7 +16,7 @@ PR 本文では `Closes #77` を使う（D-010 決定事項：1 issue = 1 フェ
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | plan_guard.py に draft 計画のタスク票の受け入れ基準3〜7行の検査を追加し smoke.sh にテストを足す | |
+| T-01 | doing | 1 | - | plan_guard.py に draft 計画のタスク票の受け入れ基準3〜7行の検査を追加し smoke.sh にテストを足す | |
 | T-02 | todo | 0 | T-01 | plan_guard.py に draft 計画票のタスク表7行以下の検査を追加し smoke.sh にテストを足す | |
 | T-03 | todo | 0 | T-01,T-02 | vault-spec.md の8節・10節に粒度が機械で検査される旨を追記する | |
 

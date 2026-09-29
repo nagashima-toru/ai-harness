@@ -1,6 +1,6 @@
 ---
 id: P-20260930-approve-transcript-guard
-status: approved
+status: done
 ---
 # ゴール
 `.claude/settings.json` の `permissions.deny` に `Bash(gh pr merge*)`・`Bash(glab mr merge*)`・`Bash(claude *)` を追加する。計画票の承認（frontmatter の status を approved にすること）は、人が `/plan approve <計画ID>` で指示した時だけ許可する。`.claude/hooks/agent_write_guard.py`（PreToolUse）は、Write/Edit/MultiEdit で `vault/plans/<計画ID>.md` の status を approved 以外（ファイルが無い場合を含む）から approved にする書き込みを検出する。その時、メインセッション（`agent_type` が空）であり、かつフックに渡される会話記録（`transcript_path`）の人の発言に `/plan approve <計画ID>` がある場合だけ許可し、それ以外は拒否する。`.claude/hooks/plan_guard.py`（PostToolUse）は、Bash による書き込みの取りこぼしを補う。作業ツリーの計画票を `git show HEAD:<path>` と比べて同じ判定を行い、裏付けが無ければブロックして元に戻すよう指示する。会話記録が読めない時は、どちらのフックもブロックせず、plan_guard が `additionalContext` で警告を出す。あわせて、会話記録（`~/.claude/projects/` 配下）への書き込みを agent_write_guard で拒否する。`.claude/skills/plan/SKILL.md` の B（承認）を、承認後すぐに log へ根拠を1行追記してコミットする手順に改める。`docs/vault-spec.md` の7・10・12節に追記し、`scripts/smoke.sh` にテストを足す（issue #75 のうち承認とマージ、`vault/designs/D-010.md` フェーズ4）。

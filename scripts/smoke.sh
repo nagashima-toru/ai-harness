@@ -798,6 +798,11 @@ expect_eq "(x) baseRef が既に head で hooks・deny も揃っている → sk
 
 rm -rf "$STMP"
 
+for ent in 'Bash(gh pr merge*)' 'Bash(glab mr merge*)' 'Bash(claude *)'; do
+  expect_eq "(approve-settings) deny に $ent がある" "true" \
+    "$(jq --arg e "$ent" '.permissions.deny | index($e) != null' "$ROOT/.claude/settings.json")"
+done
+
 echo "== install.sh の settings.json 扱い =="
 WTMP="$(mktemp -d)"
 bash "$ROOT/scripts/install.sh" "$WTMP" >/dev/null 2>&1

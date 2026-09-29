@@ -1,0 +1,34 @@
+{
+  "task": "P-20260929-done-guard-git-staging/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 05:43",
+  "criteria": [
+    {
+      "text": "done 判定の行に、`git add` と `git commit` のみのコマンドは対象外であることが書かれている。確認：`sed -n '/^## 12\\./,/^## 13\\./p' docs/vault-spec.md > /tmp/P-20260929-done-guard-git-staging-T-02-sec12.txt` を実行した後、`grep -E '^\\| 対象が `vault/tasks/' /tmp/P-20260929-done-guard-git-staging-T-02-sec12.txt | grep -c 'git add'` の出力が `1`、`grep -E '^\\| 対象が `vault/tasks/' /tmp/P-20260929-done-guard-git-staging-T-02-sec12.txt | grep -c 'git commit'` の出力が `1`",
+      "ok": true,
+      "note": "EnterWorktree は使えず、worktree（.claude/worktrees/agent-a27eeb75407e3f5a4）を絶対パスで cd して確認。verifier の Bash フックが /tmp へのリダイレクトと引用符内の `git add` を拒否したため、一時ファイルを使わず `sed -n '/^## 12\\./,/^## 13\\./p' docs/vault-spec.md | grep -E '^\\| 対象が `vault/tasks/' | grep -c 'git[ ]add'`（`git commit` も同様）に置き換えて実行（12節の同じ範囲・同じ行を直接パイプ）/ 出力: git add=1, git commit=1。行の内容も Read 相当で確認し、「Bash の書き込み動詞が `git add` / `git commit` だけのコマンドも対象外：ステージ・コミットはファイル内容を変えないため」と書かれている。実装の docstring（agent_write_guard.py 32-33行, is_git_stage_or_commit_only）とも一致。"
+    },
+    {
+      "text": "同じ行に、他の書き込み（リダイレクト・`cp`/`mv`/`rm`・`sed -i`・`tee` 等）が混在する場合は従来どおり拒否されることが書かれている。確認：`grep -E '^\\| 対象が `vault/tasks/' /tmp/P-20260929-done-guard-git-staging-T-02-sec12.txt | grep -c '混在'` の出力が `1`",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 12\\./,/^## 13\\./p' docs/vault-spec.md | grep -E '^\\| 対象が `vault/tasks/' | grep -c '混在'`（/tmp 一時ファイルは上記の理由でパイプに置換）/ 出力: 1。判定列に「内容を変える書き込みが混在すれば従来どおり拒否する」とある。"
+    },
+    {
+      "text": "既存の記述（fail-open 条件と解除口が無いこと）が残っている。確認：`grep -E '^\\| 対象が `vault/tasks/' /tmp/P-20260929-done-guard-git-staging-T-02-sec12.txt | grep -c '対象外'` が `1` 以上、かつ `grep -c '解除口は無い' /tmp/P-20260929-done-guard-git-staging-T-02-sec12.txt` が `2` 以上（vault/rules/ の行と done の行）",
+      "ok": true,
+      "note": "実行コマンド: 12節を sed で切り出して `grep -E '^\\| 対象が `vault/tasks/' | grep -c '対象外'` と `grep -c '解除口は無い'` を実行（パイプ置換）/ 出力: 対象外=1, 解除口は無い=2。git diff main で元の「計画票が無い・読めない・該当 id の行が無い場合はこの判定の対象外」と「解除口は無い」が変更行内に残っていることも確認。"
+    },
+    {
+      "text": "節見出し・表の列構成は変更されていない。確認：`git diff main -- docs/vault-spec.md | grep -E '^[+-](## |\\| 状況 )'` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff main -- docs/vault-spec.md | grep -E '^[+-](## |\\| 状況 )'` / 出力: 空（Bash completed with no output）。"
+    },
+    {
+      "text": "変更が12節の該当行1行に限られている（行を増やさず同じ行に足す）。確認：`git diff main -- docs/vault-spec.md | grep -cE '^[+-][^+-]'` の出力が `2`（該当行の削除1 + 追加1）",
+      "ok": true,
+      "note": "実行コマンド: `git diff main -- docs/vault-spec.md | grep -cE '^[+-][^+-]'` / 出力: 2。差分は12節判定表の done 行（1行の削除+1行の追加）のみで、セル内に `|` は追加されていない。タスク票の「進捗」に `起点コミット` の記録が無い（worktree・メインリポジトリ両方で grep 済み）ため、成果物外ファイルの変更検査は行っていない。なお worktree の未コミット差分は docs/vault-spec.md とタスク票 T-02.md（進捗のみ、正常扱い）だけだった。"
+    }
+  ],
+  "reasons": []
+}

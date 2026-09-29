@@ -430,6 +430,43 @@ expect "vault/plans が無い → 許可" allow "$(printf '{}' | CLAUDE_PROJECT_
 rm -rf "$EMPTY_DIR"
 mkdir -p "$TMP/vault/plans"
 
+# タスク票の粒度検査（D-010 フェーズ3）
+run_plan_guard_file() { # $1=tool_name $2=file_path
+  printf '{"hook_event_name":"PostToolUse","tool_name":"%s","tool_input":{"file_path":"%s"}}' "$1" "$2" \
+    | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"
+}
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+make_task T-01 2; expect "(granularity-task) draft・基準2行 → ブロック（行数2）" block "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")" "2行"
+make_task T-01 8; expect "(granularity-task) draft・基準8行 → ブロック（行数8）" block "$(run_plan_guard_file Edit "$TMP/vault/tasks/P-TEST/T-01.md")" "8行"
+make_task T-01 8; expect "(granularity-task) draft・基準8行・相対パス → ブロック" block "$(run_plan_guard_file Write "vault/tasks/P-TEST/T-01.md")" "8行"
+make_task T-01 3; expect "(granularity-task) draft・基準3行 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_task T-01 7; expect "(granularity-task) draft・基準7行 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_task T-01 8; cp "$TMP/vault/tasks/P-TEST/T-01.md" "$TMP/vault/tasks/P-TEST/T-01-proposal.md"
+expect "(granularity-task) T-01-proposal.md は対象外 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01-proposal.md")"
+expect "(granularity-task) Bash による書き込みは対象外 → 許可" allow "$(run_plan_guard_file Bash "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_plan "P-TEST" "approved" "| T-01 | doing | 1 | - | A | |"
+expect "(granularity-task) approved・基準8行 → 許可（検査しない）" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+rm -f "$TMP/vault/plans/P-TEST.md"
+expect "(granularity-task) 計画票が無い・基準8行 → 許可（fail-open）" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+rm -rf "$TMP/vault/tasks"
+
+# 計画票のタスク表行数検査（D-010 フェーズ3）
+make_plan_n() { # $1=planStatus $2=データ行数
+  local rows=() i
+  for i in $(seq 1 "$2"); do rows+=("| T-$i | todo | 0 | - | A$i | |"); done
+  make_plan "P-TEST" "$1" "${rows[@]}"
+}
+make_plan_n draft 8; expect "(granularity-plan) draft・タスク表8行 → ブロック（行数8・上限7）" block "$(run_plan_guard_file Write "$TMP/vault/plans/P-TEST.md")" "8行"
+printf '%s' "$(run_plan_guard_file Edit "$TMP/vault/plans/P-TEST.md")" | grep -q '7タスク' \
+  && expect "(granularity-plan) reason に上限7を含む" block "$(run_plan_guard_file Edit "$TMP/vault/plans/P-TEST.md")" "7タスク" \
+  || expect "(granularity-plan) reason に上限7を含む" block "" "7タスク"
+make_plan_n draft 8; expect "(granularity-plan) draft・8行・相対パス → ブロック" block "$(run_plan_guard_file Write "vault/plans/P-TEST.md")" "8行"
+make_plan_n draft 7; expect "(granularity-plan) draft・タスク表7行 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/plans/P-TEST.md")"
+make_plan_n approved 8; expect "(granularity-plan) approved・タスク表8行 → 粒度検査ではブロックしない" allow "$(run_plan_guard_file Write "$TMP/vault/plans/P-TEST.md")"
+make_plan_n draft 8; expect "(granularity-plan) Bash による書き込みは対象外 → 許可" allow "$(run_plan_guard_file Bash "$TMP/vault/plans/P-TEST.md")"
+rm -f "$TMP/vault/plans/P-TEST.md"
+expect "(granularity-plan) 計画票が無い → 許可（fail-open）" allow "$(run_plan_guard_file Write "$TMP/vault/plans/P-TEST.md")"
+
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テストと同じ型：
 # 一時 worktree に判定結果が変わる差し替えスクリプトを置き、cwd をその worktree に向けたペイロードを
 # メインリポジトリ側の plan_guard.py に渡す。

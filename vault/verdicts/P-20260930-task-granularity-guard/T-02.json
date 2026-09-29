@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-task-granularity-guard/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 06:19",
+  "criteria": [
+    {"text": "draft の計画票のタスク表が8行の時、plan_guard がブロックし、reason にその行数（`8`）と上限（`7`）を含む。確認：`bash scripts/smoke.sh` の出力に `ok   (granularity-plan)` で始まる該当ケースがあり `NG` が無い", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh`（worktree 内）/ 出力: `ok   (granularity-plan) draft・タスク表8行 → ブロック（行数8・上限7）` と `reason に上限7を含む` が ok、NG 0件"},
+    {"text": "draft の計画票のタスク表が7行の時はブロックしない（同上のケースで確認）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `ok   (granularity-plan) draft・タスク表7行 → 許可`"},
+    {"text": "status が `approved` の計画票を Write/Edit した時は、タスク表が8行でも粒度検査ではブロックしない（smoke.sh のケースで確認）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh` / 出力: `ok   (granularity-plan) approved・タスク表8行 → 粒度検査ではブロックしない`"},
+    {"text": "T-01 の `(granularity-task)` のケースと既存の approved 計画の検査（`(a-1)`〜`(f)`）の結果が変わらない。確認：`bash scripts/smoke.sh > /tmp/P-20260930-task-granularity-guard-T-02-smoke.txt 2>&1; grep -c '^  NG' /tmp/P-20260930-task-granularity-guard-T-02-smoke.txt` の出力が `0`", "ok": true, "note": "実行コマンド: 上記の確認コマンドどおり / 出力: 0。(granularity-task) 9件、(a-1)〜(f) の既存ケースはすべて ok"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `smoke: pass=<N> fail=0` になる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh` の最終行 / 出力: smoke: pass=184 fail=0。なお起点コミットの記録がタスク票の進捗に無いため、手順10の宣言外ファイル検査は行っていない（参考：55f6d44 との差分は plan_guard.py・smoke.sh・T-02.md のみ）"}
+  ],
+  "reasons": []
+}

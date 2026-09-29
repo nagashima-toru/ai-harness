@@ -214,6 +214,59 @@ def dependency_violations(tasks):
     return violations
 
 
+TASK_PATH_RE = re.compile(r"^vault/tasks/([^/]+)/(T-\d{2})\.md$")
+CRITERIA_MIN, CRITERIA_MAX = 3, 7
+
+
+def count_criteria(text):
+    """「## 受け入れ基準」の次の行から次の `## ` 見出し（または EOF）までの、行頭が `- ` か `数字. ` の行数。"""
+    count = 0
+    in_section = False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            in_section = line.strip() == "## 受け入れ基準"
+            continue
+        if in_section and re.match(r"^(- |\d+\. )", line):
+            count += 1
+    return count
+
+
+def granularity_violation(payload, root):
+    """draft 計画のタスク票への Write/Edit で受け入れ基準が3〜7行でなければ理由文を返す。対象外・問題なしは None。
+
+    fail-open：計画票が無い・読めない・status が取れない・タスク票が読めない場合は None。
+    """
+    if payload.get("tool_name") not in ("Write", "Edit"):
+        return None
+    tool_input = payload.get("tool_input")
+    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+    if not isinstance(file_path, str) or not file_path:
+        return None
+    if os.path.isabs(file_path):
+        rel = os.path.relpath(file_path, os.path.abspath(root))
+    else:
+        rel = os.path.normpath(file_path)
+    m = TASK_PATH_RE.match(rel.replace(os.sep, "/"))
+    if not m:
+        return None
+    plan_id, task_id = m.group(1), m.group(2)
+    _, status = plan_id_and_status(os.path.join(root, "vault", "plans", plan_id + ".md"))
+    if status != "draft":
+        return None
+    try:
+        with open(os.path.join(root, rel), encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return None
+    n = count_criteria(text)
+    if CRITERIA_MIN <= n <= CRITERIA_MAX:
+        return None
+    return (
+        f"[plan_guard] {plan_id}/{task_id} の受け入れ基準が{n}行です。"
+        f"{CRITERIA_MIN}〜{CRITERIA_MAX}行にしてください。"
+    )
+
+
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -233,6 +286,11 @@ def main():
         sys.exit(0)
 
     root = project_dir(payload)
+
+    violation = granularity_violation(payload, root)
+    if violation:
+        block(violation)
+
     plans = approved_plans(root)
 
     if len(plans) == 0:

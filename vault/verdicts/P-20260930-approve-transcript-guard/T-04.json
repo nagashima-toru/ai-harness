@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-approve-transcript-guard/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 08:52",
+  "criteria": [
+    {"text": "git フィクスチャ（HEAD で draft の計画票をコミット済み）で、作業ツリーの計画票を Bash で approved に書き換えた後、会話記録に `/plan approve P-TEST` が無ければ plan_guard が `{\"decision\": \"block\", ...}` を返し、reason に計画 ID と `git restore` を含む。確認：`bash scripts/smoke.sh` の出力に `ok   (approve-post)` で始まる該当ケースがあり `NG` が無い", "ok": true, "note": "実行コマンド: worktree 内で `bash scripts/smoke.sh > /tmp/P-20260930-approve-transcript-guard-T-04-smoke.txt 2>&1` 後 `grep 'approve-post'` / 出力: 「裏付け無し → ブロック（計画 ID を含む）」「reason に git restore を含む」が ok、NG 0件"},
+    {"text": "同じ状況で、会話記録の人の発言に `/plan approve P-TEST` があればブロックしない。tool_result・`isMeta: true` の行にしか無い場合と、別の計画 ID のコマンドだけの場合はブロックする（同上）", "ok": true, "note": "実行コマンド: 同上 `grep 'approve-post'` / 出力: 人の発言あり→許可(3件)、tool_result のみ・isMeta のみ・別ID・前方一致IDのみ→ブロック がすべて ok"},
+    {"text": "会話記録が読めない時（`transcript_path` が無い・ファイルが無い・どの行も JSON でない・人の発言が1件も無い）はブロックせず、標準出力の JSON の `hookSpecificOutput.additionalContext` に警告を出す（同上）", "ok": true, "note": "実行コマンド: 同上 `grep 'approve-post'` / 出力: 4状況それぞれ「警告（ブロックしない）」「additionalContext に計画 ID」が ok。警告と block の競合は block 優先・JSON 1つも ok"},
+    {"text": "HEAD で既に approved の計画票（承認直後のコミット済み）、draft のまま、HEAD が無い・未追跡の計画票（HEAD では approved でない扱い）、非 git ディレクトリの各場合が、仕様どおりに判定される（承認済みは検査しない・非 git は何もしない）（同上）", "ok": true, "note": "実行コマンド: 同上 `grep 'approve-post'` / 出力: HEAD で approved→検査しない・出力なし、draft→許可、HEAD 無し/未追跡→裏付け無しブロック・有り許可、非 git→何もしない、すべて ok"},
+    {"text": "既存の plan_guard のケース（approved 計画のタスク表検査・粒度検査）の結果が変わらない。確認：`bash scripts/smoke.sh > /tmp/P-20260930-approve-transcript-guard-T-04-smoke.txt 2>&1` の後 `grep -c '^  NG' /tmp/P-20260930-approve-transcript-guard-T-04-smoke.txt` が `0`、`tail -1 /tmp/P-20260930-approve-transcript-guard-T-04-smoke.txt` が `smoke: pass=<N> fail=0`", "ok": true, "note": "実行コマンド: `grep -c '^  NG' <出力>` と `tail -1 <出力>` / 出力: 0、smoke: pass=280 fail=0。`git diff 74e1b77 --name-only` は plan_guard.py・smoke.sh・T-04.md のみで成果物外の変更なし。タスク票の進捗に起点コミットの記録が無いため、宣言外ファイル検査は起点コミットでは行っていない"}
+  ],
+  "reasons": []
+}

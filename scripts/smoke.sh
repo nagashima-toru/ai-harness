@@ -567,6 +567,83 @@ make_plan_n draft 8; expect "(granularity-plan) Bash による書き込みは対
 rm -f "$TMP/vault/plans/P-TEST.md"
 expect "(granularity-plan) 計画票が無い → 許可（fail-open）" allow "$(run_plan_guard_file Write "$TMP/vault/plans/P-TEST.md")"
 
+# 承認の裏付け検査（PostToolUse・D-010 フェーズ4 / T-04）。HEAD と作業ツリーの計画票を比べる。
+# git フィクスチャは固定パス。git init し直した上で HEAD と index を空にして使う（rm -rf は使わない）
+AP_REPO="/tmp/P-20260930-approve-transcript-guard-T-04-repo"
+ap_git() { git -C "$AP_REPO" -c user.name=t -c user.email=t@example.com "$@"; }
+ap_reset() {
+  mkdir -p "$AP_REPO/vault/plans"
+  git -C "$AP_REPO" init -q
+  git -C "$AP_REPO" update-ref -d HEAD 2>/dev/null
+  git -C "$AP_REPO" rm -r --cached -q --ignore-unmatch . >/dev/null 2>&1
+  rm -f "$AP_REPO"/vault/plans/*.md "$AP_REPO"/other.txt
+}
+ap_plan() { # $1=status  作業ツリーに P-TEST を書く
+  printf -- '---\nid: P-TEST\nstatus: %s\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-01 | todo | 0 | - | A | |\n' "$1" > "$AP_REPO/vault/plans/P-TEST.md"
+}
+ap_commit_plan() { ap_plan "$1"; ap_git add vault/plans/P-TEST.md; ap_git commit -q -m "plan $1"; }
+run_ap_post() { # $1=transcript_path（空なら省略）
+  local tp=""; [ -n "${1:-}" ] && tp=',"transcript_path":"'"$1"'"'
+  printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"sed -i x"}%s}' "$tp" \
+    | CLAUDE_PROJECT_DIR="$AP_REPO" python3 "$PLAN_GUARD_HOOK"
+}
+ap_reset; ap_commit_plan draft; ap_plan approved
+make_transcript "$T_CHAT"
+out="$(run_ap_post "$AP_TRANSCRIPT")"
+expect "(approve-post) 裏付け無し → ブロック（計画 ID を含む）" block "$out" "P-TEST"
+expect "(approve-post) 裏付け無し → reason に git restore を含む" block "$out" "git restore vault/plans/P-TEST.md"
+for form in "$T_CMD" "$T_CMD_SP" "$T_SENT"; do
+  make_transcript "$T_CHAT" "$form"
+  expect "(approve-post) 人の /plan approve P-TEST あり → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
+done
+make_transcript "$T_CHAT" "$T_TOOLRES"
+expect "(approve-post) tool_result にしか無い → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
+make_transcript "$T_CHAT" "$T_META"
+expect "(approve-post) isMeta にしか無い → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
+make_transcript "$T_CHAT" "$T_OTHER_ID"
+expect "(approve-post) 別の計画 ID だけ → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
+make_transcript "$T_CHAT" "$T_PREFIX_ID"
+expect "(approve-post) 前方一致の計画 ID だけ → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
+# 会話記録が読めない時は警告（ブロックしない）
+ap_warn() { # $1=name $2=transcript_path
+  local o; o="$(run_ap_post "$2")"
+  expect "(approve-post) $1 → 警告（ブロックしない）" allow "$o" "会話記録が読めないため承認の裏付けを検査できませんでした"
+  if echo "$o" | grep -q '"additionalContext"' && echo "$o" | grep -q '"hookEventName": *"PostToolUse"' && echo "$o" | grep -q 'P-TEST'; then
+    echo "  ok   (approve-post) $1 → hookSpecificOutput.additionalContext に計画 ID"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   (approve-post) $1 → additionalContext の形式"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+make_transcript "$T_TOOLRES" "$T_META"; ap_warn "人の発言が1件も無い" "$AP_TRANSCRIPT"
+make_transcript "not json" "{broken"; ap_warn "どの行も JSON でない" "$AP_TRANSCRIPT"
+ap_warn "transcript_path が無い" ""
+ap_warn "transcript_path のファイルが無い" "/tmp/P-20260930-approve-transcript-guard-nonexistent.jsonl"
+# 承認済み・draft・HEAD 無し・未追跡・非 git
+make_transcript "$T_CHAT"
+ap_commit_plan approved
+expect "(approve-post) HEAD で既に approved → 検査しない（許可）" allow "$(run_ap_post "$AP_TRANSCRIPT")"
+if [ -z "$(run_ap_post "$AP_TRANSCRIPT")" ]; then echo "  ok   (approve-post) HEAD で既に approved → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (approve-post) HEAD で既に approved → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
+ap_reset; ap_commit_plan draft
+expect "(approve-post) draft のまま → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
+ap_reset; ap_plan approved
+expect "(approve-post) HEAD が無い（未コミット）・裏付け無し → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
+ap_reset; echo x > "$AP_REPO/other.txt"; ap_git add other.txt; ap_git commit -q -m other; ap_plan approved
+expect "(approve-post) 未追跡の計画票・裏付け無し → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
+make_transcript "$T_CHAT" "$T_CMD"
+expect "(approve-post) 未追跡の計画票・裏付けあり → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
+make_transcript "$T_CHAT"
+NONGIT="$(mktemp -d)"; mkdir -p "$NONGIT/vault/plans"; cp "$AP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
+expect "(approve-post) 非 git ディレクトリ → 何もしない（許可）" allow "$(printf '{"tool_name":"Bash","transcript_path":"%s"}' "$AP_TRANSCRIPT" | CLAUDE_PROJECT_DIR="$NONGIT" python3 "$PLAN_GUARD_HOOK")"
+rm -rf "$NONGIT"
+# block が出る時は警告を重ねない（JSON は1つだけ）：タスク表の列数不正 + 会話記録が読めない
+ap_reset; ap_commit_plan draft; ap_plan approved
+sed -i.bak 's/| T-01 | todo | 0 | - | A | |/| T-01 | todo | 0 | - | A |/' "$AP_REPO/vault/plans/P-TEST.md"; rm -f "$AP_REPO/vault/plans/P-TEST.md.bak"
+make_transcript "not json"
+cnt="$(run_ap_post "$AP_TRANSCRIPT" | grep -c '^{')"
+if [ "$cnt" = 1 ]; then echo "  ok   (approve-post) 警告と block が競合する時は JSON 1つ"; PASS_N=$((PASS_N+1)); else echo "  NG   (approve-post) JSON が $cnt 個"; FAIL_N=$((FAIL_N+1)); fi
+expect "(approve-post) 警告と block が競合する時は block を優先" block "$(run_ap_post "$AP_TRANSCRIPT")" "列数"
+rm -f "$AP_TRANSCRIPT"
+
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テストと同じ型：
 # 一時 worktree に判定結果が変わる差し替えスクリプトを置き、cwd をその worktree に向けたペイロードを
 # メインリポジトリ側の plan_guard.py に渡す。

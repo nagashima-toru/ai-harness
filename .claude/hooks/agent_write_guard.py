@@ -256,6 +256,44 @@ def targets_vault_rules(tool, tool_input, root):
     return False
 
 
+def transcript_dir():
+    """会話記録の置き場 ~/.claude/projects/（末尾 `/` 付き。projects-x などを誤検出しない）を返す。"""
+    return os.path.realpath(os.path.expanduser("~/.claude/projects")) + "/"
+
+
+def is_under_transcript_dir(path, root):
+    """path（`~` 表記・絶対・相対）を展開・正規化して ~/.claude/projects/ 配下か判定する。"""
+    if not path:
+        return False
+    expanded = os.path.expanduser(path)
+    if not os.path.isabs(expanded):
+        expanded = os.path.join(root, expanded)
+    ap = os.path.realpath(os.path.abspath(expanded))
+    base = transcript_dir()
+    return ap + "/" == base or ap.startswith(base)
+
+
+def targets_transcript_dir(tool, tool_input, root):
+    """この呼び出しが ~/.claude/projects/ 配下（会話記録）への書き込みを試みているか判定する（D-010 フェーズ4）。
+
+    承認の裏付けにする会話記録をエージェントが書き換えて人の発言を偽造するのを防ぐ。
+    Bash は既存の BASH_WRITE_PATTERNS で書き込み動詞を判定し、対象は extract_bash_write_targets と
+    `.claude/projects/` を含む path-like トークンから求める（読み取り専用コマンドは対象外）。
+    """
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        return is_under_transcript_dir(path, root)
+    if tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        masked = mask_angle_placeholders(cmd)
+        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+            return False
+        candidates = extract_bash_write_targets(cmd)
+        candidates += re.findall(r"[^\s'\"]*\.claude/projects[^\s'\"]*", cmd)
+        return any(is_under_transcript_dir(t.rstrip(")`;"), root) for t in candidates)
+    return False
+
+
 def targets_creator_denied_paths(tool, tool_input, root):
     """creator が vault/plans/・vault/log/ へ書き込もうとしていないか判定する（拒否リスト方式）。
 
@@ -482,6 +520,11 @@ def main():
             "ルール変更が成果物のタスクは vault/tasks/<計画ID>/<id>-proposal.md に下書きし、"
             "実体への反映は人が手作業で行います。"
         )
+
+    # 会話記録の改ざん防止：agent_type を問わず、~/.claude/projects/ 配下への書き込みは常に拒否する
+    # （解除口は無い。承認判定 T-03 が会話記録を裏付けにするための前提）
+    if targets_transcript_dir(tool, tool_input, root):
+        deny("[agent_write_guard] ~/.claude/projects/ 配下（会話記録）へは書き込めません。")
 
     # done タスクへの書き込み拒否：agent_type を問わず、対応する計画票で status が done な
     # id の vault/tasks/・vault/verdicts/ への書き込みは常に拒否する（解除口は無い）。

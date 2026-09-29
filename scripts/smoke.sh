@@ -391,6 +391,40 @@ expect_guard "(done-write) git rm で done の verdict を削除 → 拒否" den
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
 expect_guard "(done-write) commit メッセージ内のコマンド置換で done のタスク票へ書き込み → 拒否" deny \
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(echo x > vault/tasks/P-FIX/T-01.md)\""}}')" "done"
+
+# 会話記録（~/.claude/projects/）への書き込み拒否（D-010 フェーズ4）。実ホームを触らないよう HOME を差し替える
+TG_HOME="/tmp/P-20260930-approve-transcript-guard-home"
+mkdir -p "$TG_HOME/.claude/projects/x"
+run_guard_home() { printf '%s' "$1" | HOME="$TG_HOME" CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
+expect_tg() { # $1=name $2=deny|allow $3=payload json
+  local out; out="$(run_guard_home "$3")"
+  expect_guard "(transcript-guard) $1" "$2" "$out"
+  if [ "$2" = deny ] && ! echo "$out" | grep -q '~/.claude/projects/'; then
+    echo "  NG   (transcript-guard) $1 reason に ~/.claude/projects/ が無い"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+for at in "" creator verifier planner; do
+  ap=""; [ -n "$at" ] && ap='"agent_type":"'"$at"'",'
+  for tl in Write Edit MultiEdit; do
+    expect_tg "agent_type='$at' の $tl → 拒否" deny \
+      '{'"$ap"'"tool_name":"'"$tl"'","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
+  done
+done
+expect_tg "Bash リダイレクト > （~ 表記）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash リダイレクト >> （絶対パス）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x >> '"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash tee → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x | tee ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash sed -i → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"sed -i s/a/b/ ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash rm → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"rm '"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash mv → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"mv /tmp/a ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash cp → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"cp /tmp/a ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "verifier の Bash リダイレクト（~ 表記）→ 拒否" deny '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash cat（読み取り）→ 許可" allow '{"tool_name":"Bash","tool_input":{"command":"cat ~/.claude/projects/x/s.jsonl"}}'
+expect_tg "Bash grep（読み取り）→ 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep foo '"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
+expect_tg "Read → 許可" allow '{"tool_name":"Read","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
+expect_tg "~/.claude/settings.json への Write → 許可" allow '{"tool_name":"Write","tool_input":{"file_path":"'"$TG_HOME"'/.claude/settings.json"}}'
+expect_tg "~/.claude/projects-x/ への Write → 許可（前方一致の誤検出なし）" allow '{"tool_name":"Write","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects-x/a"}}'
+expect_tg "Bash で ~/.claude/settings.json へリダイレクト → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/settings.json"}}'
+
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 echo "== plan_guard.py =="

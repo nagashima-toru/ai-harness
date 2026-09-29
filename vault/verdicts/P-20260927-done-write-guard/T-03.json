@@ -1,0 +1,29 @@
+{
+  "task": "P-20260927-done-write-guard/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-27 14:48",
+  "criteria": [
+    {
+      "text": "「## 禁止」の `done` のタスク票・verdict を編集することの行に、フックで拒否される旨の一言が追記されている。確認：`sed -n '/^## 禁止/,$p' .claude/ai-harness.md > /tmp/P-20260927-done-write-guard-T-03-sec.txt` を実行した後、`grep -c 'done.*フックで拒否' /tmp/P-20260927-done-write-guard-T-03-sec.txt` の出力が `1`",
+      "ok": true,
+      "note": "実行コマンド: `sed -n '/^## 禁止/,$p' .claude/ai-harness.md > /tmp/...-sec.txt && grep -c 'done.*フックで拒否' /tmp/...-sec.txt` / 出力: 1（行内容: `- \\`done\\` のタスク票・verdict を編集すること（フックで拒否される）`）"
+    },
+    {
+      "text": "既存の他2行（`rm -rf`・`git push --force` の行、計画票のタスク表の列順・見出し名の行）はそのまま残っている。確認：`grep -c 'rm -rf' /tmp/P-20260927-done-write-guard-T-03-sec.txt` の出力が `1以上`、かつ `grep -c '列順・見出し名を変えること' /tmp/P-20260927-done-write-guard-T-03-sec.txt` の出力が `1以上`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c 'rm -rf' /tmp/...-sec.txt` → 1（1以上）、`grep -c '列順・見出し名を変えること' /tmp/...-sec.txt` → 1（1以上）"
+    },
+    {
+      "text": "「## 禁止」以外の見出しは変更されていない。確認：`git diff -- .claude/ai-harness.md > /tmp/P-20260927-done-write-guard-T-03-diff.txt` を実行した後、`grep -E '^[+-]## ' /tmp/P-20260927-done-write-guard-T-03-diff.txt` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: `git diff -- .claude/ai-harness.md > /tmp/...-diff.txt && grep -E '^[+-]## ' /tmp/...-diff.txt` / 出力: 空（grep終了コード1＝マッチなし）"
+    },
+    {
+      "text": "追記後もファイル全体の箇条書き行数（`## 禁止` 節の3行）は3行のまま増減していない（既存行への追記のみで新しい行を足していない）。確認：`grep -c '^- ' /tmp/P-20260927-done-write-guard-T-03-sec.txt` の出力が `3`",
+      "ok": true,
+      "note": "実行コマンド: `grep -c '^- ' /tmp/...-sec.txt` / 出力: 3"
+    }
+  ],
+  "reasons": []
+}

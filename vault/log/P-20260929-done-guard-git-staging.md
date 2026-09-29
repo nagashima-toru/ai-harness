@@ -3,3 +3,4 @@
 - 2026-09-30 05:32 T-01 blocked→todo attempt=0 人の指示で解除（permission mode を auto 以外にして再開）
 - 2026-09-30 05:33 T-01 todo→doing attempt=1
 - 2026-09-30 05:36 T-01 doing→review attempt=1
+- 2026-09-30 05:41 T-01 review→done attempt=1

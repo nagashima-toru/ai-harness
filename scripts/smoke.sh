@@ -370,6 +370,27 @@ expect_guard "(done-write) Bash のリダイレクトで done のタスク票へ
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/tasks/P-FIX/T-01.md"}}')" "done"
 expect_guard "(done-write) Bash の sed -i で done のタスク票を書き換え → 拒否" deny \
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"sed -i s/a/b/ vault/tasks/P-FIX/T-01.md"}}')" "done"
+# Bash の書き込み動詞が git add / git commit だけなら done 判定の対象外（issue #84）。混在は従来どおり拒否。
+expect_guard "(done-write) メインの git add で done の verdict と計画票をステージ（issue #84 再現）→ 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json vault/plans/P-FIX.md"}}')"
+expect_guard "(done-write) メインの git commit -m \"P-FIX/T-01: done\" → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"P-FIX/T-01: done\""}}')"
+expect_guard "(done-write) agent_type=creator の git add で done の verdict をステージ → 許可（agent_type に依存しない）" allow \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json"}}')"
+expect_guard "(done-write) git add && git commit の連結 → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json && git commit -m x"}}')"
+expect_guard "(done-write) commit メッセージ中の done verdict パス文字列は書き込み対象ではない → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"add vault/verdicts/P-FIX/T-01.json\""}}')"
+expect_guard "(done-write) git add に done の verdict へのリダイレクトが混在 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && echo x > vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(done-write) git add に sed -i が混在 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && sed -i s/a/b/ vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(done-write) git add に cp が混在 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x; cp /tmp/y vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(done-write) git rm で done の verdict を削除 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(done-write) commit メッセージ内のコマンド置換で done のタスク票へ書き込み → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(echo x > vault/tasks/P-FIX/T-01.md)\""}}')" "done"
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 echo "== plan_guard.py =="

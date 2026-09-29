@@ -29,10 +29,14 @@ vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で
 見つからない・その id の行が無い・読めない場合は許可する（fail-open）。タスク表の解析規則は
 plan_guard.py の raw_rows と同じものをこのファイル内にコピーして使う（他ファイルへの import は
 しない方針を踏襲、D-010 フェーズ2 / issue #76）。解除口は作らない。
+ただし Bash の書き込み動詞が git add / git commit だけのコマンドは対象外（ステージ・コミットは
+ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
+他の書き込み動詞・リダイレクト・コマンド置換が混ざる場合は従来どおり拒否する。
 """
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -54,6 +58,15 @@ BASH_WRITE_PATTERNS = [
     r"\bgit\s+(add|commit|push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)\b",
     r"\bsed\s+-i\b",
 ]
+# BASH_WRITE_PATTERNS から、リダイレクトと git add / git commit を除いたもの
+# （is_git_stage_or_commit_only が「git add / git commit 以外の書き込み動詞」を見分けるために使う）
+OTHER_WRITE_PATTERNS = [
+    r"\btee\b",
+    r"\b(rm|mv|cp|touch|mkdir|chmod|chown)\b",
+    r"\bgit\s+(push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)\b",
+    r"\bsed\s+-i\b",
+]
+SEGMENT_SEPARATORS = (";", "&&", "||", "|", "&")
 
 
 def mask_angle_placeholders(text):
@@ -320,6 +333,46 @@ def match_task_or_verdict_path(rel):
     return None
 
 
+def is_git_stage_or_commit_only(cmd):
+    """Bash コマンドの書き込み動詞が git add / git commit だけか判定する（issue #84）。
+
+    True になるのは次を全て満たす時：
+    - 改行・`$(`・バッククォート・`<(`・`>(` を含まず、shlex でトークン化できる
+    - `;`・`&&`・`||`・`|`・`&` 以外の記号だけのトークン（リダイレクト・サブシェル）が無い
+    - `git add` / `git commit` で始まるセグメントが1つ以上あり、それ以外のセグメントは
+      OTHER_WRITE_PATTERNS にマッチしない
+    どれか1つでも満たさなければ False（従来の判定に進む＝fail-closed）。引用符内の文字列は
+    shlex が1トークンにまとめるので、commit メッセージ中のパス文字列は書き込み対象にならない。
+    """
+    if "\n" in cmd or "\r" in cmd or any(s in cmd for s in ("$(", "`", "<(", ">(")):
+        return False
+    try:
+        lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        tokens = list(lex)
+    except ValueError:
+        return False
+    segments = [[]]
+    for tok in tokens:
+        if tok in SEGMENT_SEPARATORS:
+            segments.append([])
+        elif re.fullmatch(r"[();<>|&]+", tok):
+            return False
+        else:
+            segments[-1].append(tok)
+    staged = False
+    for seg in segments:
+        if not seg:
+            continue
+        if seg[0] == "git" and len(seg) >= 2 and seg[1] in ("add", "commit"):
+            staged = True
+            continue
+        text = " ".join(seg)
+        if any(re.search(p, text) for p in OTHER_WRITE_PATTERNS):
+            return False
+    return staged
+
+
 def find_done_task_write(tool, tool_input, root):
     """この呼び出しが done なタスクの vault/tasks/ または vault/verdicts/ を書き込もうと
     しているか判定する。該当すれば (plan_id, task_id, rel) を返し、それ以外は None を返す
@@ -334,10 +387,12 @@ def find_done_task_write(tool, tool_input, root):
         masked = mask_angle_placeholders(cmd)
         if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
             return None
+        if is_git_stage_or_commit_only(cmd):
+            return None
         candidates.extend(extract_bash_write_targets(cmd))
-        candidates.extend(re.findall(r"[^\s'\"]*vault/(?:tasks|verdicts)/[^\s'\"]*", cmd))
+        candidates.extend(re.findall(r"[^\s'\")]*vault/(?:tasks|verdicts)/[^\s'\")]*", cmd))
     for cand in candidates:
-        rel = normalize(cand, root)
+        rel = normalize(cand.rstrip(")\"'`"), root)
         matched = match_task_or_verdict_path(rel)
         if not matched:
             continue

@@ -1,0 +1,15 @@
+{
+  "task": "P-20260930-approve-transcript-guard/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 08:47",
+  "criteria": [
+    {"text": "会話記録の人の発言に `/plan approve P-TEST` がある時、`agent_type` が空の Write・Edit・MultiEdit による P-TEST の計画票の draft→approved が許可される（スラッシュコマンド形式と文形式の両方）。確認：`bash scripts/smoke.sh` の出力に `ok   (approve-pre)` で始まる該当ケースがあり `NG` が無い", "ok": true, "note": "worktree で `bash scripts/smoke.sh` 実行 / 出力: `ok   (approve-pre) コマンドあり・メイン・\"tool_name\":\"Edit|MultiEdit|Write\" → 許可` が各ツールで3組（形式別）あり、NG 無し。"},
+    {"text": "会話記録にコマンドが無い時、または `agent_type` が `planner` の時（会話記録に有っても）は拒否され、reason に `/plan approve` を含む。計画 ID が違う（`approve P-OTHER`）発言だけの時も拒否される（同上）", "ok": true, "note": "smoke 出力: `ok   (approve-pre) コマンドあり・agent_type=planner → 拒否`、`コマンド無し…→ 拒否`、`別の計画 ID（approve P-OTHER）だけ → 拒否`、`前方一致 P-TEST2 → 拒否`。agent_write_guard.py:644 の reason に `/plan approve` を含むことを grep で確認。"},
+    {"text": "同じコマンドが `tool_result`（`message.content` が配列）の行や `isMeta: true` の行にしか無い会話記録では拒否される（同上）", "ok": true, "note": "smoke 出力: `ok   (approve-pre) tool_result（content が配列）にしかコマンドが無い → 拒否`、`isMeta の行にしかコマンドが無い → 拒否`。"},
+    {"text": "会話記録が読めない時（`transcript_path` が無い・ファイルが無い・どの行も JSON でない・人の発言が1件も無い）は拒否せず許可する（同上）", "ok": true, "note": "smoke 出力: `人の発言が1件も無い → 許可`、`どの行も JSON でない → 許可`、`transcript_path が無い → 許可`、`ファイルが無い → 許可`（すべて ok）。"},
+    {"text": "draft→draft・approved→approved・done→done の編集、承認に当たらない他ファイルへの書き込みは会話記録と無関係に従来どおり許可される（同上）", "ok": true, "note": "smoke 出力: `draft→draft の Edit/Write → 許可`、`approved→approved の Edit → 許可`、`done→done の Edit → 許可`、`他ファイル（README.md）への approved 内容の Write → 許可` がすべて ok。"},
+    {"text": "`bash scripts/smoke.sh > /tmp/P-20260930-approve-transcript-guard-T-03-smoke.txt 2>&1` の後 `grep -c '^  NG' /tmp/P-20260930-approve-transcript-guard-T-03-smoke.txt` が `0`、`tail -1 /tmp/P-20260930-approve-transcript-guard-T-03-smoke.txt` が `smoke: pass=<N> fail=0`", "ok": true, "note": "実行コマンド: 上記どおり / 出力: grep -c は 0、tail -1 は `smoke: pass=254 fail=0`。起点コミットの記録がタスク票の進捗に無いため、成果物外ファイルの検査は行わなかった（参考: 起点 437cf64 との差分は agent_write_guard.py・smoke.sh・T-03.md のみ）。"}
+  ],
+  "reasons": []
+}

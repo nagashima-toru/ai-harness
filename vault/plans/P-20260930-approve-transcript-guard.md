@@ -24,7 +24,7 @@ PR 本文では `Relates to #75` を使う（`Closes #75` は使わない）。#
 | T-01 | done | 1 | - | settings.json の deny に gh pr merge・glab mr merge・claude を追加し smoke.sh に確認を足す | |
 | T-02 | done | 1 | T-01 | agent_write_guard.py で会話記録（~/.claude/projects/ 配下）への書き込みを拒否し smoke.sh にテストを足す | |
 | T-03 | done | 1 | T-02 | agent_write_guard.py で計画票の draft→approved を会話記録の人の発言で裏付け、無ければ拒否する（smoke.sh にテストを足す） | |
-| T-04 | doing | 1 | T-03 | plan_guard.py で作業ツリーの計画票を HEAD と比べて承認の裏付けを検査し smoke.sh にテストを足す | |
+| T-04 | review | 1 | T-03 | plan_guard.py で作業ツリーの計画票を HEAD と比べて承認の裏付けを検査し smoke.sh にテストを足す | |
 | T-05 | todo | 0 | T-04 | /plan スキルの B（承認）を、人のコマンド確認・log への根拠追記・コミットの手順に改める | |
 | T-06 | todo | 0 | T-05 | vault-spec.md の7・10・12節に承認の裏付けと会話記録の保護を追記する | |
 

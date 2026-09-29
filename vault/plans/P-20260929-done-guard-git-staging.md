@@ -1,6 +1,6 @@
 ---
 id: P-20260929-done-guard-git-staging
-status: draft
+status: approved
 ---
 # ゴール
 `.claude/hooks/agent_write_guard.py` の done タスク書き込み拒否判定（`find_done_task_write` / `plan_task_status`、P-20260927-done-write-guard で追加）が、`.claude/skills/run/SKILL.md` 手順6.3.4 の done 遷移手順（計画票のタスク表を done に更新 → log 追記 → 計画票・log・`vault/verdicts/<計画ID>/<id>.json` を `git add` → コミット）と衝突している問題を、フック側で解消する（issue #84）。

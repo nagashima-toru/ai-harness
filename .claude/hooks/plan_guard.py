@@ -267,6 +267,47 @@ def granularity_violation(payload, root):
     )
 
 
+PLAN_PATH_RE = re.compile(r"^vault/plans/([^/]+)\.md$")
+PLAN_ROWS_MAX = 7
+
+
+def plan_size_violation(payload, root):
+    """draft 計画票への Write/Edit でタスク表のデータ行が7行を超えれば理由文を返す。対象外・問題なしは None。
+
+    fail-open：計画票が読めない・status が取れない場合は None。行数は raw_rows と同じ規則で数える。
+    """
+    if payload.get("tool_name") not in ("Write", "Edit"):
+        return None
+    tool_input = payload.get("tool_input")
+    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+    if not isinstance(file_path, str) or not file_path:
+        return None
+    if os.path.isabs(file_path):
+        rel = os.path.relpath(file_path, os.path.abspath(root))
+    else:
+        rel = os.path.normpath(file_path)
+    rel = rel.replace(os.sep, "/")
+    m = PLAN_PATH_RE.match(rel)
+    if not m:
+        return None
+    path = os.path.join(root, rel)
+    _, status = plan_id_and_status(path)
+    if status != "draft":
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return None
+    n = len(raw_rows(text))
+    if n <= PLAN_ROWS_MAX:
+        return None
+    return (
+        f"[plan_guard] {m.group(1)} のタスク表が{n}行です。1計画は{PLAN_ROWS_MAX}タスク以下にしてください。"
+        f"超える分は次フェーズの候補として計画票の末尾に書くだけにしてください。"
+    )
+
+
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -288,6 +329,10 @@ def main():
     root = project_dir(payload)
 
     violation = granularity_violation(payload, root)
+    if violation:
+        block(violation)
+
+    violation = plan_size_violation(payload, root)
     if violation:
         block(violation)
 

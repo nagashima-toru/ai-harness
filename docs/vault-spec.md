@@ -70,7 +70,7 @@ frontmatter は `id` と `status` の2つ。
 | `approved` | 人が承認した。このブランチで進行中の計画 |
 | `done` | 全タスクが `done` になり `scripts/vcs_finish.sh` を実行済み |
 
-`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。
+`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。あわせて `Bash(claude *)` も deny する。エージェントが入れ子で `claude -p "/plan approve ..."` を起動し、子セッションの会話記録に人の発言を偽造して承認の裏付け（10・12節）をすり抜けるのを防ぐため。
 
 本文は `ゴール / 分割方針 / タスク一覧 / 計画の受け入れ基準`。このうち「タスク一覧」の表が状態の正本で、次の形にする。
 
@@ -126,6 +126,8 @@ frontmatter は `id` と `status` の2つ。
 
 ファイル名で計画が特定できるので、行の中のタスク ID は計画スコープの短い形（`T-01`）でよい。計画のブランチ内に閉じるので、並行するセッションの追記と競合しない。
 
+タスクに紐づかない計画単位の行は、タスク ID の位置を `-` にする。`/plan approve` の承認は次の形で1行追記する（承認の根拠の記録）：`- <日時> - draft→approved 人の指示: /plan approve <計画ID>`
+
 ## 8. 粒度の基準（planner と人が共有する）
 
 - 受け入れ基準が3〜7行で書ける
@@ -161,6 +163,8 @@ frontmatter は `id` と `status` の2つ。
 - 計画票の status が draft でなくなった後（approved 以降）は、これらの粒度検査は行わない
 - 各基準が「真偽で判定できる文か」は機械では判定できず、planner・verifier の運用に残る
 
+承認の裏付けの検査も plan_guard が行う（D-010 フェーズ4）。Bash による書き込みは PreToolUse 側では内容を組み立てられず取りこぼすため、その補完として、作業ツリーの計画票（status が approved のもの）を `git show HEAD:<path>` の版と比べ、HEAD では approved でない（HEAD 無し・未追跡を含む）ものを「今回承認された」計画票とみなす。その計画 ID について、会話記録の人の発言に `/plan approve <計画ID>` が無ければブロックし、`git restore vault/plans/<計画ID>.md` で元に戻すよう指示する。会話記録が読めない時（定義は12節）はブロックせず、`additionalContext` で「承認の裏付けを検査できなかった」旨の警告を出す。非 git ディレクトリでは何もしない。同じ承認に何度も当たらないよう、`/plan approve` は承認の直後にコミットする（HEAD が approved になれば対象外）。人の発言の定義・コマンドの一致規則は12節を参照する。
+
 ## 11. ルール（`vault/rules/`）
 
 「ルール」を作成エージェント・verifier・planner に渡す拡張ポイント。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`common/roles.md`・`creator/creator.md`・`verifier/verifier.md`・`planner/planner.md`）。コーディングルール・開発標準・方式設計・テスト標準・テスト観点などドメイン固有のルールは、置き場と読み込み口だけを用意し、インストール先で書く。
@@ -193,9 +197,17 @@ vault/rules/
 |---|---|
 | 対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`vault/rules/ へは書き込めません` を reason に含める。タスクの状態（`todo`/`doing`/`review`）・承認済み計画の有無は問わない。解除口は無い |
 | 対象が `vault/tasks/<計画ID>/<id>.md` または `vault/verdicts/<計画ID>/<id>.json` で、該当 id の計画票（`vault/plans/<計画ID>.md`）のタスク表上の status が `done`（計画票が無い・読めない・該当 id の行が無い場合はこの判定の対象外。Bash の書き込み動詞が `git add` / `git commit` だけのコマンドも対象外：ステージ・コミットはファイル内容を変えないため。リダイレクト・`cp`/`mv`/`rm`・`sed -i`・`tee`・`git rm` など内容を変える書き込みが混在する場合は対象） | ブロック：`done` のタスク票・verdict は編集できません。agent_type を問わず（メインセッション含む）拒否する。`git add` / `git commit` のみのコマンドが対象外なのは判定範囲の定義であって解除口ではなく、内容を変える書き込みが混在すれば従来どおり拒否する。解除口は無い |
+| 対象が `vault/plans/<計画ID>.md` で、Write/Edit/MultiEdit により frontmatter の status を approved 以外（ファイルが無い場合を含む）から approved にする（承認：draft→approved） | メインセッション（`agent_type` が空）かつ会話記録の人の発言に `/plan approve <計画ID>` がある時だけ許可。`agent_type` が空でない（planner・creator 等）、または会話記録が読めたのに該当する発言が無い時はブロック：`/plan approve <計画ID>` で指示した時だけ許可される旨を reason に含める。会話記録が読めない時（定義は下記）はブロックしない（許可。警告は plan_guard が出す：10節） |
+| 対象が `~/.claude/projects/` 配下（会話記録。`~` は `os.path.expanduser` で展開して判定する）への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash の書き込み対象パス） | ブロック：`~/.claude/projects/ 配下（会話記録）へは書き込めません` を reason に含める。`agent_type`・タスクの状態を問わず、解除口は無い。承認の裏付けが会話記録に依るため、エージェントによる改ざんを防ぐ |
 | 上記に該当しない（`vault/rules/` 以外への書き込み、または `done` でないタスクへの書き込み） | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
 
 この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、この判定で先に拒否される。
+
+**承認の裏付けの判定に使う会話記録**（agent_write_guard.py と plan_guard.py の両方が、フックに渡される `transcript_path` の会話記録（JSONL）を同じ規則で読む。フック間で import しない方針のため、解析はそれぞれにコピーして持つ。10節はここを参照する）：
+- 人の発言：`type` が `user`、`message.content` が文字列、`isMeta` が真でない行だけ。`content` が配列の行（`tool_result` など）と `isMeta` の行は対象外。探す範囲はそのセッションの会話記録全体
+- コマンドの一致：人の発言が `<command-name>/plan</command-name>` と、引数が `approve <計画ID>` の `<command-args>` を含む（スラッシュコマンドとして打った場合）か、先頭が `/plan approve <計画ID>` である（文として打った場合）。計画 ID は完全一致で比べる
+- 「読めない」：`transcript_path` が無い・ファイルが無い・どの行も JSON として読めない・人の発言が1件も無い、のいずれか。この時はブロックせず許可し、警告に落とす。読めたうえでコマンドが無い時はブロックする
+- 会話記録の形式は Claude Code の公開仕様ではなく、変わりうる。形式の変化は `scripts/smoke.sh` のサンプルで検知する
 
 ### 検知範囲：`gh api` / `curl` によるリモート直叩き（issue #6）
 

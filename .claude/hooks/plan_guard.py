@@ -308,6 +308,126 @@ def plan_size_violation(payload, root):
     )
 
 
+def frontmatter_status(text):
+    """先頭の `---` から次の `---` までの frontmatter の `status:` の値を返す。無ければ None。本文は見ない。
+
+    agent_write_guard.py の同名関数のコピー（フック間で import しない方針）。
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        m = re.match(r"^status:\s*(\S*)", line)
+        if m:
+            return m.group(1).strip("\"'")
+    return None
+
+
+def human_messages(transcript_path):
+    """会話記録（JSONL）から人の発言（type=user・content が文字列・isMeta が真でない行）を返す。
+
+    読めない（パスが無い・ファイルが無い・どの行も JSON でない）場合も空リストを返す。
+    agent_write_guard.py の同名関数のコピー。
+    """
+    if not transcript_path:
+        return []
+    try:
+        with open(os.path.expanduser(transcript_path), encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except Exception:
+        return []
+    out = []
+    for line in lines:
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(obj, dict) or obj.get("type") != "user" or obj.get("isMeta"):
+            continue
+        msg = obj.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if isinstance(content, str):
+            out.append(content)
+    return out
+
+
+def is_approve_command(text, plan_id):
+    """人の発言が `/plan approve <plan_id>`（スラッシュコマンド形式または文形式）か判定する。"""
+    if "<command-name>/plan</command-name>" in text:
+        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
+            if args.strip() == f"approve {plan_id}":
+                return True
+    m = re.match(r"^/plan\s+approve\s+(\S+)", text.lstrip())
+    return bool(m) and m.group(1) == plan_id
+
+
+def newly_approved_plans(root):
+    """作業ツリーで approved かつ HEAD では approved でない計画票を [(plan_id, file_name), ...] で返す。
+
+    HEAD の取得失敗（HEAD 無し・未追跡）は「HEAD では approved でない」として扱う。
+    非 git ディレクトリ・git が使えない場合は空リスト（何もしない）。
+    """
+    plans_dir = os.path.join(root, "vault", "plans")
+    if not os.path.isdir(plans_dir):
+        return []
+    try:
+        inside = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True, timeout=5, cwd=root,
+        )
+    except Exception:
+        return []
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        return []
+    out = []
+    for name in sorted(os.listdir(plans_dir)):
+        if not name.endswith(".md"):
+            continue
+        plan_id, status = plan_id_and_status(os.path.join(plans_dir, name))
+        if status != "approved":
+            continue
+        head_status = None
+        try:
+            shown = subprocess.run(
+                ["git", "show", f"HEAD:./vault/plans/{name}"],
+                capture_output=True, text=True, timeout=5, cwd=root,
+            )
+            if shown.returncode == 0:
+                head_status = frontmatter_status(shown.stdout)
+        except Exception:
+            pass
+        if head_status != "approved":
+            out.append((plan_id, name))
+    return out
+
+
+def approval_check(payload, root):
+    """今回承認された計画票の裏付けを会話記録で検査する。(block 理由 or None, 警告 or None) を返す。"""
+    warnings = []
+    transcript_path = payload.get("transcript_path")
+    humans = None
+    for plan_id, _name in newly_approved_plans(root):
+        if humans is None:
+            humans = human_messages(transcript_path if isinstance(transcript_path, str) else None)
+        if not humans:
+            warnings.append(
+                f"[plan_guard] {plan_id} が draft から approved に書き換えられていますが、"
+                f"会話記録が読めないため承認の裏付けを検査できませんでした。"
+                f"人が /plan approve {plan_id} で指示した時だけ承認できます。"
+            )
+            continue
+        if not any(is_approve_command(t, plan_id) for t in humans):
+            return (
+                f"[plan_guard] {plan_id} が draft から approved に書き換えられていますが、"
+                f"人の /plan approve {plan_id} の指示が会話記録にありません。"
+                f"git restore vault/plans/{plan_id}.md で元に戻してください"
+                f"（承認は人が /plan approve {plan_id} で指示した時だけ行えます）。"
+            ), None
+    return None, ("\n".join(warnings) if warnings else None)
+
+
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -336,10 +456,21 @@ def main():
     if violation:
         block(violation)
 
+    reason, warning = approval_check(payload, root)
+    if reason:
+        block(reason)
+
+    def finish():
+        """終了経路。既存の検査がブロックしなかった時だけ、承認の裏付け警告を1回出して終わる。"""
+        if warning:
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PostToolUse", "additionalContext": warning}}, ensure_ascii=False))
+        sys.exit(0)
+
     plans = approved_plans(root)
 
     if len(plans) == 0:
-        sys.exit(0)
+        finish()
 
     if len(plans) >= 2:
         ids = ", ".join(pid for pid, _ in plans)
@@ -353,11 +484,11 @@ def main():
         with open(plan_path, encoding="utf-8") as f:
             text = f.read()
     except Exception:
-        sys.exit(0)
+        finish()
 
     rows = raw_rows(text)
     if not rows:
-        sys.exit(0)
+        finish()
 
     for cells in rows:
         if len(cells) != 6:
@@ -397,7 +528,7 @@ def main():
             block(f"[plan_guard] {plan_id} で id {t['id']} が重複しています。id は一意にしてください。")
         seen.add(t["id"])
 
-    sys.exit(0)
+    finish()
 
 
 if __name__ == "__main__":

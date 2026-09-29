@@ -1,0 +1,17 @@
+{
+  "task": "P-20260930-task-granularity-guard/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 07:45",
+  "criteria": [
+    {"text": "8節に、「受け入れ基準が3〜7行」と「1計画は7タスク以下」が draft の間に plan_guard で機械検査される旨が書かれている。確認：`awk '/^## 8\\./,/^## 9\\./' docs/vault-spec.md | grep -c 'plan_guard'` の出力が `1` 以上", "ok": true, "note": "worktree で実行: 上記 awk|grep -c plan_guard / 出力: 1。137行目に両条件と draft の間の検査が記載"},
+    {"text": "10節に、検査の契機（draft の計画票・そのタスク票への Write/Edit のみ、Bash は対象外）・対象・数え方・approved 後は検査しない旨が書かれている。確認：`awk '/^## 10\\./,/^## 11\\./' docs/vault-spec.md | grep -c 'draft'` の出力が `1` 以上、かつ同範囲に `受け入れ基準` と `7` が含まれる", "ok": true, "note": "実行コマンド: 10節範囲の grep -c draft / 出力: 2。同範囲で 受け入れ基準=1行, 7=2行。契機・Bash対象外・数え方・approved以降は検査しない旨を Read/diff で確認"},
+    {"text": "「真偽で判定できる文か」は機械で検査されず planner・verifier の運用に残る旨が書かれている。確認：`grep -n '真偽' docs/vault-spec.md` の出力に8節または10節の行が含まれる", "ok": true, "note": "実行コマンド: grep -n 真偽 docs/vault-spec.md / 出力: 137行(8節)と162行(10節)を含む"},
+    {"text": "見出し行と既存の節番号が変わっていない。確認：`git diff -- docs/vault-spec.md | grep -E '^[+-]## '` の出力が空", "ok": true, "note": "実行コマンド: 上記 git diff|grep / 出力: 空。diff は追記のみ(8節1行、10節6行)"},
+    {"text": "`bash scripts/smoke.sh | tail -1` が `smoke: pass=<N> fail=0` になる", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh | tail -1 / 出力: smoke: pass=184 fail=0"}
+  ],
+  "reasons": [
+    "手順1の EnterWorktree ツールが使えなかったため、worktree の絶対パスに cd して検証した。",
+    "起点コミットがタスク票の進捗に記録されていないため、成果物外ファイルの検査は行っていない。worktree の git diff --name-only は docs/vault-spec.md とタスク票のみだった。"
+  ]
+}

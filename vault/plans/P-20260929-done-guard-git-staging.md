@@ -20,7 +20,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | blocked | 1 | - | agent_write_guard.py の done 判定から git add / git commit のみのコマンドを除外し smoke.sh にテストを足す | T-01 の成果物のうち、`/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a2c17c5063c7b9c32/.claude/hooks/agent_write_guard.py` を書き換える操作が、Claude Code の auto mode 権限分類器に「Self-Modification」として拒否されました。フックファイルの編集を許可してよいか、人の判断をお願いします。 |
+| T-01 | todo | 0 | - | agent_write_guard.py の done 判定から git add / git commit のみのコマンドを除外し smoke.sh にテストを足す | |
 | T-02 | todo | 0 | T-01 | vault-spec.md 12節の done 判定の行に git add / git commit のみは対象外である旨を足す | |
 
 ## 計画の受け入れ基準

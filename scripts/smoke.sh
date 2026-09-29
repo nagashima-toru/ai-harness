@@ -425,6 +425,72 @@ expect_tg "~/.claude/settings.json への Write → 許可" allow '{"tool_name":
 expect_tg "~/.claude/projects-x/ への Write → 許可（前方一致の誤検出なし）" allow '{"tool_name":"Write","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects-x/a"}}'
 expect_tg "Bash で ~/.claude/settings.json へリダイレクト → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/settings.json"}}'
 
+# 計画票の承認（draft→approved）の会話記録による裏付け（D-010 フェーズ4 / T-03）。
+# make_transcript は T-04 でも流用する固定パス方式（引数の各行を JSONL として書く）
+AP_TRANSCRIPT="/tmp/P-20260930-approve-transcript-guard-transcript.jsonl"
+make_transcript() { printf '%s\n' "$@" > "$AP_TRANSCRIPT"; }
+T_CMD='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>approve P-TEST</command-args>"}}'
+T_CMD_SP='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>  approve P-TEST  </command-args>"}}'
+T_SENT='{"type":"user","message":{"role":"user","content":"/plan approve P-TEST"}}'
+T_OTHER_ID='{"type":"user","message":{"role":"user","content":"/plan approve P-OTHER"}}'
+T_PREFIX_ID='{"type":"user","message":{"role":"user","content":"/plan approve P-TEST2"}}'
+T_CHAT='{"type":"user","message":{"role":"user","content":"こんにちは"}}'
+T_TOOLRES='{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"/plan approve P-TEST"}]}}'
+T_META='{"type":"user","isMeta":true,"message":{"role":"user","content":"/plan approve P-TEST"}}'
+expect_ap() { # $1=name $2=deny|allow $3=payload json（deny の時は reason に /plan approve を含むことも確認）
+  local out; out="$(run_guard "$3")"
+  if [ "$2" = deny ]; then expect_guard "(approve-pre) $1" deny "$out" "/plan approve"
+  else expect_guard "(approve-pre) $1" allow "$out"; fi
+}
+AP_EDIT='"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"status: draft","new_string":"status: approved"}'
+AP_MULTI='"tool_name":"MultiEdit","tool_input":{"file_path":"vault/plans/P-TEST.md","edits":[{"old_string":"# ゴール","new_string":"# ゴール2"},{"old_string":"status: draft","new_string":"status: approved"}]}'
+AP_WRITE='"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nid: P-TEST\nstatus: approved\n---\n# ゴール\n"}'
+TP='"transcript_path":"'"$AP_TRANSCRIPT"'"'
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+for form in "$T_CMD" "$T_CMD_SP" "$T_SENT"; do
+  make_transcript "$T_CHAT" "$form"
+  for tool in "$AP_EDIT" "$AP_MULTI" "$AP_WRITE"; do
+    expect_ap "コマンドあり・メイン・${tool%%,*} → 許可" allow "{$TP,$tool}"
+  done
+done
+make_transcript "$T_CHAT" "$T_CMD"
+expect_ap "コマンドあり・agent_type=planner → 拒否" deny "{$TP,\"agent_type\":\"planner\",$AP_EDIT}"
+expect_ap "コマンドあり・agent_type=creator → 拒否" deny "{$TP,\"agent_type\":\"creator\",$AP_WRITE}"
+make_transcript "$T_CHAT"
+expect_ap "コマンド無し（無関係な発言のみ）→ 拒否" deny "{$TP,$AP_EDIT}"
+expect_ap "コマンド無し・Write → 拒否" deny "{$TP,$AP_WRITE}"
+expect_ap "コマンド無し・MultiEdit → 拒否" deny "{$TP,$AP_MULTI}"
+make_transcript "$T_CHAT" "$T_OTHER_ID"
+expect_ap "別の計画 ID（approve P-OTHER）だけ → 拒否" deny "{$TP,$AP_EDIT}"
+make_transcript "$T_CHAT" "$T_PREFIX_ID"
+expect_ap "前方一致の計画 ID（approve P-TEST2）だけ → 拒否" deny "{$TP,$AP_EDIT}"
+make_transcript "$T_CHAT" "$T_TOOLRES"
+expect_ap "tool_result（content が配列）にしかコマンドが無い → 拒否" deny "{$TP,$AP_EDIT}"
+make_transcript "$T_CHAT" "$T_META"
+expect_ap "isMeta の行にしかコマンドが無い → 拒否" deny "{$TP,$AP_EDIT}"
+# 会話記録が読めない時は許可
+make_transcript "$T_TOOLRES" "$T_META"
+expect_ap "人の発言が1件も無い → 許可（読めない扱い）" allow "{$TP,$AP_EDIT}"
+make_transcript "not json" "{broken"
+expect_ap "どの行も JSON でない → 許可（読めない扱い）" allow "{$TP,$AP_EDIT}"
+expect_ap "transcript_path が無い → 許可" allow "{$AP_EDIT}"
+expect_ap "transcript_path のファイルが無い → 許可" allow '{"transcript_path":"/tmp/P-20260930-approve-transcript-guard-nonexistent.jsonl",'"$AP_EDIT"'}'
+expect_ap "読めない時でも agent_type=planner は拒否" deny "{\"agent_type\":\"planner\",$AP_EDIT}"
+# 承認に当たらない書き込みは会話記録と無関係に許可
+make_transcript "$T_CHAT"
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+expect_ap "draft→draft の Edit → 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"# ゴール","new_string":"# ゴール2"}}'
+expect_ap "draft→draft の Write → 許可" allow '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nstatus: draft\n---\n本文に status: approved\n"}}'
+expect_ap "本文中の status: approved は無視（Edit）→ 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"# ゴール","new_string":"status: approved"}}'
+expect_ap "old_string が見つからない Edit → 許可（Claude Code 側が失敗させる）" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"存在しない","new_string":"status: approved"}}'
+make_plan "P-TEST" "approved" "| T-01 | todo | 0 | - | A | |"
+expect_ap "approved→approved の Edit → 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| todo |","new_string":"| doing |"}}'
+make_plan "P-TEST" "done" "| T-01 | done | 1 | - | A | |"
+expect_ap "done→done の Edit → 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"# ゴール","new_string":"# ゴール2"}}'
+expect_ap "他ファイル（README.md）への approved 内容の Write → 許可" allow '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"README.md","content":"---\nstatus: approved\n---\n"}}'
+expect_ap "新規の計画票（ファイル無し）を approved で Write・コマンド無し → 拒否" deny '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-NEW.md","content":"---\nstatus: approved\n---\n"}}'
+rm -f "$AP_TRANSCRIPT"
+
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 echo "== plan_guard.py =="

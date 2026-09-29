@@ -1,6 +1,6 @@
 ---
 id: P-20260930-task-granularity-guard
-status: approved
+status: done
 ---
 # ゴール
 `.claude/hooks/plan_guard.py` に粒度の検査を追加する。Write/Edit の対象が `vault/tasks/<計画ID>/T-xx.md` で、対応する計画票の frontmatter の status が `draft` の時は、「## 受け入れ基準」節の箇条書きが3〜7行でなければブロックする。対象が `vault/plans/<計画ID>.md` で、status が `draft` の時は、タスク表のデータ行が7行を超えればブロックする。`docs/vault-spec.md` の8節と10節に、機械で検査される旨を追記する。`scripts/smoke.sh` にテストを足す（issue #77、`vault/designs/D-010.md` フェーズ3）。

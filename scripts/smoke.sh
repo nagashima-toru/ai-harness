@@ -344,6 +344,34 @@ expect_guard "(issue #54 placeholder) verifier が <n> を含む rm コマンド
 expect_guard "(issue #54 placeholder) verifier が <n> を含む git commit → 破壊的操作として拒否（プレースホルダー有無に関係なく維持）" deny \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git commit -m \"attempt=<n>\""}}')"
 
+# done タスクへの書き込み拒否（issue #76 / D-010 フェーズ2）。expect_guard を拡張し、4番目の
+# 引数で reason に含むべき部分文字列も確認できるようにする。
+expect_guard() { # $1=name $2=deny|allow $3=output $4=reason に含むべき部分文字列(optional)
+  local name="$1" want="$2" out="$3" sub="${4:-}"
+  local got="allow"; echo "$out" | grep -q '"permissionDecision": *"deny"' && got="deny"
+  if [ "$got" = "$want" ] && { [ -z "$sub" ] || echo "$out" | grep -q -- "$sub"; }; then
+    echo "  ok   $name"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $name (want=$want got=$got sub='$sub')"; echo "       out: $out"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+make_plan "P-FIX" "approved" "| T-01 | done | 1 | - | done task | |" "| T-02 | doing | 1 | - | doing task | |" "| T-03 | review | 1 | - | review task | |"
+expect_guard "(done-write) done のタスク票への Write → 拒否（reason に done を含む）" deny \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"vault/tasks/P-FIX/T-01.md"}}')" "done"
+expect_guard "(done-write) done の verdict への Write（agent_type=verifier でも）→ 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(done-write) doing のタスク票への Write → 許可（従来どおり）" allow \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"vault/tasks/P-FIX/T-02.md"}}')"
+expect_guard "(done-write) review の verdict への Write（agent_type=verifier）→ 許可（従来どおり）" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"vault/verdicts/P-FIX/T-03.json"}}')"
+expect_guard "(done-write) 計画票が存在しない計画 ID 配下のタスク票への Write → 許可（fail-open）" allow \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"vault/tasks/P-NOPLAN/T-01.md"}}')"
+expect_guard "(done-write) Bash のリダイレクトで done のタスク票へ追記 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/tasks/P-FIX/T-01.md"}}')" "done"
+expect_guard "(done-write) Bash の sed -i で done のタスク票を書き換え → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"sed -i s/a/b/ vault/tasks/P-FIX/T-01.md"}}')" "done"
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+
 echo "== plan_guard.py =="
 run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }
 

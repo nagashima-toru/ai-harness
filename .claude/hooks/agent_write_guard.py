@@ -22,6 +22,13 @@ creator（run から呼ばれる作成エージェント）向けの拒否リス
 agent_type を問わない他の判定と同じく常に拒否する。計画票のタスク表の状態更新とログ追記は、
 呼び出し元のオーケストレーター（run のメインセッション）に一本化するための制限（D-003 フェーズ2）。
 ALLOWED の許可リスト方式とは異なり、拒否リスト方式で実装する。
+
+done タスクへの書き込み拒否：agent_type を問わず（メインセッション含む）、書き込み先が
+vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、対応する計画票
+（vault/plans/<計画ID>.md）のタスク表でその id の status が done の場合は拒否する。計画票が
+見つからない・その id の行が無い・読めない場合は許可する（fail-open）。タスク表の解析規則は
+plan_guard.py の raw_rows と同じものをこのファイル内にコピーして使う（他ファイルへの import は
+しない方針を踏襲、D-010 フェーズ2 / issue #76）。解除口は作らない。
 """
 import json
 import os
@@ -37,6 +44,9 @@ ALLOWED = {
     "planner": ["vault/plans/", "vault/tasks/"],
 }
 DENIED_FOR_CREATOR = ("vault/plans/", "vault/log/")
+PLAN_TASK_COLUMNS = ("id", "status", "attempt", "after", "title", "question")
+TASK_FILE_RE = re.compile(r"^vault/tasks/([^/]+)/([^/]+)\.md$")
+VERDICT_FILE_RE = re.compile(r"^vault/verdicts/([^/]+)/([^/]+)\.json$")
 BASH_WRITE_PATTERNS = [
     r"(^|[^<>])>{1,2}\s*(?!&)\S",     # リダイレクト（`2>&1` のような N>&M fd 複製は書き込みとみなさない）
     r"\btee\b",
@@ -255,6 +265,88 @@ def targets_creator_denied_paths(tool, tool_input, root):
     return False
 
 
+def plan_raw_rows(plan_text):
+    """plan_guard.py の raw_rows と同じ規則（他ファイルへの import はしない方針を踏襲）。
+
+    「## タスク表」（前方一致）以降のデータ行を生のセルのリストで返す（見出し行・区切り行は除く）。
+    """
+    rows = []
+    in_table = False
+    for line in plan_text.splitlines():
+        if line.startswith("## "):
+            in_table = line.strip().startswith("## タスク表")
+            continue
+        stripped = line.strip()
+        if not in_table or not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if not cells or cells[0] == "id" or re.fullmatch(r"-*", cells[0]):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def plan_task_status(root, plan_id, task_id):
+    """vault/plans/<plan_id>.md のタスク表から task_id の status を返す。
+
+    計画票が無い・読めない・該当行が無い場合は None（fail-open。呼び出し側で許可に倒す）。
+    """
+    path = os.path.join(root, "vault", "plans", f"{plan_id}.md")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return None
+    for cells in plan_raw_rows(text):
+        if len(cells) < 5:
+            continue
+        cells = list(cells) + [""] * (6 - len(cells))
+        row = dict(zip(PLAN_TASK_COLUMNS, cells[:6]))
+        if row["id"] == task_id:
+            return row["status"]
+    return None
+
+
+def match_task_or_verdict_path(rel):
+    """rel（normalize() 済みのパス）が vault/tasks/<計画ID>/<id>.md または
+    vault/verdicts/<計画ID>/<id>.json にマッチしたら (plan_id, id) を返す。マッチしなければ None。
+    """
+    m = TASK_FILE_RE.match(rel)
+    if m:
+        return m.group(1), m.group(2)
+    m = VERDICT_FILE_RE.match(rel)
+    if m:
+        return m.group(1), m.group(2)
+    return None
+
+
+def find_done_task_write(tool, tool_input, root):
+    """この呼び出しが done なタスクの vault/tasks/ または vault/verdicts/ を書き込もうと
+    しているか判定する。該当すれば (plan_id, task_id, rel) を返し、それ以外は None を返す
+    （マッチしない・計画票が無い・done でない場合は全て None＝fail-open）。
+    """
+    candidates = []
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        candidates.append(path)
+    elif tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        masked = mask_angle_placeholders(cmd)
+        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+            return None
+        candidates.extend(extract_bash_write_targets(cmd))
+        candidates.extend(re.findall(r"[^\s'\"]*vault/(?:tasks|verdicts)/[^\s'\"]*", cmd))
+    for cand in candidates:
+        rel = normalize(cand, root)
+        matched = match_task_or_verdict_path(rel)
+        if not matched:
+            continue
+        plan_id, task_id = matched
+        if plan_task_status(root, plan_id, task_id) == "done":
+            return plan_id, task_id, rel
+    return None
+
+
 def delegate_to_worktree(payload):
     """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
     `.claude/hooks/agent_write_guard.py` へ判定を委譲する（issue #56 / D-008 フェーズ1）。
@@ -334,6 +426,16 @@ def main():
             "[agent_write_guard] vault/rules/ へは書き込めません。"
             "ルール変更が成果物のタスクは vault/tasks/<計画ID>/<id>-proposal.md に下書きし、"
             "実体への反映は人が手作業で行います。"
+        )
+
+    # done タスクへの書き込み拒否：agent_type を問わず、対応する計画票で status が done な
+    # id の vault/tasks/・vault/verdicts/ への書き込みは常に拒否する（解除口は無い）。
+    done_target = find_done_task_write(tool, tool_input, root)
+    if done_target:
+        plan_id, task_id, rel = done_target
+        deny(
+            f"[agent_write_guard] {plan_id}/{task_id} は status が done のため、"
+            f"{rel} へは書き込めません。"
         )
 
     agent = payload.get("agent_type") or ""

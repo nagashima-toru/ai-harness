@@ -130,6 +130,8 @@ frontmatter は `id` と `status` の2つ。
 
 blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク ID の位置にその id を書き、次の形で1行追記する（解除の根拠の記録）：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`
 
+run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了報告の受領直後に、run が1タスク1行ずつ追記する（複数タスクの場合はタスクごとに1行）。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
+
 ## 8. 粒度の基準（planner と人が共有する）
 
 - 受け入れ基準が3〜7行で書ける

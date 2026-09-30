@@ -1,6 +1,6 @@
 ---
 id: P-20260930-unblock-transcript-guard
-status: approved
+status: done
 ---
 # ゴール
 `.claude/skills/plan/SKILL.md` に C（解除）として `/plan unblock <計画ID> <id> [回答]` を追加する。対象行が blocked であることを確かめ、回答があればタスク票の「決定済み」に追記し、行の status を `todo`、attempt を `0`、question を空にする。log に `- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>` を追記し、すぐにコミットする。F4 で入れた agent_write_guard・plan_guard の判定を拡張する。計画票のタスク表で blocked の行を blocked 以外にする書き込みは、メインセッションであり、かつ会話記録の人の発言に `/plan unblock <計画ID> <id>` がある時だけ許可する（会話記録が読めない時は F4 と同じく警告）。`docs/runbook.md` 4節の解除手順を `/plan unblock` を使う形に書き換え、`.claude/ai-harness.md` と `docs/vault-spec.md` 2節の「`blocked→todo` は人のみ」に「`/plan unblock` で人が指示する」旨を追記する。`scripts/smoke.sh` にテストを足す（issue #75 のうち blocked の解除、`vault/designs/D-010.md` フェーズ5）。

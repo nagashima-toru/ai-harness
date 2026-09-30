@@ -1,6 +1,6 @@
 ---
 id: P-20260930-run-resume-info
-status: approved
+status: done
 ---
 # ゴール
 `.claude/skills/run/SKILL.md` を改訂し、オーケストレーターが creator の完了時に受け取る worktree のパス・ブランチ名と、手順3.1の `PLAN_HEAD` を、`vault/log/<計画ID>.md` に記録行 `- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>` として1行追記するようにする。手順2.2の再開手順を次のとおり書き換える。review の行は、log の最新の記録行から worktree を復元して手順5へ進む。記録された worktree が `git worktree list` に無ければ、doing に戻して attempt+1 で作り直す。doing の行は、中断を1回の試行として attempt+1 にし、creator を呼び直す（上限に達したら blocked）。`docs/vault-spec.md` 7節に記録行の書式を追記する（issue #78、`vault/designs/D-010.md` フェーズ6）。

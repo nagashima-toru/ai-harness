@@ -1,1 +1,2 @@
 - 2026-09-30 16:15 - draft→approved 人の指示: /plan approve P-20260930-run-resume-info
+- 2026-09-30 16:16 T-01 todo→doing attempt=1

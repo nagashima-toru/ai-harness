@@ -17,7 +17,10 @@ argument-hint: [task-id（省略時は先頭）]
 
 ## 2. 取り出す
 1. 計画票の「タスク表」を読む
-2. `doing` の行があればそれを続ける（`vault/tasks/<計画ID>/<id>.md` の「進捗」から再開）。`review` の行があれば手順4へ
+2. `review` または `doing` の行があれば、新規に取り出さず、中断からの再開として次のとおり扱う（複数あれば計画票の上から順に、行ごとに判断する）。再開に使う情報は `vault/log/<計画ID>.md` のその id の**最後の記録行**（`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>` の形の行。書式の正本は `docs/vault-spec.md` 7節）だけとする。以下の状態変更は、必ず log に追記してコミットしてから次へ進む
+   - `review` の行：その id の最後の記録行から worktree のパス・ブランチ名・`plan_head`（手順6で `PLAN_HEAD` として使う）を復元し、`git worktree list` にそのパスがあることを確認する。あれば手順5へ進む（手順3・4は済んでいる）。無ければ、status を `doing`、attempt を +1 にし、`- <日時> <id> review→doing attempt=<n+1> worktree が無いため作り直し` を log に追記してコミットし、手順3から creator を呼び直す。attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）に達していれば、代わりに status を `blocked`、question に「再開時に記録された worktree が無い（パス）」と書き、`- <日時> <id> review→blocked attempt=<n> worktree が無いため` を追記する。記録行そのものが無い `review` の行も同じく worktree が無い場合として扱う
+   - `doing` の行：前回の呼び出しの中断を1回の試行として数える。attempt が上限未満なら、attempt を +1 にし（status は `doing` のまま）、`- <日時> <id> doing→doing attempt=<n+1> 中断から再開` を log に追記してコミットし、手順3から creator を呼び直す（`vault/tasks/<計画ID>/<id>.md` の「進捗」を読んで続けるのは creator 自身が行う）。attempt が上限に達していれば、status を `blocked`、question に「中断が続き attempt が上限に達した」と書き、`- <日時> <id> doing→blocked attempt=<n> 中断が上限に達した` を追記する。その id に記録行があり、そのパスが `git worktree list` に残っていれば、呼び直す前に `bash scripts/discard_worktree.sh <パス> <ブランチ名>`（手順6.4.2と同じ）で破棄してよい（blocked にする場合は破棄せず残す）
+   - 記録行が無く場所が分からない worktree（`doing` の中断で残ったもの等）は自動で削除しない。完了報告に `git worktree list` の出力を添えて人に知らせる
 3. 無ければ、`todo` かつ `after` に列挙された全タスクの `status` が `done`（`after` が `-` なら無条件）である行を、タスク表の上から順に並べたものを「着手可能集合」とする。引数 `$ARGUMENTS` に ID があれば、着手可能集合をその1行だけに絞る。着手可能集合の先頭から環境変数 `HARNESS_MAX_PARALLEL`（既定 3。未設定時は3を使う。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）件までを選ぶ
 4. 選べる行が無ければ「取れるタスクがありません」と報告して終わる
 5. 選んだ行**全部**について、status を `doing`、attempt を `1` にする。この計画票への書き込みは、選んだタスクごとに分けず、他の処理を挟まず本手順の中でまとめて（一括で）行う。`vault/log/<計画ID>.md` への追記も同様に、選んだタスク全部について `- <日時> <id> todo→doing attempt=1` を本手順の中で連続してまとめて行う
@@ -27,12 +30,12 @@ argument-hint: [task-id（省略時は先頭）]
 1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う
 2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）。この呼び出しは `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順4のreview化・手順6のverdict判定が呼び出し結果に依存するため）
 3. 選んだタスクが複数件の場合、上記の呼び出しをタスクの数だけ**1メッセージの中で**行う（Agent ツールを複数回呼び、並行に実行させる）。選んだタスクが1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする（専用の逐次フォールバックは作らない）
-4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する（`vault/tasks/` 等ファイルへの永続化は不要）。この対応は後続の verifier 呼び出しと、T-03 で扱うマージ処理で使う
+4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する。この対応は後続の verifier 呼び出しと、T-03 で扱うマージ処理で使うほか、手順3.7で `vault/log/<計画ID>.md` に記録して再開に使う
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：
    `git -C <worktree のパス> merge-base --is-ancestor <PLAN_HEAD> HEAD`
    終了コードが `0` なら、その worktree は計画ブランチ（`PLAN_HEAD`）から分岐している。`git worktree list` でパスとブランチ名の対応も確認できる
 6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに対象タスクの計画票の該当行を `blocked` にし、question に「worktree の分岐元が計画ブランチと一致しない（手順5の確認コマンドの出力要点）」のように状況を書き、人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
-7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する
+7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する。あわせて、creator の完了報告を受けたタスク（blocked 報告のタスクも worktree があれば記録してよい）について、受領直後に `vault/log/<計画ID>.md` へ再開情報の記録行を1タスク1行で追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（`<パス>`・`<ブランチ名>` は手順3.4で保持した worktree の値、`<sha>` は手順3.1で控えた `PLAN_HEAD` の完全な sha）。複数タスクの場合も手順3の中でまとめて追記する。書式の正本は `docs/vault-spec.md` 7節
 8. blocked のタスクが1件以上あれば、それら全部について計画票の該当行の status を `blocked` にし、question 列に creator の質問文をそのまま書き写す（言い換えない）。この書き込みは対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→blocked attempt=<n> 理由要約` の形で追記する。選んだタスクの中に blocked 以外が無ければここで終わる
 
 ## 4. review にする

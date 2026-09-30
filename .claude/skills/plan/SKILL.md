@@ -1,10 +1,10 @@
 ---
 name: plan
-description: ゴールをタスクに分割して計画を作る。「計画を立てて」「タスクに分割して」「これをやりたい」「plan」と言われたら必ずこのスキルを使う。計画 ID とブランチを決め、planner サブエージェントで draft を作り、人が `/plan approve <計画ID>` のコマンドで承認した後に計画票の status を approved にする。「計画を承認」「P-20260919-git-ops を承認」もこのスキル（自然文の場合は `/plan approve <計画ID>` を打つよう案内する）。
-argument-hint: [ゴール | approve <計画ID>]
+description: ゴールをタスクに分割して計画を作る。「計画を立てて」「タスクに分割して」「これをやりたい」「plan」と言われたら必ずこのスキルを使う。計画 ID とブランチを決め、planner サブエージェントで draft を作り、人が `/plan approve <計画ID>` のコマンドで承認した後に計画票の status を approved にする。「計画を承認」「P-20260919-git-ops を承認」もこのスキル（自然文の場合は `/plan approve <計画ID>` を打つよう案内する）。blocked になったタスクの解除（unblock）にも使う。「blocked を解除」「T-02 の blocked を戻して」と言われたらこのスキルを使い、人が `/plan unblock <計画ID> <id> [回答]` のコマンドを打つよう案内する。
+argument-hint: [ゴール | approve <計画ID> | unblock <計画ID> <id> [回答]]
 ---
 
-ゴールを計画（`vault/plans/<計画ID>.md`）とタスク票（`vault/tasks/<計画ID>/T-01.md`）に分割し、人の承認を経て計画票の `status` を `approved` にする。仕様は `docs/vault-spec.md`。
+ゴールを計画（`vault/plans/<計画ID>.md`）とタスク票（`vault/tasks/<計画ID>/T-01.md`）に分割し、人の承認を経て計画票の `status` を `approved` にする。blocked になったタスクは、人の `/plan unblock` の指示で `todo` に戻す。仕様は `docs/vault-spec.md`。
 
 引数：`$ARGUMENTS`
 
@@ -24,6 +24,17 @@ argument-hint: [ゴール | approve <計画ID>]
 4. `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で日時を取り、`vault/log/<計画ID>.md` に次の1行を追記する（ファイルが無ければ作る）：`- <日時> - draft→approved 人の指示: /plan approve <計画ID>`
 5. `git add vault/plans/<計画ID>.md vault/log/<計画ID>.md` でファイルを名前で指定して stage し、`git commit`（メッセージ例：`<計画ID>: 計画を承認する`）する。work ブランチ上で行う。`git add .` や `git add -A` は使わない
 6. 承認したことを報告し、「`/run` で処理を開始できます」と伝える
+
+## C. blocked を解除する（引数が `unblock <計画ID> <id> [回答]` のコマンドの時）
+1. 解除の指示が `/plan unblock <計画ID> <id> [回答]` のコマンドで来たことを確認する。人が自然文で解除を伝えた場合（引数が `unblock <計画ID> <id>` の形でない場合）は解除せず、「`/plan unblock <計画ID> <id> [回答]` を打ってください」と案内して**止まる**
+2. `vault/plans/<計画ID>.md` のタスク表で、`<id>` の行の status が `blocked` であることを確認する。`blocked` でなければ解除せず状況を伝えて止まる
+3. 回答があれば、タスク票 `vault/tasks/<計画ID>/<id>.md` の「決定済み」に回答を追記する。回答が無い時は何も追記しない（ハングやマージコンフリクトなど、答える質問が無い blocked）。回答の内容で受け入れ基準を直す必要がある時は、回答に基づく追記までにとどめ、大きな書き換えは planner を呼ぶよう案内する
+4. 計画票の `<id>` の行の status を `todo`、attempt を `0`、question を空にする
+5. `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で日時を取り、`vault/log/<計画ID>.md` に次の1行を追記する：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`
+6. `git add vault/plans/<計画ID>.md vault/tasks/<計画ID>/<id>.md vault/log/<計画ID>.md` でファイルを名前で指定して stage し、`git commit`（メッセージ例：`<計画ID>: <id> の blocked を解除する`）する。回答が無く、タスク票を変えなかった時は、タスク票を add に含めない。work ブランチ上で行う。`git add .` や `git add -A` は使わない
+7. 解除したことを報告し、「`/run` で再開できます」と伝える
+
+1回のコマンドで解除するのは1行だけ。複数行を解除する時は、人がコマンドを行の数だけ打つ。
 
 ## 注意
 - 計画の修正指示を受けたら planner を再度呼ぶか自分で計画票・タスク票を直し、再提示する

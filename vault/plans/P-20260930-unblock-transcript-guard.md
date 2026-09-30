@@ -26,7 +26,7 @@ PR 本文では `Closes #75` を使う。#75 は D-010 の決定事項どおり�
 | T-03 | done | 1 | T-02 | /plan スキルに C（/plan unblock による解除）の手順を追加する | |
 | T-04 | done | 1 | T-03 | docs/runbook.md 4節の blocked 解除手順を /plan unblock を使う形に書き換える | |
 | T-05 | done | 1 | T-04 | .claude/ai-harness.md の「blocked → todo は人だけ」に /plan unblock の旨を追記する | |
-| T-06 | review | 1 | T-05 | vault-spec.md の2・7・10・12節に blocked の解除の裏付けを追記する | |
+| T-06 | done | 1 | T-05 | vault-spec.md の2・7・10・12節に blocked の解除の裏付けを追記する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

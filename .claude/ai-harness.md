@@ -9,7 +9,7 @@
 4. 「次は何をやる？」と聞かれたら、承認済み計画票のタスク表を読んで先頭タスクの ID と title を答える
 
 ## 状態遷移（5つで固定）
-`todo → doing → review → (done | doing[attempt+1] | blocked)`。`blocked → todo` は人だけ。
+`todo → doing → review → (done | doing[attempt+1] | blocked)`。`blocked → todo` は人が `/plan unblock <計画ID> <id> [回答]` で指示した時だけ（フックが会話記録で確認する。エージェントの独断は不可）。
 - `doing`/`review` は `after` 依存の無い集合（着手可能集合）に限り複数件になりうる。計画票・log への書き込みは常にオーケストレーター1プロセス（run のメインセッション）に集約する
 - `done` にできるのは `vault/verdicts/<計画ID>/<id>.json` が PASS で、`attempt` が計画票のタスク表と一致する時だけ
 - 状態を変えたら `vault/log/<計画ID>.md` に1行追記する（`- YYYY-MM-DD HH:MM T-01 doing→review attempt=1 補足`）
@@ -24,7 +24,7 @@
 - `verifier` は `vault/verdicts/`、`planner` は `vault/plans/`・`vault/tasks/` にだけ書く（詳細は `vault/rules/common/roles.md`）
 
 ## スキル
-`/plan <ゴール>`（計画を draft で作りブランチを切る。`/plan approve <計画ID>` で承認）・`/run`（自分のブランチの承認済み計画を1タスク処理する）・`/design <ゴール>`（大きなゴールを設計文書にする）
+`/plan <ゴール>`（計画を draft で作りブランチを切る。`/plan approve <計画ID>` で承認、`/plan unblock <計画ID> <id> [回答]` で blocked を解除して todo に戻す）・`/run`（自分のブランチの承認済み計画を1タスク処理する）・`/design <ゴール>`（大きなゴールを設計文書にする）
 
 ## 禁止
 - `done` のタスク票・verdict を編集すること（フックで拒否される）

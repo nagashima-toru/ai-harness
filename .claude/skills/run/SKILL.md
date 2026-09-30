@@ -17,7 +17,10 @@ argument-hint: [task-id（省略時は先頭）]
 
 ## 2. 取り出す
 1. 計画票の「タスク表」を読む
-2. `doing` の行があればそれを続ける（`vault/tasks/<計画ID>/<id>.md` の「進捗」から再開）。`review` の行があれば手順4へ
+2. `review` または `doing` の行があれば、新規に取り出さず、中断からの再開として次のとおり扱う（複数あれば計画票の上から順に、行ごとに判断する）。再開に使う情報は `vault/log/<計画ID>.md` のその id の**最後の記録行**（`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>` の形の行。書式の正本は `docs/vault-spec.md` 7節）だけとする。以下の状態変更は、必ず log に追記してコミットしてから次へ進む
+   - `review` の行：その id の最後の記録行から worktree のパス・ブランチ名・`plan_head`（手順6で `PLAN_HEAD` として使う）を復元し、`git worktree list` にそのパスがあることを確認する。あれば手順5へ進む（手順3・4は済んでいる）。無ければ、status を `doing`、attempt を +1 にし、`- <日時> <id> review→doing attempt=<n+1> worktree が無いため作り直し` を log に追記してコミットし、手順3から creator を呼び直す。attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）に達していれば、代わりに status を `blocked`、question に「再開時に記録された worktree が無い（パス）」と書き、`- <日時> <id> review→blocked attempt=<n> worktree が無いため` を追記する。記録行そのものが無い `review` の行も同じく worktree が無い場合として扱う
+   - `doing` の行：前回の呼び出しの中断を1回の試行として数える。attempt が上限未満なら、attempt を +1 にし（status は `doing` のまま）、`- <日時> <id> doing→doing attempt=<n+1> 中断から再開` を log に追記してコミットし、手順3から creator を呼び直す（`vault/tasks/<計画ID>/<id>.md` の「進捗」を読んで続けるのは creator 自身が行う）。attempt が上限に達していれば、status を `blocked`、question に「中断が続き attempt が上限に達した」と書き、`- <日時> <id> doing→blocked attempt=<n> 中断が上限に達した` を追記する。その id に記録行があり、そのパスが `git worktree list` に残っていれば、呼び直す前に `bash scripts/discard_worktree.sh <パス> <ブランチ名>`（手順6.4.2と同じ）で破棄してよい（blocked にする場合は破棄せず残す）
+   - 記録行が無く場所が分からない worktree（`doing` の中断で残ったもの等）は自動で削除しない。完了報告に `git worktree list` の出力を添えて人に知らせる
 3. 無ければ、`todo` かつ `after` に列挙された全タスクの `status` が `done`（`after` が `-` なら無条件）である行を、タスク表の上から順に並べたものを「着手可能集合」とする。引数 `$ARGUMENTS` に ID があれば、着手可能集合をその1行だけに絞る。着手可能集合の先頭から環境変数 `HARNESS_MAX_PARALLEL`（既定 3。未設定時は3を使う。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）件までを選ぶ
 4. 選べる行が無ければ「取れるタスクがありません」と報告して終わる
 5. 選んだ行**全部**について、status を `doing`、attempt を `1` にする。この計画票への書き込みは、選んだタスクごとに分けず、他の処理を挟まず本手順の中でまとめて（一括で）行う。`vault/log/<計画ID>.md` への追記も同様に、選んだタスク全部について `- <日時> <id> todo→doing attempt=1` を本手順の中で連続してまとめて行う

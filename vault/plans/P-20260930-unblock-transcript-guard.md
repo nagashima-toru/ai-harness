@@ -21,7 +21,7 @@ PR 本文では `Closes #75` を使う。#75 は D-010 の決定事項どおり�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | agent_write_guard.py で計画票の blocked→他 の書き込みを会話記録の /plan unblock で裏付け、無ければ拒否する（smoke.sh にテストを足す） | |
+| T-01 | done | 1 | - | agent_write_guard.py で計画票の blocked→他 の書き込みを会話記録の /plan unblock で裏付け、無ければ拒否する（smoke.sh にテストを足す） | |
 | T-02 | todo | 0 | T-01 | plan_guard.py で作業ツリーの計画票を HEAD と比べて blocked の解除の裏付けを検査し smoke.sh にテストを足す | |
 | T-03 | todo | 0 | T-02 | /plan スキルに C（/plan unblock による解除）の手順を追加する | |
 | T-04 | todo | 0 | T-03 | docs/runbook.md 4節の blocked 解除手順を /plan unblock を使う形に書き換える | |

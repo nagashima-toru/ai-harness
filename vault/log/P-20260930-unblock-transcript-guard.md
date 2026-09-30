@@ -1,3 +1,4 @@
 - 2026-09-30 14:54 - draft→approved 人の指示: /plan approve P-20260930-unblock-transcript-guard
 - 2026-09-30 15:31 T-01 todo→doing attempt=1
 - 2026-09-30 15:35 T-01 doing→review attempt=1
+- 2026-09-30 15:37 T-01 review→done attempt=1

@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-unblock-transcript-guard/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 12:00",
+  "criteria": [
+    {"text": "Bash で計画票の blocked 行を todo に書き換え、会話記録に `/plan unblock <計画ID> <id>` が無い時、plan_guard が `{\"decision\": \"block\", ...}` を出し、reason に計画 ID・タスク ID・`git restore vault/plans/<計画ID>.md` を含む。", "ok": true, "note": "worktree で `bash scripts/smoke.sh` 実行 / 出力: ok (unblock-post) 裏付け無し → ブロック（計画 ID・タスク ID を含む）、reason に git restore を含む、NG 0件"},
+    {"text": "会話記録の人の発言（スラッシュコマンド形式・文形式）に一致する `/plan unblock <計画ID> <id>` がある時は許可される。`tool_result`・`isMeta` の行にしか無い時、計画 ID・タスク ID が違う時、前方一致だけの時はブロックされる（同上）", "ok": true, "note": "smoke.sh 出力に (unblock-post) 人の発言あり→許可 x3、tool_result/isMeta/別計画ID/別タスクID/前方一致→ブロック が全て ok"},
+    {"text": "会話記録が読めない時（F4 と同じ定義）はブロックせず、`additionalContext` に解除の裏付けを検査できなかった旨の警告を出す（同上）", "ok": true, "note": "smoke.sh 出力に (unblock-post) 発言無し/JSONでない/transcript_path無し/ファイル無し → 警告（ブロックしない）と additionalContext の各ケースが ok"},
+    {"text": "HEAD でも blocked でない行（todo→doing など）、blocked→blocked、HEAD に計画票が無い（未追跡の）場合、非 git ディレクトリでは何も出さない（同上）", "ok": true, "note": "smoke.sh 出力に (unblock-post) blocked→blocked、todo→doing、HEAD 無し、未追跡、同じ id 無し、非 git ディレクトリ が ok（出力なし/許可）"},
+    {"text": "F4 の `(approve-post)` と T-01 の `(unblock-pre)` のケースが変わらず通る。`bash scripts/smoke.sh > /tmp/P-20260930-unblock-transcript-guard-T-02-smoke.txt 2>&1` の後 `grep -c '^  NG' /tmp/P-20260930-unblock-transcript-guard-T-02-smoke.txt` が `0`、`tail -1` が `smoke: pass=<N> fail=0`", "ok": true, "note": "実行コマンド: `grep -c '^  NG' /tmp/P-20260930-unblock-transcript-guard-T-02-smoke.txt` / 出力: 0。`tail -1` / 出力: smoke: pass=352 fail=0。(approve-post)(unblock-pre) 全ケース ok。起点コミットの記録がタスク票の進捗に無いため、成果物外ファイル検査は行っていない（worktree の変更は plan_guard.py・smoke.sh・タスク票のみ）"}
+  ],
+  "reasons": []
+}

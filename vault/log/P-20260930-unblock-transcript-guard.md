@@ -1,0 +1,1 @@
+- 2026-09-30 14:54 - draft→approved 人の指示: /plan approve P-20260930-unblock-transcript-guard

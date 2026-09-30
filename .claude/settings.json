@@ -71,7 +71,10 @@
       "Bash(git clean *)",
       "Bash(git branch -D *)",
       "Bash(curl *)",
-      "Bash(wget *)"
+      "Bash(wget *)",
+      "Bash(gh pr merge*)",
+      "Bash(glab mr merge*)",
+      "Bash(claude *)"
     ]
   },
   "hooks": {

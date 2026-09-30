@@ -256,6 +256,44 @@ def targets_vault_rules(tool, tool_input, root):
     return False
 
 
+def transcript_dir():
+    """会話記録の置き場 ~/.claude/projects/（末尾 `/` 付き。projects-x などを誤検出しない）を返す。"""
+    return os.path.realpath(os.path.expanduser("~/.claude/projects")) + "/"
+
+
+def is_under_transcript_dir(path, root):
+    """path（`~` 表記・絶対・相対）を展開・正規化して ~/.claude/projects/ 配下か判定する。"""
+    if not path:
+        return False
+    expanded = os.path.expanduser(path)
+    if not os.path.isabs(expanded):
+        expanded = os.path.join(root, expanded)
+    ap = os.path.realpath(os.path.abspath(expanded))
+    base = transcript_dir()
+    return ap + "/" == base or ap.startswith(base)
+
+
+def targets_transcript_dir(tool, tool_input, root):
+    """この呼び出しが ~/.claude/projects/ 配下（会話記録）への書き込みを試みているか判定する（D-010 フェーズ4）。
+
+    承認の裏付けにする会話記録をエージェントが書き換えて人の発言を偽造するのを防ぐ。
+    Bash は既存の BASH_WRITE_PATTERNS で書き込み動詞を判定し、対象は extract_bash_write_targets と
+    `.claude/projects/` を含む path-like トークンから求める（読み取り専用コマンドは対象外）。
+    """
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        return is_under_transcript_dir(path, root)
+    if tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        masked = mask_angle_placeholders(cmd)
+        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+            return False
+        candidates = extract_bash_write_targets(cmd)
+        candidates += re.findall(r"[^\s'\"]*\.claude/projects[^\s'\"]*", cmd)
+        return any(is_under_transcript_dir(t.rstrip(")`;"), root) for t in candidates)
+    return False
+
+
 def targets_creator_denied_paths(tool, tool_input, root):
     """creator が vault/plans/・vault/log/ へ書き込もうとしていないか判定する（拒否リスト方式）。
 
@@ -402,6 +440,113 @@ def find_done_task_write(tool, tool_input, root):
     return None
 
 
+PLAN_FILE_RE = re.compile(r"^vault/plans/([^/]+)\.md$")
+
+
+def frontmatter_status(text):
+    """先頭の `---` から次の `---` までの frontmatter の `status:` の値を返す。無ければ None。本文は見ない。"""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        m = re.match(r"^status:\s*(\S*)", line)
+        if m:
+            return m.group(1).strip("\"'")
+    return None
+
+
+def apply_edit(text, old, new, replace_all):
+    """Edit 1回分を適用する。old が見つからない場合は None。"""
+    if not old or old not in text:
+        return None
+    return text.replace(old, new) if replace_all else text.replace(old, new, 1)
+
+
+def content_after_write(tool, tool_input, current):
+    """Write/Edit/MultiEdit 適用後のファイル内容を組み立てる。組み立てられない（適用失敗等）時は None。"""
+    if tool == "Write":
+        content = tool_input.get("content")
+        return content if isinstance(content, str) else None
+    if tool == "Edit":
+        if current is None:
+            return None
+        return apply_edit(current, tool_input.get("old_string") or "",
+                          tool_input.get("new_string") or "", bool(tool_input.get("replace_all")))
+    if tool == "MultiEdit":
+        if current is None:
+            return None
+        text = current
+        for e in tool_input.get("edits") or []:
+            text = apply_edit(text, e.get("old_string") or "", e.get("new_string") or "",
+                              bool(e.get("replace_all")))
+            if text is None:
+                return None
+        return text
+    return None
+
+
+def find_plan_approval(tool, tool_input, root):
+    """この呼び出しが計画票の承認（status が approved でない状態から approved にする）なら計画 ID を返す。"""
+    if tool not in ("Write", "Edit", "MultiEdit"):
+        return None
+    path = tool_input.get("file_path") or ""
+    m = PLAN_FILE_RE.match(normalize(path, root))
+    if not m:
+        return None
+    abs_path = path if os.path.isabs(path) else os.path.join(root, path)
+    try:
+        with open(abs_path, encoding="utf-8") as f:
+            current = f.read()
+    except Exception:
+        current = None
+    after = content_after_write(tool, tool_input, current)
+    if after is None:
+        return None
+    before_status = frontmatter_status(current) if current is not None else None
+    if before_status != "approved" and frontmatter_status(after) == "approved":
+        return m.group(1)
+    return None
+
+
+def human_messages(transcript_path):
+    """会話記録（JSONL）から人の発言（type=user・content が文字列・isMeta が真でない行）を返す。
+
+    読めない（パスが無い・ファイルが無い・どの行も JSON でない）場合も空リストを返す。
+    """
+    if not transcript_path:
+        return []
+    try:
+        with open(os.path.expanduser(transcript_path), encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except Exception:
+        return []
+    out = []
+    for line in lines:
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(obj, dict) or obj.get("type") != "user" or obj.get("isMeta"):
+            continue
+        msg = obj.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if isinstance(content, str):
+            out.append(content)
+    return out
+
+
+def is_approve_command(text, plan_id):
+    """人の発言が `/plan approve <plan_id>`（スラッシュコマンド形式または文形式）か判定する。"""
+    if "<command-name>/plan</command-name>" in text:
+        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
+            if args.strip() == f"approve {plan_id}":
+                return True
+    m = re.match(r"^/plan\s+approve\s+(\S+)", text.lstrip())
+    return bool(m) and m.group(1) == plan_id
+
+
 def delegate_to_worktree(payload):
     """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
     `.claude/hooks/agent_write_guard.py` へ判定を委譲する（issue #56 / D-008 フェーズ1）。
@@ -483,6 +628,27 @@ def main():
             "実体への反映は人が手作業で行います。"
         )
 
+    # 会話記録の改ざん防止：agent_type を問わず、~/.claude/projects/ 配下への書き込みは常に拒否する
+    # （解除口は無い。承認判定 T-03 が会話記録を裏付けにするための前提）
+    if targets_transcript_dir(tool, tool_input, root):
+        deny("[agent_write_guard] ~/.claude/projects/ 配下（会話記録）へは書き込めません。")
+
+    agent = payload.get("agent_type") or ""
+
+    # 計画票の承認（draft→approved）は、人が /plan approve <計画ID> で指示した時だけ許可する（D-010 フェーズ4）。
+    # agent_type が空（メインセッション）で、会話記録に一致する人の発言がある、または会話記録が読めない時は許可。
+    approved_plan = find_plan_approval(tool, tool_input, root)
+    if approved_plan:
+        deny_reason = (
+            f"[agent_write_guard] {approved_plan} の承認（status を approved にすること）は、"
+            f"人が /plan approve {approved_plan} で指示した時だけ許可されます。"
+        )
+        if agent:
+            deny(deny_reason)
+        humans = human_messages(payload.get("transcript_path"))
+        if humans and not any(is_approve_command(t, approved_plan) for t in humans):
+            deny(deny_reason)
+
     # done タスクへの書き込み拒否：agent_type を問わず、対応する計画票で status が done な
     # id の vault/tasks/・vault/verdicts/ への書き込みは常に拒否する（解除口は無い）。
     done_target = find_done_task_write(tool, tool_input, root)
@@ -492,8 +658,6 @@ def main():
             f"[agent_write_guard] {plan_id}/{task_id} は status が done のため、"
             f"{rel} へは書き込めません。"
         )
-
-    agent = payload.get("agent_type") or ""
 
     # creator 向けの拒否リスト：計画票・ログへの書き込みはオーケストレーターに一本化する
     # （ALLOWED の許可リストには creator を加えない。成果物パスは repo 全体になりうるため）

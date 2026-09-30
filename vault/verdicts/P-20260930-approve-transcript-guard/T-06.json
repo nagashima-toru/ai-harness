@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-approve-transcript-guard/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 08:56",
+  "criteria": [
+    {"text": "7節に、計画単位の log 行の形 `- <日時> - draft→approved 人の指示: /plan approve <計画ID>`（タスク ID の位置は `-`）が書かれている。確認：`grep -n 'draft→approved 人の指示: /plan approve' docs/vault-spec.md` が7節内の行にヒットする", "ok": true, "note": "実行コマンド: `grep -n 'draft→approved 人の指示: /plan approve' docs/vault-spec.md`（worktree 内） / 出力: 129 行目にヒット。7節は123〜130行で範囲内、タスク ID 位置 `-` の説明あり"},
+    {"text": "10節に、plan_guard が作業ツリーの計画票を `git show HEAD:` と比べて承認の裏付けを検査し、裏付けが無ければブロックすること、会話記録が読めない時は `additionalContext` で警告することが書かれている。確認：`grep -n 'additionalContext' docs/vault-spec.md` が10節内の行にヒットする", "ok": true, "note": "実行コマンド: `grep -n 'additionalContext' docs/vault-spec.md` / 出力: 166 行目のみ（10節は156〜167行）。同行に git show HEAD: 比較・ブロック・警告の記述あり"},
+    {"text": "12節の判定表に、承認（draft→approved）の裏付け（メインセッションかつ会話記録の人の発言に `/plan approve <計画ID>`、それ以外は拒否、読めない時は許可）と、`~/.claude/projects/` 配下（会話記録）への書き込み拒否の2行が追記されている。確認：`grep -n '~/.claude/projects/' docs/vault-spec.md` が12節内の行にヒットし、`grep -n '/plan approve' docs/vault-spec.md` が12節内の行にヒットする", "ok": true, "note": "実行コマンド: 両 grep / 出力: `~/.claude/projects/` は201行、`/plan approve` は200行・208行（12節は192〜228行）。200行が承認の行、201行が会話記録の書き込み拒否の行で表内"},
+    {"text": "4節のマージの記述に、`gh pr merge`・`glab mr merge`・`claude` が `.claude/settings.json` の deny で止められることが書かれている。確認：`grep -n 'glab mr merge' docs/vault-spec.md` が4節内の行を含む", "ok": true, "note": "実行コマンド: `grep -n 'glab mr merge' docs/vault-spec.md` / 出力: 73行（4節は61〜87行）を含む。settings.json の deny に gh pr merge*・glab mr merge*・claude * が75〜77行にあり記述と一致"},
+    {"text": "見出し行（`## ` 始まり）を追加・変更・削除していない。確認：`git diff -- docs/vault-spec.md | grep -E '^[+-]#'` の出力が空", "ok": true, "note": "実行コマンド: `git diff -- docs/vault-spec.md | grep -E '^[+-]#'` / 出力: 空（成果物は未コミット差分として worktree にある）"}
+  ],
+  "reasons": []
+}

@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-approve-transcript-guard/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 08:29",
+  "criteria": [
+    {"text": "`~/.claude/projects/` 配下のパスへの Write/Edit/MultiEdit が、`agent_type` が空・`creator`・`verifier`・`planner` のいずれでも拒否され、reason に `~/.claude/projects/` を含む。確認：`bash scripts/smoke.sh` の出力に `ok   (transcript-guard)` で始まる該当ケースがあり `NG` が無い", "ok": true, "note": "worktree で `bash scripts/smoke.sh > /tmp/P-20260930-approve-transcript-guard-T-02-smoke.txt` を実行 / 出力: (transcript-guard) の Write/Edit/MultiEdit x 4 agent_type 計12ケースが ok、NG 0。ヘルパーが reason の ~/.claude/projects/ 含有も検査している"},
+    {"text": "Bash のリダイレクト（`>`・`>>`）・`tee`・`sed -i`・`rm`/`mv`/`cp` の対象が `~/.claude/projects/` 配下（`~` 表記・絶対パスの両方）の時も拒否される（同上のケースで確認）", "ok": true, "note": "実行コマンド: `grep transcript-guard <smoke出力>` / 出力: >（~表記）、>>（絶対パス）、tee、sed -i、rm、mv、cp、verifier のリダイレクトが全て ok（拒否）"},
+    {"text": "読み取り（`cat ~/.claude/projects/...`・Read）は拒否されない。`~/.claude/` 直下の `projects/` 以外（例：`~/.claude/settings.json`）への書き込みもこの判定では拒否されない（同上）", "ok": true, "note": "同 grep の出力: cat・grep・Read・settings.json への Write・projects-x への Write・settings.json へのリダイレクトが全て ok（許可）"},
+    {"text": "既存の `vault/rules/`・done タスクの拒否判定と、verifier/planner の書き込み先制限の結果が変わらない。確認：`bash scripts/smoke.sh > /tmp/P-20260930-approve-transcript-guard-T-02-smoke.txt 2>&1` の後 `grep -c '^  NG' /tmp/P-20260930-approve-transcript-guard-T-02-smoke.txt` が `0`", "ok": true, "note": "実行コマンド: `grep -c '^  NG' /tmp/P-20260930-approve-transcript-guard-T-02-smoke.txt` / 出力: 0。git diff で既存判定は変更されず main() に判定が1つ挿入されただけで、既存ケースも全て ok"},
+    {"text": "`tail -1 /tmp/P-20260930-approve-transcript-guard-T-02-smoke.txt` が `smoke: pass=<N> fail=0`", "ok": true, "note": "実行コマンド: `tail -1 /tmp/P-20260930-approve-transcript-guard-T-02-smoke.txt` / 出力: smoke: pass=223 fail=0。なお手順10の変更ファイル検査は、タスク票の進捗に起点コミットの記録が無いため未実施（worktree の git status では変更は agent_write_guard.py・smoke.sh・T-02 タスク票のみ）"}
+  ],
+  "reasons": []
+}

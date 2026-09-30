@@ -1,6 +1,6 @@
 ---
 name: plan
-description: ゴールをタスクに分割して計画を作る。「計画を立てて」「タスクに分割して」「これをやりたい」「plan」と言われたら必ずこのスキルを使う。計画 ID とブランチを決め、planner サブエージェントで draft を作り、人の承認後に計画票の status を approved にする。「計画を承認」「P-20260919-git-ops を承認」もこのスキル。
+description: ゴールをタスクに分割して計画を作る。「計画を立てて」「タスクに分割して」「これをやりたい」「plan」と言われたら必ずこのスキルを使う。計画 ID とブランチを決め、planner サブエージェントで draft を作り、人が `/plan approve <計画ID>` のコマンドで承認した後に計画票の status を approved にする。「計画を承認」「P-20260919-git-ops を承認」もこのスキル（自然文の場合は `/plan approve <計画ID>` を打つよう案内する）。
 argument-hint: [ゴール | approve <計画ID>]
 ---
 
@@ -17,9 +17,13 @@ argument-hint: [ゴール | approve <計画ID>]
 6. 人に提示する：計画 ID、タスクの一覧（ID / title / after / 受け入れ基準の要約）、planner からの質問
 7. 「承認するなら `/plan approve <計画ID>`、直すなら指示をください」と伝えて**止まる**。承認前に `status` を変えない
 
-## B. 承認する（引数が `approve <計画ID>`、または人が承認を伝えた時）
-1. `vault/plans/<計画ID>.md` の frontmatter `status` を `approved` にする
-2. 承認したことを報告し、「`/run` で処理を開始できます」と伝える
+## B. 承認する（引数が `approve <計画ID>` のコマンドの時）
+1. 承認の指示が `/plan approve <計画ID>` のコマンドで来たことを確認する。人が自然文で承認を伝えた場合（引数が `approve <計画ID>` の形でない場合）は承認せず、「`/plan approve <計画ID>` を打ってください」と案内して**止まる**
+2. `vault/plans/<計画ID>.md` の frontmatter `status` が `draft` であることを確認する。`draft` でなければ承認せず状況を伝えて止まる
+3. frontmatter `status` を `approved` にする
+4. `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で日時を取り、`vault/log/<計画ID>.md` に次の1行を追記する（ファイルが無ければ作る）：`- <日時> - draft→approved 人の指示: /plan approve <計画ID>`
+5. `git add vault/plans/<計画ID>.md vault/log/<計画ID>.md` でファイルを名前で指定して stage し、`git commit`（メッセージ例：`<計画ID>: 計画を承認する`）する。work ブランチ上で行う。`git add .` や `git add -A` は使わない
+6. 承認したことを報告し、「`/run` で処理を開始できます」と伝える
 
 ## 注意
 - 計画の修正指示を受けたら planner を再度呼ぶか自分で計画票・タスク票を直し、再提示する

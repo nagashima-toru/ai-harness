@@ -18,7 +18,7 @@ PR 本文では `Closes #78` を使う。
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | docs/vault-spec.md 7節に worktree の記録行の書式を追記する | |
+| T-01 | done | 1 | - | docs/vault-spec.md 7節に worktree の記録行の書式を追記する | |
 | T-02 | todo | 0 | T-01 | run SKILL.md 手順3に worktree 記録行の追記手順を足し「永続化は不要」を削除する | |
 | T-03 | todo | 0 | T-02 | run SKILL.md 手順2.2の review・doing の再開手順を記録行を使う形に書き換える | |
 

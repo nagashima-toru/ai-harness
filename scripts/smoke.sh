@@ -714,6 +714,96 @@ if [ "$cnt" = 1 ]; then echo "  ok   (approve-post) 警告と block が競合す
 expect "(approve-post) 警告と block が競合する時は block を優先" block "$(run_ap_post "$AP_TRANSCRIPT")" "列数"
 rm -f "$AP_TRANSCRIPT"
 
+# blocked の解除の裏付け検査（PostToolUse・D-010 フェーズ5 / T-02）。HEAD の blocked 行が作業ツリーで変わったかを見る
+UP_REPO="/tmp/P-20260930-unblock-transcript-guard-T-02-repo"
+up_git() { git -C "$UP_REPO" -c user.name=t -c user.email=t@example.com "$@"; }
+up_reset() {
+  mkdir -p "$UP_REPO/vault/plans"
+  git -C "$UP_REPO" init -q
+  git -C "$UP_REPO" update-ref -d HEAD 2>/dev/null
+  git -C "$UP_REPO" rm -r --cached -q --ignore-unmatch . >/dev/null 2>&1
+  rm -f "$UP_REPO"/vault/plans/*.md "$UP_REPO"/other.txt
+}
+up_plan() { # $1=T-01 の行の status  $2=T-02 の行の status（T-02 が blocked の時だけ question を入れる）
+  local q=""; [ "$2" = blocked ] && q="どうする"
+  printf -- '---\nid: P-TEST\nstatus: %s\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-01 | %s | 0 | - | A | |\n| T-02 | %s | 1 | - | B | %s |\n' "${UP_STATUS:-approved}" "$1" "$2" "$q" > "$UP_REPO/vault/plans/P-TEST.md"
+}
+up_commit() { up_plan "$1" "$2"; up_git add vault/plans/P-TEST.md; up_git commit -q -m plan; }
+run_up_post() { # $1=transcript_path（空なら省略）
+  local tp=""; [ -n "${1:-}" ] && tp=',"transcript_path":"'"$1"'"'
+  printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"sed -i x"}%s}' "$tp" \
+    | CLAUDE_PROJECT_DIR="$UP_REPO" python3 "$PLAN_GUARD_HOOK"
+}
+up_reset; up_commit todo blocked; up_plan todo todo
+make_ub_transcript "$T_CHAT"
+out="$(run_up_post "$UB_TRANSCRIPT")"
+expect "(unblock-post) 裏付け無し → ブロック（計画 ID・タスク ID を含む）" block "$out" "P-TEST/T-02"
+expect "(unblock-post) 裏付け無し → reason に git restore を含む" block "$out" "git restore vault/plans/P-TEST.md"
+for form in "$U_CMD" "$U_CMD_SP" "$U_SENT"; do
+  make_ub_transcript "$T_CHAT" "$form"
+  expect "(unblock-post) 人の /plan unblock P-TEST T-02 あり → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+done
+make_ub_transcript "$T_CHAT" "$U_TOOLRES"
+expect "(unblock-post) tool_result にしか無い → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
+make_ub_transcript "$T_CHAT" "$U_META"
+expect "(unblock-post) isMeta にしか無い → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
+make_ub_transcript "$T_CHAT" "$U_OTHER_PLAN"
+expect "(unblock-post) 別の計画 ID だけ → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
+make_ub_transcript "$T_CHAT" "$U_OTHER_TASK"
+expect "(unblock-post) 別のタスク ID だけ → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
+make_ub_transcript "$T_CHAT" "$U_PREFIX"
+expect "(unblock-post) 前方一致のタスク ID だけ → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
+up_warn() { # $1=name $2=transcript_path
+  local o; o="$(run_up_post "$2")"
+  expect "(unblock-post) $1 → 警告（ブロックしない）" allow "$o" "解除の裏付けを検査できませんでした"
+  if echo "$o" | grep -q '"additionalContext"' && echo "$o" | grep -q '"hookEventName": *"PostToolUse"' && echo "$o" | grep -q 'P-TEST/T-02'; then
+    echo "  ok   (unblock-post) $1 → hookSpecificOutput.additionalContext に計画 ID・タスク ID"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   (unblock-post) $1 → additionalContext の形式"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+make_ub_transcript "$U_TOOLRES" "$U_META"; up_warn "人の発言が1件も無い" "$UB_TRANSCRIPT"
+make_ub_transcript "not json" "{broken"; up_warn "どの行も JSON でない" "$UB_TRANSCRIPT"
+up_warn "transcript_path が無い" ""
+up_warn "transcript_path のファイルが無い" "/tmp/P-20260930-unblock-transcript-guard-nonexistent.jsonl"
+# 対象外：blocked のまま・HEAD でも blocked でない・HEAD 無し・未追跡・行が無い・非 git
+make_ub_transcript "$T_CHAT"
+up_reset; up_commit todo blocked; up_plan doing blocked
+expect "(unblock-post) blocked→blocked（他の行だけ変更）→ 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+if [ -z "$(run_up_post "$UB_TRANSCRIPT")" ]; then echo "  ok   (unblock-post) blocked→blocked → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) blocked→blocked → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
+up_reset; up_commit todo todo; up_plan doing doing
+expect "(unblock-post) HEAD でも blocked でない（todo→doing）→ 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+if [ -z "$(run_up_post "$UB_TRANSCRIPT")" ]; then echo "  ok   (unblock-post) todo→doing → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) todo→doing → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
+up_reset; UP_STATUS=draft up_plan todo todo
+expect "(unblock-post) HEAD が無い（未コミット）→ 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+up_reset; echo x > "$UP_REPO/other.txt"; up_git add other.txt; up_git commit -q -m other; UP_STATUS=draft up_plan todo todo
+expect "(unblock-post) 未追跡の計画票 → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+if [ -z "$(run_up_post "$UB_TRANSCRIPT")" ]; then echo "  ok   (unblock-post) 未追跡の計画票 → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) 未追跡の計画票 → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
+up_reset; up_commit todo blocked; up_plan todo todo
+sed -i.bak '/^| T-02 /d' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
+expect "(unblock-post) 作業ツリーに同じ id の行が無い → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+up_reset; up_commit todo blocked; up_plan todo todo
+NONGIT="$(mktemp -d)"; mkdir -p "$NONGIT/vault/plans"; cp "$UP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
+expect "(unblock-post) 非 git ディレクトリ → 何もしない（許可）" allow "$(printf '{"tool_name":"Bash","transcript_path":"%s"}' "$UB_TRANSCRIPT" | CLAUDE_PROJECT_DIR="$NONGIT" python3 "$PLAN_GUARD_HOOK")"
+rm -rf "$NONGIT"
+# コミット後は HEAD の版が blocked でなくなり対象外
+up_git add vault/plans/P-TEST.md; up_git commit -q -m unblock
+expect "(unblock-post) 解除をコミットした後 → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
+# 複数行の解除：最初の裏付けの無い行でブロック
+up_reset; printf -- '---\nid: P-TEST\nstatus: approved\n---\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-02 | blocked | 1 | - | B | q |\n| T-03 | blocked | 1 | - | C | q |\n' > "$UP_REPO/vault/plans/P-TEST.md"
+up_git add vault/plans/P-TEST.md; up_git commit -q -m plan
+sed -i.bak 's/blocked/todo/; s/| q |/| |/' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
+make_ub_transcript "$T_CHAT" "$U_CMD"
+expect "(unblock-post) 複数行の解除・T-02 だけ裏付けあり → T-03 でブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-03"
+# block が出る時は警告を重ねない（JSON は1つだけ）：列数不正 + 会話記録が読めない
+up_reset; up_commit todo blocked; up_plan todo todo
+sed -i.bak 's/| T-01 | todo | 0 | - | A | |/| T-01 | todo | 0 | - | A |/' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
+make_ub_transcript "not json"
+cnt="$(run_up_post "$UB_TRANSCRIPT" | grep -c '^{')"
+if [ "$cnt" = 1 ]; then echo "  ok   (unblock-post) 警告と block が競合する時は JSON 1つ"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) JSON が $cnt 個"; FAIL_N=$((FAIL_N+1)); fi
+expect "(unblock-post) 警告と block が競合する時は block を優先" block "$(run_up_post "$UB_TRANSCRIPT")" "列数"
+rm -f "$UB_TRANSCRIPT"
+
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テストと同じ型：
 # 一時 worktree に判定結果が変わる差し替えスクリプトを置き、cwd をその worktree に向けたペイロードを
 # メインリポジトリ側の plan_guard.py に渡す。

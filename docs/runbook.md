@@ -32,12 +32,21 @@
   - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
 
 ## 4. blocked に答えて戻す
+```
+/plan unblock <計画ID> <id> [回答]
+```
 1. 計画票（`vault/plans/<計画ID>.md`）のタスク表で `status=blocked` の行の `question` を読む
-2. 回答を `vault/tasks/<計画ID>/<id>.md` の「決定済み」に書く（必要なら受け入れ基準も直す）
-3. 行の `status` を `todo`、`question` を空にする。`attempt` は 0 に戻す
-4. `vault/log/<計画ID>.md` に `- YYYY-MM-DD HH:MM <id> blocked→todo 回答を決定済みに追記` を追記
+2. `/plan unblock <計画ID> <id> <回答>` を打つ。答える質問が無い blocked（ハングやマージコンフリクトなど）は回答を省いてよい。1回のコマンドで解除するのは1行だけ。複数あれば1行ずつ打つ
 
-`blocked→todo` は人だけが行う。エージェントには戻させない。
+エージェントが次を行う。
+- 回答を `vault/tasks/<計画ID>/<id>.md` の「決定済み」に追記する（回答を省いた時は追記しない）
+- 計画票のその行の `status` を `todo`、`attempt` を `0`、`question` を空にする
+- `vault/log/<計画ID>.md` に `- YYYY-MM-DD HH:MM <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>` を追記する
+- 変更をコミットする
+
+`blocked→todo` は、人が `/plan unblock` で指示して初めて行われる。フックが会話記録の人の発言にこのコマンドがあるかを確認するので、エージェントが独断で解除することはできない。「T-03 解除して」のような自由な文や AskUserQuestion への回答では解除できない。
+
+代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合フックは働かない。変更後は自分で log に上の形式の行を追記してコミットする。
 
 ## 5. 月次で done を archive に移す
 計画単位でまとめて移す。計画票の全タスクが `done` になり、PR がマージされたら、その計画票・配下のタスク票・verdict・ログをまとめて `vault/archive/<年-月>/` に移す。

@@ -491,6 +491,76 @@ expect_ap "他ファイル（README.md）への approved 内容の Write → 許
 expect_ap "新規の計画票（ファイル無し）を approved で Write・コマンド無し → 拒否" deny '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-NEW.md","content":"---\nstatus: approved\n---\n"}}'
 rm -f "$AP_TRANSCRIPT"
 
+# blocked の解除（blocked→他）の会話記録による裏付け（D-010 フェーズ5 / T-01）
+UB_TRANSCRIPT="/tmp/P-20260930-unblock-transcript-guard-transcript.jsonl"
+make_ub_transcript() { printf '%s\n' "$@" > "$UB_TRANSCRIPT"; }
+U_CMD='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>unblock P-TEST T-02 方針は A で\n2行目の回答</command-args>"}}'
+U_CMD_SP='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>  unblock P-TEST T-02  </command-args>"}}'
+U_SENT='{"type":"user","message":{"role":"user","content":"/plan unblock P-TEST T-02 方針は A で\n2行目"}}'
+U_OTHER_PLAN='{"type":"user","message":{"role":"user","content":"/plan unblock P-OTHER T-02"}}'
+U_OTHER_TASK='{"type":"user","message":{"role":"user","content":"/plan unblock P-TEST T-03"}}'
+U_PREFIX='{"type":"user","message":{"role":"user","content":"/plan unblock P-TEST T-020"}}'
+U_TOOLRES='{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"/plan unblock P-TEST T-02"}]}}'
+U_META='{"type":"user","isMeta":true,"message":{"role":"user","content":"/plan unblock P-TEST T-02"}}'
+expect_ub() { # $1=name $2=deny|allow $3=payload json（deny の時は reason に /plan unblock を含むことも確認）
+  local out; out="$(run_guard "$3")"
+  if [ "$2" = deny ]; then expect_guard "(unblock-pre) $1" deny "$out" "/plan unblock"
+  else expect_guard "(unblock-pre) $1" allow "$out"; fi
+}
+UTP='"transcript_path":"'"$UB_TRANSCRIPT"'"'
+ub_edit() { echo '"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| '"$1"' | '"$2"' |","new_string":"| '"$1"' | '"$3"' |"}'; }
+ub_multi() { echo '"tool_name":"MultiEdit","tool_input":{"file_path":"vault/plans/P-TEST.md","edits":[{"old_string":"# ゴール","new_string":"# ゴール2"},{"old_string":"| '"$1"' | '"$2"' |","new_string":"| '"$1"' | '"$3"' |"}]}'; }
+ub_write() { # $1=T-01 の status $2=T-02 の status
+  echo '"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nid: P-TEST\nstatus: approved\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|----|----|----|----|----|----|\n| T-01 | '"$1"' | 1 | - | A | q1 |\n| T-02 | '"$2"' | 1 | - | B | q2 |\n"}'
+}
+make_plan "P-TEST" "approved" "| T-01 | blocked | 1 | - | A | q1 |" "| T-02 | blocked | 1 | - | B | q2 |"
+for form in "$U_CMD" "$U_CMD_SP" "$U_SENT"; do
+  make_ub_transcript "$T_CHAT" "$form"
+  expect_ub "T-02 blocked→todo・Edit・メイン → 許可" allow "{$UTP,$(ub_edit T-02 blocked todo)}"
+  expect_ub "T-02 blocked→todo・MultiEdit・メイン → 許可" allow "{$UTP,$(ub_multi T-02 blocked todo)}"
+  expect_ub "T-02 blocked→todo・Write・メイン → 許可" allow "{$UTP,$(ub_write blocked todo)}"
+  expect_ub "T-01 blocked→todo・Edit（コマンドは T-02 のみ）→ 拒否" deny "{$UTP,$(ub_edit T-01 blocked todo)}"
+  expect_ub "T-01 blocked→todo・Write → 拒否" deny "{$UTP,$(ub_write todo blocked)}"
+  expect_ub "T-01・T-02 を同時に解除（T-01 に裏付け無し）→ 拒否" deny "{$UTP,$(ub_write todo todo)}"
+done
+make_ub_transcript "$T_CHAT" "$U_CMD"
+expect_ub "T-02 blocked→doing・Edit → 許可（遷移先は問わない）" allow "{$UTP,$(ub_edit T-02 blocked doing)}"
+expect_ub "コマンドあり・agent_type=creator → 拒否" deny "{$UTP,\"agent_type\":\"creator\",$(ub_edit T-02 blocked todo)}"
+expect_ub "コマンドあり・agent_type=planner → 拒否" deny "{$UTP,\"agent_type\":\"planner\",$(ub_write blocked todo)}"
+make_ub_transcript "$T_CHAT"
+expect_ub "コマンド無し（無関係な発言のみ）blocked→todo → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
+expect_ub "コマンド無し blocked→doing → 拒否" deny "{$UTP,$(ub_edit T-02 blocked doing)}"
+make_ub_transcript "$T_CHAT" "$U_OTHER_PLAN"
+expect_ub "別の計画 ID だけ → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
+make_ub_transcript "$T_CHAT" "$U_OTHER_TASK"
+expect_ub "別のタスク ID だけ → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
+make_ub_transcript "$T_CHAT" "$U_PREFIX"
+expect_ub "前方一致（T-020）だけ → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
+make_ub_transcript "$T_CHAT" "$U_TOOLRES"
+expect_ub "tool_result にしかコマンドが無い → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
+make_ub_transcript "$T_CHAT" "$U_META"
+expect_ub "isMeta の行にしかコマンドが無い → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
+# 会話記録が読めない時は許可（agent_type が空の時のみ）
+make_ub_transcript "$U_TOOLRES" "$U_META"
+expect_ub "人の発言が1件も無い → 許可（読めない扱い）" allow "{$UTP,$(ub_edit T-02 blocked todo)}"
+make_ub_transcript "not json" "{broken"
+expect_ub "どの行も JSON でない → 許可（読めない扱い）" allow "{$UTP,$(ub_edit T-02 blocked todo)}"
+expect_ub "transcript_path が無い → 許可" allow "{$(ub_edit T-02 blocked todo)}"
+expect_ub "読めない時でも agent_type=planner は拒否" deny "{\"agent_type\":\"planner\",$(ub_edit T-02 blocked todo)}"
+# 解除に当たらない書き込みは会話記録と無関係に許可
+make_ub_transcript "$T_CHAT"
+expect_ub "blocked→blocked（question の書き換え）→ 許可" allow '{'"$UTP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| q2 |","new_string":"| q2 改 |"}}'
+expect_ub "blocked 行を含まない新規 Write → 許可" allow '{'"$UTP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-NEW.md","content":"---\nstatus: draft\n---\n## タスク表\n| id | status | attempt | after | title | question |\n|--|--|--|--|--|--|\n| T-01 | todo | 0 | - | A | |\n"}}'
+expect_ub "T-01 の行が消えるだけ（今回は検査しない）→ 許可" allow '{'"$UTP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| T-01 | blocked | 1 | - | A | q1 |\n","new_string":""}}'
+make_plan "P-TEST" "approved" "| T-01 | todo | 0 | - | A | |" "| T-02 | doing | 1 | - | B | |" "| T-03 | review | 1 | - | C | |"
+expect_ub "todo→doing・コマンド無し → 許可" allow "{$UTP,$(ub_edit T-01 todo doing)}"
+expect_ub "doing→review → 許可" allow "{$UTP,$(ub_edit T-02 doing review)}"
+expect_ub "review→done → 許可" allow "{$UTP,$(ub_edit T-03 review done)}"
+expect_ub "review→doing → 許可" allow "{$UTP,$(ub_edit T-03 review doing)}"
+expect_ub "review→blocked → 許可" allow "{$UTP,$(ub_edit T-03 review blocked)}"
+expect_ub "doing→blocked → 許可" allow "{$UTP,$(ub_edit T-02 doing blocked)}"
+rm -f "$UB_TRANSCRIPT"
+
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 echo "== plan_guard.py =="

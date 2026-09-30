@@ -428,6 +428,92 @@ def approval_check(payload, root):
     return None, ("\n".join(warnings) if warnings else None)
 
 
+def is_unblock_command(text, plan_id, task_id):
+    """人の発言が `/plan unblock <plan_id> <task_id>`（スラッシュコマンド形式または文形式）か判定する。
+
+    後ろに回答が続いてよい。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べる。
+    agent_write_guard.py の同名関数のコピー。
+    """
+    want = ["unblock", plan_id, task_id]
+    if "<command-name>/plan</command-name>" in text:
+        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
+            if args.split()[:3] == want:
+                return True
+    t = text.lstrip()
+    if t.startswith("/plan") and t[5:6].isspace():
+        return t[5:].split()[:3] == want
+    return False
+
+
+def unblocked_rows(root):
+    """作業ツリーで blocked でなく、HEAD では blocked だった行を [(plan_id, file_name, task_id), ...] で返す。
+
+    対象は計画票すべて。HEAD の取得失敗（HEAD 無し・未追跡）は blocked の行が無い扱い。
+    作業ツリーに同じ id の行が無ければ検査しない。非 git ディレクトリ・git が使えない場合は空リスト。
+    """
+    plans_dir = os.path.join(root, "vault", "plans")
+    if not os.path.isdir(plans_dir):
+        return []
+    try:
+        inside = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True, timeout=5, cwd=root,
+        )
+    except Exception:
+        return []
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        return []
+    out = []
+    for name in sorted(os.listdir(plans_dir)):
+        if not name.endswith(".md"):
+            continue
+        path = os.path.join(plans_dir, name)
+        try:
+            shown = subprocess.run(
+                ["git", "show", f"HEAD:./vault/plans/{name}"],
+                capture_output=True, text=True, timeout=5, cwd=root,
+            )
+            if shown.returncode != 0:
+                continue
+            with open(path, encoding="utf-8") as f:
+                current = f.read()
+        except Exception:
+            continue
+        head_blocked = {c[0] for c in raw_rows(shown.stdout) if len(c) >= 2 and c[1] == "blocked"}
+        if not head_blocked:
+            continue
+        plan_id, _ = plan_id_and_status(path)
+        for cells in raw_rows(current):
+            if len(cells) >= 2 and cells[0] in head_blocked and cells[1] != "blocked":
+                out.append((plan_id, name, cells[0]))
+    return out
+
+
+def unblock_check(payload, root):
+    """blocked の解除の裏付けを会話記録で検査する。(block 理由 or None, 警告 or None) を返す。"""
+    warnings = []
+    transcript_path = payload.get("transcript_path")
+    humans = None
+    for plan_id, _name, task_id in unblocked_rows(root):
+        if humans is None:
+            humans = human_messages(transcript_path if isinstance(transcript_path, str) else None)
+        if not humans:
+            warnings.append(
+                f"[plan_guard] {plan_id}/{task_id} が blocked から書き換えられていますが、"
+                f"会話記録が読めないため解除の裏付けを検査できませんでした。"
+                f"人が /plan unblock {plan_id} {task_id} で指示した時だけ解除できます。"
+            )
+            continue
+        if not any(is_unblock_command(t, plan_id, task_id) for t in humans):
+            return (
+                f"[plan_guard] {plan_id}/{task_id} が blocked から書き換えられていますが、"
+                f"人の /plan unblock {plan_id} {task_id} の指示が会話記録にありません。"
+                f"git restore vault/plans/{plan_id}.md で元に戻してください"
+                f"（blocked の解除は人が /plan unblock {plan_id} {task_id} で指示した時だけ行えます）。"
+            ), None
+    return None, ("\n".join(warnings) if warnings else None)
+
+
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -459,6 +545,10 @@ def main():
     reason, warning = approval_check(payload, root)
     if reason:
         block(reason)
+    reason2, warning2 = unblock_check(payload, root)
+    if reason2:
+        block(reason2)
+    warning = "\n".join(w for w in (warning, warning2) if w) or None
 
     def finish():
         """終了経路。既存の検査がブロックしなかった時だけ、承認の裏付け警告を1回出して終わる。"""

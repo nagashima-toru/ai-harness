@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-unblock-transcript-guard/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 15:45",
+  "criteria": [
+    {"text": "`## C` の見出しで解除の節があり、引数が `unblock <計画ID> <id> [回答]` のコマンドで来たことの確認（自然文の解除は受け付けず、`/plan unblock <計画ID> <id> [回答]` を打つよう案内して止まる）が最初の手順にある。確認：`grep -n '^## C' .claude/skills/plan/SKILL.md` がヒットし、`grep -n '自然文' .claude/skills/plan/SKILL.md` が C 節内にもヒットする", "ok": true, "note": "実行コマンド（worktree 内）: `grep -n '^## C\\|自然文' .claude/skills/plan/SKILL.md` / 出力: 28行目に `## C. blocked を解除する...`、29行目（C 節の手順1）に自然文の場合は案内して止まる旨。手順1が最初の手順"},
+    {"text": "C 節が、対象行が `blocked` であることの確認（違えば解除せず状況を伝えて止まる）、回答があればタスク票の「決定済み」への追記、行の status を `todo`・attempt を `0`・question を空にする手順を書いている（目視で確認）", "ok": true, "note": "確認方法: SKILL.md の diff を目視。手順2に blocked 確認と不一致時の停止、手順3に回答の「決定済み」追記、手順4に status=todo・attempt=0・question 空が記載されている"},
+    {"text": "C 節が `- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>` の log 追記（日時は `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'`）と、ファイルを名前で指定した `git add`・`git commit` の手順を書いている。確認：`grep -n 'blocked→todo 人の指示: /plan unblock' .claude/skills/plan/SKILL.md` がヒットする", "ok": true, "note": "実行コマンド: `grep -n 'blocked→todo 人の指示: /plan unblock' .claude/skills/plan/SKILL.md` / 出力: 33行目にヒット。手順5に TZ=Asia/Tokyo の date 指定、手順6に3ファイル名指定の git add と git commit、git add . / -A 禁止の記載あり"},
+    {"text": "frontmatter の description に解除（unblock）でも使う旨があり、`argument-hint` が `[ゴール | approve <計画ID> | unblock <計画ID> <id> [回答]]` である。確認：`grep -n 'unblock' .claude/skills/plan/SKILL.md | head -3` に description と argument-hint の行が含まれる", "ok": true, "note": "実行コマンド: `grep -n 'unblock' .claude/skills/plan/SKILL.md | head -3` / 出力: 3行目（description、「解除（unblock）にも使う」）、4行目（argument-hint が指定どおり）、7行目（冒頭説明文）"},
+    {"text": "A・B 節と注意節の手順の意味が変わっていない。確認：`git diff -- .claude/skills/plan/SKILL.md | grep -E '^-[^-]'` の出力が、description・argument-hint・冒頭の説明文の行に収まることを目視で確認する", "ok": true, "note": "実行コマンド: `git diff -- .claude/skills/plan/SKILL.md`（worktree 内、未コミット差分）/ 出力: 削除行は description・argument-hint・冒頭説明文の3行のみ。A・B 節と注意節は変更なし（C 節の追加のみ）。起点コミットの記録がタスク票の進捗に無いため、成果物外ファイル検査は行っていない。参考として `git diff --name-only` は SKILL.md とタスク票のみ"}
+  ],
+  "reasons": []
+}

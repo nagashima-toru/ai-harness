@@ -1,0 +1,14 @@
+{
+  "task": "P-20260930-unblock-transcript-guard/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-09-30 15:46",
+  "criteria": [
+    {"text": "4節が `/plan unblock <計画ID> <id> [回答]` を打つ手順になっている。確認：`grep -n '/plan unblock' docs/runbook.md` が4節内の行にヒットする", "ok": true, "note": "実行コマンド: `grep -n '/plan unblock' docs/runbook.md`（worktree内） / 出力: 36,39,44,47行にヒット。4節は34-50行で全て4節内。手順2で打つ形になっている"},
+    {"text": "4節が、エージェントが行う処理（回答の「決定済み」への追記・status を `todo`・attempt を `0`・question を空にする・log 追記・コミット）を説明し、回答を省略できる場合（ハングやマージコンフリクトなど答える質問が無い blocked）と、1回のコマンドで解除するのは1行だけである旨を書いている（目視で確認）", "ok": true, "note": "確認方法: 4節を目視（awk で抽出）/ 出力: 「エージェントが次を行う」に追記・todo・attempt 0・question 空・log・コミットの5点、39行に回答省略可（ハング等）と1回1行の旨あり"},
+    {"text": "4節が、フックが会話記録の人の発言でコマンドの有無を確認するため、エージェントが独断で解除できない旨と、人がエディタで計画票を直接直す方法が代替手段であり、その場合フックは働かない旨を書いている（目視で確認）", "ok": true, "note": "確認方法: 4節を目視 / 出力: 47行にフックが会話記録で確認・独断解除不可、49行に代替手段としてエディタ直接編集・フックは働かない旨あり"},
+    {"text": "4節の「`blocked→todo` は人だけが行う」の文が、`/plan unblock` で人が指示する旨に書き換わっている。確認：`grep -n 'blocked→todo` は人だけ' docs/runbook.md` がヒットしない", "ok": true, "note": "実行コマンド: `grep -n 'blocked→todo` は人だけ' docs/runbook.md` / 出力: ヒットなし。47行は「人が /plan unblock で指示して初めて行われる」に変わっている"},
+    {"text": "4節以外の節の手順の意味が変わっていない。確認：`git diff -- docs/runbook.md | grep -E '^@@'` の変更箇所が4節（と必要なら冒頭の行）に収まることを目視で確認する", "ok": true, "note": "実行コマンド: `git diff -- docs/runbook.md | grep -E '^@@'` / 出力: @@ -32,12 +32,21 @@ の1箇所のみ。行32-52付近で4節（34-50行）に収まる。なお worktree の変更は未コミットで進捗に起点コミット記録も無いため、手順10の起点コミット差分検査は行わず、代わりに `git diff --name-only 1656af0` で docs/runbook.md と T-04 タスク票のみを確認（宣言外ファイルなし）"}
+  ],
+  "reasons": []
+}

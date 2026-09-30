@@ -20,7 +20,7 @@ PR 本文では `Closes #78` を使う。
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | docs/vault-spec.md 7節に worktree の記録行の書式を追記する | |
 | T-02 | done | 1 | T-01 | run SKILL.md 手順3に worktree 記録行の追記手順を足し「永続化は不要」を削除する | |
-| T-03 | doing | 1 | T-02 | run SKILL.md 手順2.2の review・doing の再開手順を記録行を使う形に書き換える | |
+| T-03 | review | 1 | T-02 | run SKILL.md 手順2.2の review・doing の再開手順を記録行を使う形に書き換える | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

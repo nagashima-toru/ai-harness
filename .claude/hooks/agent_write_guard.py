@@ -547,6 +547,56 @@ def is_approve_command(text, plan_id):
     return bool(m) and m.group(1) == plan_id
 
 
+def find_plan_unblocks(tool, tool_input, root):
+    """この呼び出しが計画票のタスク表で blocked の行を blocked 以外にするなら (計画 ID, [id...]) を返す。
+
+    書き込み前に blocked で、書き込み後に同じ id の行があり status が blocked でないものが解除。
+    ファイルが無い・組み立てられない・行が消えるだけの場合は解除に当たらない（None）。
+    """
+    if tool not in ("Write", "Edit", "MultiEdit"):
+        return None
+    path = tool_input.get("file_path") or ""
+    m = PLAN_FILE_RE.match(normalize(path, root))
+    if not m:
+        return None
+    abs_path = path if os.path.isabs(path) else os.path.join(root, path)
+    try:
+        with open(abs_path, encoding="utf-8") as f:
+            current = f.read()
+    except Exception:
+        return None
+    after = content_after_write(tool, tool_input, current)
+    if after is None:
+        return None
+    after_status = {}
+    for cells in plan_raw_rows(after):
+        if len(cells) >= 2:
+            after_status[cells[0]] = cells[1]
+    ids = []
+    for cells in plan_raw_rows(current):
+        if len(cells) >= 2 and cells[1] == "blocked":
+            new = after_status.get(cells[0])
+            if new is not None and new != "blocked":
+                ids.append(cells[0])
+    return (m.group(1), ids) if ids else None
+
+
+def is_unblock_command(text, plan_id, task_id):
+    """人の発言が `/plan unblock <plan_id> <task_id>`（スラッシュコマンド形式または文形式）か判定する。
+
+    後ろに回答が続いてよい。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べる。
+    """
+    want = ["unblock", plan_id, task_id]
+    if "<command-name>/plan</command-name>" in text:
+        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
+            if args.split()[:3] == want:
+                return True
+    t = text.lstrip()
+    if t.startswith("/plan") and t[5:6].isspace():
+        return t[5:].split()[:3] == want
+    return False
+
+
 def delegate_to_worktree(payload):
     """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
     `.claude/hooks/agent_write_guard.py` へ判定を委譲する（issue #56 / D-008 フェーズ1）。
@@ -648,6 +698,19 @@ def main():
         humans = human_messages(payload.get("transcript_path"))
         if humans and not any(is_approve_command(t, approved_plan) for t in humans):
             deny(deny_reason)
+
+    # blocked の解除（blocked→他）は、人が /plan unblock <計画ID> <id> で指示した時だけ許可する（D-010 フェーズ5）。
+    # agent_type が空で、会話記録に一致する人の発言がある、または会話記録が読めない時は許可。
+    unblock = find_plan_unblocks(tool, tool_input, root)
+    if unblock:
+        plan_id, task_ids = unblock
+        humans = human_messages(payload.get("transcript_path")) if not agent else []
+        for tid in task_ids:
+            if agent or (humans and not any(is_unblock_command(t, plan_id, tid) for t in humans)):
+                deny(
+                    f"[agent_write_guard] {plan_id}/{tid} の blocked の解除（status を blocked 以外にすること）は、"
+                    f"人が /plan unblock {plan_id} {tid} で指示した時だけ許可されます。"
+                )
 
     # done タスクへの書き込み拒否：agent_type を問わず、対応する計画票で status が done な
     # id の vault/tasks/・vault/verdicts/ への書き込みは常に拒否する（解除口は無い）。

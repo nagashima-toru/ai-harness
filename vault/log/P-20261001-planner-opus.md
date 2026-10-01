@@ -1,0 +1,1 @@
+- 2026-10-01 21:40 - draft→approved 人の指示: /plan approve P-20261001-planner-opus

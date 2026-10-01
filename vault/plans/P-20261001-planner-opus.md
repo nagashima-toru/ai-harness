@@ -1,6 +1,6 @@
 ---
 id: P-20261001-planner-opus
-status: draft
+status: approved
 ---
 # ゴール
 

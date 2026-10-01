@@ -1,6 +1,6 @@
 ---
 id: P-20261001-unattended-wrapper
-status: draft
+status: approved
 ---
 # ゴール
 `scripts/run_unattended.py` を新規作成する。環境変数 `HARNESS_RUN_CMD`（既定 `claude -p "/run"`）で指定したコマンドを、新しいプロセスグループで起動する。環境変数 `HARNESS_RUN_TIMEOUT`（秒、既定 3600）を過ぎたら、プロセスグループに SIGTERM を送り、10秒待っても終わらなければ SIGKILL を送り、終了コード124で終わる。時間内に終われば、子プロセスの終了コードをそのまま返す。`docs/runbook.md` の無人実行の手順を、このラッパーを cron・CI から呼ぶ形に書き換え、`.claude/skills/run/SKILL.md` の「ハング時の復旧」節に、無人実行ではラッパーが止め、次回の `/run` がフェーズ6の再開手順で続きから再開する旨を追記する。`scripts/smoke.sh` にテストを足す（issue #79、`vault/designs/D-010.md` フェーズ7）。

@@ -1,6 +1,6 @@
 ---
 id: P-20261001-model-stats
-status: approved
+status: done
 ---
 # ゴール
 

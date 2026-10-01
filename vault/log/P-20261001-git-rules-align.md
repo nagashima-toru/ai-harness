@@ -1,0 +1,1 @@
+- 2026-10-02 06:49 - draft→approved 人の指示: /plan approve P-20261001-git-rules-align

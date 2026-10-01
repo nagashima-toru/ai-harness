@@ -1,0 +1,1 @@
+- 2026-10-01 22:07 - draft→approved 人の指示: /plan approve P-20261001-generic-rules

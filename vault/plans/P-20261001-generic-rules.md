@@ -1,6 +1,6 @@
 ---
 id: P-20261001-generic-rules
-status: draft
+status: approved
 ---
 # ゴール
 

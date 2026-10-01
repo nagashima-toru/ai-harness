@@ -28,9 +28,9 @@ git 運用の記述を、現在の run の役割分担に揃える。役割分�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | common/git.md 改訂版の提案を書く | |
-| T-02 | doing | 1 | - | verifier.md の宣言外ファイル検査の理由と範囲を直す提案を書く | |
-| T-03 | doing | 1 | - | agents/verifier.md 手順10の理由と範囲を直す | |
+| T-01 | review | 1 | - | common/git.md 改訂版の提案を書く | |
+| T-02 | review | 1 | - | verifier.md の宣言外ファイル検査の理由と範囲を直す提案を書く | |
+| T-03 | review | 1 | - | agents/verifier.md 手順10の理由と範囲を直す | |
 | T-04 | todo | 0 | - | vault-spec.md 22行目の証跡の説明を直す | |
 | T-05 | todo | 0 | - | README.md の PR 作成の主語と手段を直す | |
 | T-06 | todo | 0 | - | run SKILL.md 注意節のコミットの主語を creator にする | |

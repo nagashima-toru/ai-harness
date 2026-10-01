@@ -1,0 +1,15 @@
+{
+  "task": "P-20261002-write-guard-false-positive/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-02 07:52",
+  "criteria": [
+    {"text": "フックが構文エラー無くコンパイルできる。確認：`python3 -m py_compile .claude/hooks/agent_write_guard.py` の終了コードが 0", "ok": true, "note": "実行コマンド: `python3 -m py_compile .claude/hooks/agent_write_guard.py; echo rc=$?`（worktree 内） / 出力: rc=0"},
+    {"text": "smoke が全件 pass し、NG が無い。確認：`bash scripts/smoke.sh > /tmp/P-20261002-write-guard-false-positive-T-01-smoke.txt 2>&1` の後、`tail -1 /tmp/P-20261002-write-guard-false-positive-T-01-smoke.txt` が `smoke: pass=<N> fail=0`（`<N>` は 386 以上）で、`grep -c '^  NG' /tmp/P-20261002-write-guard-false-positive-T-01-smoke.txt` が `0`", "ok": true, "note": "verifier の Bash はファイルへのリダイレクトが拒否されるため、出力を変数 OUT に格納する代替方法で実行。実行コマンド: `OUT=$(bash scripts/smoke.sh 2>&1); echo \"$OUT\" | tail -1; echo \"$OUT\" | grep -c '^  NG'` / 出力: smoke: pass=386 fail=0、NG 件数 0"},
+    {"text": "「決定済み」の許可ケース5件（現行コードでは拒否される誤検知）が、smoke で許可として通る。確認：同じ出力ファイルに対して `grep -c '^  ok   (bash-parse) .*→ 許可' /tmp/P-20261002-write-guard-false-positive-T-01-smoke.txt` が `5` 以上", "ok": true, "note": "ファイル出力の代わりに変数 OUT で実行。実行コマンド: `echo \"$OUT\" | grep -c '^  ok   (bash-parse) .*→ 許可'` / 出力: 5"},
+    {"text": "「決定済み」の拒否ケース11件（実際の書き込みと、解析できない形の従来判定へのフォールバック）が、smoke で拒否として通る。確認：同じ出力ファイルに対して `grep -c '^  ok   (bash-parse) .*→ 拒否' /tmp/P-20261002-write-guard-false-positive-T-01-smoke.txt` が `11` 以上", "ok": true, "note": "ファイル出力の代わりに変数 OUT で実行。実行コマンド: `echo \"$OUT\" | grep -c '^  ok   (bash-parse) .*→ 拒否'` / 出力: 11"},
+    {"text": "既存の smoke ケースを削除・変更していない（追加だけ）。確認：`git diff main --numstat -- scripts/smoke.sh` の2列目（削除行数）が `0`", "ok": true, "note": "実行コマンド: `git diff main --numstat -- scripts/smoke.sh` / 出力: 22 0 scripts/smoke.sh（削除行 0）"},
+    {"text": "解析関数が定義され、2つの判定から呼ばれている。確認：`grep -n 'analyze_bash_writes(' .claude/hooks/agent_write_guard.py` に `def analyze_bash_writes(` の行と、`targets_vault_rules`・`targets_transcript_dir` の本文内の呼び出し行が出る（計3行以上）", "ok": true, "note": "実行コマンド: `grep -n 'analyze_bash_writes(' .claude/hooks/agent_write_guard.py` / 出力: 464 def、552、589 の3行。`grep -n '^def '` で targets_vault_rules=539、targets_transcript_dir=576 から始まるため 552・589 はそれぞれの本文内。宣言外ファイル検査：起点コミット c1a80b3 から `git diff --name-only c1a80b3..HEAD` は空、`git status --porcelain` は agent_write_guard.py・scripts/smoke.sh・T-01.md（進捗は除外対象）のみで、成果物宣言外のファイルは無し"}
+  ],
+  "reasons": []
+}

@@ -19,7 +19,7 @@
 「自分のブランチの計画票」は `vault/plans/*.md` を走査し、frontmatter の `status` が `approved` のものを取る。2つ以上 `approved` があるのは異常（1ブランチ1計画の不変条件）。
 実際にこの走査を行うスクリプトが `scripts/current_plan.sh`（`vault/plans/*.md` の frontmatter のみを見て、approved な計画票の計画 ID を1行1件で出力する）。
 
-証跡は3層で残る。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git のステップごとのコミットと PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
+証跡は3層で残る。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとのマージコミット。worktree での作業を計画ブランチへ `git merge --no-ff` で取り込んだもの）と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
 
 ## 2. 状態（5つで固定、英小文字）
 

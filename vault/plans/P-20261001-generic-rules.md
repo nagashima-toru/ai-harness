@@ -1,6 +1,6 @@
 ---
 id: P-20261001-generic-rules
-status: approved
+status: done
 ---
 # ゴール
 
@@ -30,7 +30,7 @@ PR 本文用：`Closes #80`
 | T-03 | done | 1 | - | git-workflow.md 改訂版の提案を書く | |
 | T-04 | done | 1 | - | 契約タスクの記述を agents/planner.md・vault-spec.md から README の拡張例へ移す | |
 | T-05 | done | 1 | - | settings.json の allow から npm・npx・pytest・make を外す | |
-| T-06 | review | 1 | T-01,T-02,T-03,T-04,T-05 | smoke を通し配布対象に lessons が無いことを確認する | |
+| T-06 | done | 1 | T-01,T-02,T-03,T-04,T-05 | smoke を通し配布対象に lessons が無いことを確認する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

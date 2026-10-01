@@ -1234,6 +1234,29 @@ expect_eq "(t) unmerge_settings_json.py の unmerge 報告がある" "1" "$(echo
 expect_eq "(u) マニフェストファイル自体も削除される" "0" "$([ -f "$UNTMP/.claude/harness-manifest.json" ] && echo 1 || echo 0)"
 rm -rf "$UNTMP"
 
+echo "== run_unattended.py =="
+RU_PY="$ROOT/scripts/run_unattended.py"
+RU_PID=/tmp/P-20261001-unattended-wrapper-T-02.pid
+RU_ERR=/tmp/P-20261001-unattended-wrapper-T-02.err
+rm -f "$RU_PID" "$RU_ERR"
+HARNESS_RUN_CMD='sleep 30' HARNESS_RUN_TIMEOUT=1 python3 "$RU_PY" 2>"$RU_ERR"; rurc=$?
+expect_eq "(ru-1) タイムアウトの終了コードが124" "124" "$rurc"
+expect_eq "(ru-1) タイムアウト時の標準エラーに 'run_unattended: timeout 1s'" "1" "$(grep -c '^run_unattended: timeout 1s$' "$RU_ERR")"
+HARNESS_RUN_CMD='sh -c "exit 3"' HARNESS_RUN_TIMEOUT=5 python3 "$RU_PY" 2>/dev/null; rurc=$?
+expect_eq "(ru-2) 子の終了コード3が透過される" "3" "$rurc"
+rm -f "$RU_PID" "$RU_ERR"
+HARNESS_RUN_CMD="sh -c 'sleep 60 & echo \$! > $RU_PID; wait'" HARNESS_RUN_TIMEOUT=1 python3 "$RU_PY" 2>"$RU_ERR"; rurc=$?
+expect_eq "(ru-3) 孫プロセス構成でもタイムアウトは124" "124" "$rurc"
+ru_gpid="$(cat "$RU_PID" 2>/dev/null)"
+expect_eq "(ru-3) 孫の PID が記録されている" "1" "$([ -n "$ru_gpid" ] && echo 1 || echo 0)"
+ru_i=0
+while [ -n "$ru_gpid" ] && kill -0 "$ru_gpid" 2>/dev/null && [ "$ru_i" -lt 20 ]; do
+  sleep 0.1; ru_i=$((ru_i+1))
+done
+kill -0 "$ru_gpid" 2>/dev/null; rurc=$?
+expect_eq "(ru-3) タイムアウト後に孫プロセスが生きていない（kill -0 が失敗）" "1" "$rurc"
+rm -f "$RU_PID" "$RU_ERR"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

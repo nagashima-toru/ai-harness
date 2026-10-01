@@ -66,14 +66,14 @@ bash scripts/smoke.sh        # フックの動作検証
  │                        │                                       │ verdicts/<計画ID>/<id>.json
  │                        │ ◀─────────────────────────────────────┘
  │                        │ PASS → done / FAIL → doing(attempt+1) / 上限 → blocked
- │                        │ 全タスク done → status を done にし gh pr create
+ │                        │ 全タスク done → status を done にし vcs_finish.sh で PR
  │                        ▼
  │               Stop フック（stop_gate.py）
  │               計画票のタスク表と verdict を照合し、整合しない終了をブロック
  │ blocked に答えて戻す・PR をマージ
  └──────────────────────▶ vault/plans/<計画ID>.md（状態の正本）  vault/log/<計画ID>.md（追記ログ）
 ```
-PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `gh pr create` までしか行わない）。
+PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェント（オーケストレーター）は `bash scripts/vcs_finish.sh` で PR を作るまでしか行わない）。
 
 ## 構成
 ```

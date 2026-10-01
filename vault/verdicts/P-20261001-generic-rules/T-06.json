@@ -1,0 +1,13 @@
+{
+  "task": "P-20261001-generic-rules/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 22:15",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh > /tmp/P-20261001-generic-rules-T-06.txt 2>&1` を実行した後、`tail -1 /tmp/P-20261001-generic-rules-T-06.txt` の出力が `fail=0` で終わる（`smoke: pass=<N> fail=0` の形）", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh > /tmp/...-T-06.txt 2>&1; tail -1` / 出力: smoke: pass=370 fail=0（rc=0）"},
+    {"text": "`install.sh` に `ai-harness-lessons` の記述が無い（`grep -c 'ai-harness-lessons' scripts/install.sh` が `0`）", "ok": true, "note": "実行コマンド: `grep -c 'ai-harness-lessons' scripts/install.sh` / 出力: 0"},
+    {"text": "提案ファイル3つがそろっている（`ls vault/tasks/P-20261001-generic-rules/T-01-proposal.md vault/tasks/P-20261001-generic-rules/T-02-proposal.md vault/tasks/P-20261001-generic-rules/T-03-proposal.md` が終了コード0）", "ok": true, "note": "実行コマンド: 上記 ls / 出力: 3ファイルとも列挙、終了コード0"},
+    {"text": "`.claude/agents/planner.md` と `docs/vault-spec.md` に「契約」の記述が無いことが、マージ後の計画ブランチでも保たれている（`grep -n '契約' .claude/agents/planner.md docs/vault-spec.md` が何も出力しない）", "ok": true, "note": "実行コマンド: `grep -n '契約' .claude/agents/planner.md docs/vault-spec.md` / 出力: 無し（終了コード1）。起点コミットの記録がタスク票の進捗に無いため、変更ファイル一覧の検査は行っていない"}
+  ],
+  "reasons": []
+}

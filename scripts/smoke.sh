@@ -1257,6 +1257,63 @@ kill -0 "$ru_gpid" 2>/dev/null; rurc=$?
 expect_eq "(ru-3) タイムアウト後に孫プロセスが生きていない（kill -0 が失敗）" "1" "$rurc"
 rm -f "$RU_PID" "$RU_ERR"
 
+echo "== model_stats.py =="
+MS_PY="$ROOT/scripts/model_stats.py"
+MS_DIR="$(mktemp -d)"
+cat > "$MS_DIR/P-MS.md" <<'MSEOF'
+# log
+- 2026-10-01 10:00 T-01 todo→doing attempt=1
+- 2026-10-01 10:01 T-01 worktree path=/tmp/wt-T-01
+- 2026-10-01 10:05 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-01 10:10 T-01 review→done attempt=1 verifier=opus
+- 2026-10-01 11:00 T-02 todo→doing attempt=1
+- 2026-10-01 11:05 T-02 doing→review attempt=1 creator=haiku
+- 2026-10-01 11:10 T-02 review→doing attempt=2 verifier=opus 理由
+- 2026-10-01 11:15 T-02 doing→review attempt=2 creator=haiku
+- 2026-10-01 11:20 T-02 review→done attempt=2 verifier=opus
+- 2026-10-01 12:00 T-03 todo→doing attempt=1
+- 2026-10-01 12:05 T-03 doing→review attempt=1 creator=haiku
+- 2026-10-01 12:10 T-03 review→blocked attempt=1 verifier=opus 質問
+- 2026-10-01 13:00 T-04 todo→doing attempt=1
+- 2026-10-01 13:05 T-04 doing→review attempt=1
+- 2026-10-01 13:10 T-04 review→done attempt=1
+MSEOF
+ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\nhaiku\t2\t0.00\t1.50\t0.50\nsonnet\t1\t1.00\t1.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00')"
+ms_got="$(python3 "$MS_PY" "$MS_DIR/P-MS.md")"
+expect_eq "(ms-1) フィクスチャ log の集計出力（見出し行・モデル別の行）が期待値と一致" "$ms_want" "$ms_got"
+expect_eq "(ms-1) 見出し行がタブ区切りの5列" "5" "$(echo "$ms_got" | head -1 | awk -F'\t' '{print NF}')"
+python3 "$MS_PY" >/dev/null 2>&1; msrc=$?
+expect_eq "(ms-2) 引数なしの実行が現在の vault/log に対して終了コード0" "0" "$msrc"
+mkdir -p "$MS_DIR/root/scripts" "$MS_DIR/root/vault/log" "$MS_DIR/root/vault/archive/2026-01"
+cp "$MS_PY" "$MS_DIR/root/scripts/model_stats.py"
+grep -v 'creator=haiku' "$MS_DIR/P-MS.md" > "$MS_DIR/root/vault/log/P-LIVE.md"
+cp "$MS_DIR/P-MS.md" "$MS_DIR/root/vault/archive/2026-01/P-OLD.md"
+ms_def="$(python3 "$MS_DIR/root/scripts/model_stats.py")"
+expect_eq "(ms-2) vault/archive/ 配下は既定の対象に含まれない（haiku の行が出ない）" "0" "$(echo "$ms_def" | grep -c '^haiku')"
+expect_eq "(ms-2) vault/log/ 配下は既定の対象になる（sonnet の行が出る）" "1" "$(echo "$ms_def" | grep -c '^sonnet')"
+expect_eq "(ms-3) SKILL.md に creator= の記述" "1" "$(grep -q 'creator=' "$ROOT/.claude/skills/run/SKILL.md" && echo 1 || echo 0)"
+expect_eq "(ms-3) SKILL.md に verifier= の記述" "1" "$(grep -q 'verifier=' "$ROOT/.claude/skills/run/SKILL.md" && echo 1 || echo 0)"
+expect_eq "(ms-3) vault-spec.md に verifier= の記述" "1" "$(grep -q 'verifier=' "$ROOT/docs/vault-spec.md" && echo 1 || echo 0)"
+rm -rf "$MS_DIR"
+
+# creator=/verifier= 付きの log とタスク表がある状態でも stop_gate.py・plan_guard.py の判定が変わらない
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP/vault/log"
+cat > "$TMP/vault/log/P-TEST.md" <<'MSEOF'
+- 2026-10-01 10:00 T-0001 todo→doing attempt=1
+- 2026-10-01 10:05 T-0001 doing→review attempt=1 creator=sonnet
+- 2026-10-01 10:10 T-0001 review→done attempt=1 verifier=opus
+- 2026-10-01 11:05 T-0002 doing→review attempt=1 creator=haiku
+MSEOF
+make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0002 | review | 1 | - | B | |"
+make_verdict T-0001 1 PASS; make_verdict T-0002 1 PASS
+expect "(ms-4) 補足付き log・stop_gate: review で PASS → ブロック（done にする指示）" block "$(run_stop)" "done"
+make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0002 | done | 1 | - | B | |"
+expect "(ms-4) 補足付き log・stop_gate: 全 done → 許可" allow "$(run_stop)"
+expect "(ms-4) 補足付き log・plan_guard: 正常な計画票 → 許可" allow "$(run_plan_guard)"
+make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0001 | done | 1 | - | B | |"
+expect "(ms-4) 補足付き log・plan_guard: id 重複 → ブロック（判定が変わらない）" block "$(run_plan_guard)" "重複"
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP/vault/plans"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

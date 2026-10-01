@@ -1,0 +1,14 @@
+{
+  "task": "P-20261001-generic-rules/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 22:11",
+  "criteria": [
+    {"text": "`.claude/agents/planner.md` と `docs/vault-spec.md` に「契約」の記述が無い（`grep -n '契約' .claude/agents/planner.md docs/vault-spec.md` が何も出力しない）", "ok": true, "note": "実行コマンド: `grep -n '契約' .claude/agents/planner.md docs/vault-spec.md`（worktree 内） / 出力: 無し。差分は該当1項目の削除のみ"},
+    {"text": "`.claude/agents/planner.md` の「粒度の基準（必ず守る）」節の箇条が7から1つ減って6である（`awk '/^## 粒度の基準/{f=1;next} /^## /{f=0} f && /^- /{n++} END{print n}' .claude/agents/planner.md` が `6`）", "ok": true, "note": "実行コマンド: 基準記載の awk / 出力: 6"},
+    {"text": "`docs/vault-spec.md` の8節の箇条が7から1つ減って6である（`awk '/^## 8\\./{f=1;next} /^## 9\\./{f=0} f && /^- /{n++} END{print n}' docs/vault-spec.md` が `6`）", "ok": true, "note": "実行コマンド: 基準記載の awk / 出力: 6"},
+    {"text": "README の「拡張ポイント（ルール）」節に、契約タスクを `vault/rules/planner/` に置く拡張の例が書かれている（`awk '/^## 拡張ポイント/{f=1} /^## 仕組み/{f=0} f && /契約/ && /vault\\/rules\\/planner\\//' README.md` が1行以上出力する）", "ok": true, "note": "実行コマンド: 基準記載の awk / 出力: 「導入先で積む拡張の例（ハーネス同梱の標準ルールではない）：開発案件なら…「契約」タスクを先に切り…`vault/rules/planner/` に置く」の1行"},
+    {"text": "README の見出し（`## `）の数が変わっていない（`grep -c '^## ' README.md` が `7`）", "ok": true, "note": "実行コマンド: `grep -c '^## ' README.md` / 出力: 7"}
+  ],
+  "reasons": []
+}

@@ -33,7 +33,7 @@ git 運用の記述を、現在の run の役割分担に揃える。役割分�
 | T-03 | done | 1 | - | agents/verifier.md 手順10の理由と範囲を直す | |
 | T-04 | done | 1 | - | vault-spec.md 22行目の証跡の説明を直す | |
 | T-05 | done | 1 | - | README.md の PR 作成の主語と手段を直す | |
-| T-06 | review | 1 | - | run SKILL.md 注意節のコミットの主語を creator にする | |
+| T-06 | done | 1 | - | run SKILL.md 注意節のコミットの主語を creator にする | |
 | T-07 | todo | 0 | T-01,T-02,T-03,T-04,T-05,T-06 | smoke を通し SKILL.md の引用と提案の一致を確認する | |
 
 ## 計画の受け入れ基準

@@ -20,7 +20,7 @@ PR 本文では `Closes #79` を使う。
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | scripts/run_unattended.py を新規作成する（タイムアウト付きで HARNESS_RUN_CMD を実行） | |
-| T-02 | review | 1 | T-01 | scripts/smoke.sh に run_unattended.py のテストを足す | |
+| T-02 | done | 1 | T-01 | scripts/smoke.sh に run_unattended.py のテストを足す | |
 | T-03 | review | 1 | T-01 | docs/runbook.md 3節の無人実行の手順を run_unattended.py 経由に書き換える | |
 | T-04 | review | 1 | T-01 | run SKILL.md「ハング時の復旧」節に無人実行時のラッパーの記述を追記する | |
 

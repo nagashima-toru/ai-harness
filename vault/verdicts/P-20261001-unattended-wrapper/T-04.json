@@ -1,0 +1,14 @@
+{
+  "task": "P-20261001-unattended-wrapper/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 12:00",
+  "criteria": [
+    {"text": "「ハング時の復旧」節に、無人実行（cron・CI）では `scripts/run_unattended.py` がタイムアウトで止める旨がある。確認：`grep -n 'run_unattended.py' .claude/skills/run/SKILL.md` が同節の行にヒットする", "ok": true, "note": "実行コマンド: worktree で `grep -n 'run_unattended.py' .claude/skills/run/SKILL.md` と見出し一覧 / 出力: 60行目にヒット（節は50〜61行、## 6. は62行）。HARNESS_RUN_TIMEOUT で止め終了コード124と記載"},
+    {"text": "止められた後は、次回の `/run` が手順2.2の再開手順で続きから再開する旨がある。確認：`grep -n '手順2.2' .claude/skills/run/SKILL.md` が同節の行にもヒットする", "ok": true, "note": "実行コマンド: 同上 grep / 出力: 手順2.2 が60行目（同節内）にヒット。次回の /run が続きから行う旨を記載"},
+    {"text": "対話実行では従来どおり人が TaskStop で止め、既存の手順1・2（creator・verifier のハング復旧）が変わっていない。確認：`git diff -- .claude/skills/run/SKILL.md` の削除行（`-` で始まる行、`---` を除く）が無い、または見出し・番号付き手順の行を含まない", "ok": true, "note": "実行コマンド: `git diff -- .claude/skills/run/SKILL.md`（worktree） / 出力: 追加2行（段落と空行）のみ、削除行なし"},
+    {"text": "変更が「ハング時の復旧」節の範囲に収まる。確認：`git diff -- .claude/skills/run/SKILL.md` の `@@` 行が同節（`## ハング時の復旧` から `## 6.` の手前）に収まることを目視で確認する", "ok": true, "note": "実行コマンド: 同 git diff / 出力: @@ -57,6 +57,8 @@ の1ハンクのみ、追加は60〜61行で ## 6.（62行）の手前。節末尾に収まる。未コミット変更は SKILL.md とタスク票のみ。進捗に起点コミットの記録が無いため宣言外ファイル検査は未実施"},
+    {"text": "`bash scripts/smoke.sh` の最終行が `fail=0` になる", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh | tail -1` / 出力: smoke: pass=352 fail=0"}
+  ],
+  "reasons": []
+}

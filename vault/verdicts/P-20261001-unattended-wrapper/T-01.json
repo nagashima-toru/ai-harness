@@ -1,0 +1,15 @@
+{
+  "task": "P-20261001-unattended-wrapper/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 12:00",
+  "criteria": [
+    {"text": "`HARNESS_RUN_CMD='sleep 30' HARNESS_RUN_TIMEOUT=1 python3 scripts/run_unattended.py` が10秒以内に終了コード124で終わる。確認：実行して `echo $?` が 124", "ok": true, "note": "worktree 内で実行 / 出力: rc=124 elapsed=2（秒）"},
+    {"text": "`HARNESS_RUN_CMD='sh -c \"exit 3\"' python3 scripts/run_unattended.py` の終了コードが 3 になる。確認：実行して `echo $?` が 3", "ok": true, "note": "実行コマンド: 同左 / 出力: rc=3"},
+    {"text": "タイムアウト時に標準エラーへ `run_unattended: timeout 1s` の1行が出る（`HARNESS_RUN_TIMEOUT=1` の場合）。確認：grep -x がヒットする", "ok": true, "note": "実行コマンド: sleep 30 / TIMEOUT=1 を 2> /tmp/P-20261001-unattended-wrapper-T-01.txt、続けて grep -x / 出力: 1行ヒット、終了 0"},
+    {"text": "`HARNESS_RUN_CMD`・`HARNESS_RUN_TIMEOUT` を未設定にした時の既定値が、コード上で `claude -p \"/run\"` と 3600 になっている。確認：grep -n '3600' と grep -n 'claude -p' がヒットする", "ok": true, "note": "実行コマンド: grep -n / 出力: 19行目 DEFAULT_TIMEOUT = 3600、18行目 DEFAULT_CMD = 'claude -p \"/run\"'"},
+    {"text": "import が python3 の標準ライブラリだけである。確認：grep -nE '^(import|from) ' の出力が標準ライブラリのみ", "ok": true, "note": "実行コマンド: grep -nE / 出力: os, shlex, signal, subprocess, sys の5つ"},
+    {"text": "`bash scripts/smoke.sh` の最終行が `fail=0` になる", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh | tail -1 / 出力: smoke: pass=352 fail=0。なお起点コミットの記録が進捗に無いため宣言外ファイル検査は行わず、worktree の git status は run_unattended.py と T-01.md のみ"}
+  ],
+  "reasons": []
+}

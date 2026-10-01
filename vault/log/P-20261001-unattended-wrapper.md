@@ -5,3 +5,9 @@
 - 2026-10-01 15:51 T-02 todo→doing attempt=1
 - 2026-10-01 15:51 T-03 todo→doing attempt=1
 - 2026-10-01 15:51 T-04 todo→doing attempt=1
+- 2026-10-01 15:57 T-02 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-ae87048e7110ea0b5 branch=worktree-agent-ae87048e7110ea0b5 plan_head=8fcef935928b6bbbb7ec39bb67087b7681d2a44d
+- 2026-10-01 15:57 T-03 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-af37f29b3306b789f branch=worktree-agent-af37f29b3306b789f plan_head=8fcef935928b6bbbb7ec39bb67087b7681d2a44d
+- 2026-10-01 15:57 T-04 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a61a5cc3bf01dd15d branch=worktree-agent-a61a5cc3bf01dd15d plan_head=8fcef935928b6bbbb7ec39bb67087b7681d2a44d
+- 2026-10-01 15:57 T-02 doing→review attempt=1
+- 2026-10-01 15:57 T-03 doing→review attempt=1
+- 2026-10-01 15:57 T-04 doing→review attempt=1

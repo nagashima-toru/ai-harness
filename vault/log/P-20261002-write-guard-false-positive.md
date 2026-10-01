@@ -1,1 +1,3 @@
 - 2026-10-02 07:34 - draft→approved 人の指示: /plan approve P-20261002-write-guard-false-positive
+- 2026-10-02 07:36 T-01 todo→doing attempt=1
+- 2026-10-02 07:36 T-05 todo→doing attempt=1

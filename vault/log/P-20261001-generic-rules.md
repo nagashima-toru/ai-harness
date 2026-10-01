@@ -1,1 +1,4 @@
 - 2026-10-01 22:07 - draft→approved 人の指示: /plan approve P-20261001-generic-rules
+- 2026-10-01 22:08 T-01 todo→doing attempt=1
+- 2026-10-01 22:08 T-02 todo→doing attempt=1
+- 2026-10-01 22:08 T-03 todo→doing attempt=1

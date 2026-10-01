@@ -26,7 +26,7 @@ PR 本文用：`Closes #74`
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vault-spec 7節に creator=/verifier= の補足の書式を追記する | |
 | T-02 | done | 1 | T-01 | scripts/model_stats.py を新規作成する | |
-| T-03 | review | 1 | T-01 | run SKILL.md の手順4・6に creator=/verifier= の記録を足す | |
+| T-03 | done | 1 | T-01 | run SKILL.md の手順4・6に creator=/verifier= の記録を足す | |
 | T-04 | todo | 0 | T-02,T-03 | smoke.sh に model_stats と補足付き log のテストを足す | |
 
 ## 計画の受け入れ基準

@@ -1,3 +1,4 @@
 - 2026-10-01 15:41 - draft→approved 人の指示: /plan approve P-20261001-unattended-wrapper
 - 2026-10-01 15:41 T-01 todo→doing attempt=1
 - 2026-10-01 15:43 T-01 doing→review attempt=1
+- 2026-10-01 15:45 T-01 review→done attempt=1

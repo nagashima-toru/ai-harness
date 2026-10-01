@@ -1,0 +1,16 @@
+{
+  "task": "P-20261001-generic-rules/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 22:11",
+  "criteria": [
+    {"text": "allow に `npm`・`npx`・`pytest`・`make` で始まるエントリが無い（`jq -r '.permissions.allow[] | select(test(\"^Bash\\\\((npm|npx|pytest|make)\"))' .claude/settings.json` が何も出力しない）", "ok": true, "note": "worktree で実行コマンド: 記載の jq / 出力: 空。git diff で削除されたのは pytest *, npm test*, npm run *, npx *, make * の5行のみ"},
+    {"text": "allow が51件から5件減って46件である（`jq '.permissions.allow | length' .claude/settings.json` が `46`）", "ok": true, "note": "実行コマンド: `jq '.permissions.allow | length' .claude/settings.json` / 出力: 46"},
+    {"text": "deny は変わっていない（`jq '.permissions.deny | length' .claude/settings.json` が `18`）", "ok": true, "note": "実行コマンド: `jq '.permissions.deny | length' .claude/settings.json` / 出力: 18。diff に deny の変更なし"},
+    {"text": "トップレベルのキー構成が変わっていない（`jq -r 'keys | join(\",\")' .claude/settings.json` が `hooks,permissions,worktree`）", "ok": true, "note": "実行コマンド: `jq -r 'keys | join(\",\")' .claude/settings.json` / 出力: hooks,permissions,worktree"},
+    {"text": "ハーネスが使う許可が残っている（`jq -e '.permissions.allow | index(\"Bash(bash scripts/*)\") != null' .claude/settings.json` と `jq -e '.permissions.allow | index(\"Bash(python3 *)\") != null' .claude/settings.json` がどちらも `true`）", "ok": true, "note": "実行コマンド: 記載の jq 2本 / 出力: true, true"}
+  ],
+  "reasons": [
+    "補足: EnterWorktree が使えなかったため、worktree の絶対パスで cd して検証した。起点コミット 97b6056..HEAD の差分は空で、成果物外のファイル変更は検出されなかった（作業ツリーの未コミット差分は settings.json とタスク票のみ）"
+  ]
+}

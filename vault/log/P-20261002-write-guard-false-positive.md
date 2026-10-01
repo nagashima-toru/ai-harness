@@ -7,3 +7,4 @@
 - 2026-10-02 07:41 T-05 doing→review attempt=1 creator=sonnet
 - 2026-10-02 07:42 T-05 review→done attempt=1 verifier=sonnet
 - 2026-10-02 07:47 T-01 blocked→todo 人の指示: /plan unblock P-20261002-write-guard-false-positive T-01
+- 2026-10-02 07:48 T-01 todo→doing attempt=1

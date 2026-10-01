@@ -2,3 +2,9 @@
 - 2026-10-01 22:08 T-01 todo→doing attempt=1
 - 2026-10-01 22:08 T-02 todo→doing attempt=1
 - 2026-10-01 22:08 T-03 todo→doing attempt=1
+- 2026-10-01 22:09 T-01 af4f924c7b6c6418d worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent- branch=worktree-agent- plan_head=583a88e53588ad76c22bcb57d13377492afb82cc
+- 2026-10-01 22:09 T-02 af6803be469e16736 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent- branch=worktree-agent- plan_head=583a88e53588ad76c22bcb57d13377492afb82cc
+- 2026-10-01 22:09 T-03 a805247074406dd2d worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent- branch=worktree-agent- plan_head=583a88e53588ad76c22bcb57d13377492afb82cc
+- 2026-10-01 22:09 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-01 22:09 T-02 doing→review attempt=1 creator=sonnet
+- 2026-10-01 22:09 T-03 doing→review attempt=1 creator=sonnet

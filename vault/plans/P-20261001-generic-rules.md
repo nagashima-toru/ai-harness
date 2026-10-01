@@ -26,7 +26,7 @@ PR 本文用：`Closes #80`
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | planner.md 汎用版の提案を書く | |
-| T-02 | review | 1 | - | ai-harness-lessons.md の提案を書く | |
+| T-02 | done | 1 | - | ai-harness-lessons.md の提案を書く | |
 | T-03 | review | 1 | - | git-workflow.md 改訂版の提案を書く | |
 | T-04 | todo | 0 | - | 契約タスクの記述を agents/planner.md・vault-spec.md から README の拡張例へ移す | |
 | T-05 | todo | 0 | - | settings.json の allow から npm・npx・pytest・make を外す | |

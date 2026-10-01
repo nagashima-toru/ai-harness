@@ -51,6 +51,7 @@ bash scripts/smoke.sh        # フックの動作検証
 - 読み込みは `bash scripts/rules.sh <creator|verifier|planner>` で一本化（`common/` → 役割ディレクトリの順、ファイル名順）
 - 受け入れ基準からルールファイルを名指しして参照する（例：「`vault/rules/common/naming.md` の命名規則に従っている」）と、verifier がそのファイルを根拠に判定する
 - `doing`/`review` 中のタスクがある間は `vault/rules/` を編集できない（`agent_write_guard.py` がフックで拒否する）
+- 導入先で積む拡張の例（ハーネス同梱の標準ルールではない）：開発案件なら、型・API・テスト雛形などの「契約」タスクを先に切り、実装タスクを `after` でそれに依存させる、というルールを `vault/rules/planner/` に置く
 
 ## 仕組み
 ```

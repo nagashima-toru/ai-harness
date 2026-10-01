@@ -1,0 +1,14 @@
+{
+  "task": "P-20261002-write-guard-false-positive/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-02 07:41",
+  "criteria": [
+    {"text": "手順6.3.4 の行に、ログ追記・`git add`・`git commit` を `&&`・`;` で連結せず別々の Bash 呼び出しで実行する旨がある。確認：`grep -n '別々の Bash 呼び出し' .claude/skills/run/SKILL.md` の出力が1行で、その行が `マージが衝突なく成功したら` を含む", "ok": true, "note": "実行コマンド: worktree で `grep -n '別々の Bash 呼び出し' .claude/skills/run/SKILL.md` / 出力: 75行目の1行のみで、`マージが衝突なく成功したら` を含む"},
+    {"text": "同じ行に、コミットメッセージを1行の `-m` で渡し、コマンド置換・ヒアドキュメントを使わない旨がある。確認：`grep -n 'コマンド置換・ヒアドキュメントは使わない' .claude/skills/run/SKILL.md` の出力が1行で、その行が `マージが衝突なく成功したら` を含む", "ok": true, "note": "実行コマンド: worktree で `grep -n 'コマンド置換・ヒアドキュメントは使わない' .claude/skills/run/SKILL.md` / 出力: 75行目の1行のみで、`マージが衝突なく成功したら` を含む"},
+    {"text": "手順6.3.4 の既存の手順（done への更新・log 追記・`git add`・コミット・`git worktree remove`・`git branch -d`）が残っている。確認：`grep -n 'マージが衝突なく成功したら' .claude/skills/run/SKILL.md` の行に `review→done attempt=<n> verifier=<モデル>`・`git worktree remove`・`git branch -d` がすべて含まれる", "ok": true, "note": "実行コマンド: 該当行を取り出し各語を `grep -c` / 出力: `review→done attempt=<n> verifier=<モデル>`・`git worktree remove`・`git branch -d` いずれも1"},
+    {"text": "手順の番号と見出しを変えていない。確認：`git diff main -- .claude/skills/run/SKILL.md` の出力に、`+## ` か `-## ` で始まる行が無い", "ok": true, "note": "実行コマンド: `git diff main -- .claude/skills/run/SKILL.md | grep -cE '^[+-]## '` / 出力: 0"},
+    {"text": "成果物以外のファイルを変更していない。確認：`git status --porcelain` に出るパスが `.claude/skills/run/SKILL.md` と `vault/tasks/P-20261002-write-guard-false-positive/T-05.md` だけ", "ok": true, "note": "実行コマンド: worktree で `git status --porcelain` / 出力: ` M .claude/skills/run/SKILL.md` と ` M vault/tasks/.../T-05.md` の2件のみ。起点コミット 4b63e67 からの差分も同2ファイルのみで成果物外の変更なし"}
+  ],
+  "reasons": []
+}

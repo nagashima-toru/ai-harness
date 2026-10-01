@@ -1,1 +1,2 @@
 - 2026-10-01 21:14 - draft→approved 人の指示: /plan approve P-20261001-model-stats
+- 2026-10-01 21:14 T-01 todo→doing attempt=1

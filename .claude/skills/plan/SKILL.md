@@ -6,6 +6,8 @@ argument-hint: [ゴール | approve <計画ID> | unblock <計画ID> <id> [回答
 
 ゴールを計画（`vault/plans/<計画ID>.md`）とタスク票（`vault/tasks/<計画ID>/T-01.md`）に分割し、人の承認を経て計画票の `status` を `approved` にする。blocked になったタスクは、人の `/plan unblock` の指示で `todo` に戻す。仕様は `docs/vault-spec.md`。
 
+注意：このスキルは考える工程なので、強いモデル（opus）のセッションで実行する。
+
 引数：`$ARGUMENTS`
 
 ## A. 計画を作る（引数がゴールの時）

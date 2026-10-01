@@ -425,6 +425,28 @@ expect_tg "~/.claude/settings.json への Write → 許可" allow '{"tool_name":
 expect_tg "~/.claude/projects-x/ への Write → 許可（前方一致の誤検出なし）" allow '{"tool_name":"Write","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects-x/a"}}'
 expect_tg "Bash で ~/.claude/settings.json へリダイレクト → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/settings.json"}}'
 
+# Bash の vault/rules/・会話記録判定の精密化（issue #91）。analyze_bash_writes で解析できる形は実際の
+# 書き込み対象だけで判定し、解析できない形は従来の判定に落とす（fail-closed）。
+bp() { # $1=name $2=deny|allow $3=payload json $4=reason に含むべき部分文字列(optional)
+  expect_guard "(bash-parse) $1" "$2" "$(run_guard_home "$3")" "${4:-}"
+}
+bp "grep の検索語・対象に git commit を含む会話記録の読み取り → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep -n \"git commit\" ~/.claude/projects/x/s.jsonl"}}'
+bp "grep -c mkdir で会話記録の読み取り → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep -c mkdir ~/.claude/projects/x/s.jsonl"}}'
+bp "grep の検索語に doing->review を含む会話記録の読み取り → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep -n \"doing->review\" ~/.claude/projects/x/s.jsonl"}}'
+bp "printf の引用符内に vault/rules/ へのリダイレクト文字列 → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"printf '"'"'%s'"'"' \"echo x > vault/rules/a.md\""}}'
+bp "ヒアドキュメント本文に vault/rules/ と git commit の文字列 → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"cat > /tmp/P-20261002-write-guard-false-positive-note.md <<'"'"'EOF'"'"'\nsee vault/rules/common/git.md and git commit\nEOF"}}'
+bp "vault/rules/ へのリダイレクト → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo \"x\" > vault/rules/a.md"}}' "vault/rules/"
+bp "vault/rules/ へのリダイレクト（ヒアドキュメント付き）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"cat > vault/rules/a.md <<'"'"'EOF'"'"'\nbody\nEOF"}}' "vault/rules/"
+bp "区切りの後ろの会話記録へのリダイレクト → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x; echo y > ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
+bp "改行区切りの後ろの rm（会話記録）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo a\nrm ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
+bp "コマンド置換の中の vault/rules/ へのリダイレクト → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"echo \"$(echo x > vault/rules/a.md)\""}}' "vault/rules/"
+bp "cd 後の相対リダイレクト（vault/rules/common 配下）→ 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"cd vault/rules/common && echo x > a.md"}}' "vault/rules/"
+bp "変数を含む vault/rules/ の対象 → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"echo x > vault/rules/$NAME"}}' "vault/rules/"
+bp "bash -c の中の vault/rules/ へのリダイレクト → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"bash -c \"echo x > vault/rules/a.md\""}}' "vault/rules/"
+bp "展開されるヒアドキュメント本文のコマンド置換 → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"cat <<EOF > /tmp/x\n$(echo x > vault/rules/a.md)\nEOF"}}' "vault/rules/"
+bp "awk の print リダイレクトで vault/rules/ へ書き込み → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"awk '"'"'{print > \"vault/rules/a.md\"}'"'"' README.md"}}' "vault/rules/"
+bp "絶対パスのコマンド語 /bin/rm で会話記録を削除 → 拒否（basename 照合）" deny '{"tool_name":"Bash","tool_input":{"command":"/bin/rm ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
+
 # 計画票の承認（draft→approved）の会話記録による裏付け（D-010 フェーズ4 / T-03）。
 # make_transcript は T-04 でも流用する固定パス方式（引数の各行を JSONL として書く）
 AP_TRANSCRIPT="/tmp/P-20260930-approve-transcript-guard-transcript.jsonl"

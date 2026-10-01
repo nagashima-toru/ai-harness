@@ -25,7 +25,7 @@ PR 本文用：`Closes #73`
 | T-01 | done | 1 | - | decisions.md に planner=opus への置き換え行を追加する | |
 | T-02 | done | 1 | - | design SKILL.md に opus セッションで実行する旨を書く | |
 | T-03 | done | 1 | - | plan SKILL.md に opus セッションで実行する旨を書く | |
-| T-04 | todo | 0 | - | runbook.md に /design・/plan を opus で実行する旨を書く | |
+| T-04 | doing | 1 | - | runbook.md に /design・/plan を opus で実行する旨を書く | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | planner.md の model を opus にし smoke を通す | |
 
 ## 計画の受け入れ基準

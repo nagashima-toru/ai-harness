@@ -132,6 +132,21 @@ blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク
 
 run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了報告の受領直後に、run が1タスク1行ずつ追記する（複数タスクの場合はタスクごとに1行）。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
 
+実行したモデルの記録：遷移行の補足の先頭に、その遷移を行わせたエージェントのモデルを置く。`doing→review`・`doing→blocked` の行には `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` の行には `verifier=<モデル>` を付ける。モデルの値は `.claude/agents/<name>.md` の frontmatter の `model` とする。他の補足（理由要約など）が続く場合は、その後ろに空白区切りで書く。記録先は log だけで、verdict.json の形式は変えない。
+
+- 例（creator）：`- 2026-10-01 10:30 T-01 doing→review attempt=1 creator=sonnet`
+- 例（verifier）：`- 2026-10-01 10:40 T-01 review→done attempt=1 verifier=sonnet`
+
+モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。`vault/archive/` 配下の log は既定の対象に含めず、引数で明示的に渡した時だけ集計する。定義は次のとおり：
+
+- 対象タスク：`計画ID/id` の最後の遷移行が `→done` または `→blocked` のもの（計画 ID は log のファイル名から取る）
+- 集計キー：そのタスクの最後の `doing→review` 行の `creator=` の値。`creator=` が無い既存の行は `unknown` として扱う（エラーにしない）
+- 1回目 PASS 率：`review→done attempt=1` で終わった件数 ÷ 対象タスク数
+- 平均 attempt：最後の遷移行の `attempt=` の平均
+- blocked 率：`→blocked` で終わった件数 ÷ 対象タスク数
+
+出力はタブ区切りで、1行目を見出し `model	tasks	first_pass_rate	avg_attempt	blocked_rate` とし、率は小数2桁で出す。verifier のモデル別の集計は出さない（記録だけ残す）。
+
 ## 8. 粒度の基準（planner と人が共有する）
 
 - 受け入れ基準が3〜7行で書ける

@@ -1,0 +1,1 @@
+- 2026-10-02 07:34 - draft→approved 人の指示: /plan approve P-20261002-write-guard-false-positive

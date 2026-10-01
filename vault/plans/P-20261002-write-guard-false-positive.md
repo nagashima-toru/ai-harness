@@ -1,6 +1,6 @@
 ---
 id: P-20261002-write-guard-false-positive
-status: draft
+status: approved
 ---
 # ゴール
 `.claude/hooks/agent_write_guard.py` が Bash コマンド文字列を過剰に拒否する問題を、ガードの安全性（fail-closed、すり抜けを作らない）を弱めずに解消する。GitHub Issue **#91**（P1 bug）と **#87**（P2 bug）を1計画で解決する。

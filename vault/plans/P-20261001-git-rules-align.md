@@ -4,39 +4,42 @@ status: draft
 ---
 # ゴール
 
-`vault/rules/common/git.md` を改訂する。(1) 主語が書かれていない「作業ステップごとにコミット」「全タスク done で gh pr create」を、現在の run の役割分担に合わせる。役割分担は次のとおり：creator はブランチを切らず、コミットは受け入れ基準にある時だけ行う。worktree の未コミット分の収集・計画ブランチへのマージ・PR 作成（`bash scripts/vcs_finish.sh`）はオーケストレーターが行う。マージは人が行う。改訂は `vault/rules/creator/git-workflow.md`（フェーズ10で改訂済み）と矛盾させず、重複を避けて原則だけを書く。(2) `.claude/skills/run/SKILL.md` の手順6.3.1（72行目）は、creator の「コミットは受け入れ基準に含まれている場合だけ行う」方針の出典を `vault/rules/common/git.md` としているが、git.md にその記述が無い。この食い違いを解消する。手順6.3.5（76行目）の「`vault/rules/common/git.md` の既存方針」（コンフリクトは自己判断で解決しない）の参照も、改訂後に成り立つようにする。
+git 運用の記述を、現在の run の役割分担に揃える。役割分担は次のとおり：creator はブランチを切らず、コミットは受け入れ基準にある時だけ行う。worktree の未コミット分の収集・計画ブランチへのマージ・PR 作成（`bash scripts/vcs_finish.sh`）はオーケストレーターが行う。マージは人が行う。
 
-`vault/rules/` の実体には書き込めないので、git.md の変更は提案ファイル（`vault/tasks/P-20261001-git-rules-align/T-01-proposal.md`）に全文で書く。実体への反映は人が行う。
+1. `vault/rules/common/git.md` を改訂する。主語の無い「作業ステップごとにコミット」「全タスク done で gh pr create」を上の役割分担に合わせる。`vault/rules/creator/git-workflow.md`（フェーズ10で改訂済み）と矛盾させず、重複を避けて原則だけを書く。改訂後の git.md には、`.claude/skills/run/SKILL.md` の72行目（「コミットは受け入れ基準に含まれている場合だけ行う」）と76行目（「自己判断で解決しない」）が引用している文言を実在させ、出典の食い違いを解消する
+2. 旧方式（creator が作業ステップごとにコミットする）を前提にした記述を直す。対象は `vault/rules/verifier/verifier.md` 19行目、`.claude/agents/verifier.md` 32行目、`docs/vault-spec.md` 22行目、`README.md` 69行目と76行目、`.claude/skills/run/SKILL.md` 111行目（主語の無い「コミットは受け入れ基準に含まれている場合だけ行う」）
+
+`vault/rules/` の実体には書き込めないので、git.md と verifier.md の変更は提案ファイル（`vault/tasks/P-20261001-git-rules-align/<id>-proposal.md`）に全文で書く。実体への反映は人が行う。
 
 ## 分割方針
-- (2) は「git.md に書く（SKILL.md は直さない）」案を推奨として計画した（理由は末尾「人への質問」）。この案では、(1) の改訂で git.md に creator のコミット原則を書く。その文言を SKILL.md 72行目の引用と一字一句同じにし、76行目の引用（「自己判断で解決しない」）とも同じにすることで、SKILL.md を変えずに参照を成り立たせる。そのため (1) と (2) は同じ提案ファイル1つ（T-01）にまとめる
-- smoke.sh で `fail=0` を確かめる作業は T-02 に切り出し、T-01 の後に単独で動かす。smoke.sh は /tmp の固定パスを使うので、他タスクの受け入れ基準には入れない。T-02 では、SKILL.md の2か所の引用文言が提案ファイルにあることも突き合わせる
-- 人が「SKILL.md の出典を `vault/rules/creator/git-workflow.md` に直す」案（人への質問の案B）を選んだ場合は、SKILL.md の実体を変えるタスクを別に起こす。T-02 の `after` にそのタスクを加え、T-01 の「決定済み」のうち引用文言の一致に関する項目を外す。今回は票を起こしていない
+- ルールの提案は1タスク1ファイルにする。git.md は T-01、verifier.md は T-02
+- 実体を直接直す4ファイルも、成果物を1つにする原則に従って1タスク1ファイルにする。`.claude/agents/verifier.md` は T-03、`docs/vault-spec.md` は T-04、`README.md` は T-05、`.claude/skills/run/SKILL.md` は T-06
+- T-01〜T-06 は書き込むファイルがすべて別なので、互いに依存させず並行できる。T-02 と T-03 は verifier の同じ検査を記述しているので、両方の「決定済み」に同じ文案を書いて揃える
+- smoke.sh で `fail=0` を確かめる作業は T-07 に切り出し、T-01〜T-06 の後に単独で動かす。smoke.sh は /tmp の固定パスを使うので、他タスクの受け入れ基準には入れない。T-07 では、SKILL.md の引用文言が T-01 の提案に実在することも突き合わせる
 
-### 決定済み（各タスク票にも写す）
-- git.md には原則と役割分担（誰が行うか）だけを書く。手順の詳細は書かない。具体的には、起点コミット、`blocked: <質問文>` の返し方、`git -C` のコマンド列、`git merge --abort` などで、これらは `vault/rules/creator/git-workflow.md` と `.claude/skills/run/SKILL.md` に任せる
-- PR 作成は `bash scripts/vcs_finish.sh` と書き、`gh pr create` の語は書かない（vcs_finish.sh が GitHub・GitLab・ホスティング無しを振り分けるため）
-- `.claude/agents/verifier.md`・`vault/rules/verifier/verifier.md`・`docs/vault-spec.md` 22行目・`README.md` 69/76行目にも旧方式の記述が残っているが、この計画では変更しない（ゴール外。「次フェーズの候補」に記載）
+### 決定済み（人の回答。各タスク票にも写す）
+- SKILL.md 72行目の出典の食い違いは案Aで解消する。git.md に creator のコミット原則を「コミットは受け入れ基準に含まれている場合だけ行う」の文言そのままで書き、SKILL.md 72行目の出典表記（`vault/rules/common/git.md`）は直さない（人の回答）
+- SKILL.md 76行目の「`vault/rules/common/git.md` の既存方針」は、git.md 側の文言を「自己判断で解決しない」に揃えることで成り立たせる。76行目は直さない（人の回答）
+- git.md の破棄のルールには「不採用の worktree の破棄はオーケストレーターが `scripts/discard_worktree.sh` で行う」の1句を足す（人の回答）
+- git.md には原則と役割分担（誰が行うか）だけを書く。手順の詳細は書かない。具体的には、起点コミット、`blocked: <質問文>` の返し方、`git -C` のコマンド列、`git merge --abort` などで、これらは git-workflow.md と SKILL.md に任せる。PR 作成は `bash scripts/vcs_finish.sh` と書き、`gh pr create` の語は書かない
+- verifier の宣言外ファイル検査（verifier.md 19行目・agents/verifier.md 32行目）について。理由付けを直すと、検査の範囲も変える必要がある。verifier が worktree に入る時点（run 手順5）は、オーケストレーターが未コミット分を収集する時点（手順6.3.1、PASS の後）より前なので、creator の変更はコミット済みの分と未コミットの分の両方にありうる。そのため検査対象を「`git diff --name-only <起点コミット>..HEAD` の出力」と「`git status --porcelain` に出る未コミットのファイル」の両方にする。除外対象・`note`/`reasons` の扱い・FAIL にしないことは変えない
+- `docs/decisions.md`・過去の計画票・過去のタスク票・過去の設計文書にある旧方式の記述は直さない（経緯の記録のため）
 
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | todo | 0 | - | common/git.md 改訂版の提案を書く | |
-| T-02 | todo | 0 | T-01 | smoke を通し SKILL.md の引用と提案の一致を確認する | |
+| T-02 | todo | 0 | - | verifier.md の宣言外ファイル検査の理由と範囲を直す提案を書く | |
+| T-03 | todo | 0 | - | agents/verifier.md 手順10の理由と範囲を直す | |
+| T-04 | todo | 0 | - | vault-spec.md 22行目の証跡の説明を直す | |
+| T-05 | todo | 0 | - | README.md の PR 作成の主語と手段を直す | |
+| T-06 | todo | 0 | - | run SKILL.md 注意節のコミットの主語を creator にする | |
+| T-07 | todo | 0 | T-01,T-02,T-03,T-04,T-05,T-06 | smoke を通し SKILL.md の引用と提案の一致を確認する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある
 - 依存に循環がない
 - 1タスクが1コンテキストで終わる粒度である
 
-## 次フェーズの候補
-- `vault/rules/verifier/verifier.md` 19行目と `.claude/agents/verifier.md` 32行目に「creator は作業ステップごとにコミットするため」という理由付けが残っており、現在の run の役割分担（creator は受け入れ基準にある時だけコミットし、未コミット分はオーケストレーターが収集する）と合っていない。起点コミットを使った検査そのものは引き続き有効だが、理由の文を直す必要がある
-- `docs/vault-spec.md` 22行目の「git のステップごとのコミット」と、`README.md` 69/76行目の「gh pr create」（主語はエージェント）も、vcs_finish.sh とオーケストレーターの記述に合わせる候補になる
-- `.claude/skills/run/SKILL.md` 111行目（「注意」節）の「git のコミットはタスク票の受け入れ基準に含まれている場合だけ行う」は主語が無い。読み手はオーケストレーター（run のメインセッション）なので、手順6.3.1 で行うオーケストレーター自身のコミットと矛盾して読める
-
 ## 人への質問
-- （推奨案で着手できる。案Bを選ぶ場合だけ回答がほしい）SKILL.md 72行目の出典の食い違いをどう解消するか。
-  - 案A（推奨）：git.md に「creator のコミットは受け入れ基準に含まれている場合だけ行う」を原則として書く。SKILL.md は直さない。理由は4つ。1つ目に、ゴール(1)でこの原則はもともと git.md に書く内容である。2つ目に、git-workflow.md 自身が「原則の理由は `vault/rules/common/git.md` に譲る」と書いており、原則は common、手順は creator という配置に合う。3つ目に、common/git.md は verifier・planner にも配られるので、verifier が「未コミット分はオーケストレーターが収集する」前提を知っている方がよい。4つ目に、SKILL.md の実体を変えずに済み、変更が1ファイルの提案に収まる。欠点は、人が提案を実体へ反映するまで食い違いが残ること
-  - 案B：SKILL.md 72行目の出典を `vault/rules/creator/git-workflow.md` に直す。git-workflow.md には既に「受け入れ基準にある時だけ行う」があるので、すぐに食い違いが解消する。ただし、git.md にも同じ原則を書く(1)と組み合わせると出典が2か所に分かれる。また SKILL.md の実体を変える別タスクが要る
-- 76行目の「`vault/rules/common/git.md` の既存方針」（コンフリクトは自己判断で解決しない）について。現行の git.md の語は「自己判断で解決せず」で、意味は合っているが文言が一致していない。T-01 では「自己判断で解決しない」の語で書き、主語をオーケストレーター（マージを行う者）にする。これで参照は成り立つので、SKILL.md 76行目は直さない計画にした
-- （確認）現行 git.md の「変更を破棄する時は `git restore` のみ」は、run の FAIL 再試行でオーケストレーターが `scripts/discard_worktree.sh` によって worktree を破棄する運用と、字面の上でぶつかる。T-01 では「作業ツリーの変更の破棄は `git restore` のみ。不採用の worktree の破棄はオーケストレーターが `scripts/discard_worktree.sh` で行う」と、役割分担に合わせて1句足す。足さない方がよければ指示してほしい
+- （着手を止めるものではない）verifier の宣言外ファイル検査に、未コミットのファイル（`git status --porcelain`）を加える件（T-02・T-03）。旧方式の理由付けを直すだけだと、「未コミット差分だけを見る方法では何も検出できない」という前提が成り立たなくなる。逆に検査をコミット済み（`起点コミット..HEAD`）だけに限ると、creator が受け入れ基準にコミットの無いタスクで書いた変更を取りこぼす。そのため検査範囲の追加まで含めて計画した。理由の文だけを直し、範囲は変えない方がよければ、着手前に指示してほしい

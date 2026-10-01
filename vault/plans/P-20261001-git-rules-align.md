@@ -1,6 +1,6 @@
 ---
 id: P-20261001-git-rules-align
-status: approved
+status: done
 ---
 # ゴール
 

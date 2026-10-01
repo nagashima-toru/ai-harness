@@ -1,0 +1,14 @@
+{
+  "task": "P-20261001-model-stats/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 21:17",
+  "criteria": [
+    {"text": "手順4の `doing→review` の log 追記（および手順3.8の `doing→blocked`）の補足に `creator=<モデル>` を付ける旨がある（`grep -n 'creator=' .claude/skills/run/SKILL.md` がヒットする）", "ok": true, "note": "worktree 内で `grep -n 'creator=' .claude/skills/run/SKILL.md` / 出力: 13・42・45行目にヒット（42行は3.8の doing→blocked、45行は手順4の doing→review に creator=<モデル>）"},
+    {"text": "手順6の `review→done`・`review→doing`・`review→blocked` の log 追記の補足に `verifier=<モデル>` を付ける旨がある（`grep -n 'verifier=' .claude/skills/run/SKILL.md` がヒットする）", "ok": true, "note": "実行コマンド: `grep -n 'verifier=' .claude/skills/run/SKILL.md` / 出力: 75行(review→done)・79行(review→doing)・80行(review→blocked)ほかにヒット。76行のマージ衝突 blocked 行にも付与を確認"},
+    {"text": "モデルの値は `.claude/agents/creator.md`・`.claude/agents/verifier.md` の frontmatter の `model` から読む旨が書かれている（`grep -n 'frontmatter' .claude/skills/run/SKILL.md` に該当行がある）", "ok": true, "note": "実行コマンド: `grep -n 'frontmatter' .claude/skills/run/SKILL.md` / 出力: 13行目に「creator.md・verifier.md の frontmatter の model を読んで書く」、固定値は埋め込まれていない"},
+    {"text": "追記の書式を `docs/vault-spec.md` 7節への参照として示し、書式をこの文書で二重に定義していない（`grep -n 'vault-spec' .claude/skills/run/SKILL.md` に該当行がある）", "ok": true, "note": "実行コマンド: `grep -n 'vault-spec' .claude/skills/run/SKILL.md` / 出力: 13行目に「書式の正本は docs/vault-spec.md 7節で、ここでは重ねて定義しない」"},
+    {"text": "`.claude/skills/run/SKILL.md` 以外のファイルが変わっていない（`git status --porcelain` の出力が `.claude/skills/run/SKILL.md` と、計画票・タスク票・log・verdict 以外を含まない）", "ok": true, "note": "実行コマンド: worktree で `git status --porcelain` / 出力: M .claude/skills/run/SKILL.md と M vault/tasks/P-20261001-model-stats/T-03.md のみ。タスク票に起点コミットの記録が無いため手順10の起点差分検査は未実施"}
+  ],
+  "reasons": []
+}

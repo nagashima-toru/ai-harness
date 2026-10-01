@@ -1,0 +1,14 @@
+{
+  "task": "P-20261001-model-stats/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 21:18",
+  "criteria": [
+    {"text": "引数に log ファイルのパスを渡すとそれだけを集計し、引数が無ければ `vault/log/*.md` を対象にする（`vault/archive/` 配下は既定の対象に含めない）。`python3 scripts/model_stats.py` を現在の `vault/log/*.md` に対して実行すると終了コード0で、1行目が `model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate`（タブ区切り）になる", "ok": true, "note": "実行コマンド: `python3 scripts/model_stats.py; echo rc=$?`（worktree 内）/ 出力: 1行目が見出し（タブ区切り）、rc=0。コードは glob で vault/log/*.md のみ（archive 不含）、引数があればそれのみ。"},
+    {"text": "一時ディレクトリに作ったフィクスチャ log（sonnet で1回目 PASS 1件、haiku で2回目 PASS 1件と blocked 1件）を引数で渡すと、`sonnet` 行が `sonnet\t1\t1.00\t1.00\t0.00` になり、`haiku` 行が tasks=2・first_pass_rate=0.00・blocked_rate=0.50 で、avg_attempt が最後の遷移行の attempt の平均（フィクスチャの値から定義どおり計算）になる（率・平均は小数2桁、タブ区切り）", "ok": true, "note": "実行コマンド: verifier は Bash でファイル作成不可のため、フィクスチャを /dev/stdin のヒアドキュメントで渡した `python3 scripts/model_stats.py /dev/stdin` / 出力: haiku|2|0.00|1.50|0.50, sonnet|1|1.00|1.00|0.00（avg=(2+1)/2=1.5 で定義どおり）。"},
+    {"text": "`creator=` の無い既存形式の遷移行だけで終わるタスクは `unknown` として集計され、エラーにならない", "ok": true, "note": "実行コマンド: 同上（creator 無しの T-04 review→done を含む入力）と実 log 実行 / 出力: unknown|1|1.00|1.00|0.00、実 log でも unknown 131 件でエラー無し。"},
+    {"text": "遷移行（`→` を含む行）以外の行（`worktree path=... plan_head=...` やハングの補足行）が混じっていても結果が変わらない", "ok": true, "note": "実行コマンド: 同上（T-02 の間に `worktree path=/x plan_head=abc` 行を混在）/ 出力: haiku 行が混在無しの期待値（tasks=2, avg 1.50）と一致。"},
+    {"text": "`scripts/model_stats.py` 以外のファイルが変わっていない（`git status --porcelain` の出力が `scripts/model_stats.py` と、計画票・タスク票・log・verdict 以外を含まない）", "ok": true, "note": "実行コマンド: worktree で `git status --porcelain` / 出力: ' M vault/tasks/P-20261001-model-stats/T-02.md' と '?? scripts/model_stats.py' のみ。タスク票の進捗に起点コミットの記録が無いため宣言外ファイル検査（git diff 起点..HEAD）は行っていない。"}
+  ],
+  "reasons": []
+}

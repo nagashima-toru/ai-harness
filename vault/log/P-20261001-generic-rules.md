@@ -13,3 +13,7 @@
 - 2026-10-01 22:10 T-03 review→done attempt=1 verifier=sonnet
 - 2026-10-01 22:10 T-04 todo→doing attempt=1
 - 2026-10-01 22:10 T-05 todo→doing attempt=1
+- 2026-10-01 22:11 T-04 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-ac5eab9be96f4dd02 branch=worktree-agent-ac5eab9be96f4dd02 plan_head=97b6056021443e045d0ed8ffadbc34ffab17597b
+- 2026-10-01 22:11 T-05 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a0869fbf982bd29cc branch=worktree-agent-a0869fbf982bd29cc plan_head=97b6056021443e045d0ed8ffadbc34ffab17597b
+- 2026-10-01 22:11 T-04 doing→review attempt=1 creator=sonnet
+- 2026-10-01 22:11 T-05 doing→review attempt=1 creator=sonnet

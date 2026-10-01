@@ -1,0 +1,12 @@
+{
+  "task": "P-20261001-planner-opus/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 21:46",
+  "criteria": [
+    {"text": "0節と1節の両方に、強いモデル（opus）のセッションで実行する旨がある（`grep -c '強いモデル（opus）' docs/runbook.md` の出力が 2 以上）", "ok": true, "note": "実行コマンド: `grep -c '強いモデル（opus）' docs/runbook.md`（worktree 内） / 出力: 2。`grep -n` で12行目（0節）と20行目（1節）に1件ずつあり、いずれも opus セッションで実行する旨の文"},
+    {"text": "実行する工程（`/run`。creator・verifier）は sonnet のままである旨が書かれている（`grep -n 'sonnet' docs/runbook.md` がヒットし、目視で記述を確認）", "ok": true, "note": "実行コマンド: `grep -n 'sonnet' docs/runbook.md` / 出力: 12行目「実行する工程（/run。creator・verifier）は sonnet のまま」、20行目「creator・verifier は sonnet のまま」。目視で記述を確認"},
+    {"text": "既存の見出し行が変わっていない（`git diff -- docs/runbook.md | grep -E '^[+-]#'` の出力が空）", "ok": true, "note": "実行コマンド: `git diff -- docs/runbook.md | grep -E '^[+-]#'`（worktree 内） / 出力: 空。diff --stat は docs/runbook.md 2 insertions のみ。起点コミットの記録がタスク票に無いため宣言外ファイル検査は行わず、代替として 25431e1 との差分名を確認（docs/runbook.md とタスク票のみで宣言外なし）"}
+  ],
+  "reasons": []
+}

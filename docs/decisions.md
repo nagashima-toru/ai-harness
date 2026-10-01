@@ -26,3 +26,4 @@
 | 2026-09-19 | `CLAUDE.md` はマーカー付きブロック + `@.claude/ai-harness.md` のスタブにし、`install.sh` は既定で `merge_claude_md.py` により既存 `CLAUDE.md` にそのブロックだけをマージする（`--no-claude-md` で従来の note 案内に戻せる） | 既存 CLAUDE.md を壊さずにハーネスの規律をメインコンテキストへ読み込ませるため。スキルは自己完結なので明示的に呼べば動くが、スキルを介さない依頼では規律が効かずフックの事後ブロック頼みになる |
 | 2026-09-20 | 計画をまたぐキュー（`vault/todo.md`）を廃止し、計画票のタスク表が状態を持つ1セッション=1計画=1ブランチ方式にした | 複数のエージェントセッションが別々の計画を同時に進めても状態ファイルが競合しないようにするため（並行セッション対応） |
 | 2026-09-20 | verifier の責務に「基準の妥当性判定」と「宣言外ファイルの変更検査」を追加し、どちらも `ok: true` のまま `note`/`reasons` に記録する（FAIL には繋がない） | creator が確認コマンドを自分で通す構造では verifier が再実行にしかならず、除外リストが運用で固まっていない段階で誤検知を FAIL に繋ぐと状態遷移が誤って止まるため |
+| 2026-10-01 | 2026-09-17 の「verifier / planner の `model` は `sonnet`」を置き換え、`planner=opus`・`verifier=sonnet`・`creator=sonnet`（据え置き）にする。モデルは alias で書き、スキル frontmatter では指定しない（D-010 フェーズ9） | planner は考える工程なので強いモデルにする。verifier は実行側なので `sonnet` のまま。creator は `scripts/model_stats.py` の集計結果を見て、別の計画で見直す |

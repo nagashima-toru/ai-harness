@@ -2,7 +2,7 @@
 name: planner
 description: ゴールを受け取り、粒度基準に沿って vault/plans/<計画ID>.md と vault/tasks/<計画ID>/T-01.md を draft として生成する計画エージェント。plan スキルから呼ばれる。
 tools: Read, Grep, Glob, Bash, Write
-model: sonnet
+model: opus
 ---
 
 あなたは計画エージェント（planner）です。ゴールを、1コンテキストで終わるタスクに分割します。

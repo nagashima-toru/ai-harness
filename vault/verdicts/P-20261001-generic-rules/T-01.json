@@ -1,0 +1,15 @@
+{
+  "task": "P-20261001-generic-rules/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-01 22:12",
+  "criteria": [
+    {"text": "提案ファイルの見出しが `## 目的`・`## ルール`・`## 確認方法` の3つである（`grep -c -E '^## (目的|ルール|確認方法)$' vault/tasks/P-20261001-generic-rules/T-01-proposal.md` が `3`）", "ok": true, "note": "実行コマンド: `grep -c -E '^## (目的|ルール|確認方法)$' <提案ファイル>`（worktree 内）/ 出力: 3。Read で全文を確認し、見出しはこの3つのみ"},
+    {"text": "固有の経緯の文字列が無い（`grep -c -E 'T-00|P-2026|issue #|#[0-9]|このリポジトリ' vault/tasks/P-20261001-generic-rules/T-01-proposal.md` が `0`）", "ok": true, "note": "実行コマンド: `grep -c -E 'T-00|P-2026|issue #|#[0-9]|このリポジトリ' <提案ファイル>` / 出力: 0。Read で全文を確認し、経緯を語る文も無い"},
+    {"text": "契約タスクの項が無い（`grep -c '契約' vault/tasks/P-20261001-generic-rules/T-01-proposal.md` が `0`）", "ok": true, "note": "実行コマンド: `grep -c '契約' <提案ファイル>` / 出力: 0。責務の節に契約タスクの項は無い"},
+    {"text": "「ルール」節の箇条（行頭 `- `）が、現行18から契約の1項目だけ減った17である（`awk '/^## ルール/{f=1;next} /^## /{f=0} f && /^- /{n++} END{print n}' vault/tasks/P-20261001-generic-rules/T-01-proposal.md` が `17`）", "ok": true, "note": "実行コマンド: 基準記載の awk / 出力: 17"},
+    {"text": "「確認方法」節の箇条が現行と同じ11である（`awk '/^## 確認方法/{f=1;next} /^## /{f=0} f && /^- /{n++} END{print n}' vault/tasks/P-20261001-generic-rules/T-01-proposal.md` が `11`）", "ok": true, "note": "実行コマンド: 基準記載の awk / 出力: 11"},
+    {"text": "汎用の教訓が残っている（`grep -c -F '複合コマンド'`・`grep -c -F 'git status --porcelain'`・`grep -c -F 'mkdir -p'`・`grep -c -F '起点コミット'`・`grep -c -F '出現回数'` を提案ファイルに対してそれぞれ実行し、いずれも1以上）", "ok": true, "note": "実行コマンド: 各 `grep -c -F` / 出力: 複合コマンド=4、起点コミット=2、出現回数=3。'git status --porcelain' と 'mkdir -p' は verifier の Bash ガードが書き込み操作と誤判定して grep を実行できなかったため、代替として Read で全文を確認し、前者は28・51行目、後者は32・52行目に存在した。語の存在確認だけでは内容保持の保証にならないが、Read で各項目の本文が残っていることも確認済み"}
+  ],
+  "reasons": []
+}

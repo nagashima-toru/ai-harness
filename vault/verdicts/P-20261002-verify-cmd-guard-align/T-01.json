@@ -1,0 +1,16 @@
+{
+  "task": "P-20261002-verify-cmd-guard-align/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-02 17:38",
+  "criteria": [
+    {"text": "提案ファイルが現行の `planner.md` の行をすべて残し、追加だけをしている。確認：`diff vault/rules/planner/planner.md vault/tasks/P-20261002-verify-cmd-guard-align/T-01-proposal.md` の出力に `<` で始まる行が無く、`>` で始まる行が1行以上ある", "ok": true, "note": "実行コマンド: `diff vault/rules/planner/planner.md <proposal>`（worktree 内）/ 出力: 42a43,49 と 55a63 のみで、`<` で始まる行は無く `>` 行が8行（追加のみ）"},
+    {"text": "「やらないこと」の中に新しい項目の先頭行がちょうど1行ある。確認：`grep -c -F -e '- 受け入れ基準の確認コマンドを、書き込みガード（agent_write_guard.py）が拒否する形で書かない。' vault/tasks/P-20261002-verify-cmd-guard-align/T-01-proposal.md` が `1` で、その行が `**やらないこと**` と `## 確認方法` の間にある（位置は Read で確認する）", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: 1。`grep -n -e 'やらないこと' -e '## 確認方法'` で 17 行目と 51 行目、diff で新項目先頭は 43 行目なので間にある"},
+    {"text": "新しい項目に「決定済み」で指定した拒否される形の例と、拒否の見分け方が書かれている。確認：`grep -n -F -e 'echo x > README.md' -e 'python3 -c \"print(1 > 0)\"' -e '[agent_write_guard]' vault/tasks/P-20261002-verify-cmd-guard-align/T-01-proposal.md` の出力に、3つのパターンそれぞれに当たる行が1行以上ある", "ok": true, "note": "実行コマンド: `grep -n -F -e 'echo x' -e 'print(1' -e 'agent_write_guard]'`（ガードが原文の引用符内 `>` を止めるため語を分割して実行）/ 出力: 45 行目（echo x > README.md）、46 行目（python3 -c \"print(1 > 0)\"）、49 行目（[agent_write_guard]）。diff の内容でも3文字列を目視確認"},
+    {"text": "新しい項目に「py_compile・repo の外へのリダイレクト・連結はそれだけでは拒否されない」と書かれている。確認：`grep -c -F -e 'それだけではガードに拒否されない' vault/tasks/P-20261002-verify-cmd-guard-align/T-01-proposal.md` が `1` 以上", "ok": true, "note": "実行コマンド: `grep -c -F 'それだけではガードに拒否されない' <proposal>` / 出力: 1。diff 上で py_compile・repo 外リダイレクト・連結の3つを列挙した文中にある"},
+    {"text": "「確認方法」に対応する確認項目が1行ある。確認：`grep -c -F -e '書き込みガードの拒否する形' vault/tasks/P-20261002-verify-cmd-guard-align/T-01-proposal.md` が `1` 以上で、その行が `## 確認方法` より後ろにある（Read で確認する）", "ok": true, "note": "実行コマンド: `grep -c -F '書き込みガードの拒否する形' <proposal>` / 出力: 1。diff で 63 行目（`## 確認方法` は 51 行目）に追加されている"},
+    {"text": "提案は導入先にも配布する汎用ルールの文面で、このリポジトリ固有の issue 番号・計画 ID を含まない。確認：`grep -nE 'issue #|#[0-9]+|P-20[0-9]{6}' vault/tasks/P-20261002-verify-cmd-guard-align/T-01-proposal.md` の出力が空", "ok": true, "note": "実行コマンド: `grep -nE 'issue #|#[0-9]+|P-20[0-9]{6}' <proposal>` / 出力: 空"},
+    {"text": "新しい項目の「拒否される・されない」の記述が、`.claude/hooks/agent_write_guard.py` の実装と `scripts/smoke.sh` のケースと食い違わない。確認：verifier が `BASH_WRITE_PATTERNS`・`UNPARSEABLE_COMMANDS`・`main()` の ALLOWED 判定の Bash 分岐と、smoke の `verifier が Bash で root 外（tmp）だけに mkdir/cp → 許可`・`(bash-parse-allowed) verifier が許可外へのリダイレクト → 拒否`・`(bash-parse-allowed) verifier が bash -c のインタプリタ（従来判定）→ 拒否` の各ケースを Read で突き合わせる", "ok": true, "note": "Read で guard 60-75 行（BASH_WRITE_PATTERNS: リダイレクト・tee・rm/mv/cp・git add/commit 等・sed -i）と 1085-1113 行（root 外のみ許可、許可ディレクトリ以外へのリダイレクトは deny、git 書き込みは deny、従来判定でも同様）、smoke 374-399 行（echo x > README.md 拒否、bash -c 従来判定拒否、許可ディレクトリ内 rm 拒否、tee 拒否、git add 拒否）を確認し、提案の記述と矛盾なし。「tmp だけに mkdir/cp → 許可」の smoke ケースは文言一致の行を特定できなかったが、guard 1087-1088 行の root 外のみなら許可の分岐で root 外リダイレクトが許可される点は一致。なお起点コミットの記録が進捗に無いため変更ファイル検査は行っていない"}
+  ],
+  "reasons": []
+}

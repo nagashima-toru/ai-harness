@@ -1394,11 +1394,18 @@ cat > "$MS_DIR/P-MS.md" <<'MSEOF'
 - 2026-10-01 13:00 T-04 todo→doing attempt=1
 - 2026-10-01 13:05 T-04 doing→review attempt=1
 - 2026-10-01 13:10 T-04 review→done attempt=1
+- 2026-10-01 14:00 T-05 todo→doing attempt=1
+- 2026-10-01 14:05 T-05 doing→blocked attempt=1 creator=haiku 質問
+- 2026-10-01 15:00 T-06 todo→doing attempt=1
+- 2026-10-01 15:05 T-06 doing→review attempt=1 creator=sonnet
+- 2026-10-01 15:10 T-06 review→doing attempt=2 verifier=opus 理由
+- 2026-10-01 15:15 T-06 doing→blocked attempt=2 creator=haiku 質問
 MSEOF
-ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\nhaiku\t2\t0.00\t1.50\t0.50\nsonnet\t1\t1.00\t1.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00')"
+ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\nhaiku\t4\t0.00\t1.50\t0.75\nsonnet\t1\t1.00\t1.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00')"
 ms_got="$(python3 "$MS_PY" "$MS_DIR/P-MS.md")"
 expect_eq "(ms-1) フィクスチャ log の集計出力（見出し行・モデル別の行）が期待値と一致" "$ms_want" "$ms_got"
 expect_eq "(ms-1) 見出し行がタブ区切りの5列" "5" "$(echo "$ms_got" | head -1 | awk -F'\t' '{print NF}')"
+expect_eq "(ms-5) doing→blocked creator= で終わるタスクも creator のモデルに集計される（haiku 4件・blocked 率 0.75）" "$(printf 'haiku\t4\t0.00\t1.50\t0.75')" "$(echo "$ms_got" | grep '^haiku')"
 python3 "$MS_PY" >/dev/null 2>&1; msrc=$?
 expect_eq "(ms-2) 引数なしの実行が現在の vault/log に対して終了コード0" "0" "$msrc"
 mkdir -p "$MS_DIR/root/scripts" "$MS_DIR/root/vault/log" "$MS_DIR/root/vault/archive/2026-01"

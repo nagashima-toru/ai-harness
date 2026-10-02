@@ -246,6 +246,34 @@ git -C "$GTMP" init -q -b main
 git -C "$GTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 expect_guard "(i) main で git commit → 拒否" deny \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) grep の検索語に git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"grep -n \"git commit\" README.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) git log --grep の引数に git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git log --oneline --grep \"git commit\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) echo の引用符内に git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo \"run git commit later\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) ヒアドキュメント本文に git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cat <<\"EOF\"\ngit commit -m x\nEOF"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) パイプの grep に git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cat README.md | grep \"git commit\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) && の後ろの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git add a && git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) ; の後ろの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo x; git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) 改行区切りの後ろの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo a\ngit commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) 先頭の代入付きの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"GIT_AUTHOR_NAME=x git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) 絶対パスのコマンド語の git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"/usr/bin/git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) コマンド置換を含む git commit は従来判定で → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<\"EOF\"\nmsg\nEOF\n)\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) bash -c 内の git commit は従来判定で → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"bash -c \"git commit -m x\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) git -C . で前置オプション付きの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -C . commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(bash-parse-main) git -c で前置オプション付きの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -c user.name=x commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 git -C "$GTMP" checkout -q -b work/p-test
 expect_guard "(j) work ブランチで git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"

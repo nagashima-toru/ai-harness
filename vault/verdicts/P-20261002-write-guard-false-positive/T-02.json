@@ -1,0 +1,15 @@
+{
+  "task": "P-20261002-write-guard-false-positive/T-02",
+  "attempt": 2,
+  "result": "PASS",
+  "checked_at": "2026-10-02 12:32",
+  "criteria": [
+    {"text": "フックが構文エラー無くコンパイルできる。確認：`python3 -m py_compile .claude/hooks/agent_write_guard.py` の終了コードが 0", "ok": true, "note": "実行コマンド: `python3 -m py_compile .claude/hooks/agent_write_guard.py; echo rc=$?` / 出力: rc=0"},
+    {"text": "smoke が全件 pass し、NG が無い。確認：`bash scripts/smoke.sh > /tmp/...-T-02-smoke.txt 2>&1` の後、tail -1 が `smoke: pass=<N> fail=0`（`<N>` は 398 以上）で、`grep -c '^  NG'` が `0`", "ok": true, "note": "verifier の Bash は /tmp へのリダイレクトが拒否されるため、代替としてパイプで直接検査。実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -E '^smoke:|^  NG|...'` / 出力: smoke: pass=398 fail=0、`  NG` 行は出力に無し（0件）"},
+    {"text": "「決定済み」の許可ケース5件が、smoke で許可として通る。確認：`grep -c '^  ok   (bash-parse-creator) .*→ 許可'` が `5` 以上", "ok": true, "note": "同じ smoke 出力から (bash-parse-creator) 行を抽出（ファイル経由不可のためパイプ）。`ok   ... → 許可` が5行（grep検索語git add・git log -p リダイレクト・ヒアドキュメント・doing->review・grep -c リダイレクト）"},
+    {"text": "「決定済み」の拒否ケース7件が、smoke で拒否として通り、reason に creator の拒否文言を含む。確認：`grep -c '^  ok   (bash-parse-creator) .*→ 拒否'` が `7` 以上", "ok": true, "note": "同じ出力で `ok   ... → 拒否` が7行。scripts/smoke.sh 452行で拒否ケースは4番目の引数 `creator は vault/plans/` を reason 検査に渡す実装を確認"},
+    {"text": "既存の smoke ケースを削除・変更していない（追加だけ）。確認：`git diff main --numstat -- scripts/smoke.sh` の2列目（削除行数）が `0`", "ok": true, "note": "実行コマンド: `git diff main --numstat -- scripts/smoke.sh` / 出力: 40 0 scripts/smoke.sh（削除0）"},
+    {"text": "`targets_creator_denied_paths` が解析関数を使っている。確認：`grep -n -A 25 'def targets_creator_denied_paths' .claude/hooks/agent_write_guard.py` の出力に `analyze_bash_writes(` を含む行がある", "ok": true, "note": "実行コマンド: 上記 grep を `| grep 'analyze_bash_writes('` / 出力: 614:        writes = analyze_bash_writes(cmd)。変更ファイル検査（起点 f8840fb、`git diff --name-only f8840fb..HEAD` は空＋`git status --porcelain`）は .claude/hooks/agent_write_guard.py・scripts/smoke.sh のみ（タスク票は除外対象）で成果物外の変更なし"}
+  ],
+  "reasons": []
+}

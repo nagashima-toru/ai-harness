@@ -3,7 +3,8 @@
 
 - verifier : vault/verdicts/ 配下のみ
 - planner  : vault/plans/ と vault/tasks/ 配下のみ
-対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（リダイレクトや破壊的コマンドの簡易判定）
+対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（`analyze_bash_writes` で解析できた時は
+             実際の書き込み対象で判定し、解析できない時は従来のリダイレクト・破壊的コマンドの簡易判定）
 メインエージェントや他のサブエージェントには何もしない。
 
 改ざん防止：上記とは別に、agent_type を問わず（メインエージェント含む）vault/rules/ 配下への
@@ -16,12 +17,17 @@
 上記の拒否は、Write 系ツールのパス判定に加え、Bash 経由で `gh api` や GitHub Contents API
 （api.github.com / raw.githubusercontent.com 等）へ直接 curl するリモート書き込み経路も対象にする
 （issue #6）。
+vault/rules/ と会話記録（~/.claude/projects/）の Bash 判定は、`analyze_bash_writes` で解析できた時だけ
+実際の書き込み対象で判定し、解析できない形（コマンド置換・サブシェル・インタプリタ・変数や glob を
+含む対象など）は従来の判定（BASH_WRITE_PATTERNS 等）に落とす（fail-closed。issue #91）。
+引数・引用符内・ヒアドキュメント本文に文字列があるだけの誤検知を解消するための精密化。
 
 creator（run から呼ばれる作成エージェント）向けの拒否リスト：creator は成果物パス（repo 全体に
 及びうる）と vault/tasks/ への書き込みは許可されるが、vault/plans/・vault/log/ への書き込みは
 agent_type を問わない他の判定と同じく常に拒否する。計画票のタスク表の状態更新とログ追記は、
 呼び出し元のオーケストレーター（run のメインセッション）に一本化するための制限（D-003 フェーズ2）。
 ALLOWED の許可リスト方式とは異なり、拒否リスト方式で実装する。
+Bash は `analyze_bash_writes` で解析できた時は実際の書き込み対象だけで判定する（解析不能は従来判定）。
 
 done タスクへの書き込み拒否：agent_type を問わず（メインセッション含む）、書き込み先が
 vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、対応する計画票
@@ -32,6 +38,8 @@ plan_guard.py の raw_rows と同じものをこのファイル内にコピー�
 ただし Bash の書き込み動詞が git add / git commit だけのコマンドは対象外（ステージ・コミットは
 ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
 他の書き込み動詞・リダイレクト・コマンド置換が混ざる場合は従来どおり拒否する。
+解析できた時は `git add`/`git commit` の対象を除いた実際の書き込み対象で判定する（issue #87）。
+解析できない形（`$(` 等）は従来の `is_git_stage_or_commit_only` を含む判定に落とす。
 """
 import json
 import os
@@ -41,6 +49,7 @@ import subprocess
 import sys
 
 GIT_COMMIT_PATTERN = r"\bgit\s+commit\b"
+GIT_PREOPT_COMMIT_PATTERN = r"\bgit\s+-[^;&|\n]*\bcommit\b"
 GITHUB_API_HOSTS = ("api.github.com", "raw.githubusercontent.com", "githubusercontent.com")
 
 ALLOWED = {
@@ -237,8 +246,307 @@ def targets_vault_rules_remote(cmd):
     return False
 
 
+class _Unparseable(Exception):
+    """analyze_bash_writes が解析を諦める（None を返す）ための内部例外。"""
+
+
+# 解析しないコマンド語（basename で照合）。サブシェル・インタプリタ・任意コマンドを起動するもの。
+UNPARSEABLE_COMMANDS = frozenset((
+    "cd", "pushd", "popd", "eval", "exec", "source", ".", "bash", "sh", "zsh", "dash", "env", "sudo",
+    "nohup", "time", "timeout", "nice", "command", "builtin", "xargs", "find", "awk", "gawk", "perl",
+    "python", "python3", "ruby", "node",
+))
+# シェルの制御構文の語（コマンド位置に来ると後続のコマンドを見落とすので解析しない）
+SHELL_KEYWORDS = frozenset((
+    "if", "then", "else", "elif", "fi", "for", "while", "until", "do", "done", "case", "esac",
+    "select", "function", "coproc", "{", "}", "!",
+))
+GIT_WRITE_SUBCOMMANDS = frozenset((
+    "rm", "mv", "checkout", "switch", "reset", "restore", "clean", "stash", "merge", "rebase", "push",
+))
+ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+PUNCT_ONLY_RE = re.compile(r"^[();<>|&]+$")
+SEPARATOR_RE = re.compile(r"^[;&|]+$")
+
+
+def _strip_heredocs(cmd):
+    """ヒアドキュメント本文を取り除き、引用符外の改行を `;` に置き換えた文字列を返す。
+
+    引用符外の `<<`・`<<-` の区切り語を見つけ、次の行から区切り語だけの行までの本文を捨てる。
+    引用符内の改行はそのまま残す。区切り語の行が見つからない・展開される本文（区切り語を引用符で
+    囲まない）に `$(` かバッククォートがある場合は _Unparseable。
+    """
+    out = []
+    n = len(cmd)
+    i = 0
+    quote = None
+    pending = []  # (区切り語, <<- か, 区切り語が引用符付きか)
+    while i < n:
+        c = cmd[i]
+        if quote == "'":
+            out.append(c)
+            if c == "'":
+                quote = None
+            i += 1
+            continue
+        if quote == '"':
+            if c == "\\" and i + 1 < n:
+                out.append(cmd[i:i + 2])
+                i += 2
+                continue
+            out.append(c)
+            if c == '"':
+                quote = None
+            i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            if cmd[i + 1] == "\n":
+                out.append(" ")
+            else:
+                out.append(cmd[i:i + 2])
+            i += 2
+            continue
+        if c in "'\"":
+            quote = c
+            out.append(c)
+            i += 1
+            continue
+        if c == "\n":
+            out.append(" ; ")
+            i += 1
+            for delim, dash, quoted in pending:
+                found = False
+                body = []
+                while i < n:
+                    e = cmd.find("\n", i)
+                    if e < 0:
+                        e = n
+                    line = cmd[i:e]
+                    i = min(e + 1, n)
+                    if (line.lstrip("\t") if dash else line) == delim:
+                        found = True
+                        break
+                    body.append(line)
+                if not found:
+                    raise _Unparseable()
+                if not quoted and any("$(" in b or "`" in b for b in body):
+                    raise _Unparseable()
+            pending = []
+            continue
+        if c == "<" and cmd.startswith("<<", i) and not cmd.startswith("<<<", i):
+            j = i + 2
+            dash = False
+            if j < n and cmd[j] == "-":
+                dash = True
+                j += 1
+            while j < n and cmd[j] in " \t":
+                j += 1
+            delim = []
+            quoted = False
+            while j < n and cmd[j] not in " \t\n;&|<>()":
+                ch = cmd[j]
+                if ch in "'\"":
+                    quoted = True
+                    k = cmd.find(ch, j + 1)
+                    if k < 0:
+                        raise _Unparseable()
+                    delim.append(cmd[j + 1:k])
+                    j = k + 1
+                    continue
+                if ch == "\\" and j + 1 < n:
+                    quoted = True
+                    delim.append(cmd[j + 1])
+                    j += 2
+                    continue
+                delim.append(ch)
+                j += 1
+            word = "".join(delim)
+            if not word:
+                raise _Unparseable()
+            pending.append((word, dash, quoted))
+            out.append(cmd[i:i + 2])  # 区切り語本体は次の周回で通常どおり出力される
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+    if quote is not None or pending:
+        raise _Unparseable()
+    return "".join(out)
+
+
+def _split_positional(args):
+    """フラグ（`-` で始まるトークン）を除いた引数を返す。`--` の後はすべて引数。"""
+    out = []
+    after_dd = False
+    for a in args:
+        if after_dd:
+            out.append(a)
+        elif a == "--":
+            after_dd = True
+        elif not a.startswith("-"):
+            out.append(a)
+    return out
+
+
+def _copy_move_targets(args):
+    """cp / mv の対象（全ての非フラグ引数＋-t <dir>・--target-directory=<dir> の dir）。"""
+    tdir = None
+    rest = []
+    after_dd = False
+    k = 0
+    while k < len(args):
+        a = args[k]
+        if after_dd:
+            rest.append(a)
+        elif a == "--":
+            after_dd = True
+        elif a == "--target-directory" or (not a.startswith("--") and a.startswith("-") and a.endswith("t")):
+            if k + 1 >= len(args):
+                raise _Unparseable()
+            tdir = args[k + 1]
+            k += 1
+        elif a.startswith("--target-directory="):
+            tdir = a.split("=", 1)[1]
+        elif a.startswith("-t") and not a.startswith("--") and len(a) > 2:
+            tdir = a[2:]
+        elif not a.startswith("-"):
+            rest.append(a)
+        k += 1
+    if tdir is not None:
+        rest.append(tdir)
+    return rest
+
+
+def _segment_writes(words, redirects, writes):
+    """1セグメント（コマンド語＋引数）の書き込みを writes に追加する。解析できなければ _Unparseable。"""
+    for r in redirects:
+        writes.append(("redirect", r))
+    idx = 0
+    while idx < len(words) and ASSIGNMENT_RE.match(words[idx]):
+        idx += 1
+    if idx >= len(words):
+        return
+    cmd_word = words[idx]
+    args = words[idx + 1:]
+    if "$" in cmd_word:
+        raise _Unparseable()
+    base = os.path.basename(cmd_word)
+    if cmd_word in SHELL_KEYWORDS or base in SHELL_KEYWORDS or base in UNPARSEABLE_COMMANDS:
+        raise _Unparseable()
+    if base == "git":
+        if not args:
+            return
+        if args[0].startswith("-"):
+            raise _Unparseable()
+        sub, rest = args[0], args[1:]
+        if sub == "add":
+            for t in _split_positional(rest) or [""]:
+                writes.append(("git-add", t))
+        elif sub == "commit":
+            writes.append(("git-commit", ""))
+        elif sub in GIT_WRITE_SUBCOMMANDS:
+            for t in _split_positional(rest) or [""]:
+                writes.append(("git-write", t))
+        return
+    if base == "tee":
+        writes.extend(("tee", t) for t in _split_positional(args))
+    elif base == "sed":
+        before_dd = args[:args.index("--")] if "--" in args else args
+        in_place = any(
+            a == "--in-place" or a.startswith("--in-place=")
+            or (a.startswith("-") and not a.startswith("--") and "i" in a)
+            for a in before_dd
+        )
+        if in_place:
+            writes.extend(("sed-i", t) for t in _split_positional(args))
+    elif base in ("cp", "mv"):
+        # 人の回答（A）：全ての非フラグ引数を対象にする。-t <dir>・--target-directory=<dir> は dir も対象にする
+        writes.extend((base, t) for t in _copy_move_targets(args))
+    elif base in ("rm", "mkdir", "touch", "chmod", "chown"):
+        writes.extend((base, t) for t in _split_positional(args))
+
+
+def analyze_bash_writes(cmd):
+    """Bash コマンド文字列を shlex で解析し、実際の書き込み対象 [(verb, target), ...] を返す（issue #91）。
+
+    書き込みが無ければ空リスト。解析できない形は None（呼び出し側は従来の判定に落とす＝fail-closed）：
+    コマンド置換・プロセス置換・サブシェル・シェルの制御構文・インタプリタや任意コマンドを起動する
+    コマンド語・変数や glob を含む書き込み対象・shlex が読めない形・区切り語の無いヒアドキュメント。
+    ヒアドキュメント本文と引用符内の文字列は書き込み対象にしない。verb は redirect・tee・sed-i・
+    cp・mv・rm・mkdir・touch・chmod・chown・git-add・git-commit・git-write。
+    """
+    try:
+        text = _strip_heredocs(cmd)
+        if any(s in text for s in ("$(", "`", "<(", ">(")):
+            return None
+        lex = shlex.shlex(text, posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        lex.commenters = ""
+        tokens = list(lex)
+        writes = []
+        words, redirects = [], []
+
+        def flush():
+            if words or redirects:
+                _segment_writes(words, redirects, writes)
+            words.clear()
+            redirects.clear()
+
+        i = 0
+        while i < len(tokens):
+            tok = tokens[i]
+            if not PUNCT_ONLY_RE.match(tok):
+                words.append(tok)
+                i += 1
+                continue
+            if "(" in tok or ")" in tok:
+                return None
+            if SEPARATOR_RE.match(tok):
+                if tok not in (";", "&&", "||", "|", "|&", "&"):
+                    return None
+                flush()
+                i += 1
+                continue
+            nxt = tokens[i + 1] if i + 1 < len(tokens) else None
+            if tok in (">", ">>", ">|", "&>", "&>>", ">&", "<", "<&", "<<", "<<-", "<<<"):
+                if nxt is None or PUNCT_ONLY_RE.match(nxt):
+                    return None
+                # `2>` のような前置の fd 番号は別トークンになるので、引数から外す
+                if tok.startswith((">", "&>")) and words and words[-1].isdigit():
+                    words.pop()
+                if tok in (">", ">>", ">|", "&>", "&>>"):
+                    redirects.append(nxt)
+                elif tok == ">&" and not re.fullmatch(r"\d+-?|-", nxt):
+                    redirects.append(nxt)
+                i += 2
+                continue
+            return None
+        flush()
+        for _, target in writes:
+            if any(ch in target for ch in "$*?[{"):
+                return None
+        return writes
+    except (_Unparseable, ValueError):
+        return None
+
+
+def _legacy_targets_vault_rules_bash(cmd, root):
+    """従来の Bash 判定（解析できない形のフォールバック）。"""
+    masked = mask_angle_placeholders(cmd)
+    if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+        return False
+    redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked)
+    path_like = re.findall(r"[^\s'\"]*vault/rules/[^\s'\"]*", cmd)
+    candidates = redirect_targets + path_like
+    return any(normalize(t, root).startswith("vault/rules/") for t in candidates)
+
+
 def targets_vault_rules(tool, tool_input, root):
-    """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。"""
+    """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。
+
+    Bash は analyze_bash_writes で解析できた時だけ実際の書き込み対象で判定し、
+    None（解析不能）の時は従来の判定に落とす（issue #91）。
+    """
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
         path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
         return normalize(path, root).startswith("vault/rules/")
@@ -246,13 +554,10 @@ def targets_vault_rules(tool, tool_input, root):
         cmd = tool_input.get("command") or ""
         if targets_vault_rules_remote(cmd):
             return True
-        masked = mask_angle_placeholders(cmd)
-        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
-            return False
-        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked)
-        path_like = re.findall(r"[^\s'\"]*vault/rules/[^\s'\"]*", cmd)
-        candidates = redirect_targets + path_like
-        return any(normalize(t, root).startswith("vault/rules/") for t in candidates)
+        writes = analyze_bash_writes(cmd)
+        if writes is None:
+            return _legacy_targets_vault_rules_bash(cmd, root)
+        return any(normalize(t, root).startswith("vault/rules/") for _, t in writes if t)
     return False
 
 
@@ -277,7 +582,8 @@ def targets_transcript_dir(tool, tool_input, root):
     """この呼び出しが ~/.claude/projects/ 配下（会話記録）への書き込みを試みているか判定する（D-010 フェーズ4）。
 
     承認の裏付けにする会話記録をエージェントが書き換えて人の発言を偽造するのを防ぐ。
-    Bash は既存の BASH_WRITE_PATTERNS で書き込み動詞を判定し、対象は extract_bash_write_targets と
+    Bash は analyze_bash_writes で解析できた時だけ実際の書き込み対象で判定する。None（解析不能）の時は
+    従来の判定：BASH_WRITE_PATTERNS で書き込み動詞を判定し、対象は extract_bash_write_targets と
     `.claude/projects/` を含む path-like トークンから求める（読み取り専用コマンドは対象外）。
     """
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
@@ -285,6 +591,9 @@ def targets_transcript_dir(tool, tool_input, root):
         return is_under_transcript_dir(path, root)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
+        writes = analyze_bash_writes(cmd)
+        if writes is not None:
+            return any(is_under_transcript_dir(t, root) for _, t in writes if t)
         masked = mask_angle_placeholders(cmd)
         if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
             return False
@@ -306,6 +615,9 @@ def targets_creator_denied_paths(tool, tool_input, root):
         return normalize(path, root).startswith(DENIED_FOR_CREATOR)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
+        writes = analyze_bash_writes(cmd)
+        if writes is not None:
+            return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for _, t in writes if t)
         masked = mask_angle_placeholders(cmd)
         if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
             return False
@@ -422,13 +734,18 @@ def find_done_task_write(tool, tool_input, root):
         candidates.append(path)
     elif tool == "Bash":
         cmd = tool_input.get("command") or ""
-        masked = mask_angle_placeholders(cmd)
-        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
-            return None
-        if is_git_stage_or_commit_only(cmd):
-            return None
-        candidates.extend(extract_bash_write_targets(cmd))
-        candidates.extend(re.findall(r"[^\s'\")]*vault/(?:tasks|verdicts)/[^\s'\")]*", cmd))
+        writes = analyze_bash_writes(cmd)
+        if writes is not None:
+            # 解析できた：git add / git commit は内容を変えないので除き、実際の書き込み対象だけで判定する
+            candidates.extend(t for v, t in writes if t and v not in ("git-add", "git-commit"))
+        else:
+            masked = mask_angle_placeholders(cmd)
+            if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+                return None
+            if is_git_stage_or_commit_only(cmd):
+                return None
+            candidates.extend(extract_bash_write_targets(cmd))
+            candidates.extend(re.findall(r"[^\s'\")]*vault/(?:tasks|verdicts)/[^\s'\")]*", cmd))
     for cand in candidates:
         rel = normalize(cand.rstrip(")\"'`"), root)
         matched = match_task_or_verdict_path(rel)
@@ -644,6 +961,18 @@ def delegate_to_worktree(payload):
     return result.stdout
 
 
+def is_git_commit_command(cmd):
+    """Bash コマンドが実際に git commit を実行するかを返す（issue #91）。
+
+    analyze_bash_writes が解析できた時は git-commit の組があるかだけを見る。
+    解析できない形（None）は従来の正規表現と git -<opt> … commit の形で判定する（fail-closed）。
+    """
+    writes = analyze_bash_writes(cmd)
+    if writes is None:
+        return bool(re.search(GIT_COMMIT_PATTERN, cmd) or re.search(GIT_PREOPT_COMMIT_PATTERN, cmd))
+    return any(verb == "git-commit" for verb, _ in writes)
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -663,7 +992,9 @@ def main():
     # 非 git リポジトリ・ブランチ取得不能（detached HEAD 等）は fail-open（この判定は素通り）。
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        if re.search(GIT_COMMIT_PATTERN, cmd) and current_branch(root) == "main":
+        # 解析できた時は実際に実行される git commit だけを見る。解析できない形は従来の正規表現と
+        # git -<opt> … commit の形で判定する（issue #91）。
+        if is_git_commit_command(cmd) and current_branch(root) == "main":
             deny(
                 f"[agent_write_guard] main への直接コミットはできません。"
                 f"ブランチを切ってください（work/<計画IDの英小文字>）: {cmd[:120]}"
@@ -746,6 +1077,25 @@ def main():
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
         masked_cmd = mask_angle_placeholders(cmd)
+        parsed = analyze_bash_writes(cmd)
+        if parsed is not None:
+            # 解析できた時は、実際の書き込み対象だけで判定する（issue #91）
+            if not parsed:
+                sys.exit(0)
+            if any(v in ("git-add", "git-commit", "git-write") for v, _ in parsed):
+                deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
+            if all(is_outside_root(t, root) for _, t in parsed):
+                sys.exit(0)
+            inside = [(v, t) for v, t in parsed if not is_outside_root(t, root)]
+            if all(v in ("cp", "mv") for v, _ in inside):
+                # root 内は読み取り元だけで、コピー・移動先が root の外なら許可する
+                dests = extract_bash_write_targets(cmd)
+                if dests and all(is_outside_root(t, root) for t in dests):
+                    sys.exit(0)
+            if all(v in ("redirect", "mkdir", "touch") and normalize(t, root).startswith(tuple(allowed))
+                   for v, t in inside):
+                sys.exit(0)
+            deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
         if any(re.search(p, masked_cmd) for p in BASH_WRITE_PATTERNS):
             write_targets = extract_bash_write_targets(cmd)
             # 対象パスがすべて root（リポジトリ）の外なら許可する（issue #27）。

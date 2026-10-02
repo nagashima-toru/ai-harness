@@ -1,0 +1,14 @@
+{
+  "task": "P-20261003-model-stats-blocked-creator/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 08:17",
+  "criteria": [
+    {"text": "構文が正しい。確認：`python3 -m py_compile scripts/model_stats.py` の終了コードが0", "ok": true, "note": "実行コマンド: `python3 -m py_compile scripts/model_stats.py; echo rc=$?` / 出力: rc=0"},
+    {"text": "`doing→blocked creator=` で終わるタスクがそのモデルに集計される。確認：フィクスチャ書き出し後 `python3 scripts/model_stats.py /tmp/P-20261003-model-stats-blocked-creator-T-01.md` の標準出力がタブ区切りでちょうど4行（haiku/sonnet/unknown の期待値）", "ok": true, "note": "verifier の Bash は /tmp へのリダイレクト不可のため printf での書き出しは実行不可。代替として /tmp の既存フィクスチャを Read し、基準記載の12行と一致することを確認。実行コマンド: `python3 scripts/model_stats.py /tmp/P-20261003-model-stats-blocked-creator-T-01.md | cat -t` / 出力: header, `haiku^I2^I0.00^I1.50^I1.00`, `sonnet^I2^I0.50^I1.50^I0.50`, `unknown^I1^I1.00^I1.00^I0.00`（4行、タブ区切り、期待値と一致）"},
+    {"text": "現在の log に対して壊れない。確認：`python3 scripts/model_stats.py` の終了コードが0で、1行目が `model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate`", "ok": true, "note": "実行コマンド: `python3 scripts/model_stats.py >/dev/null; echo rc2=$?` と `python3 scripts/model_stats.py | head -1 | cat -t` / 出力: rc2=0、1行目 `model^Itasks^Ifirst_pass_rate^Iavg_attempt^Iblocked_rate`"},
+    {"text": "既存の smoke が通る（既存のフィクスチャは `doing→blocked` で終わらないので期待値は変わらない）。確認：`bash scripts/smoke.sh` の末尾行が `smoke: pass=<数> fail=0`", "ok": true, "note": "smoke 出力ファイルへのリダイレクトは verifier の Bash で不可のため、パイプで代替。実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=439 fail=0"},
+    {"text": "集計キー以外の定義は変わっていない。確認：`git diff main -- scripts/model_stats.py` を Read と目視で確認し、変わった行が `collect()` の集計キーを決める部分と、docstring・コメントだけである", "ok": true, "note": "実行コマンド: `git diff main -- scripts/model_stats.py` / 出力: 変更は collect() 内のコメント2行追加、条件を `dst in (\"review\", \"blocked\")` に、`t[\"creator\"]` 代入を `if cm:` 内に移動のみ。main()・HEADER・出力形式は差分なし。変更ファイル検査: `git diff --name-only f13e019..HEAD`（空）と `git status --porcelain`（scripts/model_stats.py とタスク票のみ）で、成果物外のファイルなし（タスク票は除外対象）"}
+  ],
+  "reasons": []
+}

@@ -42,9 +42,12 @@ def collect(paths):
                 attempt = int(am.group(1)) if am else None
                 t = tasks.setdefault(f"{plan}/{tid}", {"last": None, "creator": None})
                 t["last"] = (src, dst, attempt)
-                if src == "doing" and dst == "review":
+                # 集計キー: doing→review / doing→blocked のうち、最後の creator= 付き行の値。
+                # creator= の無い行は読み飛ばし、前の値を残す（無ければ unknown）。
+                if src == "doing" and dst in ("review", "blocked"):
                     cm = CREATOR_RE.search(rest)
-                    t["creator"] = cm.group(1) if cm else None
+                    if cm:
+                        t["creator"] = cm.group(1)
     return tasks
 
 

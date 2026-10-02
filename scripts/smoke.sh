@@ -391,6 +391,27 @@ expect_guard "(done-write) git rm で done の verdict を削除 → 拒否" den
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
 expect_guard "(done-write) commit メッセージ内のコマンド置換で done のタスク票へ書き込み → 拒否" deny \
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(echo x > vault/tasks/P-FIX/T-01.md)\""}}')" "done"
+# Bash 判定を analyze_bash_writes に載せ替え（issue #87・#91）。git add/commit は除き、実際の書き込み対象で判定する
+expect_guard "(bash-parse-done) #87 log 追記と done verdict の git add の && 連結 → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf '%s' \"- 2026-10-02 10:00 T-01 review→done attempt=1 verifier=sonnet\" >> vault/log/P-FIX.md && git add vault/plans/P-FIX.md vault/log/P-FIX.md vault/verdicts/P-FIX/T-01.json"}}')"
+expect_guard "(bash-parse-done) git add と git commit の改行区切り → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json\ngit commit -m \"P-FIX/T-01: done\""}}')"
+expect_guard "(bash-parse-done) grep の引数に done のタスク票パスがあるだけ → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"grep -n \"vault/tasks/P-FIX/T-01.md\" README.md > /tmp/x.txt"}}')"
+expect_guard "(bash-parse-done) cat で done の verdict を読んで別ファイルへ出力 → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cat vault/verdicts/P-FIX/T-01.json > /tmp/v.json"}}')"
+expect_guard "(bash-parse-done) log 追記に done の verdict へのリダイレクトが && 連結 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/log/P-FIX.md && echo y > vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(bash-parse-done) git add の後に git rm で done の verdict を削除 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(bash-parse-done) #87 の2例目 commit メッセージのコマンド置換内に done の verdict パス（解析不能は従来判定）→ 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<'EOF'\nP-FIX/T-01 vault/verdicts/P-FIX/T-01.json\nEOF\n)\""}}')" "done"
+expect_guard "(bash-parse-done) git restore で done のタスク票を戻す → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git restore vault/tasks/P-FIX/T-01.md"}}')" "done"
+expect_guard "(bash-parse-done) cp で done のタスク票を上書きして git add → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cp /tmp/y vault/tasks/P-FIX/T-01.md\ngit add vault/tasks/P-FIX/T-01.md"}}')" "done"
+expect_guard "(bash-parse-done) tee で done の verdict へ書き込み → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"tee vault/verdicts/P-FIX/T-01.json < /tmp/y"}}')" "done"
 
 # 会話記録（~/.claude/projects/）への書き込み拒否（D-010 フェーズ4）。実ホームを触らないよう HOME を差し替える
 TG_HOME="/tmp/P-20260930-approve-transcript-guard-home"

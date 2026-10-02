@@ -37,6 +37,8 @@ plan_guard.py の raw_rows と同じものをこのファイル内にコピー�
 ただし Bash の書き込み動詞が git add / git commit だけのコマンドは対象外（ステージ・コミットは
 ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
 他の書き込み動詞・リダイレクト・コマンド置換が混ざる場合は従来どおり拒否する。
+解析できた時は `git add`/`git commit` の対象を除いた実際の書き込み対象で判定する（issue #87）。
+解析できない形（`$(` 等）は従来の `is_git_stage_or_commit_only` を含む判定に落とす。
 """
 import json
 import os
@@ -730,13 +732,18 @@ def find_done_task_write(tool, tool_input, root):
         candidates.append(path)
     elif tool == "Bash":
         cmd = tool_input.get("command") or ""
-        masked = mask_angle_placeholders(cmd)
-        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
-            return None
-        if is_git_stage_or_commit_only(cmd):
-            return None
-        candidates.extend(extract_bash_write_targets(cmd))
-        candidates.extend(re.findall(r"[^\s'\")]*vault/(?:tasks|verdicts)/[^\s'\")]*", cmd))
+        writes = analyze_bash_writes(cmd)
+        if writes is not None:
+            # 解析できた：git add / git commit は内容を変えないので除き、実際の書き込み対象だけで判定する
+            candidates.extend(t for v, t in writes if t and v not in ("git-add", "git-commit"))
+        else:
+            masked = mask_angle_placeholders(cmd)
+            if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+                return None
+            if is_git_stage_or_commit_only(cmd):
+                return None
+            candidates.extend(extract_bash_write_targets(cmd))
+            candidates.extend(re.findall(r"[^\s'\")]*vault/(?:tasks|verdicts)/[^\s'\")]*", cmd))
     for cand in candidates:
         rel = normalize(cand.rstrip(")\"'`"), root)
         matched = match_task_or_verdict_path(rel)

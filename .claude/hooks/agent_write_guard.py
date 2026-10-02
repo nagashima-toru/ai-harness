@@ -3,7 +3,8 @@
 
 - verifier : vault/verdicts/ 配下のみ
 - planner  : vault/plans/ と vault/tasks/ 配下のみ
-対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（リダイレクトや破壊的コマンドの簡易判定）
+対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（`analyze_bash_writes` で解析できた時は
+             実際の書き込み対象で判定し、解析できない時は従来のリダイレクト・破壊的コマンドの簡易判定）
 メインエージェントや他のサブエージェントには何もしない。
 
 改ざん防止：上記とは別に、agent_type を問わず（メインエージェント含む）vault/rules/ 配下への
@@ -1061,6 +1062,25 @@ def main():
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
         masked_cmd = mask_angle_placeholders(cmd)
+        parsed = analyze_bash_writes(cmd)
+        if parsed is not None:
+            # 解析できた時は、実際の書き込み対象だけで判定する（issue #91）
+            if not parsed:
+                sys.exit(0)
+            if any(v in ("git-add", "git-commit", "git-write") for v, _ in parsed):
+                deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
+            if all(is_outside_root(t, root) for _, t in parsed):
+                sys.exit(0)
+            inside = [(v, t) for v, t in parsed if not is_outside_root(t, root)]
+            if all(v in ("cp", "mv") for v, _ in inside):
+                # root 内は読み取り元だけで、コピー・移動先が root の外なら許可する
+                dests = extract_bash_write_targets(cmd)
+                if dests and all(is_outside_root(t, root) for t in dests):
+                    sys.exit(0)
+            if all(v in ("redirect", "mkdir", "touch") and normalize(t, root).startswith(tuple(allowed))
+                   for v, t in inside):
+                sys.exit(0)
+            deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
         if any(re.search(p, masked_cmd) for p in BASH_WRITE_PATTERNS):
             write_targets = extract_bash_write_targets(cmd)
             # 対象パスがすべて root（リポジトリ）の外なら許可する（issue #27）。

@@ -343,6 +343,32 @@ expect_guard "(issue #54 placeholder) verifier が <n> を含む rm コマンド
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"rm attempt=<n>.txt"}}')"
 expect_guard "(issue #54 placeholder) verifier が <n> を含む git commit → 破壊的操作として拒否（プレースホルダー有無に関係なく維持）" deny \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git commit -m \"attempt=<n>\""}}')"
+expect_guard "(bash-parse-allowed) verifier が grep の引数の git add → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"grep -n \"git add\" .claude/skills/run/SKILL.md"}}')"
+expect_guard "(bash-parse-allowed) verifier が許可ディレクトリへの mkdir -p → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"mkdir -p vault/verdicts/P-X"}}')"
+expect_guard "(bash-parse-allowed) planner が grep の引数の rm -rf → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"grep -n \"rm -rf\" docs/vault-spec.md"}}')"
+expect_guard "(bash-parse-allowed) planner が grep の引数の doing->review → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"grep -n \"doing->review\" docs/vault-spec.md"}}')"
+expect_guard "(bash-parse-allowed) verifier が git add → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-X/T-01.json"}}')"
+expect_guard "(bash-parse-allowed) verifier が許可ディレクトリ内の rm → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"rm vault/verdicts/P-X/T-01.json"}}')"
+expect_guard "(bash-parse-allowed) verifier が許可外へのリダイレクト → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x > README.md"}}')"
+expect_guard "(bash-parse-allowed) verifier が root 内をコピー先にする cp → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"cp /tmp/a vault/verdicts/P-X/T-01.json"}}')"
+expect_guard "(bash-parse-allowed) verifier が tee → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"tee vault/verdicts/P-X/T-01.json"}}')"
+expect_guard "(bash-parse-allowed) verifier が bash -c のインタプリタ（従来判定）→ 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"bash -c \"echo x > README.md\""}}')"
+expect_guard "(bash-parse-allowed) verifier がコマンド置換内の git commit（従来判定）→ 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo \"$(git commit -m x)\""}}')"
+expect_guard "(bash-parse-allowed) planner が awk の print 書き込み（従来判定）→ 拒否" deny \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"awk '"'"'{print > \"README.md\"}'"'"' README.md"}}')"
+expect_guard "(bash-parse-allowed) planner が許可内リダイレクトと許可外 rm の連結 → 拒否" deny \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"echo x > vault/tasks/T.md; rm README.md"}}')"
 
 # done タスクへの書き込み拒否（issue #76 / D-010 フェーズ2）。expect_guard を拡張し、4番目の
 # 引数で reason に含むべき部分文字列も確認できるようにする。

@@ -20,9 +20,9 @@ GitHub Issue #89 を解決する。(1) `bash scripts/vcs_finish.sh` を引数な
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | vcs_finish.sh を引数なしで非対話で通るようにし、smoke にケースを足す | |
-| T-02 | todo | 0 | - | run スキルの verifier の worktree 検証手順を絶対パス方式にし、手順7に引数なし既定を書く | |
-| T-03 | todo | 0 | - | verifier ルールの worktree の扱いを絶対パス方式に書き換える提案を書く | |
+| T-01 | doing | 1 | - | vcs_finish.sh を引数なしで非対話で通るようにし、smoke にケースを足す | |
+| T-02 | doing | 1 | - | run スキルの verifier の worktree 検証手順を絶対パス方式にし、手順7に引数なし既定を書く | |
+| T-03 | doing | 1 | - | verifier ルールの worktree の扱いを絶対パス方式に書き換える提案を書く | |
 | T-04 | todo | 0 | - | verifier エージェント定義の手順1・11を絶対パス方式に書き換える | |
 
 ## 計画の受け入れ基準

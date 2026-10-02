@@ -3,7 +3,8 @@
 # `run`/`design` スキルの最終手順から呼ばれ、GitHub・GitLab・ホスティング無しの
 # 3経路に対応する。マージ（人が行う）は本スクリプトの責務外であり、実行しない。
 #
-# 使い方: bash scripts/vcs_finish.sh [gh pr create / glab mr create にそのまま渡す引数...]
+# 使い方: bash scripts/vcs_finish.sh [引数...]（引数なしなら gh は --fill、glab は --fill --yes を既定で付ける）
+#   引数がある時は gh pr create / glab mr create にそのまま渡す（既定値は足さない）
 #
 # ホスティング判定は環境変数 HARNESS_VCS_HOST で上書きできる：
 #   github | gitlab | none | auto（未指定時の既定値）
@@ -44,7 +45,11 @@ case "$host" in
         exit "$push_status"
       fi
     fi
-    gh pr create "$@"
+    if [ "$#" -eq 0 ]; then
+      gh pr create --fill
+    else
+      gh pr create "$@"
+    fi
     exit $?
     ;;
   gitlab)
@@ -60,7 +65,11 @@ case "$host" in
         exit "$push_status"
       fi
     fi
-    glab mr create "$@"
+    if [ "$#" -eq 0 ]; then
+      glab mr create --fill --yes
+    else
+      glab mr create "$@"
+    fi
     exit $?
     ;;
   none)

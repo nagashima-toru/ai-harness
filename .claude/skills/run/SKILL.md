@@ -42,11 +42,11 @@ argument-hint: [task-id（省略時は先頭）]
 8. blocked のタスクが1件以上あれば、それら全部について計画票の該当行の status を `blocked` にし、question 列に creator の質問文をそのまま書き写す（言い換えない）。この書き込みは対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→blocked attempt=<n> creator=<モデル> 理由要約` の形で追記する（`creator=<モデル>` は手順0.5。書式は `docs/vault-spec.md` 7節）。選んだタスクの中に blocked 以外が無ければここで終わる
 
 ## 4. review にする
-blocked ではない完了報告を受けたタスク全部について、status を `review` にする。この計画票への書き込みは、手順2の一括反映と同様に、対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→review attempt=<n> creator=<モデル>` の形で追記する（`creator=<モデル>` は手順0.5。書式は `docs/vault-spec.md` 7節）。この反映もこの時点でコミットする。手順5で verifier が対象タスクの worktree に `EnterWorktree` で入るため、コミットされていない変更はその worktree には反映されず verifier から見えない。
+blocked ではない完了報告を受けたタスク全部について、status を `review` にする。この計画票への書き込みは、手順2の一括反映と同様に、対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→review attempt=<n> creator=<モデル>` の形で追記する（`creator=<モデル>` は手順0.5。書式は `docs/vault-spec.md` 7節）。この反映もこの時点でコミットする。手順5で verifier が対象タスクの worktree を絶対パスで検証するため、コミットされていない変更はその worktree には反映されず verifier から見えない。
 
 ## 5. 検証する
 1. review にした（＝blocked ではなかった）タスクそれぞれについて、Agent ツールで `verifier` サブエージェントを呼ぶ。`isolation` オプションは付けない通常の呼び出しにする。prompt はタスク ID と、手順3で保持した対象タスクの worktree のパスの2つだけ（例：`<計画ID>/<id> を検証して vault/verdicts/<計画ID>/<id>.json を書いてください。対象 worktree: <worktree のパス>`）。作業内容の説明や言い訳は渡さない。この呼び出しも `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順6のverdict判定が呼び出し結果に依存するため）
-2. verifier は渡された worktree のパスに対して `EnterWorktree(path=<渡されたパス>)` を実行し、その worktree に入ってから検証する（creator の呼び出しで作られた既存 worktree を再利用し、verifier 自身は新規に worktree を作らない）
+2. verifier は `EnterWorktree` を使わない（verifier の tools に無く、権限も増やさない）。渡された worktree のパスに対して、git は `git -C <worktree のパス> ...`、ファイルは `<worktree のパス>/<相対パス>` の絶対パスで読む。作業ディレクトリが要るコマンド（スクリプトの実行など）は、同じ Bash 呼び出しの中で `cd <worktree のパス>` してから実行する。verdict はメインリポジトリ側の `vault/verdicts/<計画ID>/<id>.json` に書く（creator の呼び出しで作られた既存 worktree を再利用し、verifier 自身は新規に worktree を作らない）
 3. 対象タスクが複数件の場合、上記の呼び出しをタスクの数だけ1メッセージの中で行う（並行実行）。1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする
 4. 全ての verifier の完了を待ち、それぞれの `vault/verdicts/<計画ID>/<id>.json` を読む（verifier の返答文ではなくファイルを根拠にする）
 
@@ -83,6 +83,7 @@ blocked ではない完了報告を受けたタスク全部について、status
 ## 7. 次へ・完了
 - 計画票に取れる行が残っていれば手順2に戻る
 - 全タスクが `done` になったら、計画票 frontmatter の `status` を `done` にし、`bash scripts/vcs_finish.sh` を実行する。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名と `git merge --no-ff <branch>` の案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
+  - 引数なしの `bash scripts/vcs_finish.sh` は、GitHub なら `gh pr create --fill`、GitLab なら `glab mr create --fill --yes` を既定で使うので非対話で通る。PR/MR のタイトル・本文を整えたい時は引数で渡してよい（引数がある時は既定を付けず、そのまま渡す）
   - `bash scripts/vcs_finish.sh` が `gh`/`glab` コマンド自体が無いことによる失敗（`command not found` 相当の終了コード127、または本スクリプトが出す「`gh`/`glab` コマンドが見つかりません」という明示エラー）で終了した場合：GitHub であれば GitHub MCP ツール（例：実行環境で使える `mcp__github__create_pull_request` 等）で同内容の PR を作成してよい。`gh pr create "$@"` に渡すはずだったブランチ名・PR タイトル・本文は、そのまま MCP ツールの引数に引き継ぐ。GitLab（`glab`）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段が使える環境ではそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる。いずれの代替経路を使った場合も `gh pr merge`/`glab mr merge` は実行しない（マージは人が行うという既存方針は変わらない）。認証エラー・ネットワークエラー等、コマンド自体は存在するが実行に失敗するケースはこの代替の対象外とする
 - どちらでもなければ、処理した ID と結果を1行ずつ報告して終わる
 

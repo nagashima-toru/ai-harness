@@ -1,0 +1,13 @@
+{
+  "task": "P-20261003-run-finish-verifier-worktree/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 01:19",
+  "criteria": [
+    {"text": "`EnterWorktree` という語が手順5の2の1行だけに残り、その行が「使わない」と書いている。確認：`grep -n 'EnterWorktree' .claude/skills/run/SKILL.md` の出力がちょうど1行で、その行が `2. verifier は` で始まり、`` `EnterWorktree` を使わない``・`git -C <worktree のパス>`・`cd <worktree のパス>` の3つを含む", "ok": true, "note": "実行コマンド: `grep -n 'EnterWorktree' .claude/skills/run/SKILL.md`（worktree 内） / 出力: 49行目のみ1行。`2. verifier は `EnterWorktree` を使わない…` で始まり git -C <worktree のパス>・cd <worktree のパス> を含む"},
+    {"text": "手順4の段落の末尾の文が、絶対パスで検証する前提に書き換わっている。確認：`grep -c -F '手順5で verifier が対象タスクの worktree を絶対パスで検証するため' .claude/skills/run/SKILL.md` が `1`", "ok": true, "note": "実行コマンド: `grep -c -F '手順5で verifier が対象タスクの worktree を絶対パスで検証するため' .claude/skills/run/SKILL.md` / 出力: 1"},
+    {"text": "手順7に引数なし既定の1文が足されている。確認：`grep -n -F '既定で使うので非対話で通る' .claude/skills/run/SKILL.md` の出力がちょうど1行で、その行番号が `## 7. 次へ・完了` と `## 8. ハーネス振り返り` の見出しの行番号の間にある（`grep -n '^## ' .claude/skills/run/SKILL.md` と見比べる）", "ok": true, "note": "実行コマンド: `grep -n -F '既定で使うので非対話で通る' ...` と `grep -n '^## ' ...` / 出力: 86行目の1行のみ。見出しは83行目（## 7）と90行目（## 8）なので間にある"},
+    {"text": "変えたのは上の3か所だけ。確認：`git diff --numstat main -- .claude/skills/run/SKILL.md` の出力が `3\t2\t.claude/skills/run/SKILL.md`（追加3行・削除2行。45・49行目の書き換えと、手順7への1行の追加）", "ok": true, "note": "実行コマンド: `git diff --numstat main -- .claude/skills/run/SKILL.md`（worktree 内） / 出力: 3 2 .claude/skills/run/SKILL.md。変更ファイル検査（起点 92929e3、git diff --name-only と git status --porcelain）: 成果物以外は除外対象の plan・log・タスク票のみで宣言外なし。EnterWorktree ツールは使えなかったため、worktree の絶対パスで確認した"}
+  ],
+  "reasons": []
+}

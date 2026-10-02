@@ -1,0 +1,14 @@
+{
+  "task": "P-20261003-run-finish-verifier-worktree/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 01:20",
+  "criteria": [
+    {"text": "`bash -n scripts/vcs_finish.sh` の終了コードが0で、出力が空", "ok": true, "note": "実行コマンド: `bash -n scripts/vcs_finish.sh; echo rc=$?` / 出力: rc=0 のみ（他の出力なし）"},
+    {"text": "smoke 全体が通る。確認：`bash scripts/smoke.sh > /tmp/P-20261003-run-finish-verifier-worktree-T-01-smoke.txt 2>&1` の後、`tail -1 /tmp/P-20261003-run-finish-verifier-worktree-T-01-smoke.txt` が `smoke: pass=<数> fail=0`", "ok": true, "note": "実行コマンド: `tail -1 /tmp/P-20261003-run-finish-verifier-worktree-T-01-smoke.txt` / 出力: smoke: pass=439 fail=0"},
+    {"text": "新しい節の4ケースが ok になっている。確認：`grep -c '^  ok   (vcs_finish) ' /tmp/P-20261003-run-finish-verifier-worktree-T-01-smoke.txt` が `4`。4ケースは「決定済み」のとおり（github 引数なし→`pr create --fill`、github 引数あり→そのまま、gitlab 引数なし→`mr create --fill --yes`、gitlab 引数あり→そのまま）で、各ケースがスタブに記録された引数を比べている（smoke.sh の該当節を Read で確認する）", "ok": true, "note": "実行コマンド: `grep -c '^  ok   (vcs_finish) ' <smoke出力>` / 出力: 4。`git diff 92929e3 -- scripts/smoke.sh` で expect_vf が4ケース（github/gitlab x 引数なし/あり）でスタブ記録と期待の引数列を完全一致比較していることを確認（diff 出力を目視）"},
+    {"text": "新しい節のテストは実在の gh/glab を呼ばず、`git push` もしない。確認：smoke.sh の該当節を Read で読み、PATH の先頭にスタブのディレクトリを足して呼んでいること、上流が設定済みのフィクスチャの git リポジトリの中で実行していること（push の分岐に入らない）を確かめる", "ok": true, "note": "確認方法: `git diff 92929e3 -- scripts/smoke.sh` の目視 / 結果: PATH=\"$VF_BIN:$PATH\" でスタブ gh/glab を先頭に追加、$TMP 下の git init リポジトリで branch.vfmain.remote=. と merge=refs/heads/vfmain を設定し上流を自身にしている"},
+    {"text": "ホスティング判定・push・none 経路・exit の行は変わっていない。確認：`git diff main -- scripts/vcs_finish.sh` の削除行（`-` で始まり `---` でない行）が、`gh pr create`・`glab mr create` の呼び出し行と、冒頭のコメントの行だけ（Read と目視で確認する）", "ok": true, "note": "実行コマンド: `git diff main -- scripts/vcs_finish.sh` / 出力: 削除行は使い方コメント1行、gh pr create 呼び出し1行、glab mr create 呼び出し1行の3行のみ。変更ファイル検査: `git diff --name-only 92929e3..HEAD` は空、`git status --porcelain` は scripts/smoke.sh・scripts/vcs_finish.sh・T-01.md（進捗、除外対象）で、成果物外のファイルなし"}
+  ],
+  "reasons": []
+}

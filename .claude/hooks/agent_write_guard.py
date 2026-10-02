@@ -26,6 +26,7 @@ creator（run から呼ばれる作成エージェント）向けの拒否リス
 agent_type を問わない他の判定と同じく常に拒否する。計画票のタスク表の状態更新とログ追記は、
 呼び出し元のオーケストレーター（run のメインセッション）に一本化するための制限（D-003 フェーズ2）。
 ALLOWED の許可リスト方式とは異なり、拒否リスト方式で実装する。
+Bash は `analyze_bash_writes` で解析できた時は実際の書き込み対象だけで判定する（解析不能は従来判定）。
 
 done タスクへの書き込み拒否：agent_type を問わず（メインセッション含む）、書き込み先が
 vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、対応する計画票
@@ -610,6 +611,9 @@ def targets_creator_denied_paths(tool, tool_input, root):
         return normalize(path, root).startswith(DENIED_FOR_CREATOR)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
+        writes = analyze_bash_writes(cmd)
+        if writes is not None:
+            return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for _, t in writes if t)
         masked = mask_angle_placeholders(cmd)
         if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
             return False

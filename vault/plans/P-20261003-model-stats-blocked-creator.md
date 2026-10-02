@@ -23,7 +23,7 @@ GitHub Issue #97 を解決する。`scripts/model_stats.py` の集計キーを�
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | model_stats.py の集計キーを最後の creator= 付き行（doing→review/doing→blocked）にする | |
 | T-02 | todo | 0 | T-01 | smoke の model_stats フィクスチャに doing→blocked creator= で終わるタスクを足す | |
-| T-03 | review | 1 | - | vault-spec 7節の集計キーの定義を書き換える | |
+| T-03 | done | 1 | - | vault-spec 7節の集計キーの定義を書き換える | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

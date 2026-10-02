@@ -1,0 +1,13 @@
+{
+  "task": "P-20261003-model-stats-blocked-creator/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 08:14",
+  "criteria": [
+    {"text": "新しい定義の行がある。確認：`grep -c '^- 集計キー：そのタスクの `doing→review`・`doing→blocked` 行のうち、`creator=` が付いた最後の行の値' docs/vault-spec.md` が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c（worktree で実行） / 出力: 1。143行目が決定済みの文言と一致。"},
+    {"text": "古い定義の文言が無い。確認：`grep -c '最後の `doing→review` 行の `creator=` の値' docs/vault-spec.md` が `0`", "ok": true, "note": "実行コマンド: 指定の grep -c / 出力: 0"},
+    {"text": "変更は集計キーの1行だけ。確認：`git diff --numstat main -- docs/vault-spec.md` の出力が `1\t1\tdocs/vault-spec.md`", "ok": true, "note": "実行コマンド: `git diff --numstat main -- docs/vault-spec.md` / 出力: 1 1 docs/vault-spec.md"},
+    {"text": "7節の他の定義の行が残っている。確認：`grep -c '^- blocked 率：`→blocked` で終わった件数 ÷ 対象タスク数$' docs/vault-spec.md` が `1`、`grep -c '^- 1回目 PASS 率：' docs/vault-spec.md` が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c 2本 / 出力: 1 と 1。変更ファイル検査: タスク票の「進捗」に起点コミットの記録が無いため検査せず。参考として未コミットは docs/vault-spec.md とタスク票のみ。"}
+  ],
+  "reasons": []
+}

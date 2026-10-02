@@ -1,6 +1,6 @@
 ---
 id: P-20261003-run-finish-verifier-worktree
-status: draft
+status: approved
 ---
 # ゴール
 GitHub Issue #89 を解決する。(1) `bash scripts/vcs_finish.sh` を引数なしで実行すると、`gh pr create` が非対話環境で `--title`/`--body` を求めて失敗する。(2) verifier が `EnterWorktree(path=...)` を使えない（verifier の tools は `Read, Grep, Glob, Bash, Write` で `EnterWorktree` を含まない）。このため毎回、worktree の絶対パスと `git -C` で代わりに検証している。

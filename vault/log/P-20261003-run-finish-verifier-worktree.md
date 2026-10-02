@@ -1,0 +1,1 @@
+- 2026-10-03 01:04 - draft→approved 人の指示: /plan approve P-20261003-run-finish-verifier-worktree

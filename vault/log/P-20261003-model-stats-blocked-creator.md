@@ -1,3 +1,7 @@
 - 2026-10-03 08:11 - draft→approved 人の指示: /plan approve P-20261003-model-stats-blocked-creator
 - 2026-10-03 08:12 T-01 todo→doing attempt=1
 - 2026-10-03 08:12 T-03 todo→doing attempt=1
+- 2026-10-03 08:14 T-01 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a092c173bd47433f4 branch=worktree-agent-a092c173bd47433f4 plan_head=f13e019a4a127889fe1038e6009c6911ec68cbd9
+- 2026-10-03 08:14 T-03 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a4d306053e125b956 branch=worktree-agent-a4d306053e125b956 plan_head=f13e019a4a127889fe1038e6009c6911ec68cbd9
+- 2026-10-03 08:14 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-03 08:14 T-03 doing→review attempt=1 creator=sonnet

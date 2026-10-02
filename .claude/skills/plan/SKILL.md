@@ -30,7 +30,7 @@ argument-hint: [ゴール | approve <計画ID> | unblock <計画ID> <id> [回答
 ## C. blocked を解除する（引数が `unblock <計画ID> <id> [回答]` のコマンドの時）
 1. 解除の指示が `/plan unblock <計画ID> <id> [回答]` のコマンドで来たことを確認する。人が自然文で解除を伝えた場合（引数が `unblock <計画ID> <id>` の形でない場合）は解除せず、「`/plan unblock <計画ID> <id> [回答]` を打ってください」と案内して**止まる**
 2. `vault/plans/<計画ID>.md` のタスク表で、`<id>` の行の status が `blocked` であることを確認する。`blocked` でなければ解除せず状況を伝えて止まる
-3. 回答があれば、タスク票 `vault/tasks/<計画ID>/<id>.md` の「決定済み」に回答を追記する。回答が無い時は何も追記しない（ハングやマージコンフリクトなど、答える質問が無い blocked）。回答の内容で受け入れ基準を直す必要がある時は、回答に基づく追記までにとどめ、大きな書き換えは planner を呼ぶよう案内する
+3. 回答があれば、タスク票 `vault/tasks/<計画ID>/<id>.md` の「決定済み」に回答を追記する。回答が無い時は何も追記しない（ハングやマージコンフリクトなど、答える質問が無い blocked）。回答の内容で受け入れ基準を直す必要がある時は、回答に基づく追記までにとどめ、大きな書き換えは planner を呼ぶよう案内する。回答が、解除する `<id>` 以外のタスクにも効く前提（手順・使うツール・確認コマンドの書き方など）を変える時は、計画票のタスク表を見て、同じ前提を持つ未着手（todo）のタスク票の「決定済み」にも同じ回答を追記する。追記した票は手順6の git add に名前を指定して含める。todo 以外の票には追記しない（done の票はフックが書き込みを拒否する。doing・review・blocked の票はそれぞれの流れで扱う）
 4. 計画票の `<id>` の行の status を `todo`、attempt を `0`、question を空にする
 5. `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で日時を取り、`vault/log/<計画ID>.md` に次の1行を追記する：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`
 6. `git add vault/plans/<計画ID>.md vault/tasks/<計画ID>/<id>.md vault/log/<計画ID>.md` でファイルを名前で指定して stage し、`git commit`（メッセージ例：`<計画ID>: <id> の blocked を解除する`）する。回答が無く、タスク票を変えなかった時は、タスク票を add に含めない。work ブランチ上で行う。`git add .` や `git add -A` は使わない

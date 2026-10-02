@@ -49,6 +49,7 @@ import subprocess
 import sys
 
 GIT_COMMIT_PATTERN = r"\bgit\s+commit\b"
+GIT_PREOPT_COMMIT_PATTERN = r"\bgit\s+-[^;&|\n]*\bcommit\b"
 GITHUB_API_HOSTS = ("api.github.com", "raw.githubusercontent.com", "githubusercontent.com")
 
 ALLOWED = {
@@ -960,6 +961,18 @@ def delegate_to_worktree(payload):
     return result.stdout
 
 
+def is_git_commit_command(cmd):
+    """Bash コマンドが実際に git commit を実行するかを返す（issue #91）。
+
+    analyze_bash_writes が解析できた時は git-commit の組があるかだけを見る。
+    解析できない形（None）は従来の正規表現と git -<opt> … commit の形で判定する（fail-closed）。
+    """
+    writes = analyze_bash_writes(cmd)
+    if writes is None:
+        return bool(re.search(GIT_COMMIT_PATTERN, cmd) or re.search(GIT_PREOPT_COMMIT_PATTERN, cmd))
+    return any(verb == "git-commit" for verb, _ in writes)
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -979,7 +992,9 @@ def main():
     # 非 git リポジトリ・ブランチ取得不能（detached HEAD 等）は fail-open（この判定は素通り）。
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        if re.search(GIT_COMMIT_PATTERN, cmd) and current_branch(root) == "main":
+        # 解析できた時は実際に実行される git commit だけを見る。解析できない形は従来の正規表現と
+        # git -<opt> … commit の形で判定する（issue #91）。
+        if is_git_commit_command(cmd) and current_branch(root) == "main":
             deny(
                 f"[agent_write_guard] main への直接コミットはできません。"
                 f"ブランチを切ってください（work/<計画IDの英小文字>）: {cmd[:120]}"

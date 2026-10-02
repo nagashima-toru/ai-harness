@@ -29,3 +29,5 @@
 - 2026-10-02 12:47 T-03 doing→review attempt=1 creator=sonnet
 - 2026-10-02 12:49 T-03 review→done attempt=1 verifier=sonnet
 - 2026-10-02 12:49 T-04 todo→doing attempt=1
+- 2026-10-02 12:52 T-04 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a3dc3ee0630115082 branch=worktree-agent-a3dc3ee0630115082 plan_head=4dc27a2f8ce8b0e27d094a6bcb2561fa9471ed75
+- 2026-10-02 12:52 T-04 doing→blocked attempt=1 creator=sonnet cp/mv の root 内コピー元の扱いで既存 smoke 1件が落ちる

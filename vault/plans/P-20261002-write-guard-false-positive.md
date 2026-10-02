@@ -35,7 +35,7 @@ status: approved
 | T-01 | done | 1 | - | analyze_bash_writes を追加し vault/rules/ と会話記録の Bash 判定を精密化する | |
 | T-02 | done | 2 | T-01 | creator の vault/plans/・vault/log/ 拒否の Bash 判定を analyze_bash_writes に載せ替える | |
 | T-03 | done | 1 | T-02 | done タスク書き込み拒否の Bash 判定を analyze_bash_writes に載せ替える（#87 の連結を許可） | |
-| T-04 | doing | 1 | T-03 | verifier/planner 向け ALLOWED の Bash 判定を analyze_bash_writes に載せ替える | |
+| T-04 | blocked | 1 | T-03 | verifier/planner 向け ALLOWED の Bash 判定を analyze_bash_writes に載せ替える | 決定済みの判定順どおりだと既存 smoke 1件が落ちる（pass=420 fail=1）。落ちるのは「verifier が Bash で root 外（tmp）だけに mkdir/cp → 許可」（mkdir -p /tmp/xxx && cp scripts/install.sh /tmp/xxx/install.sh）。analyze_bash_writes は cp/mv の全非フラグ引数を target にする（T-01 回答 A）ため root 内のコピー元 scripts/install.sh も target になり、判定3（全 target が root 外）に当たらず、判定4（cp は許可 verb に無い）で拒否になる。既存ケースの削除・変更は禁止。cp/mv の root 内コピー元をどう扱うか決めてください。(a) 判定3を「root 内 target の verb がすべて cp・mv で、最後の引数（コピー先）が root 外なら許可」に直す (b) 解析関数側で cp/mv の target をコピー先だけにする（T-01 回答 A の変更。T-01 は done） (c) 既存ケースの期待値を変える。worktree: .claude/worktrees/agent-a3dc3ee0630115082 |
 | T-05 | done | 1 | - | run/SKILL.md 手順6.3.4 にログ追記・git add・git commit を別々に実行する旨を明記する | |
 | T-06 | todo | 0 | T-04,T-05,T-07 | vault-spec.md 12節に Bash の精密判定と従来判定へのフォールバック条件を書く | |
 | T-07 | todo | 0 | T-04 | main 直接コミット拒否の Bash 判定を analyze_bash_writes に載せ替える | |

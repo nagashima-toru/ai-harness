@@ -1,0 +1,14 @@
+{
+  "task": "P-20261002-verify-cmd-guard-align/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-02 17:38",
+  "criteria": [
+    {"text": "C.3 の行に、他の未着手タスク票への追記の文がある。確認：`grep -n '^3\\. 回答があれば.*同じ前提を持つ未着手（todo）のタスク票の「決定済み」にも同じ回答を追記する' .claude/skills/plan/SKILL.md` の出力がちょうど1行", "ok": true, "note": "実行コマンド: worktree の SKILL.md に対し同じパターンで `grep -c` / 出力: 1（-n ではなく -c で件数確認）"},
+    {"text": "C.3 の行に、追記した票を手順6の add に含めるという文がある。確認：`grep -n '^3\\. 回答があれば.*追記した票は手順6の git add に名前を指定して含める' .claude/skills/plan/SKILL.md` の出力がちょうど1行", "ok": true, "note": "実行コマンド: 同パターンの `grep -c` / 出力: 1"},
+    {"text": "C.3 の行に、todo 以外の票には追記しないという文がある。確認：`grep -n '^3\\. 回答があれば.*todo 以外の票には追記しない' .claude/skills/plan/SKILL.md` の出力がちょうど1行", "ok": true, "note": "実行コマンド: 同パターンの `grep -c` / 出力: 1"},
+    {"text": "C.3 の既存の文が残っている。確認：`grep -c -F -e '回答の内容で受け入れ基準を直す必要がある時は、回答に基づく追記までにとどめ、大きな書き換えは planner を呼ぶよう案内する' .claude/skills/plan/SKILL.md` が `1`", "ok": true, "note": "実行コマンド: 同コマンド / 出力: 1"},
+    {"text": "変わったのは C.3 の1行だけ（他の手順・見出しは変えていない）。確認：`git diff --numstat 9ead5b8 -- .claude/skills/plan/SKILL.md` の出力が `1\t1\t.claude/skills/plan/SKILL.md` の1行（追加1・削除1）", "ok": true, "note": "実行コマンド: `git -C <worktree> diff --numstat 9ead5b8 -- .claude/skills/plan/SKILL.md` / 出力: 1 1 .claude/skills/plan/SKILL.md。変更ファイル検査: 起点 f409e50..HEAD の差分は空、未コミットは SKILL.md と T-02.md（タスク票は除外対象）のみで成果物外のファイルなし。EnterWorktree が使えなかったため git -C と絶対パスで worktree を確認した"}
+  ],
+  "reasons": []
+}

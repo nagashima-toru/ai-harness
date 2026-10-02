@@ -1431,6 +1431,35 @@ make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0001 | done
 expect "(ms-4) 補足付き log・plan_guard: id 重複 → ブロック（判定が変わらない）" block "$(run_plan_guard)" "重複"
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP/vault/plans"
 
+echo "== vcs_finish.sh =="
+VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
+mkdir -p "$VF_BIN" "$VF_REPO"
+for vf_cmd in gh glab; do
+  printf '#!/usr/bin/env bash\nfor a in "$@"; do printf "%%s\\n" "$a"; done > "%s"\nexit 0\n' "$VF_REC" > "$VF_BIN/$vf_cmd"
+  chmod +x "$VF_BIN/$vf_cmd"
+done
+(
+  cd "$VF_REPO" && git init -q -b vfmain . \
+    && git -c user.name=smoke -c user.email=smoke@example.com commit -q --allow-empty -m init \
+    && git config branch.vfmain.remote . && git config branch.vfmain.merge refs/heads/vfmain
+) >/dev/null 2>&1
+expect_vf() { # $1=name $2=host $3=期待する記録（改行区切り） $4...=vcs_finish.sh への引数
+  local name="$1" host="$2" want="$3"
+  shift 3
+  rm -f "$VF_REC"
+  ( cd "$VF_REPO" && PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST="$host" bash "$ROOT/scripts/vcs_finish.sh" "$@" ) >/dev/null 2>&1
+  local got; got="$(cat "$VF_REC" 2>/dev/null || true)"
+  if [ "$got" = "$want" ]; then
+    echo "  ok   $name"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $name (want='$(echo "$want" | tr '\n' ' ')' got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+expect_vf "(vcs_finish) github・引数なし → gh pr create --fill" github $'pr\ncreate\n--fill'
+expect_vf "(vcs_finish) github・引数あり → そのまま（--fill なし）" github $'pr\ncreate\n--title\nT\n--body\nB' --title T --body B
+expect_vf "(vcs_finish) gitlab・引数なし → glab mr create --fill --yes" gitlab $'mr\ncreate\n--fill\n--yes'
+expect_vf "(vcs_finish) gitlab・引数あり → そのまま（--fill なし）" gitlab $'mr\ncreate\n--title\nT\n--body\nB' --title T --body B
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

@@ -1,1 +1,3 @@
 - 2026-10-02 17:36 - draft→approved 人の指示: /plan approve P-20261002-verify-cmd-guard-align
+- 2026-10-02 17:36 T-01 todo→doing attempt=1
+- 2026-10-02 17:36 T-02 todo→doing attempt=1

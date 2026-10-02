@@ -33,7 +33,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | analyze_bash_writes を追加し vault/rules/ と会話記録の Bash 判定を精密化する | |
-| T-02 | doing | 2 | T-01 | creator の vault/plans/・vault/log/ 拒否の Bash 判定を analyze_bash_writes に載せ替える | |
+| T-02 | review | 2 | T-01 | creator の vault/plans/・vault/log/ 拒否の Bash 判定を analyze_bash_writes に載せ替える | |
 | T-03 | todo | 0 | T-02 | done タスク書き込み拒否の Bash 判定を analyze_bash_writes に載せ替える（#87 の連結を許可） | |
 | T-04 | todo | 0 | T-03 | verifier/planner 向け ALLOWED の Bash 判定を analyze_bash_writes に載せ替える | |
 | T-05 | done | 1 | - | run/SKILL.md 手順6.3.4 にログ追記・git add・git commit を別々に実行する旨を明記する | |

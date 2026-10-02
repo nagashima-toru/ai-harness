@@ -32,3 +32,4 @@
 - 2026-10-02 12:52 T-04 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a3dc3ee0630115082 branch=worktree-agent-a3dc3ee0630115082 plan_head=4dc27a2f8ce8b0e27d094a6bcb2561fa9471ed75
 - 2026-10-02 12:52 T-04 doing→blocked attempt=1 creator=sonnet cp/mv の root 内コピー元の扱いで既存 smoke 1件が落ちる
 - 2026-10-02 12:59 T-04 blocked→todo 人の指示: /plan unblock P-20261002-write-guard-false-positive T-04 a
+- 2026-10-02 13:00 T-04 todo→doing attempt=1

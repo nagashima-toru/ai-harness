@@ -1,6 +1,6 @@
 ---
 id: P-20261002-verify-cmd-guard-align
-status: draft
+status: approved
 ---
 # ゴール
 GitHub Issue #102 を解決する。受け入れ基準に書いた確認コマンドが verifier・creator の Bash で止められ、毎回代わりの手段で検証している問題に対処する。書き込みガード（`.claude/hooks/agent_write_guard.py`）は緩めない。代わりに、(1) planner のルールに「ガードが実際に拒否する確認コマンドの形」と、その避け方の指針を追記し、(2) `/plan unblock` の手順 C.3 に「回答が他の未着手タスクの前提も変える時は、その票の『決定済み』にも追記する」を足す。

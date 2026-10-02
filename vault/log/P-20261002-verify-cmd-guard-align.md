@@ -1,0 +1,1 @@
+- 2026-10-02 17:36 - draft→approved 人の指示: /plan approve P-20261002-verify-cmd-guard-align

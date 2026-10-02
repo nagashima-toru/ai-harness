@@ -37,7 +37,7 @@ status: approved
 | T-03 | done | 1 | T-02 | done タスク書き込み拒否の Bash 判定を analyze_bash_writes に載せ替える（#87 の連結を許可） | |
 | T-04 | done | 1 | T-03 | verifier/planner 向け ALLOWED の Bash 判定を analyze_bash_writes に載せ替える | |
 | T-05 | done | 1 | - | run/SKILL.md 手順6.3.4 にログ追記・git add・git commit を別々に実行する旨を明記する | |
-| T-06 | todo | 0 | T-04,T-05,T-07 | vault-spec.md 12節に Bash の精密判定と従来判定へのフォールバック条件を書く | |
+| T-06 | doing | 1 | T-04,T-05,T-07 | vault-spec.md 12節に Bash の精密判定と従来判定へのフォールバック条件を書く | |
 | T-07 | done | 1 | T-04 | main 直接コミット拒否の Bash 判定を analyze_bash_writes に載せ替える | |
 
 ## 計画の受け入れ基準

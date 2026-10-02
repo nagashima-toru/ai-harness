@@ -1,0 +1,15 @@
+{
+  "task": "P-20261002-smoke-tmp-unique/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-02 15:14",
+  "criteria": [
+    {"text": "実体として作る・読む `/tmp/P-` 固定パスが残っていない。確認：`grep -nE '(=|\")/tmp/P-' scripts/smoke.sh` の出力が空（変更前はちょうど10行出る）", "ok": true, "note": "実行コマンド: worktree の scripts/smoke.sh に対し `grep -nE '(=|\")/tmp/P-'` / 出力: 空（0件）"},
+    {"text": "置き換え後のパスが `$TMP` 配下である。確認：`grep -nE '^(TG_HOME|AP_TRANSCRIPT|UB_TRANSCRIPT|AP_REPO|UP_REPO|RU_PID|RU_ERR)=' scripts/smoke.sh` の7行すべてが `$TMP/` で始まる値を代入している", "ok": true, "note": "実行コマンド: 指定の grep -nE / 出力: 7行（471,545,611,759,835,1356,1357）すべて VAR=\"$TMP/...\" の形"},
+    {"text": "逐次実行の結果が変わらない。確認：`bash scripts/smoke.sh > /tmp/P-20261002-smoke-tmp-unique-T-01-seq.txt 2>&1` の後、`grep -x 'smoke: pass=435 fail=0' /tmp/P-20261002-smoke-tmp-unique-T-01-seq.txt` が1行出る", "ok": true, "note": "verifier の Bash は /tmp へのリダイレクトがフックで拒否され指定のファイル経由は実行不可。代替として `bash scripts/smoke.sh 2>&1 | grep -x 'smoke: pass=435 fail=0'` を worktree で実行 / 出力: smoke: pass=435 fail=0 の1行"},
+    {"text": "3並列で同時に走らせても全て fail=0。確認：Bash ツールの `run_in_background` で次の3コマンドを間を置かずに続けて起動し、3つとも終わってから `grep -h '^smoke:' /tmp/P-20261002-smoke-tmp-unique-T-01-par1.txt /tmp/P-20261002-smoke-tmp-unique-T-01-par2.txt /tmp/P-20261002-smoke-tmp-unique-T-01-par3.txt` の3行がすべて `smoke: pass=435 fail=0`。起動コマンド：`bash scripts/smoke.sh > /tmp/P-20261002-smoke-tmp-unique-T-01-parN.txt 2>&1`（N=1,2,3）", "ok": true, "note": "/tmp へのリダイレクトは拒否され指定方法は不可。代替として1コマンド内で `(bash scripts/smoke.sh 2>&1 | grep '^smoke:') &` を3つ同時起動し wait / 出力: smoke: pass=435 fail=0 が3行"},
+    {"text": "新たな `rm -rf` を足していない。確認：`grep -c 'rm -rf' scripts/smoke.sh` が 48 以下（計画時点の値は 48。コメントの言い換えで減るのは可）", "ok": true, "note": "実行コマンド: `grep -c 'rm -rf' scripts/smoke.sh` / 出力: 48"},
+    {"text": "変更したのは成果物とタスク票だけ。確認：`git status --porcelain` に出るパスが `scripts/smoke.sh` と `vault/tasks/P-20261002-smoke-tmp-unique/T-01.md` 以外に無い（計画票・`vault/log/` は run が変えるので除く）", "ok": true, "note": "実行コマンド: `git -C <worktree> status --porcelain` / 出力: M scripts/smoke.sh, M vault/tasks/.../T-01.md の2行のみ。手順10: `git diff --name-only edb4db3..HEAD` は空（起点コミットは git log の edb4db3 を使用、タスク票の進捗から値は読めなかったため）で成果物外ファイルなし"}
+  ],
+  "reasons": []
+}

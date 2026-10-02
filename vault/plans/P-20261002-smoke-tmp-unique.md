@@ -22,7 +22,7 @@ GitHub Issue **#95**（P1 bug）「smoke.sh が /tmp の固定パスを使うた
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | smoke.sh の /tmp 固定パスを $TMP 配下の一意なパスに置き換える | |
+| T-01 | done | 1 | - | smoke.sh の /tmp 固定パスを $TMP 配下の一意なパスに置き換える | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

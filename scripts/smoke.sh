@@ -468,7 +468,7 @@ expect_guard "(bash-parse-done) tee で done の verdict へ書き込み → 拒
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"tee vault/verdicts/P-FIX/T-01.json < /tmp/y"}}')" "done"
 
 # 会話記録（~/.claude/projects/）への書き込み拒否（D-010 フェーズ4）。実ホームを触らないよう HOME を差し替える
-TG_HOME="/tmp/P-20260930-approve-transcript-guard-home"
+TG_HOME="$TMP/transcript-guard-home"
 mkdir -p "$TG_HOME/.claude/projects/x"
 run_guard_home() { printf '%s' "$1" | HOME="$TG_HOME" CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
 expect_tg() { # $1=name $2=deny|allow $3=payload json
@@ -541,8 +541,9 @@ bpc "コマンド置換の中のログへのリダイレクト → 拒否（従�
 bpc "改行区切りの後ろのログの rm → 拒否" deny 'echo a\nrm vault/log/P-X.md'
 
 # 計画票の承認（draft→approved）の会話記録による裏付け（D-010 フェーズ4 / T-03）。
-# make_transcript は T-04 でも流用する固定パス方式（引数の各行を JSONL として書く）
-AP_TRANSCRIPT="/tmp/P-20260930-approve-transcript-guard-transcript.jsonl"
+# make_transcript は T-04 でも流用する。パスは $TMP 配下（実行ごとに一意。引数の各行を JSONL として書く）
+AP_TRANSCRIPT="$TMP/approve-transcript.jsonl"
+AP_NONEXIST="$TMP/approve-nonexistent.jsonl"
 make_transcript() { printf '%s\n' "$@" > "$AP_TRANSCRIPT"; }
 T_CMD='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>approve P-TEST</command-args>"}}'
 T_CMD_SP='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>  approve P-TEST  </command-args>"}}'
@@ -589,7 +590,7 @@ expect_ap "人の発言が1件も無い → 許可（読めない扱い）" allo
 make_transcript "not json" "{broken"
 expect_ap "どの行も JSON でない → 許可（読めない扱い）" allow "{$TP,$AP_EDIT}"
 expect_ap "transcript_path が無い → 許可" allow "{$AP_EDIT}"
-expect_ap "transcript_path のファイルが無い → 許可" allow '{"transcript_path":"/tmp/P-20260930-approve-transcript-guard-nonexistent.jsonl",'"$AP_EDIT"'}'
+expect_ap "transcript_path のファイルが無い → 許可" allow '{"transcript_path":"'"$AP_NONEXIST"'",'"$AP_EDIT"'}'
 expect_ap "読めない時でも agent_type=planner は拒否" deny "{\"agent_type\":\"planner\",$AP_EDIT}"
 # 承認に当たらない書き込みは会話記録と無関係に許可
 make_transcript "$T_CHAT"
@@ -607,7 +608,8 @@ expect_ap "新規の計画票（ファイル無し）を approved で Write・�
 rm -f "$AP_TRANSCRIPT"
 
 # blocked の解除（blocked→他）の会話記録による裏付け（D-010 フェーズ5 / T-01）
-UB_TRANSCRIPT="/tmp/P-20260930-unblock-transcript-guard-transcript.jsonl"
+UB_TRANSCRIPT="$TMP/unblock-transcript.jsonl"
+UB_NONEXIST="$TMP/unblock-nonexistent.jsonl"
 make_ub_transcript() { printf '%s\n' "$@" > "$UB_TRANSCRIPT"; }
 U_CMD='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>unblock P-TEST T-02 方針は A で\n2行目の回答</command-args>"}}'
 U_CMD_SP='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>  unblock P-TEST T-02  </command-args>"}}'
@@ -753,8 +755,8 @@ rm -f "$TMP/vault/plans/P-TEST.md"
 expect "(granularity-plan) 計画票が無い → 許可（fail-open）" allow "$(run_plan_guard_file Write "$TMP/vault/plans/P-TEST.md")"
 
 # 承認の裏付け検査（PostToolUse・D-010 フェーズ4 / T-04）。HEAD と作業ツリーの計画票を比べる。
-# git フィクスチャは固定パス。git init し直した上で HEAD と index を空にして使う（rm -rf は使わない）
-AP_REPO="/tmp/P-20260930-approve-transcript-guard-T-04-repo"
+# git フィクスチャは $TMP 配下（実行ごとに一意）。git init し直した上で HEAD と index を空にして使う（rm -rf は使わない）
+AP_REPO="$TMP/approve-post-repo"
 ap_git() { git -C "$AP_REPO" -c user.name=t -c user.email=t@example.com "$@"; }
 ap_reset() {
   mkdir -p "$AP_REPO/vault/plans"
@@ -802,7 +804,7 @@ ap_warn() { # $1=name $2=transcript_path
 make_transcript "$T_TOOLRES" "$T_META"; ap_warn "人の発言が1件も無い" "$AP_TRANSCRIPT"
 make_transcript "not json" "{broken"; ap_warn "どの行も JSON でない" "$AP_TRANSCRIPT"
 ap_warn "transcript_path が無い" ""
-ap_warn "transcript_path のファイルが無い" "/tmp/P-20260930-approve-transcript-guard-nonexistent.jsonl"
+ap_warn "transcript_path のファイルが無い" "$AP_NONEXIST"
 # 承認済み・draft・HEAD 無し・未追跡・非 git
 make_transcript "$T_CHAT"
 ap_commit_plan approved
@@ -830,7 +832,7 @@ expect "(approve-post) 警告と block が競合する時は block を優先" bl
 rm -f "$AP_TRANSCRIPT"
 
 # blocked の解除の裏付け検査（PostToolUse・D-010 フェーズ5 / T-02）。HEAD の blocked 行が作業ツリーで変わったかを見る
-UP_REPO="/tmp/P-20260930-unblock-transcript-guard-T-02-repo"
+UP_REPO="$TMP/unblock-post-repo"
 up_git() { git -C "$UP_REPO" -c user.name=t -c user.email=t@example.com "$@"; }
 up_reset() {
   mkdir -p "$UP_REPO/vault/plans"
@@ -880,7 +882,7 @@ up_warn() { # $1=name $2=transcript_path
 make_ub_transcript "$U_TOOLRES" "$U_META"; up_warn "人の発言が1件も無い" "$UB_TRANSCRIPT"
 make_ub_transcript "not json" "{broken"; up_warn "どの行も JSON でない" "$UB_TRANSCRIPT"
 up_warn "transcript_path が無い" ""
-up_warn "transcript_path のファイルが無い" "/tmp/P-20260930-unblock-transcript-guard-nonexistent.jsonl"
+up_warn "transcript_path のファイルが無い" "$UB_NONEXIST"
 # 対象外：blocked のまま・HEAD でも blocked でない・HEAD 無し・未追跡・行が無い・非 git
 make_ub_transcript "$T_CHAT"
 up_reset; up_commit todo blocked; up_plan doing blocked
@@ -1351,8 +1353,8 @@ rm -rf "$UNTMP"
 
 echo "== run_unattended.py =="
 RU_PY="$ROOT/scripts/run_unattended.py"
-RU_PID=/tmp/P-20261001-unattended-wrapper-T-02.pid
-RU_ERR=/tmp/P-20261001-unattended-wrapper-T-02.err
+RU_PID="$TMP/run-unattended.pid"
+RU_ERR="$TMP/run-unattended.err"
 rm -f "$RU_PID" "$RU_ERR"
 HARNESS_RUN_CMD='sleep 30' HARNESS_RUN_TIMEOUT=1 python3 "$RU_PY" 2>"$RU_ERR"; rurc=$?
 expect_eq "(ru-1) タイムアウトの終了コードが124" "124" "$rurc"

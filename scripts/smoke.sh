@@ -447,6 +447,24 @@ bp "展開されるヒアドキュメント本文のコマンド置換 → 拒�
 bp "awk の print リダイレクトで vault/rules/ へ書き込み → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"awk '"'"'{print > \"vault/rules/a.md\"}'"'"' README.md"}}' "vault/rules/"
 bp "絶対パスのコマンド語 /bin/rm で会話記録を削除 → 拒否（basename 照合）" deny '{"tool_name":"Bash","tool_input":{"command":"/bin/rm ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
 
+# creator の vault/plans/・vault/log/ 拒否の Bash 判定も analyze_bash_writes に載せ替え（issue #91 / T-02）
+bpc() { # $1=name $2=deny|allow $3=command(JSON 文字列の中身)
+  local sub=""; [ "$2" = deny ] && sub="creator は vault/plans/"
+  expect_guard "(bash-parse-creator) $1" "$2" "$(run_guard '{"agent_type":"creator","tool_name":"Bash","tool_input":{"command":"'"$3"'"}}')" "$sub"
+}
+bpc "grep の検索語に git add を含む計画票の読み取り → 許可" allow 'grep -n \"git add\" vault/plans/P-X.md'
+bpc "git log -p の出力を別の場所へリダイレクト → 許可" allow 'git log -p -- vault/log/P-X.md > /tmp/out.txt'
+bpc "ヒアドキュメント本文に vault/plans/ と git commit の文字列 → 許可" allow "cat > /tmp/note.md <<'EOF'\nvault/plans/P-X.md ni git commit\nEOF"
+bpc "grep の検索語に doing->review を含むログの読み取り → 許可" allow 'grep -n \"doing->review\" vault/log/P-X.md'
+bpc "grep -c の計画票読み取りの結果を別の場所へリダイレクト → 許可" allow 'grep -c x vault/plans/P-X.md > /tmp/c.txt'
+bpc "ログへの >> リダイレクト → 拒否" deny 'echo x >> vault/log/P-X.md'
+bpc "計画票への tee -a → 拒否" deny 'printf x | tee -a vault/plans/P-X.md'
+bpc "計画票への sed -i → 拒否" deny 'sed -i s/a/b/ vault/plans/P-X.md'
+bpc "ログへの cp → 拒否" deny 'cp /tmp/a vault/log/P-X.md'
+bpc "計画票の git add → 拒否" deny 'git add vault/plans/P-X.md'
+bpc "コマンド置換の中のログへのリダイレクト → 拒否（従来判定）" deny 'echo \"$(echo x >> vault/log/P-X.md)\"'
+bpc "改行区切りの後ろのログの rm → 拒否" deny 'echo a\nrm vault/log/P-X.md'
+
 # 計画票の承認（draft→approved）の会話記録による裏付け（D-010 フェーズ4 / T-03）。
 # make_transcript は T-04 でも流用する固定パス方式（引数の各行を JSONL として書く）
 AP_TRANSCRIPT="/tmp/P-20260930-approve-transcript-guard-transcript.jsonl"

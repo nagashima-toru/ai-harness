@@ -1,6 +1,6 @@
 ---
 id: P-20261002-smoke-tmp-unique
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue **#95**（P1 bug）「smoke.sh が /tmp の固定パスを使うため、並行 creator/verifier で偽の fail が出る」を解決する。

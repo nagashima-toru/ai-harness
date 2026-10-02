@@ -34,7 +34,7 @@ status: approved
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | analyze_bash_writes を追加し vault/rules/ と会話記録の Bash 判定を精密化する | |
 | T-02 | done | 2 | T-01 | creator の vault/plans/・vault/log/ 拒否の Bash 判定を analyze_bash_writes に載せ替える | |
-| T-03 | doing | 1 | T-02 | done タスク書き込み拒否の Bash 判定を analyze_bash_writes に載せ替える（#87 の連結を許可） | |
+| T-03 | blocked | 1 | T-02 | done タスク書き込み拒否の Bash 判定を analyze_bash_writes に載せ替える（#87 の連結を許可） | フック本体 `.claude/hooks/agent_write_guard.py` を `/tmp/P-20261002-write-guard-false-positive-T-03-guard.py` から `cp` で置き換えようとしたところ、Bash が権限分類器に拒否されました（理由の説明なし）。タスク票の決定済みどおり blocked で返します。人が置き換えを許可するか、手作業で `cp` するか教えてください。 |
 | T-04 | todo | 0 | T-03 | verifier/planner 向け ALLOWED の Bash 判定を analyze_bash_writes に載せ替える | |
 | T-05 | done | 1 | - | run/SKILL.md 手順6.3.4 にログ追記・git add・git commit を別々に実行する旨を明記する | |
 | T-06 | todo | 0 | T-04,T-05,T-07 | vault-spec.md 12節に Bash の精密判定と従来判定へのフォールバック条件を書く | |

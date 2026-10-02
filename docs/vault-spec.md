@@ -140,7 +140,7 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。`vault/archive/` 配下の log は既定の対象に含めず、引数で明示的に渡した時だけ集計する。定義は次のとおり：
 
 - 対象タスク：`計画ID/id` の最後の遷移行が `→done` または `→blocked` のもの（計画 ID は log のファイル名から取る）
-- 集計キー：そのタスクの最後の `doing→review` 行の `creator=` の値。`creator=` が無い既存の行は `unknown` として扱う（エラーにしない）
+- 集計キー：そのタスクの `doing→review`・`doing→blocked` 行のうち、`creator=` が付いた最後の行の値。`creator=` が付いていない行は読み飛ばす。`creator=` 付きの行が1つも無いタスクは `unknown` として扱う（エラーにしない）
 - 1回目 PASS 率：`review→done attempt=1` で終わった件数 ÷ 対象タスク数
 - 平均 attempt：最後の遷移行の `attempt=` の平均
 - blocked 率：`→blocked` で終わった件数 ÷ 対象タスク数

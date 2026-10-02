@@ -1,6 +1,6 @@
 ---
 id: P-20261003-model-stats-blocked-creator
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #97 を解決する。`scripts/model_stats.py` の集計キーを「最後の `doing→review` 行の `creator=`」から「最後の `creator=` 付き行（`doing→review` または `doing→blocked`）の値」に広げる。これで、creator が blocked 報告で終わったタスク（`doing→blocked creator=<モデル>`）が `unknown` に流れなくなる。それ以外の集計の定義（対象タスク・1回目 PASS 率・平均 attempt・blocked 率の分母と分子、出力形式）は変えない。

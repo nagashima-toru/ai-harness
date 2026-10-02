@@ -1,1 +1,2 @@
 - 2026-10-02 15:07 - draft→approved 人の指示: /plan approve P-20261002-smoke-tmp-unique
+- 2026-10-02 15:07 T-01 todo→doing attempt=1

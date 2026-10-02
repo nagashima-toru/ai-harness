@@ -1,1 +1,3 @@
 - 2026-10-03 08:11 - draft→approved 人の指示: /plan approve P-20261003-model-stats-blocked-creator
+- 2026-10-03 08:12 T-01 todo→doing attempt=1
+- 2026-10-03 08:12 T-03 todo→doing attempt=1

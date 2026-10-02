@@ -23,7 +23,7 @@ GitHub Issue #89 を解決する。(1) `bash scripts/vcs_finish.sh` を引数な
 | T-01 | done | 1 | - | vcs_finish.sh を引数なしで非対話で通るようにし、smoke にケースを足す | |
 | T-02 | done | 1 | - | run スキルの verifier の worktree 検証手順を絶対パス方式にし、手順7に引数なし既定を書く | |
 | T-03 | done | 1 | - | verifier ルールの worktree の扱いを絶対パス方式に書き換える提案を書く | |
-| T-04 | todo | 0 | - | verifier エージェント定義の手順1・11を絶対パス方式に書き換える | |
+| T-04 | doing | 1 | - | verifier エージェント定義の手順1・11を絶対パス方式に書き換える | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

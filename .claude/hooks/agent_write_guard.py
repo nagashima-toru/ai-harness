@@ -21,6 +21,7 @@ vault/rules/ と会話記録（~/.claude/projects/）の Bash 判定は、`analy
 実際の書き込み対象で判定し、解析できない形（コマンド置換・サブシェル・インタプリタ・変数や glob を
 含む対象など）は従来の判定（BASH_WRITE_PATTERNS 等）に落とす（fail-closed。issue #91）。
 引数・引用符内・ヒアドキュメント本文に文字列があるだけの誤検知を解消するための精密化。
+本文が cat のヒアドキュメントだけのコマンド置換は1語の文字列に置き換えてから解析する（issue #109）。
 
 creator（run から呼ばれる作成エージェント）向けの拒否リスト：creator は成果物パス（repo 全体に
 及びうる）と vault/tasks/ への書き込みは許可されるが、vault/plans/・vault/log/ への書き込みは
@@ -466,6 +467,29 @@ def _segment_writes(words, redirects, writes):
         writes.extend((base, t) for t in _split_positional(args))
 
 
+_CAT_HEREDOC_SUBST_RE = re.compile(
+    r"\$\(\s*cat\s+<<(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|\"([A-Za-z_][A-Za-z0-9_]*)\"|"
+    r"\\([A-Za-z_][A-Za-z0-9_]*)|([A-Za-z_][A-Za-z0-9_]*))[ \t]*\n(.*?)\n\t*(\2|\3|\4|\5)[ \t]*\n?\s*\)",
+    re.S,
+)
+
+
+def _replace_cat_heredoc_substitutions(cmd):
+    """本文が `cat` のヒアドキュメントだけのコマンド置換 `$(cat <<'EOF' … EOF)` を1語 HEREDOC_TEXT に置き換える（issue #109）。
+
+    書き込みを起こさない形だけが対象。閉じの区切り語が開きと違う場合、区切り語を引用符で囲まない
+    のに本文に `$(` かバッククォートがある場合は置き換えず、そのまま返す（従来どおり解析不能になる）。
+    """
+    def repl(m):
+        opened = m.group(2) or m.group(3) or m.group(4) or m.group(5)
+        if m.group(7) != opened:
+            return m.group(0)
+        if m.group(5) is not None and ("$(" in m.group(6) or "`" in m.group(6)):
+            return m.group(0)
+        return "HEREDOC_TEXT"
+    return _CAT_HEREDOC_SUBST_RE.sub(repl, cmd)
+
+
 def analyze_bash_writes(cmd):
     """Bash コマンド文字列を shlex で解析し、実際の書き込み対象 [(verb, target), ...] を返す（issue #91）。
 
@@ -474,8 +498,11 @@ def analyze_bash_writes(cmd):
     コマンド語・変数や glob を含む書き込み対象・shlex が読めない形・区切り語の無いヒアドキュメント。
     ヒアドキュメント本文と引用符内の文字列は書き込み対象にしない。verb は redirect・tee・sed-i・
     cp・mv・rm・mkdir・touch・chmod・chown・git-add・git-commit・git-write。
+    本文が cat のヒアドキュメントだけのコマンド置換は、解析前に1語の文字列に置き換える（issue #109）ので
+    コマンド置換の None にはならない。
     """
     try:
+        cmd = _replace_cat_heredoc_substitutions(cmd)
         text = _strip_heredocs(cmd)
         if any(s in text for s in ("$(", "`", "<(", ">(")):
             return None

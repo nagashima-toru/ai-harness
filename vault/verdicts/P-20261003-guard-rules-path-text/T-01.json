@@ -1,0 +1,15 @@
+{
+  "task": "P-20261003-guard-rules-path-text/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 11:17",
+  "criteria": [
+    {"text": "ラベルが `(guard-text heredoc)` のケースが7件、`(guard-text cd)` のケースが8件ある。確認：`grep -c '^expect_guard \"(guard-text heredoc) ' scripts/smoke.sh` が `7`、`grep -c '^expect_guard \"(guard-text cd) ' scripts/smoke.sh` が `8`", "ok": true, "note": "実行コマンド: 両 grep -c を worktree で実行 / 出力: 7 と 8"},
+    {"text": "既存の「#87 の2例目」のケースが無くなっている（H3 に置き換わっている）。確認：`grep -c '#87 の2例目' scripts/smoke.sh` が `0`", "ok": true, "note": "実行コマンド: `grep -c '#87 の2例目' scripts/smoke.sh` / 出力: 0"},
+    {"text": "直す前のガードで、smoke の NG がちょうど6件で、すべて `(guard-text` のケース。", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh` の出力を grep -c / 出力: '^  NG' が 6、'^  NG   (guard-text' が 6、末尾 smoke: pass=448 fail=6"},
+    {"text": "拒否されるべき9件は、直す前のガードで ok。", "ok": true, "note": "実行コマンド: `grep -c '^  ok   (guard-text'` / 出力: 9"},
+    {"text": "NG の6件が、決定済みの「許可」を期待する6件（H1・H2・H3・H4・C1・C2）である。", "ok": true, "note": "実行コマンド: `grep '^  NG   (guard-text'` / 出力: H3,H1,H2,H4,C1,C2 の6行すべてに want=allow got=deny を含む"},
+    {"text": "変更したのは smoke.sh だけ。確認：`git status --porcelain` の出力が `scripts/smoke.sh` と T-01.md の行だけ", "ok": true, "note": "実行コマンド: `git status --porcelain` / 出力: M scripts/smoke.sh、M vault/tasks/P-20261003-guard-rules-path-text/T-01.md の2行のみ。worktree のタスク票の進捗に起点コミットの記録が無いため手順10の差分検査は行わず、git status のみで確認した"}
+  ],
+  "reasons": []
+}

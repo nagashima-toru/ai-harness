@@ -1,0 +1,14 @@
+{
+  "task": "P-20261003-guard-rules-path-text/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 11:46",
+  "criteria": [
+    {"text": "提案ファイルが変えたのは、46行目の後への1行の追加と、48行目（追加後は49行目）の1行だけ。確認：`diff vault/rules/planner/planner.md vault/tasks/P-20261003-guard-rules-path-text/T-04-proposal.md` の出力がちょうど6行で、ハンク見出しが `46a47`・`48c49` の2つ", "ok": true, "note": "実行コマンド: `diff` （worktree 内、単一コマンド） / 出力: 46a47 と 48c49 の2ハンク、計6行（見出し2行、> 1行、< 1行、---、> 1行）"},
+    {"text": "追加した行に、パス文字列だけで拒否されうることと cd の例外の限界が書かれている。確認：`grep -c -F 'を含む語があるだけで、それを書き込み先とみなして拒否されうる' vault/tasks/P-20261003-guard-rules-path-text/T-04-proposal.md` が `1`、`grep -c -F 'cd 先がルート以外（worktree など）の時は解析できない形のままになる。' vault/tasks/P-20261003-guard-rules-path-text/T-04-proposal.md` が `1`", "ok": true, "note": "実行コマンド: 指定の `grep -c -F` 2本 / 出力: 1 と 1"},
+    {"text": "「避け方」の行末に、分けて実行するか Read で読む1文が足されている。確認：`grep -c -F 'と同じコマンドにつながず分けて実行するか、Read で読む。' vault/tasks/P-20261003-guard-rules-path-text/T-04-proposal.md` が `1`", "ok": true, "note": "実行コマンド: 指定の `grep -c -F` / 出力: 1。`sed -n '49p'` で、その文が49行目の行末にあることも確認"},
+    {"text": "追加・変更した2行が「決定済み」の文と一字一句同じ。確認：提案ファイルの47・49行目を Read で読み、「決定済み」の文と見比べる", "ok": true, "note": "実行コマンド: `sed -n '47p;49p'` で出力を読み、決定済みの文と見比べた / 結果: 47行目は追加行と同文。49行目は元の48行目に決定済みの1文が空白なしで続く形。差異なし"},
+    {"text": "提案ファイルに、このリポジトリ固有の issue 番号・計画 ID が無い。確認：`grep -nE 'issue #|P-20[0-9]{6}' vault/tasks/P-20261003-guard-rules-path-text/T-04-proposal.md` の出力が空", "ok": true, "note": "実行コマンド: 指定の `grep -nE` / 出力: 空。なお「進捗」に起点コミットの記録が無く、成果物外ファイルの検査は行っていない。参考として `git status --porcelain` の未追跡は T-04-proposal.md のみ"}
+  ],
+  "reasons": []
+}

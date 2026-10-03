@@ -458,8 +458,8 @@ expect_guard "(bash-parse-done) log 追記に done の verdict へのリダイ�
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/log/P-FIX.md && echo y > vault/verdicts/P-FIX/T-01.json"}}')" "done"
 expect_guard "(bash-parse-done) git add の後に git rm で done の verdict を削除 → 拒否" deny \
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(bash-parse-done) #87 の2例目 commit メッセージのコマンド置換内に done の verdict パス（解析不能は従来判定）→ 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<'EOF'\nP-FIX/T-01 vault/verdicts/P-FIX/T-01.json\nEOF\n)\""}}')" "done"
+expect_guard "(guard-text heredoc) H3 commit メッセージのヒアドキュメント本文に done の verdict パス → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<'"'"'EOF'"'"'\nP-FIX/T-01 vault/verdicts/P-FIX/T-01.json\nEOF\n)\""}}')"
 expect_guard "(bash-parse-done) git restore で done のタスク票を戻す → 拒否" deny \
   "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git restore vault/tasks/P-FIX/T-01.md"}}')" "done"
 expect_guard "(bash-parse-done) cp で done のタスク票を上書きして git add → 拒否" deny \
@@ -521,6 +521,36 @@ bp "bash -c の中の vault/rules/ へのリダイレクト → 拒否（従来�
 bp "展開されるヒアドキュメント本文のコマンド置換 → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"cat <<EOF > /tmp/x\n$(echo x > vault/rules/a.md)\nEOF"}}' "vault/rules/"
 bp "awk の print リダイレクトで vault/rules/ へ書き込み → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"awk '"'"'{print > \"vault/rules/a.md\"}'"'"' README.md"}}' "vault/rules/"
 bp "絶対パスのコマンド語 /bin/rm で会話記録を削除 → 拒否（basename 照合）" deny '{"tool_name":"Bash","tool_input":{"command":"/bin/rm ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
+
+# issue #109: 本文・引数に vault/rules/ のパス文字列があるだけの誤検知の回帰ケース（P-20261003-guard-rules-path-text）
+expect_guard "(guard-text heredoc) H1 main の gh issue create 本文に vault/rules/ と > → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh issue create --title t --body \"$(cat <<'"'"'EOF'"'"'\n## 該当箇所\n- vault/rules/planner/planner.md の確認コマンド（... > /tmp/x.md）\nEOF\n)\""}}')"
+expect_guard "(guard-text heredoc) H2 planner の gh issue create 本文に vault/rules/ と > → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"gh issue create --title t --body \"$(cat <<'"'"'EOF'"'"'\n## 該当箇所\n- vault/rules/planner/planner.md の確認コマンド（... > /tmp/x.md）\nEOF\n)\""}}')"
+expect_guard "(guard-text heredoc) H4 区切り語を引用符で囲まない本文に vault/rules/ と > → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh issue create --title t --body \"$(cat <<EOF\nsee vault/rules/common/git.md > x\nEOF\n)\""}}')"
+expect_guard "(guard-text heredoc) H5 本文の後ろの vault/rules/ へのリダイレクト → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo \"$(cat <<'"'"'EOF'"'"'\nx\nEOF\n)\" > vault/rules/a.md"}}')" "vault/rules/"
+expect_guard "(guard-text heredoc) H6 展開される本文のコマンド置換で vault/rules/ へ書く → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo \"$(cat <<EOF\n$(echo x > vault/rules/a.md)\nEOF\n)\""}}')" "vault/rules/"
+expect_guard "(guard-text heredoc) H7 区切り語の後ろの別コマンドで vault/rules/ へ書く → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo \"$(cat <<'"'"'EOF'"'"'\nx\nEOF\ncp y vault/rules/a.md\n)\""}}')" "vault/rules/"
+expect_guard "(guard-text cd) C1 planner の cd と読み取りだけ（issue の再現例）→ 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; ls scripts/ scripts/*/ 2>/dev/null | head -30; grep -c x vault/rules/planner/planner.md; wc -l vault/rules/planner/planner.md"}}')"
+expect_guard "(guard-text cd) C2 ルートへの cd の後に vault/rules/ を読んで別ファイルへ出力 → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"' && grep -n x vault/rules/common/git.md > /tmp/out.txt"}}')"
+expect_guard "(guard-text cd) C3 ルートへの cd の後に vault/rules/ へリダイレクト → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"' && echo x > vault/rules/a.md"}}')" "vault/rules/"
+expect_guard "(guard-text cd) C4 ルートへの cd の後に cp で vault/rules/ へ書く → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; cp x.txt vault/rules/common/a.md"}}')" "vault/rules/"
+expect_guard "(guard-text cd) C5 ルートへの cd の後に tee で vault/rules/ へ書く → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"' && printf x | tee vault/rules/a.md"}}')" "vault/rules/"
+expect_guard "(guard-text cd) C6 ルート以外への cd の後に vault/rules/ へリダイレクト → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd /tmp && echo x > vault/rules/a.md"}}')" "vault/rules/"
+expect_guard "(guard-text cd) C7 2つ目の cd で vault/rules/common に入って書く → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; cd vault/rules/common && echo x > a.md"}}')" "vault/rules/"
+expect_guard "(guard-text cd) C8 ルートへの cd の後に gh api で vault/rules/ を更新 → 拒否" deny \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; gh api -X PUT repos/o/r/contents/vault/rules/common/roles.md -f content=Zm9v"}}')" "vault/rules/"
 
 # creator の vault/plans/・vault/log/ 拒否の Bash 判定も analyze_bash_writes に載せ替え（issue #91 / T-02）
 bpc() { # $1=name $2=deny|allow $3=command(JSON 文字列の中身)

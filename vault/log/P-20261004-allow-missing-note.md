@@ -1,0 +1,1 @@
+- 2026-10-04 08:45 - draft→approved 人の指示: /plan approve P-20261004-allow-missing-note

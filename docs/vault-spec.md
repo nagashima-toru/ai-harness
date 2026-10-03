@@ -12,7 +12,9 @@
 | `vault/log/<計画ID>.md` | その計画の追記専用ログ |
 | `vault/designs/D-001.md` | 設計文書（テンプレート：`vault/templates/design.md`）。`/plan` に渡す前の下ごしらえ |
 | `vault/rules/` | 作成エージェント・verifier・planner に渡すルール（「ルール（`vault/rules/`）」の節を見る） |
-| `vault/archive/` | done になった計画一式を月次でまとめる先 |
+| `vault/archive/<年-月>/{plans,tasks,verdicts,log}/` | done かつ PR がマージ済みの計画一式の移動先（`vault/` と同じ種別ごとのサブディレクトリ。詳細は表の後の段落）。参照用で、消しても運用に影響しない |
+
+archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手順は `docs/runbook.md` 5節）。エージェントは `--list`・`--dry-run` だけを使う。計画票が `status: done`・タスク表が全行 `done`・`main` でも `status: done`（マージ済み）・log に日時行がある計画を候補にし、新しい順に --keep（既定5）件を残す。それより古い全部を移す。現在のブランチの計画は候補に入れず、5件に数えない。「新しい」の基準は log の最初の日時行（`- YYYY-MM-DD HH:MM ` で始まる最初の行）の日時で、同じなら計画 ID の文字列順で後ろのものを新しいとみなす。`<年-月>` は計画 ID の日付部分から決める。移した後のファイルは agent_write_guard.py の done 判定の対象外になる（フックは `vault/tasks/`・`vault/verdicts/` だけを見る）。`vault/archive/` 配下はいざという時の参照用で、編集のチェックは不要。
 
 計画をまたぐキューは持たない。**1セッション = 1計画 = 1ブランチ**で、計画の作成から実行・PR までを1本のブランチに閉じる。状態ファイルが計画ごとに分かれるので、複数のエージェントセッションが別々の計画を同時に進めても競合しない。
 
@@ -137,7 +139,7 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 - 例（creator）：`- 2026-10-01 10:30 T-01 doing→review attempt=1 creator=sonnet`
 - 例（verifier）：`- 2026-10-01 10:40 T-01 review→done attempt=1 verifier=sonnet`
 
-モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。`vault/archive/` 配下の log は既定の対象に含めず、引数で明示的に渡した時だけ集計する。定義は次のとおり：
+モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。`vault/archive/` 配下の log は既定の対象に含めず、引数で明示的に渡した時だけ集計する（例：`python3 scripts/model_stats.py vault/archive/*/log/*.md`。log のファイル名が `<計画ID>.md` のまま残るので計画 ID が取れる）。定義は次のとおり：
 
 - 対象タスク：`計画ID/id` の最後の遷移行が `→done` または `→blocked` のもの（計画 ID は log のファイル名から取る）
 - 集計キー：そのタスクの `doing→review`・`doing→blocked` 行のうち、`creator=` が付いた最後の行の値。`creator=` が付いていない行は読み飛ばす。`creator=` 付きの行が1つも無いタスクは `unknown` として扱う（エラーにしない）

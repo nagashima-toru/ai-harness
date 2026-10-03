@@ -16,7 +16,7 @@ GitHub Issue #107 を解決する。#102（計画 P-20261002-verify-cmd-guard-al
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | planner ルールの確認コマンドの代替から /tmp へのリダイレクトを外す提案を書く | |
+| T-01 | doing | 1 | - | planner ルールの確認コマンドの代替から /tmp へのリダイレクトを外す提案を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

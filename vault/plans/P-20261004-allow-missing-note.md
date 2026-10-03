@@ -1,6 +1,6 @@
 ---
 id: P-20261004-allow-missing-note
-status: approved
+status: done
 ---
 # ゴール
 install.sh 実行時、導入先の `.claude/settings.json` の `permissions.allow` に、ハーネスが動くのに必要な許可（ハーネス側 `.claude/settings.json` の `permissions.allow`）のうち足りないものがあれば、`scripts/merge_settings_json.py` が `note` 行で案内する。`permissions.allow` 自体は従来どおり一切変更しない。`docs/install.md` にもこの挙動と、許可が入らない場合の影響（対話実行では確認ダイアログ、無人実行（`claude -p`）では拒否される）を書く。

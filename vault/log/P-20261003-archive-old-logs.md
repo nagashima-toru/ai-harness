@@ -1,1 +1,2 @@
 - 2026-10-03 13:32 - draft→approved 人の指示: /plan approve P-20261003-archive-old-logs
+- 2026-10-03 13:43 T-01 todo→doing attempt=1

@@ -41,7 +41,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | 計画一式を archive に移す scripts/archive_plans.sh を作る | |
+| T-01 | doing | 1 | - | 計画一式を archive に移す scripts/archive_plans.sh を作る | |
 | T-02 | todo | 0 | T-01 | smoke.sh に archive_plans.sh の節を足す | |
 | T-03 | todo | 0 | T-01 | runbook 5節の手動手順を archive_plans.sh の手順に置き換える | |
 | T-04 | todo | 0 | T-01 | vault-spec の archive の説明を配置とスクリプトに合わせる | |

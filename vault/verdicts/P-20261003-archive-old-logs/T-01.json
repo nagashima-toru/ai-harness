@@ -1,0 +1,16 @@
+{
+  "task": "P-20261003-archive-old-logs/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 13:46",
+  "criteria": [
+    {"text": "構文エラーが無い：`bash -n scripts/archive_plans.sh` の出力が空", "ok": true, "note": "実行コマンド: `bash -n scripts/archive_plans.sh` / 出力: 空"},
+    {"text": "既定（`--keep 5`）で移す対象が49件：`bash scripts/archive_plans.sh --list | grep -c '^P-'` の出力が `49`", "ok": true, "note": "実行コマンド: `bash scripts/archive_plans.sh --list | grep -c '^P-'` / 出力: 49"},
+    {"text": "新しい5件は残り、6件目から移す：`bash scripts/archive_plans.sh --list | grep -c -x -e P-20261002-smoke-tmp-unique -e P-20261002-verify-cmd-guard-align -e P-20261003-guard-rules-path-text` の出力が `1`（6件目の `P-20261002-smoke-tmp-unique` だけが出る）", "ok": true, "note": "実行コマンド: 基準記載の grep -c -x ... / 出力: 1"},
+    {"text": "候補が `--keep` 件以下なら何も出さない：`bash scripts/archive_plans.sh --list --keep 60 | grep -c .` の出力が `0`", "ok": true, "note": "実行コマンド: `bash scripts/archive_plans.sh --list --keep 60 | grep -c .` / 出力: 0（stderr に「移す計画がありません」）"},
+    {"text": "計画 ID を渡すと4種別の移動行を出す：`bash scripts/archive_plans.sh --dry-run P-20260920-freeze-legacy | grep -c ' vault/archive/2026-09/\\(plans\\|tasks\\|verdicts\\|log\\)/P-20260920-freeze-legacy'` の出力が `4`", "ok": true, "note": "実行コマンド: 基準記載の grep -c / 出力: 4"},
+    {"text": "新しい5件に入る計画 ID を渡すと NG 行を出す：`bash scripts/archive_plans.sh --dry-run P-20261003-guard-rules-path-text 2>&1 | grep -c '^archive_plans: NG P-20261003-guard-rules-path-text: '` の出力が `1` 以上", "ok": true, "note": "実行コマンド: 基準記載の grep -c / 出力: 1"},
+    {"text": "モードの指定が無い時は usage を出す：`bash scripts/archive_plans.sh P-20260920-freeze-legacy 2>&1 | grep -c '^usage: '` の出力が `1`", "ok": true, "note": "実行コマンド: 基準記載の grep -c / 出力: 1。変更ファイル検査: タスク票の進捗に「起点コミット」の記録が無いため検査せず（参考: git status は scripts/archive_plans.sh 新規と T-01.md のみ）"}
+  ],
+  "reasons": []
+}

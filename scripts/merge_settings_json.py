@@ -20,6 +20,10 @@ src はハーネス側の settings.json、dst はインストール先の settin
 
 `permissions.allow` は読み取るだけで一切変更しない（インストール先が許可を足すための列で、
 ハーネスが上書きしてよいものではないため）。
+ただし dst が既にある時（merge/skip の経路）は、src の `permissions.allow` のうち dst に無いもの
+（文字列の完全一致で判定。パターンの包含関係は見ない）を `note` 行1本で案内する。変更はしない。
+dst が無く `create` する時は src がそのまま書かれるので出さない。allow の不足は足す数に数えず、
+allow だけが不足している時も `skip` のままで dst は書き換えない。
 
 merge の時だけ `<dst>.bak-<YYYYMMDDHHMMSS>` を残す。ファイルは消さない。
 """
@@ -125,6 +129,33 @@ def worktree_base_ref_note(dst, conflict):
     )
 
 
+def missing_allow(src_allow, dst_allow):
+    """src の allow のうち dst に完全一致の文字列が無いものを、src の順で返す。
+
+    src 内の重複は1回だけ数え、文字列でない要素は無視する。
+    src_allow が None・リストでない時は []。dst_allow が None なら空リスト扱い。
+    """
+    if not isinstance(src_allow, list):
+        return []
+    known = set(x for x in (dst_allow or []) if isinstance(x, str))
+    out = []
+    for item in src_allow:
+        if isinstance(item, str) and item not in known:
+            out.append(item)
+            known.add(item)
+    return out
+
+
+def allow_missing_note(dst, missing):
+    """不足している allow を列挙する note 行（1行）を返す。"""
+    return (
+        f"note {dst}: permissions.allow にハーネスが使う許可が {len(missing)} 件足りない: "
+        f"{', '.join(missing)}。"
+        "対話実行では確認ダイアログが出て、無人実行（claude -p）では拒否される。"
+        "必要なら手で足すこと（このスクリプトは permissions.allow を変更しない）"
+    )
+
+
 def dump(data):
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
@@ -171,6 +202,18 @@ def main(argv):
     added += worktree_added
     if worktree_conflict is not None:
         print(worktree_base_ref_note(dst, worktree_conflict))
+
+    dst_allow = dst_perms.get("allow")
+    if dst_allow is not None and not isinstance(dst_allow, list):
+        print(
+            f"note {dst}: permissions.allow の型が不正 ({type(dst_allow).__name__}) "
+            "なため不足を確認できない"
+        )
+    else:
+        src_allow = (src_data.get("permissions") or {}).get("allow")
+        missing = missing_allow(src_allow, dst_allow)
+        if missing:
+            print(allow_missing_note(dst, missing))
 
     if added == 0:
         # 足すものが無い時は書き換えない（整形の違いだけで dst を触らない）

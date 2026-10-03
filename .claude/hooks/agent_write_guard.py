@@ -22,6 +22,7 @@ vault/rules/ と会話記録（~/.claude/projects/）の Bash 判定は、`analy
 含む対象など）は従来の判定（BASH_WRITE_PATTERNS 等）に落とす（fail-closed。issue #91）。
 引数・引用符内・ヒアドキュメント本文に文字列があるだけの誤検知を解消するための精密化。
 本文が cat のヒアドキュメントだけのコマンド置換は1語の文字列に置き換えてから解析する（issue #109）。
+先頭のリポジトリのルートへの cd は読み飛ばして解析する（issue #109）。
 
 creator（run から呼ばれる作成エージェント）向けの拒否リスト：creator は成果物パス（repo 全体に
 及びうる）と vault/tasks/ への書き込みは許可されるが、vault/plans/・vault/log/ への書き込みは
@@ -490,7 +491,7 @@ def _replace_cat_heredoc_substitutions(cmd):
     return _CAT_HEREDOC_SUBST_RE.sub(repl, cmd)
 
 
-def analyze_bash_writes(cmd):
+def analyze_bash_writes(cmd, root=None):
     """Bash コマンド文字列を shlex で解析し、実際の書き込み対象 [(verb, target), ...] を返す（issue #91）。
 
     書き込みが無ければ空リスト。解析できない形は None（呼び出し側は従来の判定に落とす＝fail-closed）：
@@ -500,6 +501,8 @@ def analyze_bash_writes(cmd):
     cp・mv・rm・mkdir・touch・chmod・chown・git-add・git-commit・git-write。
     本文が cat のヒアドキュメントだけのコマンド置換は、解析前に1語の文字列に置き換える（issue #109）ので
     コマンド置換の None にはならない。
+    root を渡すと、先頭の `cd <root と同じディレクトリ>` の後に `;` か `&&` が続く時だけ、その cd を読み飛ばして
+    解析する（issue #109）。root が None・cd 先がルート以外・2つ目以降の cd は従来どおり None。
     """
     try:
         cmd = _replace_cat_heredoc_substitutions(cmd)
@@ -510,6 +513,14 @@ def analyze_bash_writes(cmd):
         lex.whitespace_split = True
         lex.commenters = ""
         tokens = list(lex)
+        if root is not None and len(tokens) >= 3 and tokens[0] == "cd" and tokens[2] in (";", "&&"):
+            dest = tokens[1]
+            if (not PUNCT_ONLY_RE.match(dest) and dest != "" and not dest.startswith("-")
+                    and not any(ch in dest for ch in "$~*?[{`")):
+                if not os.path.isabs(dest):
+                    dest = os.path.join(root, dest)
+                if os.path.realpath(dest) == os.path.realpath(root):
+                    tokens = tokens[3:]
         writes = []
         words, redirects = [], []
 
@@ -581,7 +592,7 @@ def targets_vault_rules(tool, tool_input, root):
         cmd = tool_input.get("command") or ""
         if targets_vault_rules_remote(cmd):
             return True
-        writes = analyze_bash_writes(cmd)
+        writes = analyze_bash_writes(cmd, root)
         if writes is None:
             return _legacy_targets_vault_rules_bash(cmd, root)
         return any(normalize(t, root).startswith("vault/rules/") for _, t in writes if t)
@@ -618,7 +629,7 @@ def targets_transcript_dir(tool, tool_input, root):
         return is_under_transcript_dir(path, root)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        writes = analyze_bash_writes(cmd)
+        writes = analyze_bash_writes(cmd, root)
         if writes is not None:
             return any(is_under_transcript_dir(t, root) for _, t in writes if t)
         masked = mask_angle_placeholders(cmd)
@@ -642,7 +653,7 @@ def targets_creator_denied_paths(tool, tool_input, root):
         return normalize(path, root).startswith(DENIED_FOR_CREATOR)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        writes = analyze_bash_writes(cmd)
+        writes = analyze_bash_writes(cmd, root)
         if writes is not None:
             return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for _, t in writes if t)
         masked = mask_angle_placeholders(cmd)
@@ -761,7 +772,7 @@ def find_done_task_write(tool, tool_input, root):
         candidates.append(path)
     elif tool == "Bash":
         cmd = tool_input.get("command") or ""
-        writes = analyze_bash_writes(cmd)
+        writes = analyze_bash_writes(cmd, root)
         if writes is not None:
             # 解析できた：git add / git commit は内容を変えないので除き、実際の書き込み対象だけで判定する
             candidates.extend(t for v, t in writes if t and v not in ("git-add", "git-commit"))
@@ -988,13 +999,13 @@ def delegate_to_worktree(payload):
     return result.stdout
 
 
-def is_git_commit_command(cmd):
+def is_git_commit_command(cmd, root=None):
     """Bash コマンドが実際に git commit を実行するかを返す（issue #91）。
 
     analyze_bash_writes が解析できた時は git-commit の組があるかだけを見る。
     解析できない形（None）は従来の正規表現と git -<opt> … commit の形で判定する（fail-closed）。
     """
-    writes = analyze_bash_writes(cmd)
+    writes = analyze_bash_writes(cmd, root)
     if writes is None:
         return bool(re.search(GIT_COMMIT_PATTERN, cmd) or re.search(GIT_PREOPT_COMMIT_PATTERN, cmd))
     return any(verb == "git-commit" for verb, _ in writes)
@@ -1021,7 +1032,7 @@ def main():
         cmd = tool_input.get("command") or ""
         # 解析できた時は実際に実行される git commit だけを見る。解析できない形は従来の正規表現と
         # git -<opt> … commit の形で判定する（issue #91）。
-        if is_git_commit_command(cmd) and current_branch(root) == "main":
+        if is_git_commit_command(cmd, root) and current_branch(root) == "main":
             deny(
                 f"[agent_write_guard] main への直接コミットはできません。"
                 f"ブランチを切ってください（work/<計画IDの英小文字>）: {cmd[:120]}"
@@ -1104,7 +1115,7 @@ def main():
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
         masked_cmd = mask_angle_placeholders(cmd)
-        parsed = analyze_bash_writes(cmd)
+        parsed = analyze_bash_writes(cmd, root)
         if parsed is not None:
             # 解析できた時は、実際の書き込み対象だけで判定する（issue #91）
             if not parsed:

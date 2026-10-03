@@ -55,15 +55,43 @@
 代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合フックは働かない。変更後は自分で log に上の形式の行を追記してコミットする。
 
 ## 5. 月次で done を archive に移す
-計画単位でまとめて移す。計画票の全タスクが `done` になり、PR がマージされたら、その計画票・配下のタスク票・verdict・ログをまとめて `vault/archive/<年-月>/` に移す。
+計画単位でまとめて移す。月次で人が `scripts/archive_plans.sh` を実行する。
+
+対象は、計画票が `status: done`・タスク表が全行 `done`・PR がマージ済み（`main` に `status: done` の計画票がある）の計画のうち、新しい順に `--keep`（既定5件）を残した、それより古い全部。「新しい」は log の最初の日時行の日時で決め、同じなら計画 ID の文字列順とする。現在のブランチの計画は常に残し、5件に数えない。
+
+移す前に `bash scripts/archive_plans.sh --list` で、移す計画 ID の一覧を確かめられる。
+
+配置は次の4種別（`<年-月>` は計画 ID の日付部分から決まり、移した日ではない）。
+
+- `vault/archive/<年-月>/plans/<計画ID>.md`
+- `vault/archive/<年-月>/tasks/<計画ID>/`
+- `vault/archive/<年-月>/verdicts/<計画ID>/`
+- `vault/archive/<年-月>/log/<計画ID>.md`
+
+計画 ID を渡さなければ移す対象の全部を、渡せばその ID だけを移す。
+
+手順は PR ブランチ（または人が切った作業ブランチ）の上で行い、`main` へは PR でマージする。
 
 ```bash
-mkdir -p vault/archive/$(date +%Y-%m)
-git mv vault/plans/<計画ID>.md vault/archive/$(date +%Y-%m)/
-git mv vault/tasks/<計画ID> vault/archive/$(date +%Y-%m)/
-git mv vault/verdicts/<計画ID> vault/archive/$(date +%Y-%m)/
-git mv vault/log/<計画ID>.md vault/archive/$(date +%Y-%m)/
+bash scripts/archive_plans.sh --dry-run <計画ID> ...      # または --from-file <path>
+bash scripts/archive_plans.sh --apply <計画ID> ...
+git commit
 ```
+
+`--dry-run`（または `--from-file <path>`）で移動内容を確かめ、`--apply` で移し、人が `git commit` する。
+
+エージェント（creator を含む）は --apply を実行しない。creator は `vault/plans/`・`vault/log/` に書き込めず、done のタスク票・verdict の編集も禁止されている。スクリプト経由の移動はフックが見えない経路でその禁止を回避することになるため、実行は人が行う。
+
+安全装置：done、全行 done、`main` で done、log に日時行がある、現在のブランチの計画でない、新しい `--keep` 件に入らない、未コミットの変更が無い、移動先が無い。このどれか1件でも外れたら何も移さない。候補が `--keep` 件以下の時も何も移さない。
+
+集計：`model_stats.py` の既定は `vault/log/*.md` だけである。archive 済みの log を含めるには、次のように明示して渡す。
+
+```bash
+python3 scripts/model_stats.py vault/archive/*/log/*.md
+```
+
+移した後のファイルは `agent_write_guard.py` の done 判定の対象外になる（フックは `vault/tasks/`・`vault/verdicts/` だけを見る）。`vault/archive/2026-09/` にある旧形式（`todo.md`・`tasks/T-0024.md` など）はそのままにする。
+
 計画 ID は日付＋スラッグなので再利用の心配が無く、採番の調整は不要。
 
 ## 6. ルールを足す

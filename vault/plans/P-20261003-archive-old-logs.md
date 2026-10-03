@@ -28,7 +28,7 @@ status: draft
   - `agent_write_guard.py` は creator の `vault/plans/`・`vault/log/` への書き込みを拒否する。アーカイブはこの2か所からファイルを移すので、creator がスクリプトを実行すると、フックが見えない経路（`bash` 経由のスクリプト内の `git mv`）でこの禁止を回避することになる。done のタスク票・verdict の編集禁止も同じ（直接の `git mv vault/tasks/<計画ID>/T-01.md ...` は拒否されるが、ディレクトリ単位やスクリプト内では検知されない）
   - そのため、実際の移動（`--apply`）は**人が手元で PR ブランチ上で実行する**。エージェント（creator を含む）は `--list` と `--dry-run` だけを実行する。`vault/rules/` の提案ファイル方式と同じ発想
   - `stop_gate.py`・`plan_guard.py`・`scripts/current_plan.sh` は `vault/plans/*.md`（approved の計画票と、HEAD との比較）しか見ないので、done の計画票が `vault/plans/` から消えても判定は変わらない
-  - `agent_write_guard.py` の done 判定は `^vault/tasks/`・`^vault/verdicts/` と `vault/plans/<計画ID>.md` を前提にしているので、アーカイブ後のファイルは done 判定の対象外になる（保護が外れる）。これは仕様に明記する（T-04）。フック側の対応は別の計画に回す（人への質問2。回答が無いので推奨のまま）
+  - `agent_write_guard.py` の done 判定は `^vault/tasks/`・`^vault/verdicts/` と `vault/plans/<計画ID>.md` を前提にしているので、アーカイブ後のファイルは done 判定の対象外になる（保護が外れる）。これは仕様に明記する（T-04）。`vault/archive/` は参照用で消してよいので、フック側の対応は行わない（人への質問2の回答）
 - 安全装置（詳細は T-01 の「決定済み」）：候補は「計画票が `status: done`・タスク表が全行 `done`・基準ブランチ（既定 `main`）にも `status: done` の計画票がある（＝ PR がマージ済み）・log に日時行がある・現在のブランチの計画ではない」の全部を満たすものだけ。候補を新しい順に並べて `--keep`（既定5）件を残し、残りを移す。候補が `--keep` 件以下なら何も移さない。移すものに未コミットの変更がある・移動先が既にある、のどれか1件でもあれば何も移さない。`--list`・`--dry-run`・`--apply` のどれか1つを必ず指定する
 - 「PR がマージ済み」はスクリプトからは直接分からないので、`git show main:vault/plans/<計画ID>.md` が `status: done` であることで確認する。計画票は PR のマージでしか `main` に入らないため、これで「マージ済み」とみなせる。`git branch --merged main` はブランチを消した後の計画を判定できないので使わない
 - タスクの分け方：T-01 でスクリプト本体、T-02 で smoke.sh のテスト、T-03〜T-05 で文書（runbook・vault-spec・decisions）、T-06 で移す対象の一覧を確定して `--dry-run` で検査する。データの移動はタスクにしない（上記のとおり人が行う）
@@ -57,7 +57,4 @@ status: draft
 
 ## 人への質問
 1. （回答済み）アーカイブの対象：人の回答は「B の変形」。done かつ main でもマージ済みの計画のうち、新しい順に5件を残し、それより古い全部を移す。基準と件数は「分割方針」と T-01・T-06 の「決定済み」に反映した
-2. アーカイブ後のファイル（`vault/archive/` 配下）は、`agent_write_guard.py` の done 判定（done のタスク票・verdict の編集禁止）の対象外になる。人の回答が無いので推奨のまま進める：この計画では仕様（T-04）に明記するだけにし、フック側の保護は別の計画に回す（issue #85 の制約のため）
-
-## 次フェーズの候補
-- `agent_write_guard.py` の done 判定を `vault/archive/<年-月>/{tasks,verdicts}/` にも広げる（issue #85 の制約が外れた後）
+2. （回答済み）アーカイブ後のファイル（`vault/archive/` 配下）の保護：人の回答は「`vault/archive/` 配下はいざという時の参照用で、消しても問題ない。編集のチェックは不要」。フック側の対応は行わない（別の計画も作らない）。仕様（T-04）には、done 判定の対象外であることに加えて、参照用で消してよい旨を書く

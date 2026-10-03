@@ -21,7 +21,7 @@ install.sh 実行時、導入先の `.claude/settings.json` の `permissions.all
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | merge_settings_json.py に permissions.allow の不足を note 行で案内する処理を足す | |
 | T-02 | done | 1 | T-01 | smoke.sh に permissions.allow 不足案内のケースを足す | |
-| T-03 | review | 1 | T-01 | docs/install.md に permissions.allow 不足案内の挙動と影響・限界を書く | |
+| T-03 | done | 1 | T-01 | docs/install.md に permissions.allow 不足案内の挙動と影響・限界を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

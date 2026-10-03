@@ -1,0 +1,15 @@
+{
+  "task": "P-20261003-archive-old-logs/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 13:52",
+  "criteria": [
+    {"text": "smoke 全体が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内） / 出力: smoke: pass=486 fail=0"},
+    {"text": "節の見出しが1つある：`bash scripts/smoke.sh 2>&1 | grep -c '^== archive_plans.sh ==$'` の出力が `1`", "ok": true, "note": "実行コマンド: smoke 出力に対する `grep -c '^== archive_plans.sh ==$'` / 出力: 1"},
+    {"text": "節のテストが11件以上通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ar-'` の出力が `11` 以上", "ok": true, "note": "実行コマンド: smoke 出力に対する `grep -c '^  ok   (ar-'` / 出力: 32"},
+    {"text": "新しい件数を残すケース・件数以下のケース・同日の並びのケースがそれぞれ通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ar-\\(9\\|10\\|11\\))'` の出力が `3` 以上", "ok": true, "note": "実行コマンド: smoke 出力に対する `grep -c '^  ok   (ar-\\(9\\|10\\|11\\))'` / 出力: 8"},
+    {"text": "節のテストに失敗が無い：`bash scripts/smoke.sh 2>&1 | grep -c '^  NG   (ar-'` の出力が `0`", "ok": true, "note": "実行コマンド: smoke 出力に対する `grep -c '^  NG   (ar-'` / 出力: 0"},
+    {"text": "追加した行に `/tmp/` の固定パスが無い：`git diff main -- scripts/smoke.sh | grep -c '^+.*/tmp/'` の出力が `0`", "ok": true, "note": "実行コマンド: `git diff main -- scripts/smoke.sh | grep -c '^+.*/tmp/'` / 出力: 0。変更ファイル検査: 起点コミット bfb6873 からの差分と git status は scripts/smoke.sh とタスク票(除外対象)のみで、成果物外の変更なし"}
+  ],
+  "reasons": []
+}

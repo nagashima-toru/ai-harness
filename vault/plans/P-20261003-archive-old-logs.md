@@ -42,7 +42,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | 計画一式を archive に移す scripts/archive_plans.sh を作る | |
-| T-02 | review | 1 | T-01 | smoke.sh に archive_plans.sh の節を足す | |
+| T-02 | done | 1 | T-01 | smoke.sh に archive_plans.sh の節を足す | |
 | T-03 | review | 1 | T-01 | runbook 5節の手動手順を archive_plans.sh の手順に置き換える | |
 | T-04 | review | 1 | T-01 | vault-spec の archive の説明を配置とスクリプトに合わせる | |
 | T-05 | todo | 0 | T-01 | decisions.md に archive をスクリプト化した判断の行を足す | |

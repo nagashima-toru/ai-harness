@@ -81,7 +81,7 @@ if [ "${#ARGS_IDS[@]}" -gt 0 ]; then
   GIVEN=("${ARGS_IDS[@]}")
 fi
 if [ -n "$FROM_FILE" ]; then
-  if [ ! -r "$FROM_FILE" ]; then
+  if [ ! -f "$FROM_FILE" ] || [ ! -r "$FROM_FILE" ]; then
     echo "archive_plans: --from-file を読めません: $FROM_FILE" >&2
     exit 2
   fi

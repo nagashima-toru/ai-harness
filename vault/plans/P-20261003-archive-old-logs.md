@@ -1,6 +1,6 @@
 ---
 id: P-20261003-archive-old-logs
-status: approved
+status: done
 ---
 # ゴール
 古い計画（計画票が `status: done` で、PR がマージ済みのもの）の一式を `vault/archive/<年-月>/` に移すための安全な手順（スクリプト `scripts/archive_plans.sh`）を作り、それを使って古い形式の log（`creator=` が無い遷移行の log）を `scripts/model_stats.py` の既定の集計から外す。

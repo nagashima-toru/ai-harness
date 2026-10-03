@@ -21,7 +21,7 @@ GitHub Issue #109 を解決する（#91・#87 の続き）。`.claude/hooks/agen
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | smoke.sh に vault/rules/ パス文字列の誤検知の回帰ケースを足す | |
-| T-02 | review | 1 | T-01 | ガードが cat のヒアドキュメントだけのコマンド置換を解析できるようにする | |
+| T-02 | done | 1 | T-01 | ガードが cat のヒアドキュメントだけのコマンド置換を解析できるようにする | |
 | T-03 | todo | 0 | T-02 | ガードが先頭の cd <リポジトリのルート> を読み飛ばして解析するようにする | |
 | T-04 | todo | 0 | T-03 | planner ルールの解析できない形の説明に vault/rules/ のパス文字列と例外を足す提案を書く | |
 

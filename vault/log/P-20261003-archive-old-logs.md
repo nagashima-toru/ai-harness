@@ -1,0 +1,25 @@
+- 2026-10-03 13:32 - draft→approved 人の指示: /plan approve P-20261003-archive-old-logs
+- 2026-10-03 13:43 T-01 todo→doing attempt=1
+- 2026-10-03 13:46 T-01 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-abae4b023f5a4f73b branch=worktree-agent-abae4b023f5a4f73b plan_head=b949a3d84dd718d5b3707d30c13bdfca3da0b54a
+- 2026-10-03 13:46 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-03 13:46 T-01 review→done attempt=1 verifier=sonnet
+- 2026-10-03 13:46 T-02 todo→doing attempt=1
+- 2026-10-03 13:46 T-03 todo→doing attempt=1
+- 2026-10-03 13:46 T-04 todo→doing attempt=1
+- 2026-10-03 13:50 T-02 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-aa762ef8d8a5a9601 branch=worktree-agent-aa762ef8d8a5a9601 plan_head=bfb6873e286e165b813516ee67fa187e825b5eb8
+- 2026-10-03 13:50 T-03 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a086426bc7d2cc41b branch=worktree-agent-a086426bc7d2cc41b plan_head=bfb6873e286e165b813516ee67fa187e825b5eb8
+- 2026-10-03 13:50 T-04 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-afb7fb9f0780f569e branch=worktree-agent-afb7fb9f0780f569e plan_head=bfb6873e286e165b813516ee67fa187e825b5eb8
+- 2026-10-03 13:50 T-02 doing→review attempt=1 creator=sonnet
+- 2026-10-03 13:50 T-03 doing→review attempt=1 creator=sonnet
+- 2026-10-03 13:50 T-04 doing→review attempt=1 creator=sonnet
+- 2026-10-03 13:52 T-02 review→done attempt=1 verifier=sonnet
+- 2026-10-03 13:53 T-03 review→done attempt=1 verifier=sonnet
+- 2026-10-03 13:53 T-04 review→done attempt=1 verifier=sonnet
+- 2026-10-03 13:54 T-05 todo→doing attempt=1
+- 2026-10-03 13:54 T-06 todo→doing attempt=1
+- 2026-10-03 13:55 T-05 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a1fc3f8e16b3b3235 branch=worktree-agent-a1fc3f8e16b3b3235 plan_head=058318849d685860d2d9c3af478887783b0b08f0
+- 2026-10-03 13:55 T-06 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a556deb9af2f98722 branch=worktree-agent-a556deb9af2f98722 plan_head=058318849d685860d2d9c3af478887783b0b08f0
+- 2026-10-03 13:55 T-05 doing→review attempt=1 creator=sonnet
+- 2026-10-03 13:55 T-06 doing→review attempt=1 creator=sonnet
+- 2026-10-03 13:56 T-05 review→done attempt=1 verifier=sonnet
+- 2026-10-03 13:57 T-06 review→done attempt=1 verifier=sonnet

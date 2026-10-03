@@ -1,0 +1,14 @@
+{
+  "task": "P-20261003-guard-rules-path-text/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 11:44",
+  "criteria": [
+    {"text": "smoke がすべて通り、回帰ケース15件が ok。確認：`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=454 fail=0`、`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guard-text'` が `15`", "ok": true, "note": "worktree で smoke.sh を1回実行し出力を保存して確認 / tail -1: smoke: pass=454 fail=0、grep -c '^  ok   (guard-text': 15"},
+    {"text": "ルート以外への cd を含む既存の拒否が残っている。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (bash-parse) cd 後の相対リダイレクト'` が `1`", "ok": true, "note": "同じ smoke 出力に対し grep -c '^  ok   (bash-parse) cd 後の相対リダイレクト' / 出力: 1"},
+    {"text": "`analyze_bash_writes` が root を受け取り、6か所すべてで root を渡している。確認：`grep -c '^def analyze_bash_writes(cmd, root=None):' .claude/hooks/agent_write_guard.py` が `1`、`grep -c 'analyze_bash_writes(cmd, root)' .claude/hooks/agent_write_guard.py` が `6`", "ok": true, "note": "worktree で実行 / 出力: 1 と 6"},
+    {"text": "構文が正しい。確認：`python3 -m py_compile .claude/hooks/agent_write_guard.py` の終了コードが0", "ok": true, "note": "実行コマンド: python3 -m py_compile .claude/hooks/agent_write_guard.py; echo rc=$? / 出力: rc=0"},
+    {"text": "変更したのはガードだけ。確認：`git status --porcelain` の出力が `.claude/hooks/agent_write_guard.py` と `vault/tasks/P-20261003-guard-rules-path-text/T-03.md` の行だけ", "ok": true, "note": "worktree で git status --porcelain / 出力: ' M .claude/hooks/agent_write_guard.py' と ' M vault/tasks/.../T-03.md' の2行のみ。起点コミットの記録がタスク票の進捗に無いため成果物外ファイルの検査は行わず（上記 status で代替確認）"}
+  ],
+  "reasons": []
+}

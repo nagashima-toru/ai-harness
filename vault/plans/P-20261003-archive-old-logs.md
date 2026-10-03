@@ -46,7 +46,7 @@ status: approved
 | T-03 | done | 1 | T-01 | runbook 5節の手動手順を archive_plans.sh の手順に置き換える | |
 | T-04 | done | 1 | T-01 | vault-spec の archive の説明を配置とスクリプトに合わせる | |
 | T-05 | done | 1 | T-01 | decisions.md に archive をスクリプト化した判断の行を足す | |
-| T-06 | review | 1 | T-01,T-02 | 移す対象の計画 ID 一覧を確定し dry-run で検査する | |
+| T-06 | done | 1 | T-01,T-02 | 移す対象の計画 ID 一覧を確定し dry-run で検査する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

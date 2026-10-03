@@ -1,0 +1,1 @@
+- 2026-10-03 11:12 - draft→approved 人の指示: /plan approve P-20261003-guard-rules-path-text

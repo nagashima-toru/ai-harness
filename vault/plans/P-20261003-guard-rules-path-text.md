@@ -1,6 +1,6 @@
 ---
 id: P-20261003-guard-rules-path-text
-status: draft
+status: approved
 ---
 # ゴール
 GitHub Issue #109 を解決する（#91・#87 の続き）。`.claude/hooks/agent_write_guard.py` が、コマンドの本文・引数に出てくるだけの `vault/rules/` のパス文字列を書き込み先とみなし、「vault/rules/ へは書き込めません」と拒否する誤検知を、実際の書き込みの拒否を落とさずに減らす。

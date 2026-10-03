@@ -1280,6 +1280,59 @@ cp "$ROOT/.claude/settings.json" "$STMP/x.json"
 out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/x.json")"
 expect_eq "(x) baseRef が既に head で hooks・deny も揃っている → skip" "skip" "${out%% *}"
 
+# permissions.allow の不足は note 行で案内するだけで、allow は変更しない
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+a = d['permissions']['allow']
+a.remove('Bash(jq *)')
+a[a.index('Bash(git *)')] = 'Bash(git:*)'
+pathlib.Path('$STMP/al1.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/al1.json")"
+first="$(echo "$out" | head -n 1)"
+last="$(echo "$out" | tail -n 1)"
+expect_eq "(al-1) allow だけ不足 → 1行目が permissions.allow の note" "1" \
+  "$(echo "$first" | grep -c '^note .*permissions\.allow')"
+expect_eq "(al-1) note に Bash(git *) と Bash(jq *) の両方が入る（完全一致判定）" "1 1" \
+  "$(echo "$first" | grep -cF 'Bash(git *)') $(echo "$first" | grep -cF 'Bash(jq *)')"
+expect_eq "(al-1) 最終行が skip" "skip" "${last%% *}"
+expect_eq "(al-1) dst の allow は変更されない" "True False" \
+  "$(python3 -c "import json;a=json.load(open('$STMP/al1.json'))['permissions']['allow'];print('Bash(git:*)' in a, 'Bash(jq *)' in a)")"
+expect_eq "(al-1) バックアップが作られない" "0" "$(ls "$STMP" | grep -c '^al1\.json\.bak-')"
+
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+d['permissions']['allow'].remove('Bash(jq *)')
+d['permissions']['deny'].pop()
+pathlib.Path('$STMP/al2.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/al2.json")"
+expect_eq "(al-2) allow と deny の両方が不足 → note が merge より前に出る" "note merge" \
+  "$(echo "$out" | sed -n 1p | cut -d' ' -f1) $(echo "$out" | sed -n 2p | cut -d' ' -f1)"
+expect_eq "(al-2) merge 後も不足していた allow は足されない" "False" \
+  "$(python3 -c "import json;print('Bash(jq *)' in json.load(open('$STMP/al2.json'))['permissions']['allow'])")"
+
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/al3/settings.json")"
+expect_eq "(al-3) dst が無い（create）→ note 行が無い" "0" "$(echo "$out" | grep -c '^note')"
+
+cp "$ROOT/.claude/settings.json" "$STMP/al4.json"
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/al4.json")"
+expect_eq "(al-4) allow が揃っている → permissions.allow の note が無い" "0" \
+  "$(echo "$out" | grep -c '^note.*permissions\.allow')"
+
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+d['permissions']['allow'] = 'Bash(git *)'
+pathlib.Path('$STMP/al5.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+rc=0
+out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/al5.json")" || rc=$?
+expect_eq "(al-5) allow が文字列 → 終了コード0" "0" "$rc"
+expect_eq "(al-5) 型不正の note 行が1行" "1" "$(echo "$out" | grep -c '^note.*permissions\.allow の型が不正')"
+
 rm -rf "$STMP"
 
 for ent in 'Bash(gh pr merge*)' 'Bash(glab mr merge*)' 'Bash(claude *)'; do
@@ -1307,6 +1360,17 @@ expect_eq "(p) --update 後も独自の allow が残る" "True" \
   "$(python3 -c "import json;print('Bash(独自コマンド *)' in json.load(open('$WTMP/.claude/settings.json'))['permissions']['allow'])")"
 expect_eq "(p) --update で欠落 hooks が足される" "True" \
   "$(python3 -c "import json;d=json.load(open('$WTMP/.claude/settings.json'));print(any('plan_guard.py' in h['command'] for e in d['hooks'].get('PostToolUse',[]) for h in e.get('hooks',[])))")"
+python3 -c "
+import json, pathlib
+d = json.load(open('$WTMP/.claude/settings.json'))
+d['permissions']['allow'].remove('Bash(jq *)')
+pathlib.Path('$WTMP/.claude/settings.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+out="$(bash "$ROOT/scripts/install.sh" --update "$WTMP" 2>/dev/null)"
+expect_eq "(al-6) install.sh --update の出力に allow 不足の note 行が1行ある" "1" \
+  "$(echo "$out" | grep -c '^note .*permissions\.allow にハーネスが使う許可が')"
+expect_eq "(al-6) --update 後も allow に削除した項目は戻らない" "False" \
+  "$(python3 -c "import json;print('Bash(jq *)' in json.load(open('$WTMP/.claude/settings.json'))['permissions']['allow'])")"
 rm -rf "$WTMP"
 
 echo "== current_plan.sh =="

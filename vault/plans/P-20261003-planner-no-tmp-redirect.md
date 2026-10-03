@@ -1,6 +1,6 @@
 ---
 id: P-20261003-planner-no-tmp-redirect
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #107 を解決する。#102（計画 P-20261002-verify-cmd-guard-align）の続きとして扱う。planner のルール（`vault/rules/planner/planner.md`）が確認コマンドの代わりの手段として「`/tmp` へリダイレクトしてから別コマンドで読む」形を勧めているが、実運用では verifier が `/tmp` へのリダイレクトを実行できない（agent_write_guard の外の権限判定で止まる）。この記述を、リダイレクトを使わない形（単一の読み取り専用コマンド、または出力を絞るパイプ1段）を勧める記述に最小の変更で直す提案を書く。

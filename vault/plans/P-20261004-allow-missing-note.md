@@ -19,7 +19,7 @@ install.sh 実行時、導入先の `.claude/settings.json` の `permissions.all
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | merge_settings_json.py に permissions.allow の不足を note 行で案内する処理を足す | |
+| T-01 | done | 1 | - | merge_settings_json.py に permissions.allow の不足を note 行で案内する処理を足す | |
 | T-02 | todo | 0 | T-01 | smoke.sh に permissions.allow 不足案内のケースを足す | |
 | T-03 | todo | 0 | T-01 | docs/install.md に permissions.allow 不足案内の挙動と影響・限界を書く | |
 

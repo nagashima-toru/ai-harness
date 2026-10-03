@@ -139,10 +139,18 @@ bash /path/to/ai-harness/scripts/install.sh --update .
 
 - **未編集のハーネス本体ファイル**（配った時のままのもの）は最新化され、`update <path>` と表示される
 - **インストール先で編集したファイル**は上書きされず、`skip (edited) <path>` として一覧報告される。取り込みたい差分があれば手で当てる
-- **`.claude/settings.json`** は `scripts/merge_settings_json.py` が hooks の欠落エントリと `permissions.deny` の不足分、`worktree.baseRef`（導入先に無ければ足す。別の値が入っていれば上書きせず `note` 行で案内するだけにとどめる）を足す。インストール先で足した `permissions.allow` は変更しない
+- **`.claude/settings.json`** は `scripts/merge_settings_json.py` が hooks の欠落エントリと `permissions.deny` の不足分、`worktree.baseRef`（導入先に無ければ足す。別の値が入っていれば上書きせず `note` 行で案内するだけにとどめる）を足す。インストール先で足した `permissions.allow` は変更しない。不足があれば `note` 行で案内する（後述）
 - マニフェストが無いインストール先（`--update` より前に入れたもの）では、既存ファイルはすべて `skip (edited)` になる。編集していないものは一度手で消してから `--update` すれば配られる
 
 `merge_settings_json.py` は書き換える時だけ `.claude/settings.json.bak-<日時>` を残す。不要なら消してよい（`.gitignore` に `*.bak-*` を足しておくと楽）。
+
+**`permissions.allow` の不足案内** ハーネス側 `.claude/settings.json` の `permissions.allow` のうち導入先に無いものがあれば、`merge_settings_json.py` が `note` 行で列挙する（`permissions.allow` 自体は変更しない）。許可が入らないままだと、対話実行では確認ダイアログが出て、無人実行（`claude -p`）では拒否される。必要なら note に出た項目を手で `permissions.allow` に足す。導入先に settings.json が無い（`create`）場合は丸ごと作られるので note は出ない。
+
+```text
+note .claude/settings.json: permissions.allow にハーネスが使う許可が 2 件足りない: Bash(git *), Bash(gh pr *)。対話実行では確認ダイアログが出て、無人実行（claude -p）では拒否される。必要なら手で足すこと（このスクリプトは permissions.allow を変更しない）
+```
+
+判定は文字列の完全一致で、パターンの包含関係は見ない。たとえば導入先に `Bash(git:*)` があっても `Bash(git *)` は不足として出る。またスクリプトは利用者の個人設定を含め `~/.claude/settings.json` は読まない（そこで許可していれば実際は確認が出ないこともある）。
 
 ## アンインストール
 複製したハーネスを取り除きたい時は `scripts/uninstall.sh`（`install.sh` の対になるスクリプト）を使う。

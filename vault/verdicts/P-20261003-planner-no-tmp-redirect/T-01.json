@@ -1,0 +1,16 @@
+{
+  "task": "P-20261003-planner-no-tmp-redirect/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-03 10:52",
+  "criteria": [
+    {"text": "提案ファイルが変えたのは32・36・48・60行目の4行だけ。確認：`diff vault/rules/planner/planner.md vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` の出力がちょうど16行で、ハンク見出しが `32c32`・`36c36`・`48c48`・`60c60` の4つ（各ハンクは `<` で始まる1行、`---`、`>` で始まる1行）", "ok": true, "note": "実行コマンド: `diff ... | wc -l` と `diff ... | grep -E '^[0-9]'` / 出力: 16、見出しは 32c32 36c36 48c48 60c60 の4つ"},
+    {"text": "32行目の行末に、`/tmp` への書き込みが止まりうる旨の注意の1文が足されている。確認：`grep -c -F 'フィクスチャが要る時は creator が作るか、リポジトリ内の既存ファイルを使う。' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` が `1`", "ok": true, "note": "実行コマンド: 同 grep -c -F / 出力: 1。sed -n 32p で行末に該当文があることも確認"},
+    {"text": "36行目から `/tmp` への書き出しの例が消え、リダイレクトを前提にしない文が入っている。確認：`grep -c -F '/tmp/<計画ID>-<タスクID>.txt' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` が `0`、`grep -c -F 'repo の外へのリダイレクトを含む）を前提にしない。verifier の Bash では権限判定で実行できないことがある。' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` が `1`", "ok": true, "note": "実行コマンド: 2つの grep -c -F / 出力: 0 と 1"},
+    {"text": "48行目に、`/tmp` へのリダイレクトを代わりの手段として勧めない1文が足されている。確認：`grep -c -F '代わりの手段としても勧めない' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` が `1`", "ok": true, "note": "実行コマンド: grep -c -F / 出力: 1。sed -n 48p で48行目の行末にあることを確認"},
+    {"text": "60行目から「事前書き出し」が消え、パイプ1段の形に置き換わっている。確認：`grep -c -F '事前書き出し' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` が `0`、`grep -c -F '出力を絞るパイプ1段の形になっているか' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` が `1`", "ok": true, "note": "実行コマンド: 2つの grep -c -F / 出力: 0 と 1"},
+    {"text": "書き換えた4行が「決定済み」の置き換え後の文と一字一句同じ。確認：提案ファイルの32・36・48・60行目を Read で読み、「決定済み」の文と見比べる", "ok": true, "note": "確認方法: `sed -n '32p;36p;48p;60p'` で出力し、決定済みの文と見比べた（Read の代わりに sed を使用）。32・36・48・60の追加文・置き換え文は一致。diff が4ハンクのみなので他行は原文のまま"},
+    {"text": "提案ファイルに、このリポジトリ固有の issue 番号・計画 ID が無い。確認：`grep -nE 'issue #|P-20[0-9]{6}' vault/tasks/P-20261003-planner-no-tmp-redirect/T-01-proposal.md` の出力が空", "ok": true, "note": "実行コマンド: 同 grep -nE / 出力: 空。起点コミット 44f546b からの変更ファイルは T-01.md（タスク票、進捗の更新とみなす）と T-01-proposal.md（成果物）のみで、成果物外のファイルは無し"}
+  ],
+  "reasons": []
+}

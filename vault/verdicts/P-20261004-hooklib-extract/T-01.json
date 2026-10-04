@@ -1,0 +1,15 @@
+{
+  "task": "P-20261004-hooklib-extract/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-04 18:34",
+  "criteria": [
+    {"text": "構文が正しい：`python3 -B -c \"import ast; ast.parse(open('.claude/hooks/_hooklib.py').read()); print('ok')\"` の出力が `ok`", "ok": true, "note": "実行コマンド: 上記を worktree で実行 / 出力: ok"},
+    {"text": "10関数がちょうど1回ずつ定義されている：grep -cE '^def (...)\\(' .claude/hooks/_hooklib.py の出力が `10`", "ok": true, "note": "実行コマンド: 基準記載の grep -c / 出力: 10"},
+    {"text": "関数が元と同じに動く：基準記載の python3 -B -c の出力が `('P-20261004-hooklib-extract', 'approved') ['P-20261004-hooklib-extract'] approved True True [['T-01', 'todo']] []`", "ok": true, "note": "実行コマンド: 基準記載のコマンド / 出力: ('P-20261004-hooklib-extract', 'approved') ['P-20261004-hooklib-extract'] approved True True [['T-01', 'todo']] [] (期待と一致)"},
+    {"text": "存在しないディレクトリからでも git のルートを返す：基準記載のコマンドの出力が `True True`", "ok": true, "note": "実行コマンド: 基準記載のコマンド / 出力: True True"},
+    {"text": "`delegate_to_worktree` が委譲先のスクリプト名を引数で受ける：出力が `(payload, script_name)`", "ok": true, "note": "実行コマンド: inspect.signature の基準記載コマンド / 出力: (payload, script_name)"},
+    {"text": "標準ライブラリしか import しない：基準記載のコマンドの出力が `[]`", "ok": true, "note": "実行コマンド: ast による import 抽出 / 出力: []。なお __pycache__ に _hooklib のキャッシュは無いことも ls で確認"}
+  ],
+  "reasons": []
+}

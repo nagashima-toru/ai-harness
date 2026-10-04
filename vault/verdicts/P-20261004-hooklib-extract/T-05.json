@@ -1,0 +1,14 @@
+{
+  "task": "P-20261004-hooklib-extract/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-04 12:00",
+  "criteria": [
+    {"text": "smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` (worktree 内) / 出力: smoke: pass=507 fail=0。起点コミットの記録が無いため宣言外ファイル検査は行わず、未コミットは scripts/smoke.sh とタスク票のみ（成果物内）"},
+    {"text": "壊れた `_hooklib.py` の4ケースが通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (hooklib-broken)'` の出力が `4`", "ok": true, "note": "実行コマンド: `grep -c '^  ok   (hooklib-broken)'` / 出力: 4"},
+    {"text": "worktree の未コミット検査の3ケースが通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (stop_gate worktree)'` の出力が `3`", "ok": true, "note": "実行コマンド: `grep -c '^  ok   (stop_gate worktree)'` / 出力: 3"},
+    {"text": "`__pycache__` のケースが通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (hooklib-pycache)'` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c '^  ok   (hooklib-pycache)'` / 出力: 1"},
+    {"text": "既存のケースを消したり書き換えたりしていない（行の追加だけ）：`git diff main... -- scripts/smoke.sh | grep -c '^-[^-]'` の出力が `0`", "ok": true, "note": "実行コマンド: `git diff main... -- scripts/smoke.sh | grep -c '^-[^-]'` / 出力: 0。`git diff --stat` で smoke.sh は 42 insertions のみ"}
+  ],
+  "reasons": []
+}

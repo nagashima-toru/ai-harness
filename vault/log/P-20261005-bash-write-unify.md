@@ -1,0 +1,1 @@
+- 2026-10-05 08:14 - draft→approved 人の指示: /plan approve P-20261005-bash-write-unify

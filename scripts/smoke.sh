@@ -1779,6 +1779,39 @@ make_plan "P-TEST" "approved" "  | T-0001 | doing | 1 | - | A | |"
 expect "(hooklib-rules) stop_gate: 行頭を半角空白でインデントしたタスク表の doing 行を検査する" block "$(run_stop)" "verdict が無い"
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"; mkdir -p "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"
 
+echo "== bash-write-unify =="
+# 1回のフック呼び出し（main()）で analyze_bash_writes が何回実行されたかと、判定（deny/allow）を返す。
+count_analyze_calls() { # $1=command 文字列
+  BWU_CMD="$1" CLAUDE_PROJECT_DIR="$TMP" _HOOK_DELEGATED=1 python3 -B - "$ROOT/.claude/hooks" <<'PY'
+import contextlib, io, json, os, sys
+sys.dont_write_bytecode = True
+sys.path.insert(0, sys.argv[1])
+import agent_write_guard as G
+calls = [0]
+orig = G.analyze_bash_writes
+def counting(*a, **k):
+    calls[0] += 1
+    return orig(*a, **k)
+G.analyze_bash_writes = counting
+payload = {"tool_name": "Bash", "tool_input": {"command": os.environ["BWU_CMD"]}}
+sys.stdin = io.StringIO(json.dumps(payload))
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    try:
+        G.main()
+    except SystemExit:
+        pass
+denied = '"permissionDecision": "deny"' in buf.getvalue() or '"permissionDecision":"deny"' in buf.getvalue()
+print(calls[0], "deny" if denied else "allow")
+PY
+}
+out="$(count_analyze_calls 'echo x > vault/rules/a.md')"
+expect_eq "(bash-write-unify) 解析できる形（リダイレクト）で analyze_bash_writes は1回" "1 deny" "$out"
+out="$(count_analyze_calls 'bash -c "echo y > vault/rules/b.md"')"
+expect_eq "(bash-write-unify) 解析できない形（bash -c）でも analyze_bash_writes は1回" "1 deny" "$out"
+expect_guard "(bash-write-unify) 一本化で許可→拒否: verifier が引用符内の vault/tasks/<計画ID>/<id>.md を含む root 外リダイレクト" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"python3 -c \"open('"'"'vault/tasks/P-X/T-01.md'"'"')\" > /tmp/x.txt"}}')"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

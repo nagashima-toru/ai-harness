@@ -1,6 +1,6 @@
 ---
 id: P-20261005-bash-write-unify
-status: approved
+status: done
 ---
 # ゴール
 設計文書 `vault/designs/D-011.md` の「フェーズ3 agent_write_guard.py の Bash 書き込み判定の一本化」を行う。

@@ -550,22 +550,57 @@ def analyze_bash_writes(cmd, root=None):
         return None
 
 
-def _legacy_targets_vault_rules_bash(cmd, root):
-    """従来の Bash 判定（解析できない形のフォールバック）。"""
-    masked = mask_angle_placeholders(cmd)
-    if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
-        return False
-    redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked)
-    path_like = re.findall(r"[^\s'\"]*vault/rules/[^\s'\"]*", cmd)
-    candidates = redirect_targets + path_like
-    return any(normalize(t, root).startswith("vault/rules/") for t in candidates)
+_BASH_WRITE_TARGETS_CACHE = {}
+_PROTECTED_PREFIX = r"(?:vault/(?:rules|plans|log|tasks|verdicts)/|\.claude/projects)"
+_LEGACY_PATH_RES = (
+    re.compile(r"[^\s'\"]*" + _PROTECTED_PREFIX + r"[^\s'\"]*"),
+    re.compile(r"[^\s'\")]*" + _PROTECTED_PREFIX + r"[^\s'\")]*"),
+)
+
+
+def bash_write_targets(cmd, root):
+    """Bash コマンドの書き込み対象を `(parsed, writes)` で返す（同じ (cmd, root) は2回目からメモ化）。
+
+    parsed は analyze_bash_writes が解析できた時 True。writes は (verb, target) のタプルのタプル。
+    解析できない時は、書き込み動詞が無ければ (False, ())。あれば従来の4通りの判定の候補
+    （legacy-redirect・legacy-write・legacy-path）の和集合を返し、1つも特定できなければ
+    (("legacy-unknown", ""),) を返す（拒否する側に倒す）。
+    """
+    key = (cmd, root)
+    cached = _BASH_WRITE_TARGETS_CACHE.get(key)
+    if cached is not None:
+        return cached
+    writes = analyze_bash_writes(cmd, root)
+    if writes is not None:
+        result = (True, tuple(writes))
+    else:
+        masked = mask_angle_placeholders(cmd)
+        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+            result = (False, ())
+        else:
+            found = []
+            for t in re.findall(r">{1,2}\s*([^\s;&|]+)", masked):
+                found.append(("legacy-redirect", t))
+            for t in extract_bash_write_targets(cmd):
+                found.append(("legacy-write", t))
+            for rx in _LEGACY_PATH_RES:
+                for t in rx.findall(cmd):
+                    found.append(("legacy-path", t))
+            cands = []
+            for verb, t in found:
+                t = t.rstrip(")\"'`;")
+                if t:
+                    cands.append((verb, t))
+            result = (False, tuple(cands) if cands else (("legacy-unknown", ""),))
+    _BASH_WRITE_TARGETS_CACHE[key] = result
+    return result
 
 
 def targets_vault_rules(tool, tool_input, root):
     """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。
 
-    Bash は analyze_bash_writes で解析できた時だけ実際の書き込み対象で判定し、
-    None（解析不能）の時は従来の判定に落とす（issue #91）。
+    Bash は bash_write_targets の書き込み対象（解析できない時は従来の判定の候補の和集合）を
+    パスで絞り込んで判定する。
     """
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
         path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
@@ -574,9 +609,7 @@ def targets_vault_rules(tool, tool_input, root):
         cmd = tool_input.get("command") or ""
         if targets_vault_rules_remote(cmd):
             return True
-        writes = analyze_bash_writes(cmd, root)
-        if writes is None:
-            return _legacy_targets_vault_rules_bash(cmd, root)
+        _, writes = bash_write_targets(cmd, root)
         return any(normalize(t, root).startswith("vault/rules/") for _, t in writes if t)
     return False
 
@@ -602,24 +635,16 @@ def targets_transcript_dir(tool, tool_input, root):
     """この呼び出しが ~/.claude/projects/ 配下（会話記録）への書き込みを試みているか判定する（D-010 フェーズ4）。
 
     承認の裏付けにする会話記録をエージェントが書き換えて人の発言を偽造するのを防ぐ。
-    Bash は analyze_bash_writes で解析できた時だけ実際の書き込み対象で判定する。None（解析不能）の時は
-    従来の判定：BASH_WRITE_PATTERNS で書き込み動詞を判定し、対象は extract_bash_write_targets と
-    `.claude/projects/` を含む path-like トークンから求める（読み取り専用コマンドは対象外）。
+    Bash は bash_write_targets の書き込み対象（解析できない時は従来の判定の候補の和集合）を
+    パスで絞り込んで判定する。
     """
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
         path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
         return is_under_transcript_dir(path, root)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        writes = analyze_bash_writes(cmd, root)
-        if writes is not None:
-            return any(is_under_transcript_dir(t, root) for _, t in writes if t)
-        masked = mask_angle_placeholders(cmd)
-        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
-            return False
-        candidates = extract_bash_write_targets(cmd)
-        candidates += re.findall(r"[^\s'\"]*\.claude/projects[^\s'\"]*", cmd)
-        return any(is_under_transcript_dir(t.rstrip(")`;"), root) for t in candidates)
+        _, writes = bash_write_targets(cmd, root)
+        return any(is_under_transcript_dir(t, root) for _, t in writes if t)
     return False
 
 
@@ -628,23 +653,15 @@ def targets_creator_denied_paths(tool, tool_input, root):
 
     creator の成果物パスは repo 全体になりうるため ALLOWED の許可リスト方式は使わず、
     vault/rules/ の改ざん防止判定（targets_vault_rules）と同じ考え方で、書き込んではいけない
-    2パスだけを直接判定する。
+    2パスだけを直接判定する。Bash は bash_write_targets の結果をパスで絞り込んで判定する。
     """
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
         path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
         return normalize(path, root).startswith(DENIED_FOR_CREATOR)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        writes = analyze_bash_writes(cmd, root)
-        if writes is not None:
-            return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for _, t in writes if t)
-        masked = mask_angle_placeholders(cmd)
-        if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
-            return False
-        redirect_targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked)
-        path_like = re.findall(r"[^\s'\"]*vault/(?:plans|log)/[^\s'\"]*", cmd)
-        candidates = redirect_targets + path_like
-        return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for t in candidates)
+        _, writes = bash_write_targets(cmd, root)
+        return any(normalize(t, root).startswith(DENIED_FOR_CREATOR) for _, t in writes if t)
     return False
 
 

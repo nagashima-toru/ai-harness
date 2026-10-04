@@ -35,8 +35,8 @@ done タスクへの書き込み拒否：agent_type を問わず（メインセ�
 vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、対応する計画票
 （vault/plans/<計画ID>.md）のタスク表でその id の status が done の場合は拒否する。計画票が
 見つからない・その id の行が無い・読めない場合は許可する（fail-open）。タスク表の解析規則は
-plan_guard.py の raw_rows と同じものをこのファイル内にコピーして使う（他ファイルへの import は
-しない方針を踏襲、D-010 フェーズ2 / issue #76）。解除口は作らない。
+共通モジュール _hooklib.py の raw_rows を使う（D-010 フェーズ2 / issue #76）。解除口は作らない。
+共通関数は .claude/hooks/_hooklib.py にあり、読み込めない時は終了コード2で終わる（D-011）。
 ただし Bash の書き込み動詞が git add / git commit だけのコマンドは対象外（ステージ・コミットは
 ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
 他の書き込み動詞・リダイレクト・コマンド置換が混ざる場合は従来どおり拒否する。
@@ -49,6 +49,14 @@ import re
 import shlex
 import subprocess
 import sys
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import _hooklib as H
+except Exception as e:  # SyntaxError なども含めて捕まえる
+    sys.stderr.write(f"[agent_write_guard] _hooklib の読み込みに失敗しました: {e}\n")
+    sys.exit(2)
 
 GIT_COMMIT_PATTERN = r"\bgit\s+commit\b"
 GIT_PREOPT_COMMIT_PATTERN = r"\bgit\s+-[^;&|\n]*\bcommit\b"
@@ -111,50 +119,6 @@ def normalize(path, root):
     return rel.replace(os.sep, "/")
 
 
-def existing_ancestor(dir_path):
-    """dir_path 自身、または存在する祖先ディレクトリまで `os.path.dirname()` で遡って返す。
-
-    worktree 内でまだ作成されていないネストしたディレクトリ配下に書き込もうとした場合、
-    `git -C <存在しないpath> rev-parse --show-toplevel` は exit 128 で失敗する（issue #24）。
-    worktree のルート自体は常に存在するため、存在するディレクトリまで遡ってから
-    `git -C` に渡せば正しく worktree のルートを解決できる。
-    """
-    if not dir_path:
-        return None
-    probe = dir_path
-    while probe and not os.path.isdir(probe):
-        parent = os.path.dirname(probe)
-        if parent == probe:
-            # ルートまで遡っても見つからない（ほぼ起こらない）場合は諦める
-            return None
-        probe = parent
-    return probe or None
-
-
-def git_toplevel(dir_path):
-    """dir_path から `git rev-parse --show-toplevel` を試みる。
-
-    worktree 内から呼ばれた場合はその worktree のルートを返す。非 git・取得失敗時は None
-    （呼び出し側で既存のフォールバック順に進む＝fail-open）。
-    """
-    if not dir_path:
-        return None
-    dir_path = existing_ancestor(dir_path)
-    if not dir_path:
-        return None
-    try:
-        out = subprocess.run(
-            ["git", "-C", dir_path, "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception:
-        return None
-    if out.returncode != 0:
-        return None
-    top = out.stdout.strip()
-    return top or None
-
-
 def resolve_root(tool, tool_input, payload):
     """書き込み先パスの正規化に使う root を求める。
 
@@ -175,7 +139,7 @@ def resolve_root(tool, tool_input, payload):
         if cwd:
             probe_dir = cwd
     if probe_dir:
-        top = git_toplevel(probe_dir)
+        top = H.git_toplevel(probe_dir)
         if top:
             return top
     return fallback
@@ -666,27 +630,6 @@ def targets_creator_denied_paths(tool, tool_input, root):
     return False
 
 
-def plan_raw_rows(plan_text):
-    """plan_guard.py の raw_rows と同じ規則（他ファイルへの import はしない方針を踏襲）。
-
-    「## タスク表」（前方一致）以降のデータ行を生のセルのリストで返す（見出し行・区切り行は除く）。
-    """
-    rows = []
-    in_table = False
-    for line in plan_text.splitlines():
-        if line.startswith("## "):
-            in_table = line.strip().startswith("## タスク表")
-            continue
-        stripped = line.strip()
-        if not in_table or not stripped.startswith("|"):
-            continue
-        cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if not cells or cells[0] == "id" or re.fullmatch(r"-*", cells[0]):
-            continue
-        rows.append(cells)
-    return rows
-
-
 def plan_task_status(root, plan_id, task_id):
     """vault/plans/<plan_id>.md のタスク表から task_id の status を返す。
 
@@ -698,7 +641,7 @@ def plan_task_status(root, plan_id, task_id):
             text = f.read()
     except Exception:
         return None
-    for cells in plan_raw_rows(text):
+    for cells in H.raw_rows(text):
         if len(cells) < 5:
             continue
         cells = list(cells) + [""] * (6 - len(cells))
@@ -798,20 +741,6 @@ def find_done_task_write(tool, tool_input, root):
 PLAN_FILE_RE = re.compile(r"^vault/plans/([^/]+)\.md$")
 
 
-def frontmatter_status(text):
-    """先頭の `---` から次の `---` までの frontmatter の `status:` の値を返す。無ければ None。本文は見ない。"""
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    for line in lines[1:]:
-        if line.strip() == "---":
-            break
-        m = re.match(r"^status:\s*(\S*)", line)
-        if m:
-            return m.group(1).strip("\"'")
-    return None
-
-
 def apply_edit(text, old, new, replace_all):
     """Edit 1回分を適用する。old が見つからない場合は None。"""
     if not old or old not in text:
@@ -859,47 +788,10 @@ def find_plan_approval(tool, tool_input, root):
     after = content_after_write(tool, tool_input, current)
     if after is None:
         return None
-    before_status = frontmatter_status(current) if current is not None else None
-    if before_status != "approved" and frontmatter_status(after) == "approved":
+    before_status = H.frontmatter_status(current) if current is not None else None
+    if before_status != "approved" and H.frontmatter_status(after) == "approved":
         return m.group(1)
     return None
-
-
-def human_messages(transcript_path):
-    """会話記録（JSONL）から人の発言（type=user・content が文字列・isMeta が真でない行）を返す。
-
-    読めない（パスが無い・ファイルが無い・どの行も JSON でない）場合も空リストを返す。
-    """
-    if not transcript_path:
-        return []
-    try:
-        with open(os.path.expanduser(transcript_path), encoding="utf-8") as f:
-            lines = f.read().splitlines()
-    except Exception:
-        return []
-    out = []
-    for line in lines:
-        try:
-            obj = json.loads(line)
-        except Exception:
-            continue
-        if not isinstance(obj, dict) or obj.get("type") != "user" or obj.get("isMeta"):
-            continue
-        msg = obj.get("message")
-        content = msg.get("content") if isinstance(msg, dict) else None
-        if isinstance(content, str):
-            out.append(content)
-    return out
-
-
-def is_approve_command(text, plan_id):
-    """人の発言が `/plan approve <plan_id>`（スラッシュコマンド形式または文形式）か判定する。"""
-    if "<command-name>/plan</command-name>" in text:
-        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
-            if args.strip() == f"approve {plan_id}":
-                return True
-    m = re.match(r"^/plan\s+approve\s+(\S+)", text.lstrip())
-    return bool(m) and m.group(1) == plan_id
 
 
 def find_plan_unblocks(tool, tool_input, root):
@@ -924,79 +816,16 @@ def find_plan_unblocks(tool, tool_input, root):
     if after is None:
         return None
     after_status = {}
-    for cells in plan_raw_rows(after):
+    for cells in H.raw_rows(after):
         if len(cells) >= 2:
             after_status[cells[0]] = cells[1]
     ids = []
-    for cells in plan_raw_rows(current):
+    for cells in H.raw_rows(current):
         if len(cells) >= 2 and cells[1] == "blocked":
             new = after_status.get(cells[0])
             if new is not None and new != "blocked":
                 ids.append(cells[0])
     return (m.group(1), ids) if ids else None
-
-
-def is_unblock_command(text, plan_id, task_id):
-    """人の発言が `/plan unblock <plan_id> <task_id>`（スラッシュコマンド形式または文形式）か判定する。
-
-    後ろに回答が続いてよい。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べる。
-    """
-    want = ["unblock", plan_id, task_id]
-    if "<command-name>/plan</command-name>" in text:
-        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
-            if args.split()[:3] == want:
-                return True
-    t = text.lstrip()
-    if t.startswith("/plan") and t[5:6].isspace():
-        return t[5:].split()[:3] == want
-    return False
-
-
-def delegate_to_worktree(payload):
-    """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
-    `.claude/hooks/agent_write_guard.py` へ判定を委譲する（issue #56 / D-008 フェーズ1）。
-
-    委譲に成功した場合は委譲先の stdout をそのまま文字列で返す（呼び出し側はそれをそのまま
-    自分の stdout として出し exit 0 する）。委譲しない・できない場合は None を返し、
-    呼び出し側は通常どおりメインリポジトリ側のローカル判定に進む（fail-open）。
-
-    二重委譲防止：委譲先プロセスの環境変数に `_HOOK_DELEGATED=1` をセットして呼び出す。
-    自分自身の環境で既に `_HOOK_DELEGATED` が設定されている場合は委譲せず、必ず
-    ローカル判定にフォールバックする（委譲は1段まで）。
-    """
-    if os.environ.get("_HOOK_DELEGATED"):
-        return None
-
-    cwd = payload.get("cwd") or ""
-    if not cwd:
-        return None
-    worktree_root = git_toplevel(cwd)
-    if not worktree_root:
-        return None
-
-    self_root = os.environ.get("CLAUDE_PROJECT_DIR") or git_toplevel(os.path.dirname(os.path.abspath(__file__)))
-    if not self_root:
-        return None
-    if os.path.abspath(worktree_root) == os.path.abspath(self_root):
-        return None
-
-    delegate_script = os.path.join(worktree_root, ".claude", "hooks", "agent_write_guard.py")
-    if not os.path.isfile(delegate_script):
-        return None
-
-    env = os.environ.copy()
-    env["_HOOK_DELEGATED"] = "1"
-    try:
-        result = subprocess.run(
-            ["python3", delegate_script],
-            input=json.dumps(payload),
-            capture_output=True, text=True, timeout=20, env=env,
-        )
-    except Exception:
-        return None
-    if result.returncode != 0:
-        return None
-    return result.stdout
 
 
 def is_git_commit_command(cmd, root=None):
@@ -1017,7 +846,7 @@ def main():
     except Exception:
         sys.exit(0)
 
-    delegated_stdout = delegate_to_worktree(payload)
+    delegated_stdout = H.delegate_to_worktree(payload, "agent_write_guard.py")
     if delegated_stdout is not None:
         sys.stdout.write(delegated_stdout)
         sys.exit(0)
@@ -1064,8 +893,8 @@ def main():
         )
         if agent:
             deny(deny_reason)
-        humans = human_messages(payload.get("transcript_path"))
-        if humans and not any(is_approve_command(t, approved_plan) for t in humans):
+        humans = H.human_messages(payload.get("transcript_path"))
+        if humans and not any(H.is_approve_command(t, approved_plan) for t in humans):
             deny(deny_reason)
 
     # blocked の解除（blocked→他）は、人が /plan unblock <計画ID> <id> で指示した時だけ許可する（D-010 フェーズ5）。
@@ -1073,9 +902,9 @@ def main():
     unblock = find_plan_unblocks(tool, tool_input, root)
     if unblock:
         plan_id, task_ids = unblock
-        humans = human_messages(payload.get("transcript_path")) if not agent else []
+        humans = H.human_messages(payload.get("transcript_path")) if not agent else []
         for tid in task_ids:
-            if agent or (humans and not any(is_unblock_command(t, plan_id, tid) for t in humans)):
+            if agent or (humans and not any(H.is_unblock_command(t, plan_id, tid) for t in humans)):
                 deny(
                     f"[agent_write_guard] {plan_id}/{tid} の blocked の解除（status を blocked 以外にすること）は、"
                     f"人が /plan unblock {plan_id} {tid} で指示した時だけ許可されます。"

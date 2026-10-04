@@ -52,7 +52,7 @@ D-011 の決定事項の表、フェーズ2の「決定済み」、「今回や�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | _hooklib.py に parse_tasks・count_criteria・frontmatter_value を置き frontmatter の読み方を揃える | |
+| T-01 | done | 1 | - | _hooklib.py に parse_tasks・count_criteria・frontmatter_value を置き frontmatter の読み方を揃える | |
 | T-02 | todo | 0 | T-01 | stop_gate.py の parse_tasks・count_acceptance_criteria を _hooklib の関数に置き換える | |
 | T-03 | todo | 0 | T-01 | plan_guard.py の parse_tasks・count_criteria を _hooklib の関数に置き換える | |
 | T-04 | todo | 0 | T-01 | agent_write_guard.py の plan_task_status を _hooklib.parse_tasks で書き直す | |

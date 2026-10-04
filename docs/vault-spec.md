@@ -165,6 +165,7 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 | 状況 | 判定 |
 |---|---|
 | `stop_hook_active` が真 | 許可（`HARNESS_STRICT_STOP=1` なら無視して判定を続ける） |
+| 未コミットの変更がある（git の作業ツリーかどうかは `git rev-parse --is-inside-work-tree` で判定し、`.git` がファイルの worktree も対象にする） | ブロック：作業ステップごとにコミットしてから終了する |
 | doing / review のタスクが無い | 許可 |
 | verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く |
 | verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
@@ -226,7 +227,7 @@ vault/rules/
 
 この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、この判定で先に拒否される。
 
-**承認の裏付けの判定に使う会話記録**（agent_write_guard.py と plan_guard.py の両方が、フックに渡される `transcript_path` の会話記録（JSONL）を同じ規則で読む。フック間で import しない方針のため、解析はそれぞれにコピーして持つ。10節はここを参照する）：
+**承認の裏付けの判定に使う会話記録**（agent_write_guard.py と plan_guard.py の両方が、フックに渡される `transcript_path` の会話記録（JSONL）を同じ規則で読む。解析は共通モジュール `.claude/hooks/_hooklib.py` の関数を使う。10節はここを参照する）：
 - 人の発言：`type` が `user`、`message.content` が文字列、`isMeta` が真でない行だけ。`content` が配列の行（`tool_result` など）と `isMeta` の行は対象外。探す範囲はそのセッションの会話記録全体
 - コマンドの一致：人の発言が `<command-name>/plan</command-name>` と、引数が `approve <計画ID>` の `<command-args>` を含む（スラッシュコマンドとして打った場合）か、先頭が `/plan approve <計画ID>` である（文として打った場合）。計画 ID は完全一致で比べる
 - 「読めない」：`transcript_path` が無い・ファイルが無い・どの行も JSON として読めない・人の発言が1件も無い、のいずれか。この時はブロックせず許可し、警告に落とす。読めたうえでコマンドが無い時はブロックする
@@ -254,6 +255,8 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - main 直接コミット拒否：main ブランチ上では、解析できた時は verb `git-commit`（`&&`・`;`・改行で連結した後ろも含む）がある時だけ拒否し、`grep "git commit"` のような読み取り・引用符内・ヒアドキュメント本文は許可する。解析できない時は従来の `git commit` の正規表現に加え、`git -C . commit` のような `git -<オプション> … commit` の形も拒否する。非 git リポジトリ・ブランチを取得できない時（detached HEAD 等）はこの判定を素通りする
 - 採らなかったこと：`$(cat <<'EOF' …)` の標準形のコミットメッセージを許可する案は採らない。コマンド置換の中身は任意のコマンドを実行でき、許可の形を作るとすり抜けを作りやすいため。コミットの起点を記録する欄も採らない
 - 残る弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。従来の判定には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
+
+**フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter とタスク表の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
 
 ### 提案ファイル方式（ルール自体を変更するタスク用）
 

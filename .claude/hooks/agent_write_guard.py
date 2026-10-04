@@ -36,6 +36,8 @@ vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で
 （vault/plans/<計画ID>.md）のタスク表でその id の status が done の場合は拒否する。計画票が
 見つからない・その id の行が無い・読めない場合は許可する（fail-open）。タスク表の解析規則は
 共通モジュール _hooklib.py の parse_tasks を使う（D-010 フェーズ2 / issue #76）。解除口は作らない。
+Bash の書き込み動詞の正規表現（BASH_WRITE_PATTERNS・OTHER_WRITE_PATTERNS・DESTRUCTIVE_BASH_PATTERN）は、
+FILE_WRITE_VERBS・DESTRUCTIVE_FILE_VERBS・GIT_STAGE_COMMIT_VERBS・GIT_WRITE_SUBCOMMANDS の1箇所の定義から組み立てる。
 共通関数は .claude/hooks/_hooklib.py にあり、読み込めない時は終了コード2で終わる（D-011）。
 ただし Bash の書き込み動詞が git add / git commit だけのコマンドは対象外（ステージ・コミットは
 ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
@@ -69,20 +71,40 @@ ALLOWED = {
 DENIED_FOR_CREATOR = ("vault/plans/", "vault/log/")
 TASK_FILE_RE = re.compile(r"^vault/tasks/([^/]+)/([^/]+)\.md$")
 VERDICT_FILE_RE = re.compile(r"^vault/verdicts/([^/]+)/([^/]+)\.json$")
+# 書き込み動詞の定義（3つのパターンはすべてここから組み立てる）
+# ファイル操作の動詞（BASH_WRITE_PATTERNS / OTHER_WRITE_PATTERNS 用）
+FILE_WRITE_VERBS = ("rm", "mv", "cp", "touch", "mkdir", "chmod", "chown")
+# FILE_WRITE_VERBS のうち DESTRUCTIVE_BASH_PATTERN に入れるもの（touch/mkdir/chmod/chown は入れない）
+DESTRUCTIVE_FILE_VERBS = ("rm", "mv", "cp")
+# git のステージ・コミットの動詞（OTHER_WRITE_PATTERNS には入れない）
+GIT_STAGE_COMMIT_VERBS = ("add", "commit")
+# git の書き込みサブコマンド（analyze_bash_writes も使う）
+GIT_WRITE_SUBCOMMANDS = frozenset((
+    "rm", "mv", "checkout", "switch", "reset", "restore", "clean", "stash", "merge", "rebase", "push",
+))
+# 正規表現の選択肢（a|b|c）：上の定義を join したもの。frozenset は sorted() で順序を固定する
+_FILE_VERBS_ALT = "|".join(FILE_WRITE_VERBS)
+_DESTRUCTIVE_FILE_VERBS_ALT = "|".join(DESTRUCTIVE_FILE_VERBS)
+_GIT_OTHER_ALT = "|".join(sorted(GIT_WRITE_SUBCOMMANDS))
+_GIT_ALL_ALT = "|".join(sorted(GIT_WRITE_SUBCOMMANDS | set(GIT_STAGE_COMMIT_VERBS)))
+# 両方のリストに共通する個別パターン（tee / ファイル操作 / sed -i）
+_TEE_PATTERN = r"\btee\b"
+_FILE_WRITE_PATTERN = r"\b(" + _FILE_VERBS_ALT + r")\b"
+_SED_INPLACE_PATTERN = r"\bsed\s+-i\b"
 BASH_WRITE_PATTERNS = [
     r"(^|[^<>])>{1,2}\s*(?!&)\S",     # リダイレクト（`2>&1` のような N>&M fd 複製は書き込みとみなさない）
-    r"\btee\b",
-    r"\b(rm|mv|cp|touch|mkdir|chmod|chown)\b",
-    r"\bgit\s+(add|commit|push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)\b",
-    r"\bsed\s+-i\b",
+    _TEE_PATTERN,
+    _FILE_WRITE_PATTERN,
+    r"\bgit\s+(" + _GIT_ALL_ALT + r")\b",
+    _SED_INPLACE_PATTERN,
 ]
 # BASH_WRITE_PATTERNS から、リダイレクトと git add / git commit を除いたもの
 # （is_git_stage_or_commit_only が「git add / git commit 以外の書き込み動詞」を見分けるために使う）
 OTHER_WRITE_PATTERNS = [
-    r"\btee\b",
-    r"\b(rm|mv|cp|touch|mkdir|chmod|chown)\b",
-    r"\bgit\s+(push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)\b",
-    r"\bsed\s+-i\b",
+    _TEE_PATTERN,
+    _FILE_WRITE_PATTERN,
+    r"\bgit\s+(" + _GIT_OTHER_ALT + r")\b",
+    _SED_INPLACE_PATTERN,
 ]
 SEGMENT_SEPARATORS = (";", "&&", "||", "|", "&")
 
@@ -159,9 +181,9 @@ def current_branch(root):
     return branch or None
 
 
+# 破壊的な書き込み動詞（rm/mv/cp・git の書き込みと add/commit・sed -i・tee）。touch/mkdir 等は含めない
 DESTRUCTIVE_BASH_PATTERN = (
-    r"\b(rm|mv|cp|git\s+(add|commit|push|checkout|switch|reset|restore|clean|stash|merge|rebase|rm|mv)"
-    r"|sed\s+-i|tee)\b"
+    r"\b(" + _DESTRUCTIVE_FILE_VERBS_ALT + r"|git\s+(" + _GIT_ALL_ALT + r")|sed\s+-i|tee)\b"
 )
 
 
@@ -225,9 +247,6 @@ UNPARSEABLE_COMMANDS = frozenset((
 SHELL_KEYWORDS = frozenset((
     "if", "then", "else", "elif", "fi", "for", "while", "until", "do", "done", "case", "esac",
     "select", "function", "coproc", "{", "}", "!",
-))
-GIT_WRITE_SUBCOMMANDS = frozenset((
-    "rm", "mv", "checkout", "switch", "reset", "restore", "clean", "stash", "merge", "rebase", "push",
 ))
 ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 PUNCT_ONLY_RE = re.compile(r"^[();<>|&]+$")

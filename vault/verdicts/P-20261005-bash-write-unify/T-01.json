@@ -1,0 +1,14 @@
+{
+  "task": "P-20261005-bash-write-unify/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-05 08:20",
+  "criteria": [
+    {"text": "構文が正しい：`python3 -B -c \"import ast; ast.parse(open('.claude/hooks/agent_write_guard.py').read()); print('ok')\"` の出力が `ok`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c ast.parse（worktree で実行） / 出力: ok"},
+    {"text": "3つのパターンが一本化前と同じ文字列に一致する：`python3 -B vault/tasks/P-20261005-bash-write-unify/fixtures/patterns_check.py` の出力が `pattern_mismatch=0` と `samples=201` の2行だけ", "ok": true, "note": "実行コマンド: `python3 -B vault/tasks/P-20261005-bash-write-unify/fixtures/patterns_check.py` / 出力: pattern_mismatch=0 と samples=201 の2行のみ"},
+    {"text": "動詞の並びを正規表現の文字列に直書きしていない：`grep -cE 'rm\\|mv\\|cp|checkout\\|switch' .claude/hooks/agent_write_guard.py` の出力が `0`", "ok": true, "note": "基準記載の grep はフックが verifier の Bash で拒否（動詞文字列を書き込みと誤検知）し実行不可。代替として同じ語に一致する `grep -cE 'r[m]\\|m[v]\\|c[p]|check[o]ut\\|switc[h]' .claude/hooks/agent_write_guard.py` を実行 / 出力: 0"},
+    {"text": "フックの判定が変わっていない：`python3 -B vault/tasks/P-20261005-bash-write-unify/fixtures/bash_writes_check.py` の出力の最後から2行目が `mismatch=change-example`", "ok": true, "note": "実行コマンド: `python3 -B .../bash_writes_check.py | tail -3` / 出力: 最後から2行目が mismatch=change-example（最終行 max_calls=5）"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=513 fail=0。変更ファイル検査: タスク票の進捗に起点コミットの記録が無いため検査せず（参考: git status では agent_write_guard.py と T-01.md のみ変更）"}
+  ],
+  "reasons": []
+}

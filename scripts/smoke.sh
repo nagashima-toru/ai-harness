@@ -1742,6 +1742,43 @@ printf '%s' '{"stop_hook_active":true}' | env -u PYTHONDONTWRITEBYTECODE CLAUDE_
 expect_eq "(hooklib-pycache) 3フック実行後に .claude/hooks/__pycache__ が無い" "no" "$([ -e "$HPC/.claude/hooks/__pycache__" ] && echo yes || echo no)"
 rm -rf "$HLB" "$HPC"
 
+echo "== hooklib-rules（D-011 フェーズ2） =="
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"; mkdir -p "$TMP/vault/plans"
+# a
+make_plan_task T-0001 review 1
+mkdir -p "$TMP/vault/tasks/P-TEST"
+printf '# T-0001 テスト\n\n## 受け入れ基準\n1. 基準1\n2. 基準2\n3. 基準3\n4. 基準4\n\n## 決定済み\n- x\n' > "$TMP/vault/tasks/P-TEST/T-0001.md"
+write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"','"$OK_C"','"$OK_C"','"$OK_C"'],"reasons":[]}'
+expect "(hooklib-rules) stop_gate: 受け入れ基準が番号付きの4行・criteria 4件の PASS → 形式不正にしない" block "$(run_stop)" "verdict は PASS ですが"
+# b
+rm -rf "$TMP/vault/verdicts" "$TMP/vault/tasks"
+make_plan "P-TEST" '"approved"' "| T-0001 | doing | 1 | - | A | |"
+expect "(hooklib-rules) stop_gate: status: \"approved\"（引用符付き）の計画票を approved として扱う" block "$(run_stop)" "verdict が無い"
+# c
+make_plan "P-TEST" '"approved"' "| T-0001 | blocked | 1 | - | A | |"
+expect "(hooklib-rules) plan_guard: status: \"approved\"（引用符付き）の計画票を approved として扱う" block "$(run_plan_guard)" "question 列が空です"
+# d（status の後ろに語が続く fixtures-comment も同じ出力に含める。両方満たす時だけ P-CUR-Q になる）
+rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+printf -- "---\nid: 'P-CUR-Q'\nstatus: \"approved\"\n---\n" > "$TMP/vault/plans/P-CUR-Q.md"
+hr_q="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
+hr_fc="$(CLAUDE_PROJECT_DIR="$ROOT/vault/tasks/P-20261004-hooklib-rules/fixtures-comment" bash "$CURRENT_PLAN_SH")"
+[ "$hr_fc" = "P-FIXTURE-COMMENT" ] || hr_q="$hr_q (fixtures-comment: $hr_fc)"
+expect_eq "(hooklib-rules) current_plan.sh: id・status が引用符付き → 引用符を外した計画 ID を出す" "P-CUR-Q" "$hr_q"
+# e（インデントした done でない行を持つ計画は候補から外れる。移る計画は q の1件だけ＝git mv 4行）
+ar_init ar_quoted
+ar_plan ar_quoted P-20260101-q '"done"' done "2026-01-01 10:00"
+ar_plan ar_quoted P-20260102-q2 done review "2026-01-02 10:00"
+sed 's/^| T-01/  | T-01/' "$TMP/ar_quoted/vault/plans/P-20260102-q2.md" > "$TMP/ar_quoted/q2.tmp" && mv "$TMP/ar_quoted/q2.tmp" "$TMP/ar_quoted/vault/plans/P-20260102-q2.md"
+ar_commit ar_quoted
+ar_branch ar_quoted work/p-20260109-cur
+ar_run ar_quoted --keep 0 --dry-run
+expect_eq "(hooklib-rules) archive_plans.sh: status: \"done\"（引用符付き）の計画を移す対象にする" "4" "$(grep -c '^git mv ' "$AR_OUT")"
+# f
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts"
+make_plan "P-TEST" "approved" "  | T-0001 | doing | 1 | - | A | |"
+expect "(hooklib-rules) stop_gate: 行頭を半角空白でインデントしたタスク表の doing 行を検査する" block "$(run_stop)" "verdict が無い"
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"; mkdir -p "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

@@ -104,9 +104,10 @@ fm_status() {
     {
       if ($0 == "---") { exit 0 }
       line = $0
-      if (line ~ /^status:[ \t]*[^ \t]+[ \t]*$/) {
+      if (line ~ /^status:[ \t]*[^ \t]+/) {
         sub(/^status:[ \t]*/, "", line)
-        sub(/[ \t]*$/, "", line)
+        sub(/[ \t].*$/, "", line)
+        gsub(/^["\047]+|["\047]+$/, "", line)
         print line
         exit 0
       }

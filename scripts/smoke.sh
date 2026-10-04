@@ -1701,5 +1701,47 @@ ar_run ar_repo12 --keep 1 --list
 expect_eq "(ar-11) log の日時も同じ: ID の文字列順で前の -a だけが出る" "P-20260106-a" "$(cat "$AR_OUT")"
 
 echo
+echo "== _hooklib.py =="
+HLB="$(mktemp -d)"
+mkdir -p "$HLB/.claude/hooks"
+for h in agent_write_guard plan_guard stop_gate; do cp "$ROOT/.claude/hooks/$h.py" "$HLB/.claude/hooks/$h.py"; done
+printf 'def broken(:\n' > "$HLB/.claude/hooks/_hooklib.py"
+printf '%s' '{}' | CLAUDE_PROJECT_DIR="$HLB" python3 "$HLB/.claude/hooks/agent_write_guard.py" >/dev/null 2>&1; rc=$?
+expect_eq "(hooklib-broken) agent_write_guard: _hooklib 構文エラー → 終了コード 2" "2" "$rc"
+printf '%s' '{}' | CLAUDE_PROJECT_DIR="$HLB" python3 "$HLB/.claude/hooks/plan_guard.py" >/dev/null 2>&1; rc=$?
+expect_eq "(hooklib-broken) plan_guard: _hooklib 構文エラー → 終了コード 2" "2" "$rc"
+printf '%s' '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR="$HLB" python3 "$HLB/.claude/hooks/stop_gate.py" >/dev/null 2>&1; rc=$?
+expect_eq "(hooklib-broken) stop_gate: stop_hook_active=false → 終了コード 2" "2" "$rc"
+printf '%s' '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$HLB" HARNESS_STRICT_STOP=0 python3 "$HLB/.claude/hooks/stop_gate.py" >/dev/null 2>&1; rc=$?
+expect_eq "(hooklib-broken) stop_gate: stop_hook_active=true・STRICT=0 → 終了コード 0" "0" "$rc"
+
+WTBASE="$(mktemp -d)"
+WTMAIN="$WTBASE/main"; LEAF="$WTBASE/leaf"
+mkdir -p "$WTMAIN"
+git -C "$WTMAIN" init -q -b main
+git -C "$WTMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+git -C "$WTMAIN" worktree add -q "$LEAF" -b wt-leaf
+mkdir -p "$LEAF/vault/plans"
+expect_eq "(stop_gate worktree) 前提: worktree の .git がファイルである" "yes" "$([ -f "$LEAF/.git" ] && echo yes || echo no)"
+echo dirty > "$LEAF/x.txt"
+expect "(stop_gate worktree) 未コミットのファイルがある → ブロック" block \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$LEAF" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "未コミットの変更があります"
+rm -f "$LEAF/x.txt"
+expect "(stop_gate worktree) ファイルを消す → 許可" allow \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$LEAF" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
+git -C "$WTMAIN" worktree remove -q --force "$LEAF"
+rm -rf "$WTBASE"
+
+HPC="$(mktemp -d)"
+mkdir -p "$HPC/.claude/hooks"
+cp "$ROOT"/.claude/hooks/*.py "$HPC/.claude/hooks/"
+rm -rf "$HPC/.claude/hooks/__pycache__"
+printf '%s' '{}' | env -u PYTHONDONTWRITEBYTECODE CLAUDE_PROJECT_DIR="$HPC" python3 "$HPC/.claude/hooks/agent_write_guard.py" >/dev/null 2>&1
+printf '%s' '{}' | env -u PYTHONDONTWRITEBYTECODE CLAUDE_PROJECT_DIR="$HPC" python3 "$HPC/.claude/hooks/plan_guard.py" >/dev/null 2>&1
+printf '%s' '{"stop_hook_active":true}' | env -u PYTHONDONTWRITEBYTECODE CLAUDE_PROJECT_DIR="$HPC" python3 "$HPC/.claude/hooks/stop_gate.py" >/dev/null 2>&1
+expect_eq "(hooklib-pycache) 3フック実行後に .claude/hooks/__pycache__ が無い" "no" "$([ -e "$HPC/.claude/hooks/__pycache__" ] && echo yes || echo no)"
+rm -rf "$HLB" "$HPC"
+
+echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

@@ -36,6 +36,10 @@ D-011 の決定事項の表、フェーズ2の「決定済み」、「今回や�
     - `fixtures/numbered-criteria.md`：受け入れ基準が `1. `〜`3. ` と `- ` の4行（今の stop_gate は1行と数える）
   - 本物の計画票・タスク票ではない。フックは `vault/plans/*.md` と `vault/tasks/<計画ID>/<id>.md`（1階層）しか見ないので、ここに置いても判定に影響しない。どのタスクもこのフィクスチャを編集しない
   - `stop_gate.py` は最初に未コミット検査をするので、フィクスチャに対して `main()` をそのまま動かすと「未コミットの変更があります」で止まる。確認コマンドでは `runpy` で読み込み、`main.__globals__['has_uncommitted_changes']` を差し替えてから呼ぶ
+- 人の決定（2026-10-05）
+  - `table_counts` も行頭の空白を許す規則に揃える（T-08）。`archive_plans.sh` は T-05 と同じファイルなので T-08 は T-05 の後
+  - awk も値の後ろに語が続く行（`status: approved # メモ`）は先頭の語を読む（T-05。フィクスチャ `fixtures-comment/` を追加）
+  - フィクスチャは `vault/tasks/<計画ID>/fixtures*/` に置く
 - タスクの分け方
   - T-01 で `_hooklib.py` に、揃えた規則の関数（`parse_tasks`・`count_criteria`・`frontmatter_value`）を置き、`plan_id_and_status`・`frontmatter_status` を同じ規則にする。この時点で (2) の frontmatter の統一は3フックに効く
   - T-02〜T-04 で、フックごとに複製を消して `H.` の関数に置き換える。成果物のファイルが違うので、T-01 の後は並行してよい。(1)・(3) は T-02（stop_gate.py）で効く
@@ -52,9 +56,10 @@ D-011 の決定事項の表、フェーズ2の「決定済み」、「今回や�
 | T-02 | todo | 0 | T-01 | stop_gate.py の parse_tasks・count_acceptance_criteria を _hooklib の関数に置き換える | |
 | T-03 | todo | 0 | T-01 | plan_guard.py の parse_tasks・count_criteria を _hooklib の関数に置き換える | |
 | T-04 | todo | 0 | T-01 | agent_write_guard.py の plan_task_status を _hooklib.parse_tasks で書き直す | |
-| T-05 | todo | 0 | - | current_plan.sh と archive_plans.sh の frontmatter の awk で値の引用符を外す | |
-| T-06 | todo | 0 | T-02,T-03,T-04,T-05 | smoke.sh に番号付き基準・引用符付き status・インデントした行のケースを足す | |
-| T-07 | todo | 0 | T-02,T-03,T-04,T-05 | docs/vault-spec.md に統一した解析規則を書く | |
+| T-05 | todo | 0 | - | current_plan.sh と archive_plans.sh の frontmatter の awk で値の引用符を外し先頭の語を読む | |
+| T-08 | todo | 0 | T-05 | archive_plans.sh の table_counts がタスク表の行頭の空白を許すようにする | |
+| T-06 | todo | 0 | T-02,T-03,T-04,T-08 | smoke.sh に番号付き基準・引用符付き status・インデントした行のケースを足す | |
+| T-07 | todo | 0 | T-02,T-03,T-04,T-08 | docs/vault-spec.md に統一した解析規則を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある
@@ -65,8 +70,3 @@ D-011 の決定事項の表、フェーズ2の「決定済み」、「今回や�
 
 ## 次フェーズの候補（票は起こさない）
 - D-011 フェーズ3（agent_write_guard.py の Bash 書き込み判定の一本化）。フェーズ2と同じく `docs/vault-spec.md` を編集するので、フェーズ2のマージ後に始める
-
-## 人への質問
-- `scripts/archive_plans.sh` の `table_counts` の awk も、タスク表の行を `^\|` でしか拾わない（行頭の空白を許さない。「## タスク表」節にも限定していない）。D-011 の (3) は `stop_gate.py` の `parse_tasks` だけを対象にしているので、この計画では触らない。インデントした行が done でない計画は「全行 done」と数えられうるが、揃える必要はあるか（あれば T-05 に足すか、次の計画にする）
-- awk 側は D-011 の決定どおり「引用符を外す処理を足すだけ」にするので、`status: approved # メモ` のように値の後ろに語が続く行は、awk では読まず、Python（先頭の語を読む）では `approved` と読む差が残る。このままでよいか
-- 確認用のフィクスチャを `vault/tasks/P-20261004-hooklib-rules/fixtures/` に置いた（分割方針を参照）。計画票・タスク票と一緒にコミットされ、archive の時は計画のタスク票と一緒に移る。この置き方でよいか

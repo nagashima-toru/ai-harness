@@ -1,0 +1,16 @@
+{
+  "task": "P-20261004-hooklib-rules/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-05 00:17",
+  "criteria": [
+    {"text": "構文が正しい：`bash -n scripts/current_plan.sh` と `bash -n scripts/archive_plans.sh` がともに終了コード0", "ok": true, "note": "実行コマンド: `bash -n scripts/current_plan.sh; echo $?` と archive_plans.sh 同様 / 出力: 0 と 0"},
+    {"text": "引用符付きの frontmatter を読む：`env CLAUDE_PROJECT_DIR=vault/tasks/P-20261004-hooklib-rules/fixtures bash scripts/current_plan.sh` の出力が `P-FIXTURE-QUOTED` の1行だけ", "ok": true, "note": "実行コマンド: 同コマンド（worktree 内） / 出力: P-FIXTURE-QUOTED の1行"},
+    {"text": "値の後ろに語が続く行は先頭の語を読む：`env CLAUDE_PROJECT_DIR=vault/tasks/P-20261004-hooklib-rules/fixtures-comment bash scripts/current_plan.sh` の出力が `P-FIXTURE-COMMENT` の1行だけ", "ok": true, "note": "実行コマンド: 同コマンド / 出力: P-FIXTURE-COMMENT の1行"},
+    {"text": "引用符の無い既存の計画票は従来どおり読む：`bash scripts/current_plan.sh` の出力が `P-20261004-hooklib-rules` の1行だけ", "ok": true, "note": "実行コマンド: `bash scripts/current_plan.sh` / 出力: P-20261004-hooklib-rules の1行"},
+    {"text": "引用符を外す処理が3か所にある：`grep -nF 'gsub(/^[\"\\047]+|[\"\\047]+$/, \"\", line)' scripts/current_plan.sh scripts/archive_plans.sh` の出力が3行（`current_plan.sh` が2行、`archive_plans.sh` が1行）", "ok": true, "note": "実行コマンド: 同 grep -nF / 出力: current_plan.sh:41, current_plan.sh:51, archive_plans.sh:110 の3行"},
+    {"text": "先頭のコメントが `_hooklib.py` を指す：`grep -n '_hooklib.py の frontmatter_value' scripts/current_plan.sh` の出力が1行で行番号が2〜10、かつ `grep -c 'plan_guard.py の plan_id_and_status' scripts/current_plan.sh` の出力が `0`", "ok": true, "note": "実行コマンド: 2本の grep / 出力: 4:# frontmatter の判定規則は .claude/hooks/_hooklib.py の frontmatter_value と同じ： の1行、続けて 0"},
+    {"text": "既存の smoke が全件通る（current_plan.sh・archive_plans.sh のケースを含む）：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=507 fail=0。変更ファイル検査: 起点コミット 245e9c9 から `git diff --name-only 245e9c9..HEAD` は空、未コミットは scripts/archive_plans.sh・scripts/current_plan.sh・T-05.md（進捗のみ）で成果物外のファイルなし"}
+  ],
+  "reasons": []
+}

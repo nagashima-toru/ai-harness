@@ -1,0 +1,14 @@
+{
+  "task": "P-20261004-hooklib-rules/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-05 00:22",
+  "criteria": [
+    {"text": "構文が正しい：`python3 -B -c \"import ast; ast.parse(open('.claude/hooks/stop_gate.py').read()); print('ok')\"` の出力が `ok`", "ok": true, "note": "実行コマンド: 同上（worktree で実行） / 出力: ok"},
+    {"text": "複製の関数定義が残っていない：`grep -nE '^def (parse_tasks|count_acceptance_criteria|count_criteria)\\(' .claude/hooks/stop_gate.py` の出力が空", "ok": true, "note": "実行コマンド: 同上 / 出力: 空"},
+    {"text": "番号付きの受け入れ基準4行を4件と数え、件数の不一致は従来どおり検出する：validate_verdict を numbered-criteria.md で実行し、出力が `[] ['criteria の行数（3）がタスク票の受け入れ基準の行数（4）と一致しません']`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c ... / 出力: [] ['criteria の行数（3）がタスク票の受け入れ基準の行数（4）と一致しません']"},
+    {"text": "インデントした doing の行を検査対象にする（未コミット検査は差し替えて飛ばす）：出力が `P-FIXTURE-QUOTED/T-01 は doing ですが verdict が無い` を含む", "ok": true, "note": "実行コマンド: 基準記載の printf '{}' | env CLAUDE_PROJECT_DIR=... python3 -B -c ... / 出力: {\"decision\": \"block\", \"reason\": \"[stop_gate] P-FIXTURE-QUOTED/T-01 は doing ですが verdict が無い。...\"}"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=507 fail=0。変更ファイル検査: 起点 a7255dc から変更は .claude/hooks/stop_gate.py とタスク票(除外対象)のみで、成果物外のファイルなし。__pycache__ も残っていない"}
+  ],
+  "reasons": []
+}

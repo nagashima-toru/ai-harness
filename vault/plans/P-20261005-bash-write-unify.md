@@ -35,11 +35,16 @@ status: draft
   - T-01：3つのパターン定義を1つの定義から組み立てる（挙動は変えない）
   - T-02：`bash_write_targets` を足し、`vault/rules/`・会話記録・creator の3つの拒否判定をそれに載せ替える。メモ化にして、残りの呼び出し元はこの時点ではそのまま
   - T-03：done 判定・`is_git_commit_command`・ALLOWED 判定を載せ替え、`analyze_bash_writes` を直接呼ぶのを `bash_write_targets` だけにする。挙動が変わる箇所（拒否側）はここで出る
-  - T-04（smoke.sh）・T-05（docs/vault-spec.md）は T-03 の後に1つずつ。互いに別ファイルなので並行してよい
+  - T-04（smoke.sh）・T-05（docs/vault-spec.md）・T-06（planner.md の修正案）は T-03 の後に1つずつ。互いに別ファイルなので並行してよい
+  - T-06：`vault/rules/planner/planner.md` の「書き込みガードが拒否する形」(2) の「`vault/rules/` を含む語があるだけで拒否されうる」を、一本化後の保護対象パス全体に広げる修正案を書く。エージェントは `vault/rules/` を編集できないので、成果物は提案ファイル `vault/tasks/P-20261005-bash-write-unify/T-06-proposal.md`（`docs/vault-spec.md` 12節「提案ファイル方式」）。実体への反映は人が行う。creator・verifier 向けのルールに同種の記述があるかも grep で確かめ、あれば同じ案に含める
 - D-011 の受け入れ基準の候補からの調整
   - 「`grep -c BASH_WRITE_PATTERNS` が3以下」は、docstring の言及も数えてしまい、語を数えるだけの確認になるので、AST で「その名前を参照している関数が `bash_write_targets` だけ」を確かめる形にした（T-03）
   - 「`analyze_bash_writes` の呼び出しが高々1回」は、smoke のケース（T-04）に加えて、フィクスチャ `bash_writes_check.py` の `max_calls=1` でも確かめる（T-03）
   - 挙動が変わる例として、少なくとも `change-example`（verifier の、解析できない形で `/tmp` だけに書き込み、引数に `vault/tasks/...` を含むコマンド。変更前は許可、変更後は拒否）がある。T-04 で smoke のケースにする
+- 人の決定（2026-10-05。元の「人への質問」1〜3。T-03 の「決定済み」が参照する「質問1」はこの1）
+  1. ALLOWED 判定（verifier・planner の Bash）も和集合の候補で判定する（計画どおり）。解析できない形で repo の外だけに書き込むコマンドでも、引数や引用符の中に保護対象パスがあると拒否されるようになる変化（例：`python3 -c "open('vault/tasks/P/T-01.md')" > /tmp/x.txt`。変更前は許可）を受け入れる
+  2. 挙動が変わった点は T-03 の「進捗」と T-05 の `docs/vault-spec.md` 12節に書き、PR 本文への「変更前→変更後」の列挙は run の最後にオーケストレーターが `bash scripts/vcs_finish.sh --title ... --body ...` で行う（計画どおり）
+  3. `vault/rules/planner/planner.md` の (2) の記述への追随は、この計画の中で行う（T-06。提案ファイル方式）
 - 既存の smoke の期待値は変えない（D-011）。T-01〜T-03 で既存の smoke が落ちた場合は、smoke.sh を直さず blocked にして question に書く
 - 確認コマンドで `agent_write_guard` を import する時は `python3 -B` を使う（フィクスチャも `sys.dont_write_bytecode = True` にしてある）。構文の確認は `ast.parse` で行い、`py_compile` は使わない
 
@@ -51,6 +56,7 @@ status: draft
 | T-03 | todo | 0 | T-02 | done 判定・is_git_commit_command・ALLOWED 判定を bash_write_targets に載せ替える | |
 | T-04 | todo | 0 | T-03 | smoke.sh に analyze_bash_writes の呼び出し回数と挙動が変わった例のケースを足す | |
 | T-05 | todo | 0 | T-03 | docs/vault-spec.md 12節の Bash 判定の記述を一本化後の規則に直す | |
+| T-06 | todo | 0 | T-03 | planner.md の「解析できない形」の記述を一本化後の挙動に合わせる修正案を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある
@@ -58,11 +64,11 @@ status: draft
 - 1タスクが1コンテキストで終わる粒度である
 - `analyze_bash_writes` を直接参照する関数が `bash_write_targets` だけ：`python3 -B -c "import ast; t = ast.parse(open('.claude/hooks/agent_write_guard.py').read()); print(sorted({f.name for f in t.body if isinstance(f, ast.FunctionDef) for n in ast.walk(f) if isinstance(n, ast.Name) and n.id == 'analyze_bash_writes'}))"` の出力が `['bash_write_targets']`
 - `bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` を含み、pass が516以上
+- `vault/rules/planner/planner.md` (2) の記述を一本化後の保護対象パス全体に広げる修正案が `vault/tasks/P-20261005-bash-write-unify/T-06-proposal.md` にあり、`vault/rules/` の実体は変更していない（`git status --porcelain -- vault/rules/` の出力が空）
 
 ## 次フェーズの候補（票は起こさない）
 - なし（D-011 はこのフェーズで完了。「今回やらないこと」の settings.json 許可リストの件は別の設計で扱う）
+- T-06 の修正案の `vault/rules/planner/planner.md` への反映は人が手作業で行う（エージェントのタスクにはしない）
 
 ## 人への質問
-1. ALLOWED 判定（verifier・planner の Bash）も和集合の候補で判定するため、解析できない形で repo の外だけに書き込むコマンドでも、引数や引用符の中に保護対象パス（`vault/tasks/...` など）があると拒否されるようになる（例：`python3 -c "open('vault/tasks/P/T-01.md')" > /tmp/x.txt`。変更前は許可）。D-011 の「拒否する側に倒す」に従い、この変化を受け入れる前提で計画した。verifier の確認コマンドが拒否されやすくなるのが困る場合は、ALLOWED 判定だけ和集合を使わない（従来の候補のまま）形に T-03 の「決定済み」を変えるので、指示がほしい
-2. D-011 は「挙動が変わった点を PR 本文に『変更前→変更後』の形で列挙する」としているが、`scripts/vcs_finish.sh` は引数なしだと `gh pr create --fill`（コミットメッセージから本文を作る）になる。計画では、変わった点を T-03 の「進捗」と T-05 の `docs/vault-spec.md` 12節に書き、PR 本文への列挙は run の最後にオーケストレーターが `bash scripts/vcs_finish.sh --title ... --body ...` で行う想定にしている。この運用でよいか
-3. `vault/rules/planner/planner.md` の「書き込みガードが拒否する形」の (2) は、解析できない形について「コマンドのどこかに `vault/rules/` を含む語があるだけで拒否されうる」と書いている。一本化後は `vault/plans/`・`vault/log/`・`vault/tasks/`・`vault/verdicts/`・`.claude/projects` を含む語でも同じことが起こりうる（質問1の帰結）。ルールの実体は人が直すため、この計画には含めていない。追随の要否を判断してほしい（必要なら、別計画で `<id>-proposal.md` を成果物とするタスクにする）
+- なし（元の質問1〜3は決定済み。「分割方針」の「人の決定」に記録した）

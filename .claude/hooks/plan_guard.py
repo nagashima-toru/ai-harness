@@ -20,6 +20,7 @@ approved な計画票が0件、および表にデータ行が無い場合は何�
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/plan_guard.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
 委譲の実装は共通モジュール `_hooklib.py` の `delegate_to_worktree` を使う。
+タスク表の行の解釈（`parse_tasks`）と受け入れ基準の行数（`count_criteria`）も `_hooklib.py` のものを使う。
 `_hooklib` を読み込めない時は、理由を標準エラーに出して終了コード2で終わる。
 """
 import json
@@ -37,7 +38,6 @@ except Exception as e:  # SyntaxError なども含めて捕まえる
     sys.exit(2)
 
 STATUSES = ("todo", "doing", "review", "blocked", "done")
-COLUMNS = ("id", "status", "attempt", "after", "title", "question")
 
 
 def project_dir(payload):
@@ -46,17 +46,6 @@ def project_dir(payload):
         return cand
     here = os.path.dirname(os.path.abspath(__file__))
     return os.path.abspath(os.path.join(here, "..", ".."))
-
-
-def parse_tasks(plan_text):
-    """stop_gate.py と同じ規則で行を dict にする（6列に満たない分は空文字で埋める）。"""
-    tasks = []
-    for cells in H.raw_rows(plan_text):
-        if len(cells) < 5:
-            continue
-        cells = list(cells) + [""] * (6 - len(cells))
-        tasks.append(dict(zip(COLUMNS, cells[:6])))
-    return tasks
 
 
 def dependency_violations(tasks):
@@ -81,19 +70,6 @@ def dependency_violations(tasks):
 
 TASK_PATH_RE = re.compile(r"^vault/tasks/([^/]+)/(T-\d{2})\.md$")
 CRITERIA_MIN, CRITERIA_MAX = 3, 7
-
-
-def count_criteria(text):
-    """「## 受け入れ基準」の次の行から次の `## ` 見出し（または EOF）までの、行頭が `- ` か `数字. ` の行数。"""
-    count = 0
-    in_section = False
-    for line in text.splitlines():
-        if line.startswith("## "):
-            in_section = line.strip() == "## 受け入れ基準"
-            continue
-        if in_section and re.match(r"^(- |\d+\. )", line):
-            count += 1
-    return count
 
 
 def granularity_violation(payload, root):
@@ -123,7 +99,7 @@ def granularity_violation(payload, root):
             text = f.read()
     except Exception:
         return None
-    n = count_criteria(text)
+    n = H.count_criteria(text)
     if CRITERIA_MIN <= n <= CRITERIA_MAX:
         return None
     return (
@@ -381,7 +357,7 @@ def main():
                 f"id/status/attempt/after/title/question の6列にしてください。"
             )
 
-    tasks = parse_tasks(text)
+    tasks = H.parse_tasks(text)
 
     for t in tasks:
         if t["status"] not in STATUSES:

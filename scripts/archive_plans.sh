@@ -104,9 +104,10 @@ fm_status() {
     {
       if ($0 == "---") { exit 0 }
       line = $0
-      if (line ~ /^status:[ \t]*[^ \t]+[ \t]*$/) {
+      if (line ~ /^status:[ \t]*[^ \t]+/) {
         sub(/^status:[ \t]*/, "", line)
-        sub(/[ \t]*$/, "", line)
+        sub(/[ \t].*$/, "", line)
+        gsub(/^["\047]+|["\047]+$/, "", line)
         print line
         exit 0
       }
@@ -119,6 +120,7 @@ table_counts() {
   awk -F'|' '
     {
       sub(/\r$/, "")
+      sub(/^[ \t]+/, "")
       if ($0 !~ /^\|/) next
       c1 = $2; gsub(/^[ \t]+|[ \t]+$/, "", c1)
       if (c1 !~ /^T-/) next

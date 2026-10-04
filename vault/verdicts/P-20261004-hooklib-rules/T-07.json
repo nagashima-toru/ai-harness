@@ -1,0 +1,14 @@
+{
+  "task": "P-20261004-hooklib-rules/T-07",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-05 00:31",
+  "criteria": [
+    {"text": "4節に frontmatter の読み方がある：`grep -n '前後の引用符を外して読む' docs/vault-spec.md` と `grep -nF '`scripts/current_plan.sh`・`scripts/archive_plans.sh` も同じ規則で読む' docs/vault-spec.md` の出力の行番号が、どちらも4節の範囲にある", "ok": true, "note": "実行コマンド: 両 grep と `grep -n '^## ' docs/vault-spec.md` / 出力: どちらも69行目、4節は63〜92行（## 5. は93行）"},
+    {"text": "4節にタスク表の行の読み方がある：`grep -n 'タスク表の行は行頭の空白を許す' docs/vault-spec.md` の出力の行番号が4節の範囲にある", "ok": true, "note": "実行コマンド: 該当 grep / 出力: 88行目（4節63〜92内）"},
+    {"text": "5節に受け入れ基準の数え方がある：`grep -nF '行頭が `- ` か `数字. ` の行を数える' docs/vault-spec.md` の出力の行番号が5節の範囲にある", "ok": true, "note": "実行コマンド: 該当 grep / 出力: 98行目（5節93〜100内、## 6. は101行）"},
+    {"text": "9節の verdict が不正の行が5節の数え方を指す：`grep -n '^| verdict が不正.*受け入れ基準の行数（5節の数え方）' docs/vault-spec.md` の出力が1行", "ok": true, "note": "実行コマンド: 該当 grep / 出力: 175行目の1行のみ"},
+    {"text": "12節の共通モジュールの段落に解析規則の関数がある：`grep -n '^\\*\\*フックの共通モジュール\\*\\*.*count_criteria' docs/vault-spec.md` の出力が1行", "ok": true, "note": "実行コマンド: 該当 grep / 出力: 263行目の1行のみ。git status の変更は docs/vault-spec.md とタスク票のみ。タスク票に起点コミットの記録が無いため成果物外ファイル検査は未実施"}
+  ],
+  "reasons": []
+}

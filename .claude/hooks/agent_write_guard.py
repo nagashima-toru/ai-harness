@@ -35,7 +35,7 @@ done タスクへの書き込み拒否：agent_type を問わず（メインセ�
 vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、対応する計画票
 （vault/plans/<計画ID>.md）のタスク表でその id の status が done の場合は拒否する。計画票が
 見つからない・その id の行が無い・読めない場合は許可する（fail-open）。タスク表の解析規則は
-共通モジュール _hooklib.py の raw_rows を使う（D-010 フェーズ2 / issue #76）。解除口は作らない。
+共通モジュール _hooklib.py の parse_tasks を使う（D-010 フェーズ2 / issue #76）。解除口は作らない。
 共通関数は .claude/hooks/_hooklib.py にあり、読み込めない時は終了コード2で終わる（D-011）。
 ただし Bash の書き込み動詞が git add / git commit だけのコマンドは対象外（ステージ・コミットは
 ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
@@ -67,7 +67,6 @@ ALLOWED = {
     "planner": ["vault/plans/", "vault/tasks/"],
 }
 DENIED_FOR_CREATOR = ("vault/plans/", "vault/log/")
-PLAN_TASK_COLUMNS = ("id", "status", "attempt", "after", "title", "question")
 TASK_FILE_RE = re.compile(r"^vault/tasks/([^/]+)/([^/]+)\.md$")
 VERDICT_FILE_RE = re.compile(r"^vault/verdicts/([^/]+)/([^/]+)\.json$")
 BASH_WRITE_PATTERNS = [
@@ -641,13 +640,9 @@ def plan_task_status(root, plan_id, task_id):
             text = f.read()
     except Exception:
         return None
-    for cells in H.raw_rows(text):
-        if len(cells) < 5:
-            continue
-        cells = list(cells) + [""] * (6 - len(cells))
-        row = dict(zip(PLAN_TASK_COLUMNS, cells[:6]))
-        if row["id"] == task_id:
-            return row["status"]
+    for t in H.parse_tasks(text):
+        if t["id"] == task_id:
+            return t["status"]
     return None
 
 

@@ -66,6 +66,8 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 frontmatter は `id` と `status` の2つ。
 
+1行目の `---` から次の `---` の行（無ければ末尾）までを frontmatter として読む。値は前後の引用符を外して読む（例：`status: "approved"` も approved として扱う）。この読み方は `.claude/hooks/_hooklib.py` の `frontmatter_value` にあり、`scripts/current_plan.sh`・`scripts/archive_plans.sh` も同じ規則で読む。
+
 | status | 意味 |
 |---|---|
 | `draft` | planner が作った直後。人の承認待ちで、まだ着手しない |
@@ -83,6 +85,7 @@ frontmatter は `id` と `status` の2つ。
 ```
 
 - 列の順序・列名・見出し名は変えない（フックがこの表を解析する）
+- タスク表の行は行頭の空白を許す（`_hooklib.py` の `parse_tasks`。3フックが同じ規則で読む）
 - `after`：依存タスク ID。未完了なら飛ばす。複数はカンマ区切り。無ければ `-`
 - `question`：`blocked` の時に人へ聞くこと（必須）
 - `after` が指せるのは同じ計画内のタスクだけ。表が計画ごとに分かれているため、計画をまたぐ依存は書けない
@@ -92,6 +95,7 @@ frontmatter は `id` と `status` の2つ。
 見出しは `目的 / 入力 / 成果物 / 受け入れ基準 / 決定済み / 進捗` の6つで固定。順序も変えない。
 
 - 受け入れ基準は3〜7行。各行は真偽で判定できる文にし、機械で確認できるものは確認コマンドを併記する
+- 受け入れ基準の行数は、「## 受け入れ基準」見出しから次の `## ` 見出しまでで、行頭が `- ` か `数字. ` の行を数える（`_hooklib.py` の `count_criteria`）。stop_gate の verdict 検査（9節）と plan_guard の粒度検査（10節）が同じ数え方を使う
 - 進捗は doing 中に作成エージェントが追記する。セッションが切れた時はここから再開する
 
 ## 6. verdict.json
@@ -168,7 +172,7 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 | 未コミットの変更がある（git の作業ツリーかどうかは `git rev-parse --is-inside-work-tree` で判定し、`.git` がファイルの worktree も対象にする） | ブロック：作業ステップごとにコミットしてから終了する |
 | doing / review のタスクが無い | 許可 |
 | verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く |
-| verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
+| verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数（5節の数え方）と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
 | FAIL かつ attempt < 上限 | ブロック：doing に戻し attempt を +1 して修正 |
 | FAIL かつ attempt ≥ 上限 | ブロック：blocked にし question を書く（既に blocked なら許可） |
 | PASS だが status が done でない | ブロック：done にし log に追記 |
@@ -256,7 +260,7 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - 採らなかったこと：`$(cat <<'EOF' …)` の標準形のコミットメッセージを許可する案は採らない。コマンド置換の中身は任意のコマンドを実行でき、許可の形を作るとすり抜けを作りやすいため。コミットの起点を記録する欄も採らない
 - 残る弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。従来の判定には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
 
-**フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter とタスク表の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
+**フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
 
 ### 提案ファイル方式（ルール自体を変更するタスク用）
 

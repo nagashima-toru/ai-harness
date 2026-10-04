@@ -100,6 +100,29 @@ def delegate_to_worktree(payload, script_name):
     return result.stdout
 
 
+def frontmatter_value(text, key):
+    """先頭の `---` から次の `---`（無ければ末尾）までの frontmatter の `<key>:` の値を返す。本文は見ない。
+
+    値の前後の引用符（`"`・`'`）は外す。値が無い・空・key が無い・frontmatter が無ければ None。
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    pattern = r"^" + re.escape(key) + r":\s*(\S*)"
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        m = re.match(pattern, line)
+        if m:
+            return m.group(1).strip("\"'") or None
+    return None
+
+
+def frontmatter_status(text):
+    """frontmatter の `status:` の値を返す。無ければ None。"""
+    return frontmatter_value(text, "status")
+
+
 def plan_id_and_status(path):
     """計画票の frontmatter から (id, status) を返す。読めない・frontmatter が無ければ (None, None)。"""
     try:
@@ -107,15 +130,11 @@ def plan_id_and_status(path):
             text = f.read()
     except Exception:
         return None, None
-    m = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
-    if not m:
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
         return None, None
-    front = m.group(1)
-    id_m = re.search(r"^id:\s*(\S+)\s*$", front, re.MULTILINE)
-    status_m = re.search(r"^status:\s*(\S+)\s*$", front, re.MULTILINE)
-    plan_id = id_m.group(1) if id_m else os.path.basename(path)[: -len(".md")]
-    status = status_m.group(1) if status_m else None
-    return plan_id, status
+    plan_id = frontmatter_value(text, "id") or os.path.basename(path)[: -len(".md")]
+    return plan_id, frontmatter_value(text, "status")
 
 
 def approved_plans(root):
@@ -152,18 +171,31 @@ def raw_rows(plan_text):
     return rows
 
 
-def frontmatter_status(text):
-    """先頭の `---` から次の `---` までの frontmatter の `status:` の値を返す。無ければ None。本文は見ない。"""
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    for line in lines[1:]:
-        if line.strip() == "---":
-            break
-        m = re.match(r"^status:\s*(\S*)", line)
-        if m:
-            return m.group(1).strip("\"'")
-    return None
+TASK_COLUMNS = ("id", "status", "attempt", "after", "title", "question")
+
+
+def parse_tasks(plan_text):
+    """タスク表の行を dict のリストにする（5列未満は捨て、6列に満たない分は空文字で埋める）。"""
+    tasks = []
+    for cells in raw_rows(plan_text):
+        if len(cells) < 5:
+            continue
+        cells = list(cells) + [""] * (6 - len(cells))
+        tasks.append(dict(zip(TASK_COLUMNS, cells[:6])))
+    return tasks
+
+
+def count_criteria(text):
+    """「## 受け入れ基準」節の、行頭が `- ` か `数字. ` の行数。"""
+    count = 0
+    in_section = False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            in_section = line.strip() == "## 受け入れ基準"
+            continue
+        if in_section and re.match(r"^(- |\d+\. )", line):
+            count += 1
+    return count
 
 
 def human_messages(transcript_path):

@@ -1,0 +1,15 @@
+{
+  "task": "P-20261004-hooklib-rules/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-05 00:00",
+  "criteria": [
+    {"text": "構文が正しい：`python3 -B -c \"import ast; ast.parse(open('.claude/hooks/_hooklib.py').read()); print('ok')\"` の出力が `ok`", "ok": true, "note": "実行コマンド: python3 -B -c ast.parse(...) / 出力: ok"},
+    {"text": "`count_criteria` は「## 受け入れ基準」節の行頭 `- ` と `数字. ` だけを数える：出力が `4 1`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c / 出力: 4 1"},
+    {"text": "frontmatter の値は前後の引用符を外して読み、本文は見ない：出力が `('P-FIXTURE-QUOTED', 'approved') done P-A (None, None)`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c / 出力: ('P-FIXTURE-QUOTED', 'approved') done P-A (None, None)"},
+    {"text": "`parse_tasks` は行頭の空白を許す：出力が `[('T-01', 'doing', ''), ('T-02', 'blocked', '')]`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c / 出力: [('T-01', 'doing', ''), ('T-02', 'blocked', '')]"},
+    {"text": "引用符付きの `status: \"approved\"` の計画票を plan_guard が自分の計画票として検査する：出力が `P-FIXTURE-QUOTED の T-02 が blocked なのに question 列が空です` を含む", "ok": true, "note": "実行コマンド: printf '{}' | env CLAUDE_PROJECT_DIR=vault/tasks/P-20261004-hooklib-rules/fixtures python3 -B .claude/hooks/plan_guard.py / 出力: decision block, [plan_guard] P-FIXTURE-QUOTED の T-02 が blocked なのに question 列が空です。"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1 / 出力: smoke: pass=507 fail=0。変更ファイル検査: 起点コミット 245e9c9、git status --porcelain は _hooklib.py とタスク票のみ、git diff --name-only は除外対象の計画票・log のみで、成果物外の変更なし"}
+  ],
+  "reasons": []
+}

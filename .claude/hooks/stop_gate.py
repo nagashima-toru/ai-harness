@@ -10,8 +10,9 @@ vault/verdicts/<計画ID>/<タスクID>.json を読んで判定する。
 
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/stop_gate.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
-実装は agent_write_guard.py の delegate_to_worktree と同じパターンをそのまま複製したもの
-（git_toplevel・existing_ancestor も同様にコピー。他ファイルへの import はしない）。
+委譲の実装は共通モジュール `_hooklib.py` の `delegate_to_worktree` を使う。
+`_hooklib` が読み込めない時は、標準エラーに理由を出して終了コード2で終わる
+（`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0）。
 """
 import json
 import os
@@ -19,99 +20,22 @@ import re
 import subprocess
 import sys
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import _hooklib as H
+except Exception as e:  # SyntaxError なども含めて捕まえる
+    sys.stderr.write(f"[stop_gate] _hooklib の読み込みに失敗しました: {e}\n")
+    try:
+        _payload = json.load(sys.stdin)
+    except Exception:
+        _payload = {}
+    if isinstance(_payload, dict) and _payload.get("stop_hook_active") and os.environ.get("HARNESS_STRICT_STOP", "0") != "1":
+        sys.exit(0)
+    sys.exit(2)
+
 MAX_ATTEMPTS = int(os.environ.get("HARNESS_MAX_ATTEMPTS", "3"))
 STRICT = os.environ.get("HARNESS_STRICT_STOP", "0") == "1"
-
-
-def existing_ancestor(dir_path):
-    """dir_path 自身、または存在する祖先ディレクトリまで `os.path.dirname()` で遡って返す。
-
-    worktree 内でまだ作成されていないネストしたディレクトリ配下に書き込もうとした場合、
-    `git -C <存在しないpath> rev-parse --show-toplevel` は exit 128 で失敗する（issue #24）。
-    worktree のルート自体は常に存在するため、存在するディレクトリまで遡ってから
-    `git -C` に渡せば正しく worktree のルートを解決できる。
-    """
-    if not dir_path:
-        return None
-    probe = dir_path
-    while probe and not os.path.isdir(probe):
-        parent = os.path.dirname(probe)
-        if parent == probe:
-            # ルートまで遡っても見つからない（ほぼ起こらない）場合は諦める
-            return None
-        probe = parent
-    return probe or None
-
-
-def git_toplevel(dir_path):
-    """dir_path から `git rev-parse --show-toplevel` を試みる。
-
-    worktree 内から呼ばれた場合はその worktree のルートを返す。非 git・取得失敗時は None
-    （呼び出し側で既存のフォールバック順に進む＝fail-open）。
-    """
-    if not dir_path:
-        return None
-    dir_path = existing_ancestor(dir_path)
-    if not dir_path:
-        return None
-    try:
-        out = subprocess.run(
-            ["git", "-C", dir_path, "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception:
-        return None
-    if out.returncode != 0:
-        return None
-    top = out.stdout.strip()
-    return top or None
-
-
-def delegate_to_worktree(payload):
-    """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
-    `.claude/hooks/stop_gate.py` へ判定を委譲する（issue #56 / D-008 フェーズ2）。
-
-    委譲に成功した場合は委譲先の stdout をそのまま文字列で返す（呼び出し側はそれをそのまま
-    自分の stdout として出し exit 0 する）。委譲しない・できない場合は None を返し、
-    呼び出し側は通常どおりメインリポジトリ側のローカル判定に進む（fail-open）。
-
-    二重委譲防止：委譲先プロセスの環境変数に `_HOOK_DELEGATED=1` をセットして呼び出す。
-    自分自身の環境で既に `_HOOK_DELEGATED` が設定されている場合は委譲せず、必ず
-    ローカル判定にフォールバックする（委譲は1段まで）。
-    """
-    if os.environ.get("_HOOK_DELEGATED"):
-        return None
-
-    cwd = payload.get("cwd") or ""
-    if not cwd:
-        return None
-    worktree_root = git_toplevel(cwd)
-    if not worktree_root:
-        return None
-
-    self_root = os.environ.get("CLAUDE_PROJECT_DIR") or git_toplevel(os.path.dirname(os.path.abspath(__file__)))
-    if not self_root:
-        return None
-    if os.path.abspath(worktree_root) == os.path.abspath(self_root):
-        return None
-
-    delegate_script = os.path.join(worktree_root, ".claude", "hooks", "stop_gate.py")
-    if not os.path.isfile(delegate_script):
-        return None
-
-    env = os.environ.copy()
-    env["_HOOK_DELEGATED"] = "1"
-    try:
-        result = subprocess.run(
-            ["python3", delegate_script],
-            input=json.dumps(payload),
-            capture_output=True, text=True, timeout=20, env=env,
-        )
-    except Exception:
-        return None
-    if result.returncode != 0:
-        return None
-    return result.stdout
 
 
 def project_dir(payload):
@@ -122,28 +46,17 @@ def project_dir(payload):
     return os.path.abspath(os.path.join(here, "..", ".."))
 
 
-def plan_id_and_status(path):
-    """計画票の frontmatter から (id, status) を返す。読めない・frontmatter が無ければ (None, None)。
-    plan_guard.py と同じ規則をこのファイル内にコピーして使う（import はしない）。"""
-    try:
-        with open(path, encoding="utf-8") as f:
-            text = f.read()
-    except Exception:
-        return None, None
-    m = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
-    if not m:
-        return None, None
-    front = m.group(1)
-    id_m = re.search(r"^id:\s*(\S+)\s*$", front, re.MULTILINE)
-    status_m = re.search(r"^status:\s*(\S+)\s*$", front, re.MULTILINE)
-    plan_id = id_m.group(1) if id_m else os.path.basename(path)[: -len(".md")]
-    status = status_m.group(1) if status_m else None
-    return plan_id, status
-
-
 def has_uncommitted_changes(root):
-    """作業ツリーに未コミットの変更があるか。非 git リポジトリ・取得不能なら False（fail-open）。"""
-    if not os.path.isdir(os.path.join(root, ".git")):
+    """作業ツリーに未コミットの変更があるか。非 git リポジトリ・取得不能なら False（fail-open）。
+    worktree（`.git` がファイル）でも判定する。"""
+    try:
+        inside = subprocess.run(
+            ["git", "-C", root, "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:
+        return False
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
         return False
     try:
         out = subprocess.run(
@@ -155,22 +68,6 @@ def has_uncommitted_changes(root):
     if out.returncode != 0:
         return False
     return bool(out.stdout.strip())
-
-
-def approved_plans(root):
-    """vault/plans/*.md のうち status: approved のもの一覧を [(plan_id, path), ...] で返す。"""
-    plans_dir = os.path.join(root, "vault", "plans")
-    if not os.path.isdir(plans_dir):
-        return []
-    out = []
-    for name in sorted(os.listdir(plans_dir)):
-        if not name.endswith(".md"):
-            continue
-        path = os.path.join(plans_dir, name)
-        plan_id, status = plan_id_and_status(path)
-        if status == "approved":
-            out.append((plan_id, path))
-    return out
 
 
 def parse_tasks(plan_text):
@@ -255,7 +152,7 @@ def main():
     except Exception:
         payload = {}
 
-    delegated_stdout = delegate_to_worktree(payload)
+    delegated_stdout = H.delegate_to_worktree(payload, "stop_gate.py")
     if delegated_stdout is not None:
         sys.stdout.write(delegated_stdout)
         sys.exit(0)
@@ -271,7 +168,7 @@ def main():
             "作業ステップごとにコミットしてから終了してください（git status --porcelain の出力を確認）。"
         )
 
-    plans = approved_plans(root)
+    plans = H.approved_plans(root)
 
     if len(plans) == 0:
         allow()

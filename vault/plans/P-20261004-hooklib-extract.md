@@ -34,8 +34,8 @@ D-011 の決定事項の表と「今回やらないこと」を前提にする�
 | T-02 | done | 1 | T-01 | agent_write_guard.py の複製関数を _hooklib の import に置き換える | |
 | T-03 | done | 1 | T-01 | plan_guard.py の複製関数を _hooklib の import に置き換える | |
 | T-04 | done | 1 | T-01 | stop_gate.py の複製関数を _hooklib に置き換え .git 判定を rev-parse に直す | |
-| T-05 | doing | 1 | T-02,T-03,T-04 | smoke.sh に _hooklib の読み込み失敗・worktree の未コミット・__pycache__ のケースを足す | |
-| T-06 | doing | 1 | T-02,T-03,T-04 | docs/vault-spec.md と docs/decisions.md を _hooklib の導入に合わせて更新する | |
+| T-05 | review | 1 | T-02,T-03,T-04 | smoke.sh に _hooklib の読み込み失敗・worktree の未コミット・__pycache__ のケースを足す | |
+| T-06 | review | 1 | T-02,T-03,T-04 | docs/vault-spec.md と docs/decisions.md を _hooklib の導入に合わせて更新する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -1,6 +1,6 @@
 ---
 id: P-20261004-hooklib-rules
-status: draft
+status: approved
 ---
 # ゴール
 設計文書 `vault/designs/D-011.md` の「フェーズ2 複製間でずれていた解析規則の統一」を行う。

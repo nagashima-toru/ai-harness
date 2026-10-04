@@ -1,0 +1,1 @@
+- 2026-10-05 00:13 - draft→approved 人の指示: /plan approve P-20261004-hooklib-rules

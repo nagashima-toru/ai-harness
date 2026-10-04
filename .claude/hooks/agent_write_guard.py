@@ -3,8 +3,7 @@
 
 - verifier : vault/verdicts/ 配下のみ
 - planner  : vault/plans/ と vault/tasks/ 配下のみ
-対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（`analyze_bash_writes` で解析できた時は
-             実際の書き込み対象で判定し、解析できない時は従来のリダイレクト・破壊的コマンドの簡易判定）
+対象ツール : Write / Edit / MultiEdit / NotebookEdit（パス判定）、Bash（`bash_write_targets` の書き込み対象で判定）
 メインエージェントや他のサブエージェントには何もしない。
 
 改ざん防止：上記とは別に、agent_type を問わず（メインエージェント含む）vault/rules/ 配下への
@@ -17,9 +16,10 @@
 上記の拒否は、Write 系ツールのパス判定に加え、Bash 経由で `gh api` や GitHub Contents API
 （api.github.com / raw.githubusercontent.com 等）へ直接 curl するリモート書き込み経路も対象にする
 （issue #6）。
-vault/rules/ と会話記録（~/.claude/projects/）の Bash 判定は、`analyze_bash_writes` で解析できた時だけ
-実際の書き込み対象で判定し、解析できない形（コマンド置換・サブシェル・インタプリタ・変数や glob を
-含む対象など）は従来の判定（BASH_WRITE_PATTERNS 等）に落とす（fail-closed。issue #91）。
+Bash の書き込み対象は `bash_write_targets` が1度だけ計算する（同じコマンドはメモ化）。解析できた時は
+実際の書き込み対象を返し、解析できない形（コマンド置換・サブシェル・インタプリタ・変数や glob を
+含む対象など）は4通りの従来判定の候補の和集合を返す（fail-closed。issue #91）。vault/rules/・会話記録
+（~/.claude/projects/）・done タスク・creator の拒否・ALLOWED の各判定は、それをパスで絞り込む。
 引数・引用符内・ヒアドキュメント本文に文字列があるだけの誤検知を解消するための精密化。
 本文が cat のヒアドキュメントだけのコマンド置換は1語の文字列に置き換えてから解析する（issue #109）。
 先頭のリポジトリのルートへの cd は読み飛ばして解析する（issue #109）。
@@ -29,7 +29,7 @@ creator（run から呼ばれる作成エージェント）向けの拒否リス
 agent_type を問わない他の判定と同じく常に拒否する。計画票のタスク表の状態更新とログ追記は、
 呼び出し元のオーケストレーター（run のメインセッション）に一本化するための制限（D-003 フェーズ2）。
 ALLOWED の許可リスト方式とは異なり、拒否リスト方式で実装する。
-Bash は `analyze_bash_writes` で解析できた時は実際の書き込み対象だけで判定する（解析不能は従来判定）。
+Bash は `bash_write_targets` の書き込み対象をパスで絞り込んで判定する。
 
 done タスクへの書き込み拒否：agent_type を問わず（メインセッション含む）、書き込み先が
 vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、対応する計画票
@@ -43,7 +43,7 @@ FILE_WRITE_VERBS・DESTRUCTIVE_FILE_VERBS・GIT_STAGE_COMMIT_VERBS・GIT_WRITE_S
 ファイルの内容を変えないため。run/SKILL.md 手順6.3.4 の done 後の add・commit を通す。issue #84）。
 他の書き込み動詞・リダイレクト・コマンド置換が混ざる場合は従来どおり拒否する。
 解析できた時は `git add`/`git commit` の対象を除いた実際の書き込み対象で判定する（issue #87）。
-解析できない形（`$(` 等）は従来の `is_git_stage_or_commit_only` を含む判定に落とす。
+解析できない形（`$(` 等）は `is_git_stage_or_commit_only` で判定し、それ以外は `bash_write_targets` の和集合の候補で判定する。
 """
 import json
 import os
@@ -746,18 +746,16 @@ def find_done_task_write(tool, tool_input, root):
         candidates.append(path)
     elif tool == "Bash":
         cmd = tool_input.get("command") or ""
-        writes = analyze_bash_writes(cmd, root)
-        if writes is not None:
+        parsed, writes = bash_write_targets(cmd, root)
+        if parsed:
             # 解析できた：git add / git commit は内容を変えないので除き、実際の書き込み対象だけで判定する
             candidates.extend(t for v, t in writes if t and v not in ("git-add", "git-commit"))
         else:
-            masked = mask_angle_placeholders(cmd)
-            if not any(re.search(p, masked) for p in BASH_WRITE_PATTERNS):
+            if not writes:
                 return None
             if is_git_stage_or_commit_only(cmd):
                 return None
-            candidates.extend(extract_bash_write_targets(cmd))
-            candidates.extend(re.findall(r"[^\s'\")]*vault/(?:tasks|verdicts)/[^\s'\")]*", cmd))
+            candidates.extend(t for _, t in writes if t)
     for cand in candidates:
         rel = normalize(cand.rstrip(")\"'`"), root)
         matched = match_task_or_verdict_path(rel)
@@ -862,11 +860,11 @@ def find_plan_unblocks(tool, tool_input, root):
 def is_git_commit_command(cmd, root=None):
     """Bash コマンドが実際に git commit を実行するかを返す（issue #91）。
 
-    analyze_bash_writes が解析できた時は git-commit の組があるかだけを見る。
-    解析できない形（None）は従来の正規表現と git -<opt> … commit の形で判定する（fail-closed）。
+    bash_write_targets が解析できた時は git-commit の組があるかだけを見る。
+    解析できない形は従来の正規表現と git -<opt> … commit の形で判定する（fail-closed）。
     """
-    writes = analyze_bash_writes(cmd, root)
-    if writes is None:
+    parsed, writes = bash_write_targets(cmd, root)
+    if not parsed:
         return bool(re.search(GIT_COMMIT_PATTERN, cmd) or re.search(GIT_PREOPT_COMMIT_PATTERN, cmd))
     return any(verb == "git-commit" for verb, _ in writes)
 
@@ -974,14 +972,15 @@ def main():
 
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        masked_cmd = mask_angle_placeholders(cmd)
-        parsed = analyze_bash_writes(cmd, root)
-        if parsed is not None:
+        ok, parsed = bash_write_targets(cmd, root)
+        deny_msg = (f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません"
+                    f"（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
+        if ok:
             # 解析できた時は、実際の書き込み対象だけで判定する（issue #91）
             if not parsed:
                 sys.exit(0)
             if any(v in ("git-add", "git-commit", "git-write") for v, _ in parsed):
-                deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
+                deny(deny_msg)
             if all(is_outside_root(t, root) for _, t in parsed):
                 sys.exit(0)
             inside = [(v, t) for v, t in parsed if not is_outside_root(t, root)]
@@ -993,22 +992,22 @@ def main():
             if all(v in ("redirect", "mkdir", "touch") and normalize(t, root).startswith(tuple(allowed))
                    for v, t in inside):
                 sys.exit(0)
-            deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
-        if any(re.search(p, masked_cmd) for p in BASH_WRITE_PATTERNS):
-            write_targets = extract_bash_write_targets(cmd)
-            # 対象パスがすべて root（リポジトリ）の外なら許可する（issue #27）。
-            # トレードオフ：/etc/passwd のようなシステムファイルへの書き込みも root 外である以上
-            # 許可してしまうが、root 外を一律許可する方式を選んだ結果として受け入れる
-            # （過度に複雑な許可リスト方式にはしない）。対象パスが1つも抽出できない場合や、
-            # root 内のパスが1つでも混ざる場合はこの許可を適用せず、既存どおり fail-closed に倒す。
-            if write_targets and all(is_outside_root(t, root) for t in write_targets):
-                sys.exit(0)
-            # 許可ディレクトリだけを対象にしたリダイレクトは通す
-            targets = re.findall(r">{1,2}\s*([^\s;&|]+)", masked_cmd)
-            if targets and all(normalize(t, root).startswith(tuple(allowed)) for t in targets) \
-                    and not re.search(DESTRUCTIVE_BASH_PATTERN, cmd):
-                sys.exit(0)
-            deny(f"[agent_write_guard] {agent} の Bash では書き込み・破壊的操作を行えません（{allowed_text} へのリダイレクトのみ可）: {cmd[:120]}")
+            deny(deny_msg)
+        # 解析できない形：bash_write_targets は従来の判定の候補の和集合を返す。全候補にパスの条件を課す
+        if not parsed:
+            sys.exit(0)  # 書き込み動詞なし
+        # 対象パスがすべて root（リポジトリ）の外なら許可する（issue #27）。
+        # トレードオフ：/etc/passwd のようなシステムファイルへの書き込みも root 外である以上
+        # 許可してしまうが、root 外を一律許可する方式を選んだ結果として受け入れる。
+        # legacy-write の候補が無い場合や、root 内のパスが1つでも混ざる場合は fail-closed に倒す。
+        if any(v == "legacy-write" for v, _ in parsed) and all(is_outside_root(t, root) for _, t in parsed):
+            sys.exit(0)
+        # 許可ディレクトリだけを対象にしたリダイレクトは通す
+        if any(v == "legacy-redirect" for v, _ in parsed) \
+                and all(normalize(t, root).startswith(tuple(allowed)) for _, t in parsed) \
+                and not re.search(DESTRUCTIVE_BASH_PATTERN, cmd):
+            sys.exit(0)
+        deny(deny_msg)
     sys.exit(0)
 
 

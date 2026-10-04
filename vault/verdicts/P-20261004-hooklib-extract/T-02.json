@@ -1,0 +1,14 @@
+{
+  "task": "P-20261004-hooklib-extract/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-04 18:39",
+  "criteria": [
+    {"text": "構文が正しい：python3 -B -c \"import ast; ast.parse(...agent_write_guard.py...); print('ok')\" の出力が ok", "ok": true, "note": "実行コマンド: 基準記載の ast.parse コマンド（worktree 内） / 出力: ok"},
+    {"text": "複製の関数定義と「import しない」「コピー」の注記が残っていない：grep -nE '...' .claude/hooks/agent_write_guard.py の出力が空", "ok": true, "note": "実行コマンド: 基準記載の grep -nE（worktree 内） / 出力: 空"},
+    {"text": "_hooklib を読み込めない時は、終了コード2で理由を標準エラーに出す（出力が 2 True）", "ok": true, "note": "実行コマンド: 基準記載の subprocess + runpy コマンド / 出力: 2 True"},
+    {"text": "フックを実行しても _hooklib のバイトコードキャッシュができない（出力が []）", "ok": true, "note": "実行コマンド: 基準記載の glob コマンド / 出力: []"},
+    {"text": "既存の smoke が全件通る（worktree 委譲のケースを含む）：bash scripts/smoke.sh 2>&1 | tail -1 の出力が fail=0 を含む", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1（worktree 内） / 出力: smoke: pass=499 fail=0。起点コミットの記録がタスク票の進捗に無いため変更ファイル検査は行わず。git status --porcelain は agent_write_guard.py とタスク票のみ変更"}
+  ],
+  "reasons": []
+}

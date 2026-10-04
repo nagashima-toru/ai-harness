@@ -120,6 +120,7 @@ table_counts() {
   awk -F'|' '
     {
       sub(/\r$/, "")
+      sub(/^[ \t]+/, "")
       if ($0 !~ /^\|/) next
       c1 = $2; gsub(/^[ \t]+|[ \t]+$/, "", c1)
       if (c1 !~ /^T-/) next

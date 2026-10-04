@@ -52,7 +52,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | BASH_WRITE_PATTERNS・OTHER_WRITE_PATTERNS・DESTRUCTIVE_BASH_PATTERN を1つの定義から組み立てる | |
-| T-02 | doing | 1 | T-01 | bash_write_targets を足し vault/rules・会話記録・creator の拒否判定を載せ替える | |
+| T-02 | review | 1 | T-01 | bash_write_targets を足し vault/rules・会話記録・creator の拒否判定を載せ替える | |
 | T-03 | todo | 0 | T-02 | done 判定・is_git_commit_command・ALLOWED 判定を bash_write_targets に載せ替える | |
 | T-04 | todo | 0 | T-03 | smoke.sh に analyze_bash_writes の呼び出し回数と挙動が変わった例のケースを足す | |
 | T-05 | todo | 0 | T-03 | docs/vault-spec.md 12節の Bash 判定の記述を一本化後の規則に直す | |

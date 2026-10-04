@@ -1,6 +1,6 @@
 ---
 id: P-20261004-hooklib-extract
-status: draft
+status: approved
 ---
 # ゴール
 設計文書 `vault/designs/D-011.md` の「フェーズ1 共通モジュール `_hooklib.py` の導入と .git 判定の修正」を行う。

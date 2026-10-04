@@ -55,7 +55,7 @@ D-011 の決定事項の表、フェーズ2の「決定済み」、「今回や�
 | T-01 | done | 1 | - | _hooklib.py に parse_tasks・count_criteria・frontmatter_value を置き frontmatter の読み方を揃える | |
 | T-02 | done | 1 | T-01 | stop_gate.py の parse_tasks・count_acceptance_criteria を _hooklib の関数に置き換える | |
 | T-03 | done | 1 | T-01 | plan_guard.py の parse_tasks・count_criteria を _hooklib の関数に置き換える | |
-| T-04 | review | 1 | T-01 | agent_write_guard.py の plan_task_status を _hooklib.parse_tasks で書き直す | |
+| T-04 | done | 1 | T-01 | agent_write_guard.py の plan_task_status を _hooklib.parse_tasks で書き直す | |
 | T-05 | done | 1 | - | current_plan.sh と archive_plans.sh の frontmatter の awk で値の引用符を外し先頭の語を読む | |
 | T-08 | todo | 0 | T-05 | archive_plans.sh の table_counts がタスク表の行頭の空白を許すようにする | |
 | T-06 | todo | 0 | T-02,T-03,T-04,T-08 | smoke.sh に番号付き基準・引用符付き status・インデントした行のケースを足す | |

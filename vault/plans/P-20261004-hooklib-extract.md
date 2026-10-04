@@ -30,7 +30,7 @@ D-011 の決定事項の表と「今回やらないこと」を前提にする�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | .claude/hooks/_hooklib.py を新設し3フックに複製されている10関数を置く | |
+| T-01 | review | 1 | - | .claude/hooks/_hooklib.py を新設し3フックに複製されている10関数を置く | |
 | T-02 | todo | 0 | T-01 | agent_write_guard.py の複製関数を _hooklib の import に置き換える | |
 | T-03 | todo | 0 | T-01 | plan_guard.py の複製関数を _hooklib の import に置き換える | |
 | T-04 | todo | 0 | T-01 | stop_gate.py の複製関数を _hooklib に置き換え .git 判定を rev-parse に直す | |

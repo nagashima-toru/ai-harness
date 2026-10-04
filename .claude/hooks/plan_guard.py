@@ -19,8 +19,8 @@ approved な計画票が0件、および表にデータ行が無い場合は何�
 
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/plan_guard.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
-実装は agent_write_guard.py の delegate_to_worktree と同じパターンをそのまま複製したもの
-（git_toplevel・existing_ancestor も同様にコピー。他ファイルへの import はしない）。
+委譲の実装は共通モジュール `_hooklib.py` の `delegate_to_worktree` を使う。
+`_hooklib` を読み込めない時は、理由を標準エラーに出して終了コード2で終わる。
 """
 import json
 import os
@@ -28,99 +28,16 @@ import re
 import subprocess
 import sys
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import _hooklib as H
+except Exception as e:  # SyntaxError なども含めて捕まえる
+    sys.stderr.write(f"[plan_guard] _hooklib の読み込みに失敗しました: {e}\n")
+    sys.exit(2)
+
 STATUSES = ("todo", "doing", "review", "blocked", "done")
 COLUMNS = ("id", "status", "attempt", "after", "title", "question")
-
-
-def existing_ancestor(dir_path):
-    """dir_path 自身、または存在する祖先ディレクトリまで `os.path.dirname()` で遡って返す。
-
-    worktree 内でまだ作成されていないネストしたディレクトリ配下に書き込もうとした場合、
-    `git -C <存在しないpath> rev-parse --show-toplevel` は exit 128 で失敗する（issue #24）。
-    worktree のルート自体は常に存在するため、存在するディレクトリまで遡ってから
-    `git -C` に渡せば正しく worktree のルートを解決できる。
-    """
-    if not dir_path:
-        return None
-    probe = dir_path
-    while probe and not os.path.isdir(probe):
-        parent = os.path.dirname(probe)
-        if parent == probe:
-            # ルートまで遡っても見つからない（ほぼ起こらない）場合は諦める
-            return None
-        probe = parent
-    return probe or None
-
-
-def git_toplevel(dir_path):
-    """dir_path から `git rev-parse --show-toplevel` を試みる。
-
-    worktree 内から呼ばれた場合はその worktree のルートを返す。非 git・取得失敗時は None
-    （呼び出し側で既存のフォールバック順に進む＝fail-open）。
-    """
-    if not dir_path:
-        return None
-    dir_path = existing_ancestor(dir_path)
-    if not dir_path:
-        return None
-    try:
-        out = subprocess.run(
-            ["git", "-C", dir_path, "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception:
-        return None
-    if out.returncode != 0:
-        return None
-    top = out.stdout.strip()
-    return top or None
-
-
-def delegate_to_worktree(payload):
-    """payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
-    `.claude/hooks/plan_guard.py` へ判定を委譲する（issue #56 / D-008 フェーズ2）。
-
-    委譲に成功した場合は委譲先の stdout をそのまま文字列で返す（呼び出し側はそれをそのまま
-    自分の stdout として出し exit 0 する）。委譲しない・できない場合は None を返し、
-    呼び出し側は通常どおりメインリポジトリ側のローカル判定に進む（fail-open）。
-
-    二重委譲防止：委譲先プロセスの環境変数に `_HOOK_DELEGATED=1` をセットして呼び出す。
-    自分自身の環境で既に `_HOOK_DELEGATED` が設定されている場合は委譲せず、必ず
-    ローカル判定にフォールバックする（委譲は1段まで）。
-    """
-    if os.environ.get("_HOOK_DELEGATED"):
-        return None
-
-    cwd = payload.get("cwd") or ""
-    if not cwd:
-        return None
-    worktree_root = git_toplevel(cwd)
-    if not worktree_root:
-        return None
-
-    self_root = os.environ.get("CLAUDE_PROJECT_DIR") or git_toplevel(os.path.dirname(os.path.abspath(__file__)))
-    if not self_root:
-        return None
-    if os.path.abspath(worktree_root) == os.path.abspath(self_root):
-        return None
-
-    delegate_script = os.path.join(worktree_root, ".claude", "hooks", "plan_guard.py")
-    if not os.path.isfile(delegate_script):
-        return None
-
-    env = os.environ.copy()
-    env["_HOOK_DELEGATED"] = "1"
-    try:
-        result = subprocess.run(
-            ["python3", delegate_script],
-            input=json.dumps(payload),
-            capture_output=True, text=True, timeout=20, env=env,
-        )
-    except Exception:
-        return None
-    if result.returncode != 0:
-        return None
-    return result.stdout
 
 
 def project_dir(payload):
@@ -131,62 +48,10 @@ def project_dir(payload):
     return os.path.abspath(os.path.join(here, "..", ".."))
 
 
-def plan_id_and_status(path):
-    """計画票の frontmatter から (id, status) を返す。読めない・frontmatter が無ければ (None, None)。"""
-    try:
-        with open(path, encoding="utf-8") as f:
-            text = f.read()
-    except Exception:
-        return None, None
-    m = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
-    if not m:
-        return None, None
-    front = m.group(1)
-    id_m = re.search(r"^id:\s*(\S+)\s*$", front, re.MULTILINE)
-    status_m = re.search(r"^status:\s*(\S+)\s*$", front, re.MULTILINE)
-    plan_id = id_m.group(1) if id_m else os.path.basename(path)[: -len(".md")]
-    status = status_m.group(1) if status_m else None
-    return plan_id, status
-
-
-def approved_plans(root):
-    """vault/plans/*.md のうち status: approved のもの一覧を [(plan_id, path), ...] で返す。"""
-    plans_dir = os.path.join(root, "vault", "plans")
-    if not os.path.isdir(plans_dir):
-        return []
-    out = []
-    for name in sorted(os.listdir(plans_dir)):
-        if not name.endswith(".md"):
-            continue
-        path = os.path.join(plans_dir, name)
-        plan_id, status = plan_id_and_status(path)
-        if status == "approved":
-            out.append((plan_id, path))
-    return out
-
-
-def raw_rows(plan_text):
-    """「## タスク表」（前方一致）以降のデータ行を生のセルのリストで返す（見出し行・区切り行は除く）。"""
-    rows = []
-    in_table = False
-    for line in plan_text.splitlines():
-        if line.startswith("## "):
-            in_table = line.strip().startswith("## タスク表")
-            continue
-        stripped = line.strip()
-        if not in_table or not stripped.startswith("|"):
-            continue
-        cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if not cells or cells[0] == "id" or re.fullmatch(r"-*", cells[0]):
-            continue
-        rows.append(cells)
-    return rows
-
-
 def parse_tasks(plan_text):
     """stop_gate.py と同じ規則で行を dict にする（6列に満たない分は空文字で埋める）。"""
     tasks = []
-    for cells in raw_rows(plan_text):
+    for cells in H.raw_rows(plan_text):
         if len(cells) < 5:
             continue
         cells = list(cells) + [""] * (6 - len(cells))
@@ -250,7 +115,7 @@ def granularity_violation(payload, root):
     if not m:
         return None
     plan_id, task_id = m.group(1), m.group(2)
-    _, status = plan_id_and_status(os.path.join(root, "vault", "plans", plan_id + ".md"))
+    _, status = H.plan_id_and_status(os.path.join(root, "vault", "plans", plan_id + ".md"))
     if status != "draft":
         return None
     try:
@@ -291,7 +156,7 @@ def plan_size_violation(payload, root):
     if not m:
         return None
     path = os.path.join(root, rel)
-    _, status = plan_id_and_status(path)
+    _, status = H.plan_id_and_status(path)
     if status != "draft":
         return None
     try:
@@ -299,68 +164,13 @@ def plan_size_violation(payload, root):
             text = f.read()
     except Exception:
         return None
-    n = len(raw_rows(text))
+    n = len(H.raw_rows(text))
     if n <= PLAN_ROWS_MAX:
         return None
     return (
         f"[plan_guard] {m.group(1)} のタスク表が{n}行です。1計画は{PLAN_ROWS_MAX}タスク以下にしてください。"
         f"超える分は次フェーズの候補として計画票の末尾に書くだけにしてください。"
     )
-
-
-def frontmatter_status(text):
-    """先頭の `---` から次の `---` までの frontmatter の `status:` の値を返す。無ければ None。本文は見ない。
-
-    agent_write_guard.py の同名関数のコピー（フック間で import しない方針）。
-    """
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    for line in lines[1:]:
-        if line.strip() == "---":
-            break
-        m = re.match(r"^status:\s*(\S*)", line)
-        if m:
-            return m.group(1).strip("\"'")
-    return None
-
-
-def human_messages(transcript_path):
-    """会話記録（JSONL）から人の発言（type=user・content が文字列・isMeta が真でない行）を返す。
-
-    読めない（パスが無い・ファイルが無い・どの行も JSON でない）場合も空リストを返す。
-    agent_write_guard.py の同名関数のコピー。
-    """
-    if not transcript_path:
-        return []
-    try:
-        with open(os.path.expanduser(transcript_path), encoding="utf-8") as f:
-            lines = f.read().splitlines()
-    except Exception:
-        return []
-    out = []
-    for line in lines:
-        try:
-            obj = json.loads(line)
-        except Exception:
-            continue
-        if not isinstance(obj, dict) or obj.get("type") != "user" or obj.get("isMeta"):
-            continue
-        msg = obj.get("message")
-        content = msg.get("content") if isinstance(msg, dict) else None
-        if isinstance(content, str):
-            out.append(content)
-    return out
-
-
-def is_approve_command(text, plan_id):
-    """人の発言が `/plan approve <plan_id>`（スラッシュコマンド形式または文形式）か判定する。"""
-    if "<command-name>/plan</command-name>" in text:
-        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
-            if args.strip() == f"approve {plan_id}":
-                return True
-    m = re.match(r"^/plan\s+approve\s+(\S+)", text.lstrip())
-    return bool(m) and m.group(1) == plan_id
 
 
 def newly_approved_plans(root):
@@ -385,7 +195,7 @@ def newly_approved_plans(root):
     for name in sorted(os.listdir(plans_dir)):
         if not name.endswith(".md"):
             continue
-        plan_id, status = plan_id_and_status(os.path.join(plans_dir, name))
+        plan_id, status = H.plan_id_and_status(os.path.join(plans_dir, name))
         if status != "approved":
             continue
         head_status = None
@@ -395,7 +205,7 @@ def newly_approved_plans(root):
                 capture_output=True, text=True, timeout=5, cwd=root,
             )
             if shown.returncode == 0:
-                head_status = frontmatter_status(shown.stdout)
+                head_status = H.frontmatter_status(shown.stdout)
         except Exception:
             pass
         if head_status != "approved":
@@ -410,7 +220,7 @@ def approval_check(payload, root):
     humans = None
     for plan_id, _name in newly_approved_plans(root):
         if humans is None:
-            humans = human_messages(transcript_path if isinstance(transcript_path, str) else None)
+            humans = H.human_messages(transcript_path if isinstance(transcript_path, str) else None)
         if not humans:
             warnings.append(
                 f"[plan_guard] {plan_id} が draft から approved に書き換えられていますが、"
@@ -418,7 +228,7 @@ def approval_check(payload, root):
                 f"人が /plan approve {plan_id} で指示した時だけ承認できます。"
             )
             continue
-        if not any(is_approve_command(t, plan_id) for t in humans):
+        if not any(H.is_approve_command(t, plan_id) for t in humans):
             return (
                 f"[plan_guard] {plan_id} が draft から approved に書き換えられていますが、"
                 f"人の /plan approve {plan_id} の指示が会話記録にありません。"
@@ -426,23 +236,6 @@ def approval_check(payload, root):
                 f"（承認は人が /plan approve {plan_id} で指示した時だけ行えます）。"
             ), None
     return None, ("\n".join(warnings) if warnings else None)
-
-
-def is_unblock_command(text, plan_id, task_id):
-    """人の発言が `/plan unblock <plan_id> <task_id>`（スラッシュコマンド形式または文形式）か判定する。
-
-    後ろに回答が続いてよい。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べる。
-    agent_write_guard.py の同名関数のコピー。
-    """
-    want = ["unblock", plan_id, task_id]
-    if "<command-name>/plan</command-name>" in text:
-        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
-            if args.split()[:3] == want:
-                return True
-    t = text.lstrip()
-    if t.startswith("/plan") and t[5:6].isspace():
-        return t[5:].split()[:3] == want
-    return False
 
 
 def unblocked_rows(root):
@@ -479,11 +272,11 @@ def unblocked_rows(root):
                 current = f.read()
         except Exception:
             continue
-        head_blocked = {c[0] for c in raw_rows(shown.stdout) if len(c) >= 2 and c[1] == "blocked"}
+        head_blocked = {c[0] for c in H.raw_rows(shown.stdout) if len(c) >= 2 and c[1] == "blocked"}
         if not head_blocked:
             continue
-        plan_id, _ = plan_id_and_status(path)
-        for cells in raw_rows(current):
+        plan_id, _ = H.plan_id_and_status(path)
+        for cells in H.raw_rows(current):
             if len(cells) >= 2 and cells[0] in head_blocked and cells[1] != "blocked":
                 out.append((plan_id, name, cells[0]))
     return out
@@ -496,7 +289,7 @@ def unblock_check(payload, root):
     humans = None
     for plan_id, _name, task_id in unblocked_rows(root):
         if humans is None:
-            humans = human_messages(transcript_path if isinstance(transcript_path, str) else None)
+            humans = H.human_messages(transcript_path if isinstance(transcript_path, str) else None)
         if not humans:
             warnings.append(
                 f"[plan_guard] {plan_id}/{task_id} が blocked から書き換えられていますが、"
@@ -504,7 +297,7 @@ def unblock_check(payload, root):
                 f"人が /plan unblock {plan_id} {task_id} で指示した時だけ解除できます。"
             )
             continue
-        if not any(is_unblock_command(t, plan_id, task_id) for t in humans):
+        if not any(H.is_unblock_command(t, plan_id, task_id) for t in humans):
             return (
                 f"[plan_guard] {plan_id}/{task_id} が blocked から書き換えられていますが、"
                 f"人の /plan unblock {plan_id} {task_id} の指示が会話記録にありません。"
@@ -527,7 +320,7 @@ def main():
     if not isinstance(payload, dict):
         payload = {}
 
-    delegated_stdout = delegate_to_worktree(payload)
+    delegated_stdout = H.delegate_to_worktree(payload, "plan_guard.py")
     if delegated_stdout is not None:
         sys.stdout.write(delegated_stdout)
         sys.exit(0)
@@ -557,7 +350,7 @@ def main():
                 "hookEventName": "PostToolUse", "additionalContext": warning}}, ensure_ascii=False))
         sys.exit(0)
 
-    plans = approved_plans(root)
+    plans = H.approved_plans(root)
 
     if len(plans) == 0:
         finish()
@@ -576,7 +369,7 @@ def main():
     except Exception:
         finish()
 
-    rows = raw_rows(text)
+    rows = H.raw_rows(text)
     if not rows:
         finish()
 

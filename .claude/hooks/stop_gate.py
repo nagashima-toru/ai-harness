@@ -10,13 +10,13 @@ vault/verdicts/<計画ID>/<タスクID>.json を読んで判定する。
 
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/stop_gate.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
+タスク表と受け入れ基準の読み方は `_hooklib.py` の `parse_tasks`・`count_criteria` を使う。
 委譲の実装は共通モジュール `_hooklib.py` の `delegate_to_worktree` を使う。
 `_hooklib` が読み込めない時は、標準エラーに理由を出して終了コード2で終わる
 （`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0）。
 """
 import json
 import os
-import re
 import subprocess
 import sys
 
@@ -70,42 +70,6 @@ def has_uncommitted_changes(root):
     return bool(out.stdout.strip())
 
 
-def parse_tasks(plan_text):
-    """計画票の「## タスク表」（前方一致）以降の行を dict のリストで返す。"""
-    rows = []
-    in_table = False
-    for line in plan_text.splitlines():
-        if line.startswith("## "):
-            in_table = line.strip().startswith("## タスク表")
-            continue
-        if not in_table or not line.startswith("|"):
-            continue
-        cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 5 or cells[0] == "id" or re.fullmatch(r"-*", cells[0]):
-            continue
-        cells += [""] * (6 - len(cells))
-        rows.append({
-            "id": cells[0], "status": cells[1], "attempt": cells[2],
-            "after": cells[3], "title": cells[4], "question": cells[5],
-        })
-    return rows
-
-
-def count_acceptance_criteria(task_path):
-    """タスク票の「## 受け入れ基準」節にある行頭 `- ` の行数を返す（ネストは数えない）。"""
-    with open(task_path, encoding="utf-8") as f:
-        lines = f.read().splitlines()
-    in_section = False
-    count = 0
-    for line in lines:
-        if line.startswith("## "):
-            in_section = line.strip() == "## 受け入れ基準"
-            continue
-        if in_section and line.startswith("- "):
-            count += 1
-    return count
-
-
 def validate_verdict(verdict, expected_task, task_path):
     """verdict の形式を検査し、不正な点の説明リストを返す（空なら正常）。"""
     problems = []
@@ -127,7 +91,8 @@ def validate_verdict(verdict, expected_task, task_path):
             if not isinstance(note, str) or not note.strip():
                 problems.append(f"criteria[{i}].note が空です")
         if os.path.isfile(task_path):
-            expected = count_acceptance_criteria(task_path)
+            with open(task_path, encoding="utf-8") as f:
+                expected = H.count_criteria(f.read())
             if len(criteria) != expected:
                 problems.append(
                     f"criteria の行数（{len(criteria)}）がタスク票の受け入れ基準の行数（{expected}）と一致しません"
@@ -182,7 +147,7 @@ def main():
 
     plan_id, plan_path = plans[0]
     with open(plan_path, encoding="utf-8") as f:
-        tasks = parse_tasks(f.read())
+        tasks = H.parse_tasks(f.read())
 
     active_tasks = [t for t in tasks if t["status"] in ("doing", "review")]
     if not active_tasks:

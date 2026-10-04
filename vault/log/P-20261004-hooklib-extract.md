@@ -1,1 +1,2 @@
 - 2026-10-04 18:06 - draft→approved 人の指示: /plan approve P-20261004-hooklib-extract
+- 2026-10-04 18:10 T-01 todo→doing attempt=1

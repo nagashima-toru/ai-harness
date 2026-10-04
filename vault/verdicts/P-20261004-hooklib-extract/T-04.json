@@ -1,0 +1,16 @@
+{
+  "task": "P-20261004-hooklib-extract/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-04 12:00",
+  "criteria": [
+    {"text": "構文が正しい：`python3 -B -c \"import ast; ast.parse(open('.claude/hooks/stop_gate.py').read()); print('ok')\"` の出力が `ok`", "ok": true, "note": "実行コマンド: 基準記載の ast.parse 確認コマンド（worktree で実行） / 出力: ok"},
+    {"text": "複製の関数定義・「import しない」「コピー」「複製」の注記・`.git` のディレクトリ判定が残っていない：`grep -nE '^def (existing_ancestor|git_toplevel|delegate_to_worktree|plan_id_and_status|approved_plans)\\(|import (は)?しない|import は$|同名関数のコピー|コピーして使う|そのまま複製|isdir\\(os\\.path\\.join\\(root, \"\\.git\"\\)\\)' .claude/hooks/stop_gate.py` の出力が空", "ok": true, "note": "実行コマンド: 基準記載の grep -nE / 出力: 空"},
+    {"text": "`_hooklib` を読み込めない時の終了コードが、`stop_hook_active` が偽なら2、真なら0、真でも `HARNESS_STRICT_STOP=1` なら2になる。あわせて理由を標準エラーに出す（基準記載の subprocess スクリプト）の出力が `[2, 0, 2] True`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c スクリプト / 出力: [2, 0, 2] True"},
+    {"text": "`has_uncommitted_changes` が `git rev-parse --is-inside-work-tree` で判定する：`grep -c -- '\"--is-inside-work-tree\"' .claude/hooks/stop_gate.py` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c -- '\"--is-inside-work-tree\"' .claude/hooks/stop_gate.py` / 出力: 1。語の出現数を数える形式だが、次の行の動作確認と併せて目的は満たされると判断"},
+    {"text": "`has_uncommitted_changes` の結果が、作業ツリーの `git status --porcelain` の有無と一致し、非 git のディレクトリでは False（基準記載の python3 -B -c スクリプト）の出力が `True False`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c スクリプト（worktree で実行） / 出力: True False"},
+    {"text": "フックを実行しても `_hooklib` のバイトコードキャッシュができない（基準記載の glob スクリプト）の出力が `[]`", "ok": true, "note": "実行コマンド: 基準記載の python3 -B -c スクリプト / 出力: []"},
+    {"text": "既存の smoke が全件通る（未コミット検査・worktree 委譲のケースを含む）：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=499 fail=0。変更ファイル検査: 起点コミット 596470e、git status は stop_gate.py（成果物）と T-04.md（進捗、除外対象）のみで宣言外ファイルなし"}
+  ],
+  "reasons": []
+}

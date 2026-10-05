@@ -98,6 +98,8 @@ python3 scripts/model_stats.py vault/archive/*/log/*.md
 1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く
 2. 渡したい相手（全員／作成エージェント／verifier／planner）でディレクトリを決める
 3. 反映させたい受け入れ基準の行にルールファイルを名指しして参照する
+4. エージェントは `vault/rules/` に書けない（フックが常に拒否する）。ファイルは人が自分で置く・直す
+5. ルールの変更自体をタスクにする時は、成果物を `vault/tasks/<計画ID>/<id>-proposal.md` に下書きさせ、verifier の PASS 後に人が実体へ反映する（`docs/vault-spec.md` の「提案ファイル方式」）
 
 ## 7. ハーネス自体の更新を取り込む
 このハーネスを他のプロジェクトに組み込んでいる場合、フックやスキルを直しても組み込み先には届かない。取り込みたい時に次を打つ。

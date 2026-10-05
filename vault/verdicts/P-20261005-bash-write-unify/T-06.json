@@ -1,0 +1,15 @@
+{
+  "task": "P-20261005-bash-write-unify/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-05 08:37",
+  "criteria": [
+    {"text": "4つの見出しがある：`grep -c -e '^## 現行の該当箇所' -e '^## 直した文面' -e '^## 理由' -e '^## 他のロールのルール' vault/tasks/P-20261005-bash-write-unify/T-06-proposal.md` の出力が `4`", "ok": true, "note": "実行コマンド: 見出し4種の grep -c -e / 出力: 4"},
+    {"text": "現行の47行と49行の文面が引用されている：どちらの grep -c -F も1以上", "ok": true, "note": "実行コマンド: 47行文面と49行文面の grep -c -F 2本 / 出力: 1 と 1"},
+    {"text": "直した文面が6つの保護対象パスを挙げている：出力が2以上（47行の案と49行の案の両方）", "ok": true, "note": "実行コマンド: 保護対象パス括弧書きの grep -c -F / 出力: 3"},
+    {"text": "理由に一本化で変わった例が書かれている：出力が1以上", "ok": true, "note": "実行コマンド: grep -c -F \"open('vault/tasks/\" / 出力: 2"},
+    {"text": "他のロールのルールを確かめた結果が書かれている：出力が2以上", "ok": true, "note": "実行コマンド: grep -c -e 'vault/rules/creator/' -e 'vault/rules/verifier/' / 出力: 4"},
+    {"text": "`vault/rules/` を変更していない：`git status --porcelain -- vault/rules/` の出力が空", "ok": true, "note": "実行コマンド: worktree で git status --porcelain の rules 配下指定 / 出力: 空。全体の変更は T-06.md と T-06-proposal.md のみ。タスク票の進捗に起点コミット記録が無いため成果物外ファイル検査は未実施"}
+  ],
+  "reasons": []
+}

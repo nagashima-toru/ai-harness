@@ -36,6 +36,9 @@
   - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
   - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にし `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh` コマンドで、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
   - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
+  - PR のマージ方式：スカッシュマージを推奨する。main の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。
+    - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= main の `git log`）にも残る（設定は人が行う）
+    - 通常のマージ（merge commit）も可。main にタスクごとのコミットが残る。ホスティング無しの `git merge --no-ff` の案内は今のまま
 
 ## 4. blocked に答えて戻す
 ```

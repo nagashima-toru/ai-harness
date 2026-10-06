@@ -1,0 +1,13 @@
+{
+  "task": "P-20261006-pr-task-history/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-06 18:26",
+  "criteria": [
+    {"text": "`grep -c -F '  - PR のマージ方式：スカッシュマージを推奨する。' docs/runbook.md` の出力が `1`", "ok": true, "note": "実行コマンド: `cd <worktree>; grep -c -F '  - PR のマージ方式：スカッシュマージを推奨する。' docs/runbook.md` / 出力: 1。差分は3節の箇条の直後への追記3行のみ"},
+    {"text": "`grep -c 'scripts/pr_body.py' docs/runbook.md` の出力が `1` 以上で、その行が3節（`## 3.` と `## 4.` の間）にある（Read で確認）", "ok": true, "note": "実行コマンド: `grep -n 'scripts/pr_body.py' docs/runbook.md; grep -n '^## ' docs/runbook.md` / 出力: 39行目に1件、3節は28行目から4節43行目の間"},
+    {"text": "`grep -c -F 'Pull request title and description' docs/runbook.md` の出力が `1`（スカッシュ時に表をコミットメッセージにも残す GitHub の設定を書いている）", "ok": true, "note": "実行コマンド: `grep -c -F 'Pull request title and description' docs/runbook.md` / 出力: 1。差分で40行目に設定の説明があることを確認。変更ファイルは docs/runbook.md とタスク票（進捗）のみで成果物外のファイルなし（起点コミット 9b58e4a）"},
+    {"text": "`grep -c '^## ' docs/runbook.md` の出力が `9`（節の見出しを増減していない）", "ok": true, "note": "実行コマンド: `grep -c '^## ' docs/runbook.md` / 出力: 9"}
+  ],
+  "reasons": []
+}

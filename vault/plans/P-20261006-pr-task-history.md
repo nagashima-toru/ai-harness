@@ -19,7 +19,7 @@ PR をスカッシュマージすると main にタスクごとの履歴が残�
 | T-01 | done | 1 | - | 計画のタスク履歴表を PR 本文として出力する scripts/pr_body.py を作る | |
 | T-02 | done | 1 | T-01 | vcs_finish.sh が引数なしの時に計画のタスク履歴を PR/MR 本文に載せる（smoke.sh にケース追加） | |
 | T-03 | done | 1 | T-02 | docs/runbook.md に PR のマージ方式とタスク履歴の辿り方を書く | |
-| T-04 | review | 1 | T-02 | run/SKILL.md 手順7の vcs_finish.sh 引数なしの説明を新しい挙動に合わせる | |
+| T-04 | done | 1 | T-02 | run/SKILL.md 手順7の vcs_finish.sh 引数なしの説明を新しい挙動に合わせる | |
 | T-05 | review | 1 | T-02 | docs/vault-spec.md 1節の証跡の段落に PR 本文のタスク履歴を足す | |
 
 ## 計画の受け入れ基準

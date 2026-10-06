@@ -1561,6 +1561,49 @@ expect_vf "(vcs_finish) github・引数あり → そのまま（--fill なし�
 expect_vf "(vcs_finish) gitlab・引数なし → glab mr create --fill --yes" gitlab $'mr\ncreate\n--fill\n--yes'
 expect_vf "(vcs_finish) gitlab・引数あり → そのまま（--fill なし）" gitlab $'mr\ncreate\n--title\nT\n--body\nB' --title T --body B
 
+# 計画のあるブランチ（別リポジトリ）：引数なしならタスク履歴を本文に載せる
+VF_REPO2="$TMP/vf_repo2"
+mkdir -p "$VF_REPO2/vault/plans" "$VF_REPO2/vault/verdicts/P-20990101-vf"
+(
+  cd "$VF_REPO2" && git init -q -b work/p-20990101-vf . \
+    && printf -- '---\nid: P-20990101-vf\nstatus: approved\n---\n# ゴール\nvf goal line\n\n## タスク表\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-01 | done | 1 | - | first | |\n| T-02 | todo | 0 | T-01 | second | |\n' > vault/plans/P-20990101-vf.md \
+    && printf '{"task": "P-20990101-vf/T-01", "attempt": 1, "result": "PASS"}\n' > vault/verdicts/P-20990101-vf/T-01.json \
+    && git add -A && git -c user.name=smoke -c user.email=smoke@example.com commit -q -m "P-20990101-vf/T-01: done" \
+    && git config branch.work/p-20990101-vf.remote . && git config branch.work/p-20990101-vf.merge refs/heads/work/p-20990101-vf
+) >/dev/null 2>&1
+vf_body_check() { # $1=name $2=host
+  local name="$1" host="$2" ok=1 want5
+  shift 2
+  rm -f "$VF_REC"
+  ( cd "$VF_REPO2" && PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST="$host" bash "$ROOT/scripts/vcs_finish.sh" "$@" ) >/dev/null 2>&1
+  local got; got="$(cat "$VF_REC" 2>/dev/null || true)"
+  if [ "$host" = github ]; then
+    want5=$'pr\ncreate\n--title\nP-20990101-vf: vf goal line\n--body'
+  else
+    want5=$'mr\ncreate\n--title\nP-20990101-vf: vf goal line\n--description'
+  fi
+  [ "$(printf '%s\n' "$got" | head -5)" = "$want5" ] || ok=0
+  printf '%s\n' "$got" | grep -q '^| T-01 | .*PASS (attempt=1) |$' || ok=0
+  printf '%s\n' "$got" | grep -q '^| T-02 | .*| - | - |$' || ok=0
+  if [ "$host" = gitlab ]; then
+    [ "$(printf '%s\n' "$got" | tail -1)" = "--yes" ] || ok=0
+  fi
+  if [ "$ok" = 1 ]; then
+    echo "  ok   $name"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $name (got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+vf_body_check "(vcs_finish-body) github・計画あり・引数なし → --title と --body にタスク履歴" github
+vf_body_check "(vcs_finish-body) gitlab・計画あり・引数なし → --title と --description にタスク履歴と --yes" gitlab
+rm -f "$VF_REC"
+( cd "$VF_REPO2" && PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github bash "$ROOT/scripts/vcs_finish.sh" --title T --body B ) >/dev/null 2>&1
+if [ "$(cat "$VF_REC" 2>/dev/null)" = $'pr\ncreate\n--title\nT\n--body\nB' ]; then
+  echo "  ok   (vcs_finish-body) github・計画あり・引数あり → そのまま"; PASS_N=$((PASS_N+1))
+else
+  echo "  NG   (vcs_finish-body) github・計画あり・引数あり → そのまま (got='$(tr '\n' ' ' < "$VF_REC" 2>/dev/null)')"; FAIL_N=$((FAIL_N+1))
+fi
+
 echo "== archive_plans.sh =="
 AR_OUT="$TMP/ar_out.txt"; AR_ERR="$TMP/ar_err.txt"
 ar_init() { # $1=リポジトリ名（$TMP の下に作る）

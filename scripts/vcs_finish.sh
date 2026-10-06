@@ -5,6 +5,8 @@
 #
 # 使い方: bash scripts/vcs_finish.sh [引数...]（引数なしなら gh は --fill、glab は --fill --yes を既定で付ける）
 #   引数がある時は gh pr create / glab mr create にそのまま渡す（既定値は足さない）
+#   引数なしで、現在のブランチ（work/<計画IDの英小文字>）の計画票が見つかった時は、--fill の代わりに
+#   タイトル「<計画ID>: <ゴールの1行目>」と scripts/pr_body.py の出力（タスク履歴表）を本文として渡す
 #
 # ホスティング判定は環境変数 HARNESS_VCS_HOST で上書きできる：
 #   github | gitlab | none | auto（未指定時の既定値）
@@ -13,6 +15,38 @@
 #   gitlab を含む     -> gitlab
 #   それ以外・origin が無い -> none
 set -u
+
+# 引数なしの時の PR/MR 本文を作る。見つかれば pr_title / pr_body を設定して0、無ければ1を返す。
+find_plan_body() {
+  pr_title=""; pr_body=""
+  local branch rest toplevel f id lower plan_id="" goal body
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 1
+  case "$branch" in
+    work/*) rest="${branch#work/}" ;;
+    *) return 1 ;;
+  esac
+  toplevel="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
+  for f in "$toplevel"/vault/plans/*.md; do
+    [ -f "$f" ] || continue
+    id="$(basename "$f" .md)"
+    lower="$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]')"
+    if [ "$lower" = "$rest" ]; then
+      plan_id="$id"
+      break
+    fi
+  done
+  [ -n "$plan_id" ] || return 1
+  body="$(python3 "$(dirname "$0")/pr_body.py" "$plan_id" 2>/dev/null)" || return 1
+  [ -n "$body" ] || return 1
+  goal="$(awk '/^# ゴール[[:space:]]*$/ {f=1; next} f && NF {print; exit}' "$toplevel/vault/plans/$plan_id.md")"
+  if [ -n "$goal" ]; then
+    pr_title="$plan_id: $goal"
+  else
+    pr_title="$plan_id"
+  fi
+  pr_body="$body"
+  return 0
+}
 
 host="${HARNESS_VCS_HOST:-auto}"
 
@@ -46,7 +80,11 @@ case "$host" in
       fi
     fi
     if [ "$#" -eq 0 ]; then
-      gh pr create --fill
+      if find_plan_body; then
+        gh pr create --title "$pr_title" --body "$pr_body"
+      else
+        gh pr create --fill
+      fi
     else
       gh pr create "$@"
     fi
@@ -66,7 +104,11 @@ case "$host" in
       fi
     fi
     if [ "$#" -eq 0 ]; then
-      glab mr create --fill --yes
+      if find_plan_body; then
+        glab mr create --title "$pr_title" --description "$pr_body" --yes
+      else
+        glab mr create --fill --yes
+      fi
     else
       glab mr create "$@"
     fi

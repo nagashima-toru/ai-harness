@@ -23,6 +23,8 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 証跡は3層で残る。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとのマージコミット。worktree での作業を計画ブランチへ `git merge --no-ff` で取り込んだもの）と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
 
+引数なしの `scripts/vcs_finish.sh` は、現在のブランチ（`work/<計画IDの英小文字>`）の計画が見つかれば、PR/MR のタイトルを `<計画ID>: <ゴールの1行目>`、本文を `scripts/pr_body.py` が出す「タスク履歴」表（タスク ID・title・`<計画ID>/<id>: done` コミットの短縮ハッシュ・verdict）にする。PR がスカッシュマージされて main にタスクごとのコミットが残らなくても、この表から辿れる。マージ方式の運用は `docs/runbook.md` 3節を参照。
+
 ## 2. 状態（5つで固定、英小文字）
 
 | status | 意味 | 誰が付けるか |

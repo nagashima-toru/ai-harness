@@ -1,0 +1,14 @@
+{
+  "task": "P-20261006-pr-task-history/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-06 18:25",
+  "criteria": [
+    {"text": "`bash -n scripts/vcs_finish.sh` が終了コード0", "ok": true, "note": "実行コマンド: `bash -n scripts/vcs_finish.sh; echo bn=$?`（worktree 内） / 出力: bn=0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=519 fail=0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c 'ok   (vcs_finish) '` の出力が `4`（既存の4ケース：計画の無いブランチの引数なし `--fill`/`--fill --yes` と、引数ありの素通しが変わらない）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c 'ok   (vcs_finish) '` / 出力: 4"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c 'ok   (vcs_finish-body) '` の出力が `3`（決定済みの3ケース）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c 'ok   (vcs_finish-body) '` / 出力: 3"},
+    {"text": "`grep -c 'HARNESS_PR_BODY_FILE' scripts/vcs_finish.sh` の出力が `0`（D-013 の環境変数を先取りしない）", "ok": true, "note": "実行コマンド: `grep -c HARNESS_PR_BODY_FILE scripts/vcs_finish.sh` / 出力: 0。変更ファイル検査: タスク票の進捗に起点コミットの記録が無いため検査を行わなかった。git status 上の変更は scripts/smoke.sh・scripts/vcs_finish.sh と T-02.md のみ"}
+  ],
+  "reasons": []
+}

@@ -1,0 +1,13 @@
+{
+  "task": "P-20261006-pr-task-history/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-06 18:26",
+  "criteria": [
+    {"text": "`grep -c 'scripts/pr_body.py' .claude/skills/run/SKILL.md` の出力が `1` 以上で、その行が「## 7. 次へ・完了」の節にある（Read で確認）", "ok": true, "note": "実行コマンド: `grep -c 'scripts/pr_body.py' .claude/skills/run/SKILL.md`（worktree内）/ 出力: 1。sed で手順7節を表示し、86行目（83行目の「## 7」の節内）に pr_body.py の記述があることを確認"},
+    {"text": "`grep -c -F 'gh pr create --fill' .claude/skills/run/SKILL.md` の出力が `1` 以上（計画が見つからない時の既定として残す）", "ok": true, "note": "実行コマンド: `grep -c -F 'gh pr create --fill' .claude/skills/run/SKILL.md` / 出力: 1。86行目に「計画が見つからない時…今までどおり gh pr create --fill」とある"},
+    {"text": "`grep -c '^## ' .claude/skills/run/SKILL.md` の出力が `13`（節の見出しを増減していない）", "ok": true, "note": "実行コマンド: `grep -c '^## ' .claude/skills/run/SKILL.md` / 出力: 13"},
+    {"text": "手順7の「引数がある時は既定を付けず、そのまま渡す」旨の記述が残っている（Read で確認）", "ok": true, "note": "手順7の86行目末尾に「引数で渡してよい（引数がある時は既定を付けず、そのまま渡す）」が残っていることを sed 出力で確認。MCP 代替経路の箇条（87行目）も変更なし。変更ファイル検査: `git status --porcelain` は SKILL.md と T-04.md（進捗のみ）のみ。タスク票の進捗に起点コミットの記録が無いため成果物外ファイル検査は行わず（git diff b36e1fa..HEAD は計画票・logのみで除外対象）"}
+  ],
+  "reasons": []
+}

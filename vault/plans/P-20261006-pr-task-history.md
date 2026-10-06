@@ -1,6 +1,6 @@
 ---
 id: P-20261006-pr-task-history
-status: approved
+status: done
 ---
 # ゴール
 PR をスカッシュマージしてもタスクごとの履歴を PR 本文から辿れるようにする

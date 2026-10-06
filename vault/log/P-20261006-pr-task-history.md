@@ -1,1 +1,2 @@
 - 2026-10-06 18:15 - draft→approved 人の指示: /plan approve P-20261006-pr-task-history
+- 2026-10-06 18:16 T-01 todo→doing attempt=1

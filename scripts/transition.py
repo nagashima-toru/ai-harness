@@ -13,8 +13,11 @@
 
 遷移表は todo→doing・doing→doing・doing→review・doing→blocked・review→done・
 review→doing・review→blocked の7つだけ。承認と blocked の解除は扱わない。
-review→done は T-02 で verdict の検査を実装するまで扱えない。
-`--no-model` は受け付けるだけで、今は何もしない。
+review→done は、各 id に正しい PASS の verdict があり（_hooklib.done_rows_without_pass）
+attempt が一致する時だけ行い、verdict もコミットに含める。
+doing→review・doing→blocked の行に creator=<model>、review→done・review→doing・
+review→blocked の行に verifier=<model> を付ける（対象リポジトリの .claude/agents/<name>.md の
+frontmatter の model。無ければ付けない）。`--no-model` で付けない。
 
 終了コード:
     0  遷移した
@@ -50,6 +53,25 @@ TRANSITIONS = (
     ("review", "blocked"),
 )
 ATTEMPT_PLUS = (("doing", "doing"), ("review", "doing"))
+
+
+# モデルを記録する遷移 -> 行のキー名（agents のファイル名と同じ）
+MODEL_AGENT = {
+    ("doing", "review"): "creator",
+    ("doing", "blocked"): "creator",
+    ("review", "done"): "verifier",
+    ("review", "doing"): "verifier",
+    ("review", "blocked"): "verifier",
+}
+
+
+def agent_model(root, name):
+    """対象リポジトリの .claude/agents/<name>.md の frontmatter の model。取れなければ None。"""
+    try:
+        with open(os.path.join(root, ".claude", "agents", name + ".md"), encoding="utf-8") as f:
+            return _hooklib.frontmatter_value(f.read(), "model")
+    except (OSError, UnicodeDecodeError):
+        return None
 
 
 class Refuse(Exception):
@@ -187,8 +209,6 @@ def main(argv):
         olds.add(old)
         if (old, target) not in TRANSITIONS:
             fail("%s: %s→%s は遷移表にありません" % (tid, old, target))
-        if (old, target) == ("review", "done"):
-            fail("review→done は T-02 で verdict の検査を実装するまで扱えません")
         try:
             cur = int(row["attempt"])
         except ValueError:
@@ -212,6 +232,23 @@ def main(argv):
     if len(olds) != 1:
         fail("渡した id の現在の status がそろっていません: %s" % ", ".join(sorted(olds)))
     old_all = plans[0][1]
+
+    if (old_all, target) == ("review", "done"):
+        done_rows = []
+        for tid, _old, _new, _attempt in plans:
+            row = dict(by_id[tid])
+            row["status"] = "done"
+            done_rows.append(row)
+        bad = _hooklib.done_rows_without_pass(root, plan_id, done_rows)
+        if bad:
+            for tid, reason in bad:
+                sys.stderr.write("[transition] %s/%s: %s\n" % (plan_id, tid, reason))
+            sys.exit(1)
+
+    model = None
+    if not args.no_model:
+        if (old_all, target) in MODEL_AGENT:
+            model = agent_model(root, MODEL_AGENT[(old_all, target)])
 
     # 書き換え
     new_lines = list(plan_lines)
@@ -239,12 +276,16 @@ def main(argv):
         add = "\n"
     for tid, old, new, attempt in plans:
         line = "- %s %s %s→%s attempt=%d" % (now, tid, old, new, attempt)
+        if model:
+            line += " %s=%s" % (MODEL_AGENT[(old, new)], model)
         if args.note_text:
             line += " " + args.note_text
         add += line + "\n"
     new_log_bytes = log_before + add.encode("utf-8")
 
     paths = [plan_rel, log_rel]
+    if (old_all, target) == ("review", "done"):
+        paths += ["vault/verdicts/%s/%s.json" % (plan_id, tid) for tid in args.id_list]
     subject = "%s/%s: %s→%s" % (plan_id, ",".join(args.id_list), old_all, target)
 
     log_dir_created = None

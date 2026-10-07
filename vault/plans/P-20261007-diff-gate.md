@@ -1,6 +1,6 @@
 ---
 id: P-20261007-diff-gate
-status: approved
+status: done
 ---
 # ゴール
 差分ゲート diff_gate.py と「成果物」の記法（D-012 フェーズ3）
@@ -27,7 +27,7 @@ creator の作業ブランチの差分が、タスク票の「成果物」に宣
 | T-02 | done | 1 | T-01 | smoke.sh に diff_gate.py のケースを20件以上足す | |
 | T-03 | done | 1 | - | vault/templates/task.md の「成果物」に、変えるファイルをすべてバッククォートのパスで書く記法を足す | |
 | T-04 | done | 1 | T-01 | .claude/agents/planner.md に「成果物」の書き方（変えるファイルをすべてバッククォートのパスで書く）を足す | |
-| T-05 | review | 1 | T-01 | docs/vault-spec.md の5節に「成果物」の記法と diff_gate.py の判定を書く | |
+| T-05 | done | 1 | T-01 | docs/vault-spec.md の5節に「成果物」の記法と diff_gate.py の判定を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

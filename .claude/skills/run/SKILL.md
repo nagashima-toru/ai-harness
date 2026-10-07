@@ -10,7 +10,7 @@ argument-hint: [task-id（省略時は先頭）]
 log の日時は transition.py が実時刻で書くので、run は書かない。`TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` は verifier が verdict の `checked_at` に使う。
 
 ## 0.5 実行モデルの記録
-モデルの記録は transition.py が自動で付ける。`doing→review`・`doing→blocked` は `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` は `verifier=<モデル>` で、値は `.claude/agents/creator.md`・`.claude/agents/verifier.md` の frontmatter の `model` から transition.py が読む。ほかの遷移（`todo→doing`、再開・ハング・worktree が無い時の `doing→doing`・`review→doing`・blocked など）は `--no-model` を付けて呼ぶ。書式の正本は `docs/vault-spec.md` 7節で、ここでは重ねて定義しない。
+モデルの記録は transition.py が自動で付ける。`doing→review`・`doing→blocked` は `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` は `verifier=<モデル>` で、`creator=` の値は環境変数 `HARNESS_CREATOR_MODEL`（空文字は未設定と同じ）を優先し、無ければ `.claude/agents/creator.md` の frontmatter の `model` を transition.py が読む。`verifier=` の値は `.claude/agents/verifier.md` の frontmatter の `model` から読み、環境変数の影響を受けない（手順5の verifier の呼び出しにも `HARNESS_CREATOR_MODEL` は渡さない）。ほかの遷移（`todo→doing`、再開・ハング・worktree が無い時の `doing→doing`・`review→doing`・blocked など）は `--no-model` を付けて呼ぶ。書式の正本は `docs/vault-spec.md` 7節で、ここでは重ねて定義しない。
 
 ## transition.py の呼び出し（早見表）
 計画票のタスク表と `vault/log/<計画ID>.md` は transition.py で変える。log の日時・モデルの記録・コミットは transition.py が行う。
@@ -60,8 +60,8 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 5. 選んだ行の id をカンマでつないで早見表1の呼び出し `python3 scripts/transition.py <計画ID> <id>[,<id>...] doing` を1回行う（計画票・log の書き換えとコミットを transition.py が行う。コミットが要る理由：手順3の worktree はコミット済みの HEAD から分岐するため）。終了コード1なら人に報告して止める
 
 ## 3. 作る
-1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う
-2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）。この呼び出しは `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順4のreview化・手順6のverdict判定が呼び出し結果に依存するため）
+1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う。あわせて `echo "${HARNESS_CREATOR_MODEL:-}"` を1回だけ実行し、出力（以下 `CREATOR_MODEL`）を控える。値の検査はしない
+2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。`CREATOR_MODEL` が空でなければ、その値を Agent ツールの `model` に渡す。空なら `model` を指定しない（`.claude/agents/creator.md` の frontmatter の値になる）。Agent ツールがその値を受け付けずに呼び出しがエラーで返った時は、transition.py を呼ばず、エラーの内容と `HARNESS_CREATOR_MODEL` の値を人に報告してそのタスクの処理を止める（状態は変えない。doing のまま残り、次の `/run` の手順2.2で扱われる）。渡すのは creator の呼び出しだけで、手順5の verifier の呼び出しには渡さない。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）。この呼び出しは `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順4のreview化・手順6のverdict判定が呼び出し結果に依存するため）
 3. 選んだタスクが複数件の場合、上記の呼び出しをタスクの数だけ**1メッセージの中で**行う（Agent ツールを複数回呼び、並行に実行させる）。選んだタスクが1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする（専用の逐次フォールバックは作らない）
 4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する。この対応は後続の review・verifier 呼び出しと、マージ処理で使う。再開に使う記録行は、手順3の8・手順4の呼び出しで transition.py が log に書く
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：

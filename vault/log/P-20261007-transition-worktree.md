@@ -1,1 +1,3 @@
 - 2026-10-07 14:59 - draft→approved 人の指示: /plan approve P-20261007-transition-worktree
+- 2026-10-07 15:24 T-01 todo→doing attempt=1
+- 2026-10-07 15:24 T-06 todo→doing attempt=1

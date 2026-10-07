@@ -1,6 +1,6 @@
 ---
 id: P-20261007-run-transition
-status: draft
+status: approved
 ---
 # ゴール
 run の手順を transition.py に置き換える（D-012 フェーズ5）

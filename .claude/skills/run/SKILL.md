@@ -45,9 +45,15 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 
 ## 2. 取り出す
 1. 計画票の「タスク表」を読む
-2. `review` または `doing` の行があれば、新規に取り出さず、中断からの再開として次のとおり扱う（複数あれば計画票の上から順に、行ごとに判断する）。再開に使う情報は `vault/log/<計画ID>.md` のその id の**最後の記録行**（`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>` の形の行。書式の正本は `docs/vault-spec.md` 7節）だけとする。以下の状態変更は、必ず log に追記してコミットしてから次へ進む
-   - `review` の行：その id の最後の記録行から worktree のパス・ブランチ名・`plan_head`（手順6で `PLAN_HEAD` として使う）を復元し、`git worktree list` にそのパスがあることを確認する。あれば手順5へ進む（手順3・4は済んでいる）。無ければ、status を `doing`、attempt を +1 にし、`- <日時> <id> review→doing attempt=<n+1> worktree が無いため作り直し` を log に追記してコミットし、手順3から creator を呼び直す。attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）に達していれば、代わりに status を `blocked`、question に「再開時に記録された worktree が無い（パス）」と書き、`- <日時> <id> review→blocked attempt=<n> worktree が無いため` を追記する。記録行そのものが無い `review` の行も同じく worktree が無い場合として扱う
-   - `doing` の行：前回の呼び出しの中断を1回の試行として数える。attempt が上限未満なら、attempt を +1 にし（status は `doing` のまま）、`- <日時> <id> doing→doing attempt=<n+1> 中断から再開` を log に追記してコミットし、手順3から creator を呼び直す（`vault/tasks/<計画ID>/<id>.md` の「進捗」を読んで続けるのは creator 自身が行う）。attempt が上限に達していれば、status を `blocked`、question に「中断が続き attempt が上限に達した」と書き、`- <日時> <id> doing→blocked attempt=<n> 中断が上限に達した` を追記する。その id に記録行があり、そのパスが `git worktree list` に残っていれば、呼び直す前に `bash scripts/discard_worktree.sh <パス> <ブランチ名>`（手順6.4.2と同じ）で破棄してよい（blocked にする場合は破棄せず残す）
+2. `review` または `doing` の行があれば、新規に取り出さず、中断からの再開として次のとおり扱う（複数あれば計画票の上から順に、行ごとに判断する）。再開に使う情報は `vault/log/<計画ID>.md` のその id の**最後の記録行**（`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>` の形の行。書式の正本は `docs/vault-spec.md` 7節）だけとする。状態の変更は transition.py の呼び出しで行う（log の追記とコミットも transition.py が行う）。終了コードが0でなければ早見表の表のとおりにする。再試行か blocked かは run が決める：attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）未満なら doing の呼び出し、達していれば blocked の呼び出し（`--worktree` 無しの transition.py は上限を超える doing を終了コード1で拒否するだけで、blocked には切り替えない）。blocked の質問文は Write ツールで一時ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書いて `--question-file` で渡す
+   - `review` の行：その id の最後の記録行から worktree のパス・ブランチ名・`plan_head`（手順6で `PLAN_HEAD` として使う）を復元し、`git worktree list` にそのパスがあることを確認する。あれば手順5へ進む（手順3・4は済んでいる）。無ければ、attempt が上限未満なら次を呼び（review→doing。attempt+1）、手順3から creator を呼び直す。記録行そのものが無い `review` の行も同じく worktree が無い場合として扱う
+     - `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "worktree が無いため作り直し"`
+   - `review` の行で worktree が無く attempt が上限に達していれば、代わりに次を呼ぶ（質問文は「再開時に記録された worktree が無い（パス）」）
+     - `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "worktree が無いため"`
+   - `doing` の行：前回の呼び出しの中断を1回の試行として数える。attempt が上限未満なら次を呼び（doing→doing。attempt+1）、手順3から creator を呼び直す（`vault/tasks/<計画ID>/<id>.md` の「進捗」を読んで続けるのは creator 自身が行う）。その id に記録行があり、そのパスが `git worktree list` に残っていれば、呼び直す前に `bash scripts/discard_worktree.sh <パス> <ブランチ名>`（不採用の worktree の破棄と同じ方法）で破棄してよい
+     - `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "中断から再開"`
+   - `doing` の行で attempt が上限に達していれば、代わりに次を呼ぶ（質問文は「中断が続き attempt が上限に達した」。worktree は破棄せず残す）
+     - `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "中断が上限に達した"`
    - 記録行が無く場所が分からない worktree（`doing` の中断で残ったもの等）は自動で削除しない。完了報告に `git worktree list` の出力を添えて人に知らせる
 3. 無ければ、`todo` かつ `after` に列挙された全タスクの `status` が `done`（`after` が `-` なら無条件）である行を、タスク表の上から順に並べたものを「着手可能集合」とする。引数 `$ARGUMENTS` に ID があれば、着手可能集合をその1行だけに絞る。着手可能集合の先頭から環境変数 `HARNESS_MAX_PARALLEL`（既定 3。未設定時は3を使う。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）件までを選ぶ
 4. 選べる行が無ければ「取れるタスクがありません」と報告して終わる
@@ -87,12 +93,17 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 
 強制終了で復旧した後、オーケストレーターは次のいずれかの手順を取る。
 
-1. **creator 呼び出し（手順3）がハングした場合**：対象タスクの worktree を `bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>` で破棄する（手順6.3.2の FAIL 再試行パターンと同様の破棄方法）。attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）未満なら、status を `doing` のまま attempt を +1 にし、`vault/log/<計画ID>.md` に `- <日時> <id> doing→doing attempt=<n+1> creator呼び出しハングにより再試行` を追記した上で手順3から creator を呼び直す。attempt が上限に達していれば status を `blocked` にし、question に「creator 呼び出しがハングした（応答無し、強制終了で復旧）」ことを明記し、`vault/log/<計画ID>.md` に `- <日時> <id> doing→blocked attempt=<n> creator呼び出しハング` を追記する。
-2. **verifier 呼び出し（手順5）がハングした場合**：creator の成果物が入っている worktree は破棄しない（維持する）。verifier を呼び直してよいが、同一タスクでのハング再試行が2回に達したら（タスクの attempt カウンタとは別に、ハング再試行回数として数える）status を `blocked` にし、question に「verifier 呼び出しがハングした」ことと worktree のパスを明記する。この場合も worktree は削除しない（人が調査に使えるようにする、既存の blocked 時の温存方針と同じ）。`vault/log/<計画ID>.md` には `- <日時> <id> review→blocked attempt=<n> verifier呼び出しハング` を追記する。
+1. **creator 呼び出し（手順3）がハングした場合**：対象タスクの worktree を `bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>` で破棄する（FAIL の再試行で不採用の worktree を破棄するのと同じ方法）。その後、attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）未満なら次の呼び出しをして手順3から creator を呼び直す。
+   - `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "creator呼び出しハングにより再試行"`
 
-いずれの場合も、状態変更（doing への差し戻し・blocked 化）は `vault/log/<計画ID>.md` に既存の書式（`- <日時> <id> <遷移> attempt=<n> 補足`）で追記し、補足に「ハング」の語を含める。
+   attempt が上限に達していれば、代わりに次を呼ぶ（質問文は「creator 呼び出しがハングした（応答無し、強制終了で復旧）」。Write ツールで一時ファイルに書いて `--question-file` で渡す）。
+   - `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "creator呼び出しハング"`
+2. **verifier 呼び出し（手順5）がハングした場合**：creator の成果物が入っている worktree は破棄しない（維持する）。verifier を呼び直してよいが、同一タスクでのハング再試行が2回に達したら（タスクの attempt カウンタとは別に、ハング再試行回数として数える）次を呼ぶ（review→blocked。質問文は「verifier 呼び出しがハングした」ことと worktree のパス）。この場合も worktree は削除しない（人が調査に使えるようにする、既存の blocked 時の温存方針と同じ）。
+   - `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "verifier呼び出しハング"`
 
-**無人実行（cron・CI）の場合**：`python3 scripts/run_unattended.py` を cron・CI から呼ぶ場合は、人が TaskStop で止めるのを待たない。ラッパーが `HARNESS_RUN_TIMEOUT`（既定 3600 秒）でプロセスグループごと止め、終了コード124で終わる。止められた後の復旧は、次回の `/run` が手順2.2（フェーズ6の再開手順：`doing` は中断を1回の試行として attempt+1、`review` は記録行から worktree を復元）で続きから行う。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で `blocked` になる。ラッパーは vault のファイルに書かない（log への追記は次回の `/run` のオーケストレーターが再開手順の中で行う）。対話実行（人が `/run` を打つ場合）の運用は上記のとおり変わらない。
+いずれの場合も、状態の変更は transition.py の呼び出しで行い（log の追記とコミットも transition.py が行う）、補足（`--note`）に「ハング」の語を含める。
+
+**無人実行（cron・CI）の場合**：`python3 scripts/run_unattended.py` を cron・CI から呼ぶ場合は、人が TaskStop で止めるのを待たない。ラッパーが `HARNESS_RUN_TIMEOUT`（既定 3600 秒）でプロセスグループごと止め、終了コード124で終わる。止められた後の復旧は、次回の `/run` が手順2.2（フェーズ6の再開手順：`doing` は中断を1回の試行として attempt+1、`review` は記録行から worktree を復元）で続きから行う。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で `blocked` になる。ラッパーは vault のファイルに書かない（状態の変更は次回の `/run` が再開手順の中で transition.py で行う）。対話実行（人が `/run` を打つ場合）の運用は上記のとおり変わらない。
 
 ## 6. verdict に従う（逐次処理）
 全 verifier の完了を待った上で、対象タスク（手順5で verifier を呼んだタスク）を1件ずつ、計画票のタスク表の上から並んだ順に**逐次**処理する。transition.py がコミット・マージを行うので、複数タスクが同時に PASS していても並行に呼ばず、1件ずつ完了させてから次のタスクに移る。

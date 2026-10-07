@@ -33,7 +33,7 @@ done の行の verdict をフックで検査する（D-012 フェーズ1）
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | _hooklib.py に validate_verdict と done_rows_without_pass を足す | |
+| T-01 | done | 1 | - | _hooklib.py に validate_verdict と done_rows_without_pass を足す | |
 | T-02 | review | 1 | - | smoke.sh の done の行を含む既存ケースに PASS の verdict を置く | |
 | T-03 | todo | 0 | T-01,T-02 | stop_gate.py で done の行の verdict を検査し validate_verdict を _hooklib.py に切り替える | |
 | T-04 | todo | 0 | T-01,T-02 | plan_guard.py で done の行の verdict を検査する | |

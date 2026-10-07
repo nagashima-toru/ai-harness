@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-done-verdict-check/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 09:09",
+  "criteria": [
+    {"text": "2関数が定義されている：`python3 -c \"import sys; sys.path.insert(0, '.claude/hooks'); import _hooklib as H; print(callable(H.validate_verdict), callable(H.done_rows_without_pass))\"` の出力が `True True`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c（worktree で実行） / 出力: True True"},
+    {"text": "`validate_verdict` が今の stop_gate.py のものと同じ引数・同じ判定：（len(validate_verdict(PASS...)), len(validate_verdict(FOO...))）の出力が `0 1`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c / 出力: 0 1"},
+    {"text": "正しくない done の行だけを表の順に理由つきで返す（review の T-07 は返さない）：mixed フィクスチャの出力が5行と完全に一致する", "ok": true, "note": "実行コマンド: 基準記載の python3 -c（mixed） / 出力: T-02..T-06 の5行が期待文言と一致、T-07 は無し"},
+    {"text": "正しい PASS の verdict だけなら空：ok フィクスチャの出力が `[]`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c（ok） / 出力: []"},
+    {"text": "既存の smoke が全件通り、件数も変わらない：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=519 fail=0`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree） / 出力: smoke: pass=519 fail=0。変更ファイル検査: 起点コミット 5530889、git status は .claude/hooks/_hooklib.py と T-01.md のみで宣言外なし"}
+  ],
+  "reasons": []
+}

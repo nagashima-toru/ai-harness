@@ -45,6 +45,20 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 `todo→doing` で一度に選べるタスク数（着手可能集合のうち、実際に `doing` へ回す件数）の上限は環境変数 `HARNESS_MAX_PARALLEL`（既定 3。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）。着手可能集合は「`todo` かつ `after` の依存が全て `done`」なタスクの集合で、計画票のタスク表の上から順に並べ、その先頭から `HARNESS_MAX_PARALLEL` 件までを選ぶ。
 
+状態遷移は `scripts/transition.py` で1コマンドで行うのが推奨の経路である。呼び出しの形：
+
+`python3 scripts/transition.py <計画ID> <id>[,<id>...] <遷移先> [--question <文> | --question-file <パス>] [--note <補足>] [--no-model]`
+
+- 許す遷移は todo→doing、doing→doing、doing→review、doing→blocked、review→done、review→doing、review→blocked の7つ。`attempt` は todo→doing で 1、doing→doing・review→doing で +1、それ以外は変えない
+- タスク表の status・attempt・question を書き換え、log に遷移行を追記し、計画票と log（done の時は verdict も）だけを `git commit -m "<計画ID>/<id,...>: <旧>→<新>" -- <パス...>` でコミットする。ほかの staged な変更は混ぜない。対象のリポジトリは実行時のカレントディレクトリの `git rev-parse --show-toplevel`
+- question の `|` は `／` に、改行は空白に置き換えて表に書く。`--question-file` はファイルの中身を question にする（引用符の問題とガードの誤検知を避けるため）
+- 拒否して何も変えない条件（終了コード 1）：遷移表に無い／計画票が approved でない／ブランチが `work/<計画IDの英小文字>` でない／`after` の依存が done でない／`attempt` が上限（`HARNESS_MAX_ATTEMPTS`）を超える／blocked への遷移に question が無い／review→done で PASS の verdict が無い（条件は10節の done の行の verdict の検査と同じ）
+- 複数の id は、全部の行で同じ遷移が許される時だけ行う（1つでも拒否があれば何も変えない）。コミットは1回
+- 終了コード：0 遷移した／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り
+- 承認（draft→approved）と blocked の解除（`/plan approve`・`/plan unblock`）は扱わず、今の `/plan` の Edit のまま（10節の裏付けの検査が「HEAD と作業ツリーの比較」で働くため）
+- 推奨の経路であって強制ではない。Edit による計画票の直接の書き換えはフックで拒否しない。done の行の verdict の検査（9節・10節）で「PASS の無い done」が残らないことを守る
+- 今の `/run`（`.claude/skills/run/SKILL.md`）の手順はまだ `scripts/transition.py` を呼ばない
+
 ## 3. ID・ファイル名・ブランチ名
 
 | 種別 | 形式 | 例 |
@@ -141,6 +155,8 @@ blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク
 run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了報告の受領直後に、run が1タスク1行ずつ追記する（複数タスクの場合はタスクごとに1行）。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
 
 実行したモデルの記録：遷移行の補足の先頭に、その遷移を行わせたエージェントのモデルを置く。`doing→review`・`doing→blocked` の行には `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` の行には `verifier=<モデル>` を付ける。モデルの値は `.claude/agents/<name>.md` の frontmatter の `model` とする。他の補足（理由要約など）が続く場合は、その後ろに空白区切りで書く。記録先は log だけで、verdict.json の形式は変えない。
+
+`scripts/transition.py`（2節）で遷移した時は、log の日時をスクリプトが実行時の JST（UTC+9 固定）で書く。`creator=`・`verifier=` は、対象リポジトリの `.claude/agents/creator.md`・`verifier.md` の frontmatter の `model` からスクリプトが自動で付ける（読めない時は付けない）。`--no-model` を付けると付けない（中断からの再開・ハング・worktree が無い時の行のため）。`--note` の値は、モデルの記録の後ろに補足として書かれる。
 
 - 例（creator）：`- 2026-10-01 10:30 T-01 doing→review attempt=1 creator=sonnet`
 - 例（verifier）：`- 2026-10-01 10:40 T-01 review→done attempt=1 verifier=sonnet`

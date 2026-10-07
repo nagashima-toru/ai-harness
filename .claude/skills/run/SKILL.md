@@ -32,7 +32,7 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 | 終了コード | 次の行動 |
 |---|---|
 | 0 | 遷移した。次の手順へ進む。`--worktree` 無しの呼び出し（着手・再開・ハング・上限での blocked）は成功すると blocked でも 0 |
-| 1 | 前提を満たさず何も変えていない。標準エラーの `[transition] ` の理由を添えて人に報告し、そのタスクの処理を止める（計画票や log を Edit・printf で直さない） |
+| 1 | 前提を満たさず何も変えていない。標準エラーの `[transition] ` の理由を添えて人に報告し、そのタスクの処理を止める（計画票や log を Edit やシェルの書き込みで直さない） |
 | 2 | 引数の誤り。早見表の形と見比べて呼び出しを直す |
 | 3 | 差し戻した（creator を呼び直す）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直してその id の creator を呼び直す |
 | 4 | blocked にした。標準出力の1行を完了報告に写し、その id を終えて次の対象タスクへ進む（worktree は残っている） |
@@ -63,11 +63,11 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う
 2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）。この呼び出しは `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順4のreview化・手順6のverdict判定が呼び出し結果に依存するため）
 3. 選んだタスクが複数件の場合、上記の呼び出しをタスクの数だけ**1メッセージの中で**行う（Agent ツールを複数回呼び、並行に実行させる）。選んだタスクが1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする（専用の逐次フォールバックは作らない）
-4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する。この対応は後続の review・verifier 呼び出しと、マージ処理で使う。再開に使う記録行は、手順3.8・手順4の呼び出しで transition.py が log に書く
+4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する。この対応は後続の review・verifier 呼び出しと、マージ処理で使う。再開に使う記録行は、手順3の8・手順4の呼び出しで transition.py が log に書く
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：
    `git -C <worktree のパス> merge-base --is-ancestor <PLAN_HEAD> HEAD`
    終了コードが `0` なら、その worktree は計画ブランチ（`PLAN_HEAD`）から分岐している。`git worktree list` でパスとブランチ名の対応も確認できる
-6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに、質問文（「worktree の分岐元が計画ブランチと一致しない」と、手順5の確認コマンドの出力の要点）を Write ツールで一時ファイルに書き、3.8 と同じ呼び出しで対象タスクを blocked にして人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
+6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに、質問文（「worktree の分岐元が計画ブランチと一致しない」と、手順5の確認コマンドの出力の要点）を Write ツールで一時ファイルに書き、手順3の8と同じ呼び出しで対象タスクを blocked にして人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
 7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する
 8. 報告が「blocked: <質問文>」のタスクについて、質問文を言い換えずに Write ツールで一時ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書き、`python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` を id ごとに1回呼ぶ。worktree は transition.py が残す。終了コードは4（blocked にした）が正常。選んだタスクの中に blocked 以外が無ければここで終わる
 
@@ -109,7 +109,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 全 verifier の完了を待った上で、対象タスク（手順5で verifier を呼んだタスク）を1件ずつ、計画票のタスク表の上から並んだ順に**逐次**処理する。transition.py がコミット・マージを行うので、複数タスクが同時に PASS していても並行に呼ばず、1件ずつ完了させてから次のタスクに移る。
 
 各タスクについて：
-1. `vault/verdicts/<計画ID>/<id>.json` が存在しない場合、まず対象タスクの worktree のパス（手順3.4で保持したもの）配下の同じ相対パス（`<worktree のパス>/vault/verdicts/<計画ID>/<id>.json`）を確認する。存在すれば `cp <worktree のパス>/vault/verdicts/<計画ID>/<id>.json vault/verdicts/<計画ID>/<id>.json` でメインリポジトリ側へコピーし（log には書かない。コピーした verdict は done のコミットに含まれる）、手順2で通常どおり読む。worktree 側にも見つからない場合は検証未完了として扱い、そのタスクは次のタスクに進まず処理を止める（人に確認する）
+1. `vault/verdicts/<計画ID>/<id>.json` が存在しない場合、まず対象タスクの worktree のパス（手順3の4で保持したもの）配下の同じ相対パス（`<worktree のパス>/vault/verdicts/<計画ID>/<id>.json`）を確認する。存在すれば `cp <worktree のパス>/vault/verdicts/<計画ID>/<id>.json vault/verdicts/<計画ID>/<id>.json` でメインリポジトリ側へコピーし（log には書かない。コピーした verdict は done のコミットに含まれる）、手順2で通常どおり読む。worktree 側にも見つからない場合は検証未完了として扱い、そのタスクは次のタスクに進まず処理を止める（人に確認する）
 2. `vault/verdicts/<計画ID>/<id>.json`（手順1でコピーした場合はコピー後のファイル）を読み、`result` と `attempt` を確認する。`attempt` が計画票のタスク表の値と一致しない verdict は「無い」ものとして扱い、そのタスクは検証未完了として次のタスクに進まず処理を止める（人に確認する）
 3. `PASS` の場合：次を1回呼ぶ。`PLAN_HEAD` は手順3の1で控えた値（中断からの再開では log の記録行から復元した値。手順2の2）を使う。
    `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>`
@@ -131,7 +131,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 
 ## 7. 次へ・完了
 - 計画票に取れる行が残っていれば手順2に戻る
-- 全タスクが `done` になったら、計画票 frontmatter の `status` を `done` にし、`bash scripts/vcs_finish.sh` を実行する。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名と `git merge --no-ff <branch>` の案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
+- 全タスクが `done` になったら、計画票 frontmatter の `status` を `done` にし、`bash scripts/vcs_finish.sh` を実行する。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名とマージの案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
   - 引数なしの `bash scripts/vcs_finish.sh` は、現在のブランチが `work/<計画IDの英小文字>` で `vault/plans/` に計画票があれば、GitHub なら `gh pr create --title "<計画ID>: <ゴールの1行目>" --body <本文>`、GitLab なら `glab mr create --title "<計画ID>: <ゴールの1行目>" --description <本文> --yes` を既定で使う。本文は `scripts/pr_body.py` が出すタスク履歴表（タスク ID・title・コミット・verdict）。計画が見つからない時（`design/d-xxx` など）は今までどおり `gh pr create --fill` / `glab mr create --fill --yes` を使う。いずれも非対話で通る。PR/MR のタイトル・本文を整えたい時は引数で渡してよい（引数がある時は既定を付けず、そのまま渡す）
   - `bash scripts/vcs_finish.sh` が `gh`/`glab` コマンド自体が無いことによる失敗（`command not found` 相当の終了コード127、または本スクリプトが出す「`gh`/`glab` コマンドが見つかりません」という明示エラー）で終了した場合：GitHub であれば GitHub MCP ツール（例：実行環境で使える `mcp__github__create_pull_request` 等）で同内容の PR を作成してよい。`gh pr create "$@"` に渡すはずだったブランチ名・PR タイトル・本文は、そのまま MCP ツールの引数に引き継ぐ。GitLab（`glab`）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段が使える環境ではそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる。いずれの代替経路を使った場合も `gh pr merge`/`glab mr merge` は実行しない（マージは人が行うという既存方針は変わらない）。認証エラー・ネットワークエラー等、コマンド自体は存在するが実行に失敗するケースはこの代替の対象外とする
 - どちらでもなければ、処理した ID と結果を1行ずつ報告して終わる
@@ -146,17 +146,18 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 5. 起票した issue（またはフォールバックで書いたファイル）の自動トリアージ（ラベル付け・アサイン等）は行わない
 
 ## 回帰確認（着手可能集合が1件だけの場合）
-着手可能集合が1件だけの計画でも手順2〜7は同じ経路（creator/verifier のサブエージェント呼び出し・worktree・逐次マージ）を通す（専用の逐次フォールバックは作らない）。この経路を通しても、`P-20260924-creator-subagent` で実施したフェーズ2までの逐次フロー（worktree を使わず1タスクずつ creator→review→verifier→done/blocked を処理していた版）と最終結果が同じになることを、次の観点で確認する：
+着手可能集合が1件だけの計画でも手順2〜7は同じ経路（creator/verifier のサブエージェント呼び出し・worktree・transition.py による逐次の状態変更とマージ）を通す（専用の逐次フォールバックは作らない）。この経路を通しても、`P-20260924-creator-subagent` で実施したフェーズ2までの逐次フロー（worktree を使わず1タスクずつ creator→review→verifier→done/blocked を処理していた版）と最終結果が同じになることを、次の観点で確認する：
 1. 計画票のタスク表：対象タスクの行が最終的に `done`（FAIL で上限到達、またはマージコンフリクトの場合は `blocked`）になっており、`attempt` の値が実際の処理回数と一致している。他の行の `status`・`after`・`question` は変化していない
-2. `vault/log/<計画ID>.md`：対象タスクについて `todo→doing` → `doing→review` →（`review→done` または `review→doing`（再試行）または `review→blocked`）の各遷移が1行ずつ、他のタスクと同じ書式（`- <日時> <id> <遷移> attempt=<n> [補足]`）で記録されている。着手可能集合が1件だけなので「まとめて」書く手順を通っても実際には1行ずつになり、フェーズ2の版と行数・書式が一致する
-3. 成果物：計画ブランチ上の対象ファイルの差分（`git diff <PLAN_HEAD>..HEAD -- <成果物のパス>`）が、creator が worktree 内で作った変更内容と一致し、マージコミット以外の余分な差分が無い
+2. `vault/log/<計画ID>.md`：対象タスクについて `todo→doing` → `doing→review` →（`review→done` または `review→doing`（再試行）または `review→blocked`）の各遷移が transition.py によって1行ずつ、他のタスクと同じ書式（`- <日時> <id> <遷移> attempt=<n> [補足]`）で記録されている。日時は transition.py の実時刻である。着手可能集合が1件だけなので、フェーズ2の版と行数・書式が一致する
+3. 成果物：計画ブランチ上の対象ファイルの差分（`git diff <PLAN_HEAD>..HEAD -- <成果物のパス>`）が、creator が worktree 内で作った変更内容と一致し、マージコミット以外の余分な差分が無い（worktree 側に収集コミット `<計画ID>/<id>: creator 成果物をオーケストレーターが収集` がありうる）
 4. `vault/verdicts/<計画ID>/<id>.json` の `attempt` が計画票のタスク表の値と一致している（Stop フックの整合性検査を通過する点もフェーズ2と同じ）
-5. worktree・作業ブランチが最終状態で残っていない（PASS で `done` になった場合は削除済み。`blocked`（コンフリクトまたは上限到達）の場合のみ残っていてよい）
+5. worktree・作業ブランチが最終状態で残っていない（PASS で `done` になれば transition.py の done が削除済み。`blocked`（新規コミット無し・宣言外の変更・コンフリクト・上限到達）の時だけ残っていてよい）
 
 上記1〜5がいずれも成立すれば、着手可能集合が1件だけのケースの最終状態はフェーズ2までの逐次フローと同じ結果とみなす。差異があれば手順6・7の実装を見直す。
 
 ## 注意
 - Stop フックが verdict と status を照合する。手順を飛ばして終わろうとするとブロックされ、理由が表示される
 - `done` のタスク票は編集しない。計画票のタスク表の列順・見出しは変えない
-- creator のコミットはタスク票の受け入れ基準に含まれている場合だけ行う（オーケストレーターが手順6.3.1 で worktree の未コミット分をコミットするのはこの対象外）
+- creator のコミットはタスク票の受け入れ基準に含まれている場合だけ行う（手順4の review の呼び出しで transition.py が worktree の未コミット分を収集コミットするのはこの対象外）
+- タスク表と log は transition.py で変え、Edit やシェルの書き込みで直接書き換えない（frontmatter の approved→done だけは Edit）
 - タスク中は `vault/rules/` を編集しない（verifier の判定基準を自分で変えないため。フックでも拒否される）

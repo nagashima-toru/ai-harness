@@ -11,6 +11,7 @@ vault/verdicts/<計画ID>/<タスクID>.json を読んで判定する。
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/stop_gate.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
 タスク表と受け入れ基準の読み方は `_hooklib.py` の `parse_tasks`・`count_criteria` を使う。
+done の行は verdict を検査する（`_hooklib.py` の `validate_verdict`・`done_rows_without_pass` を使う）。
 委譲の実装は共通モジュール `_hooklib.py` の `delegate_to_worktree` を使う。
 `_hooklib` が読み込めない時は、標準エラーに理由を出して終了コード2で終わる
 （`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0）。
@@ -70,38 +71,6 @@ def has_uncommitted_changes(root):
     return bool(out.stdout.strip())
 
 
-def validate_verdict(verdict, expected_task, task_path):
-    """verdict の形式を検査し、不正な点の説明リストを返す（空なら正常）。"""
-    problems = []
-    result = verdict.get("result")
-    if str(result).upper() not in ("PASS", "FAIL"):
-        problems.append(f"result が PASS/FAIL 以外です（{result!r}）")
-    criteria = verdict.get("criteria")
-    if not isinstance(criteria, list):
-        problems.append("criteria が配列ではありません")
-    else:
-        for i, c in enumerate(criteria):
-            if not isinstance(c, dict):
-                problems.append(f"criteria[{i}] が辞書ではありません")
-                continue
-            if not all(k in c for k in ("text", "ok", "note")):
-                problems.append(f"criteria[{i}] に text/ok/note のいずれかがありません")
-                continue
-            note = c.get("note")
-            if not isinstance(note, str) or not note.strip():
-                problems.append(f"criteria[{i}].note が空です")
-        if os.path.isfile(task_path):
-            with open(task_path, encoding="utf-8") as f:
-                expected = H.count_criteria(f.read())
-            if len(criteria) != expected:
-                problems.append(
-                    f"criteria の行数（{len(criteria)}）がタスク票の受け入れ基準の行数（{expected}）と一致しません"
-                )
-    if not isinstance(verdict.get("reasons"), list):
-        problems.append("reasons が配列ではありません")
-    return problems
-
-
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -149,6 +118,16 @@ def main():
     with open(plan_path, encoding="utf-8") as f:
         tasks = H.parse_tasks(f.read())
 
+    # done の行は attempt が一致する正しい PASS の verdict が必要（無ければ review に戻して verifier）。
+    missing = H.done_rows_without_pass(root, plan_id, tasks)
+    if missing:
+        done_id, why = missing[0]
+        done_attempt = next((t["attempt"] for t in tasks if t["id"] == done_id), "")
+        block(
+            f"[stop_gate] {plan_id}/{done_id} は done ですが、attempt={done_attempt} の PASS の verdict がありません（{why}）。"
+            f"計画票の {done_id} の status を review に戻し、verifier を実行してください。"
+        )
+
     active_tasks = [t for t in tasks if t["status"] in ("doing", "review")]
     if not active_tasks:
         allow()
@@ -186,7 +165,7 @@ def main():
                 f"（attempt={attempt}）。"
             )
 
-        problems = validate_verdict(verdict, task_key, task_path)
+        problems = H.validate_verdict(verdict, task_key, task_path)
         if problems:
             block(
                 f"[stop_gate] {task_key} の verdict の形式が不正です: {'; '.join(problems)}。"
@@ -198,8 +177,6 @@ def main():
         reasons_text = " / ".join(str(r) for r in reasons) if reasons else "（理由なし）"
 
         if result == "PASS":
-            if status == "done":
-                continue
             block(
                 f"[stop_gate] {task_key} の verdict は PASS ですが status が {status} です。"
                 f"計画票（vault/plans/{plan_id}.md）のタスク表の status を done にし、vault/log/{plan_id}.md に1行追記すること。"

@@ -7,6 +7,10 @@
 #   引数がある時は gh pr create / glab mr create にそのまま渡す（既定値は足さない）
 #   引数なしで、現在のブランチ（work/<計画IDの英小文字>）の計画票が見つかった時は、--fill の代わりに
 #   タイトル「<計画ID>: <ゴールの1行目>」と scripts/pr_body.py の出力（タスク履歴表）を本文として渡す
+#   引数なしで HARNESS_PR_BODY_FILE（本文のファイル）が空でない値で設定されている時だけ、その内容を本文として渡す
+#   （gh は --body-file にパスをそのまま、glab は --description にファイルの中身を渡す）。引数がある時は見ない。
+#   読めないファイルなら git push の前に標準エラーへ出して終了コード2で終わる（none の経路では検査しない）
+#   HARNESS_PR_TITLE は上の経路でだけ使うタイトル。未設定か空なら計画ID、計画が見つからなければ現在のブランチ名
 #
 # ホスティング判定は環境変数 HARNESS_VCS_HOST で上書きできる：
 #   github | gitlab | none | auto（未指定時の既定値）
@@ -16,10 +20,10 @@
 #   それ以外・origin が無い -> none
 set -u
 
-# 引数なしの時の PR/MR 本文を作る。見つかれば pr_title / pr_body を設定して0、無ければ1を返す。
-find_plan_body() {
-  pr_title=""; pr_body=""
-  local branch rest toplevel f id lower plan_id="" goal body
+# 現在のブランチ（work/<計画IDの英小文字>）に対応する計画票を探し、plan_id と plan_toplevel を設定する。無ければ1を返す。
+find_plan_id() {
+  plan_id=""; plan_toplevel=""
+  local branch rest toplevel f id lower
   branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 1
   case "$branch" in
     work/*) rest="${branch#work/}" ;;
@@ -32,10 +36,20 @@ find_plan_body() {
     lower="$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]')"
     if [ "$lower" = "$rest" ]; then
       plan_id="$id"
+      plan_toplevel="$toplevel"
       break
     fi
   done
   [ -n "$plan_id" ] || return 1
+  return 0
+}
+
+# 引数なしの時の PR/MR 本文を作る。見つかれば pr_title / pr_body を設定して0、無ければ1を返す。
+find_plan_body() {
+  pr_title=""; pr_body=""
+  local goal body toplevel
+  find_plan_id || return 1
+  toplevel="$plan_toplevel"
   body="$(python3 "$(dirname "$0")/pr_body.py" "$plan_id" 2>/dev/null)" || return 1
   [ -n "$body" ] || return 1
   goal="$(awk '/^# ゴール[[:space:]]*$/ {f=1; next} f && NF {print; exit}' "$toplevel/vault/plans/$plan_id.md")"
@@ -46,6 +60,29 @@ find_plan_body() {
   fi
   pr_body="$body"
   return 0
+}
+
+# HARNESS_PR_BODY_FILE の経路のタイトル。HARNESS_PR_TITLE、無ければ計画ID、無ければブランチ名。
+notes_title() {
+  if [ -n "${HARNESS_PR_TITLE:-}" ]; then
+    printf '%s' "$HARNESS_PR_TITLE"
+  elif find_plan_id; then
+    printf '%s' "$plan_id"
+  else
+    git rev-parse --abbrev-ref HEAD
+  fi
+}
+
+# 引数なしで HARNESS_PR_BODY_FILE が空でない時だけ使う。読めなければ push の前に終了コード2で終わる。
+use_notes=0
+if [ "$#" -eq 0 ] && [ -n "${HARNESS_PR_BODY_FILE:-}" ]; then
+  use_notes=1
+fi
+check_notes() {
+  if [ "$use_notes" = 1 ] && [ ! -r "$HARNESS_PR_BODY_FILE" ]; then
+    echo "vcs_finish.sh: HARNESS_PR_BODY_FILE が読めません: $HARNESS_PR_BODY_FILE" >&2
+    exit 2
+  fi
 }
 
 host="${HARNESS_VCS_HOST:-auto}"
@@ -71,6 +108,7 @@ case "$host" in
       echo "vcs_finish.sh: gh コマンドが見つかりません（GitHub は検出済みです）。GitHub CLI をインストールするか、GitHub MCP 等の代替手段で PR を作成してください。" >&2
       exit 127
     fi
+    check_notes
     if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
       current_branch="$(git rev-parse --abbrev-ref HEAD)"
       git push -u origin "$current_branch"
@@ -79,7 +117,9 @@ case "$host" in
         exit "$push_status"
       fi
     fi
-    if [ "$#" -eq 0 ]; then
+    if [ "$use_notes" = 1 ]; then
+      gh pr create --title "$(notes_title)" --body-file "$HARNESS_PR_BODY_FILE"
+    elif [ "$#" -eq 0 ]; then
       if find_plan_body; then
         gh pr create --title "$pr_title" --body "$pr_body"
       else
@@ -95,6 +135,7 @@ case "$host" in
       echo "vcs_finish.sh: glab コマンドが見つかりません（GitLab は検出済みです）。GitLab CLI をインストールするか、GitLab MCP 等の代替手段で MR を作成してください。" >&2
       exit 127
     fi
+    check_notes
     if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
       current_branch="$(git rev-parse --abbrev-ref HEAD)"
       git push -u origin "$current_branch"
@@ -103,7 +144,10 @@ case "$host" in
         exit "$push_status"
       fi
     fi
-    if [ "$#" -eq 0 ]; then
+    if [ "$use_notes" = 1 ]; then
+      notes_text="$(cat "$HARNESS_PR_BODY_FILE")"
+      glab mr create --title "$(notes_title)" --description "$notes_text" --yes
+    elif [ "$#" -eq 0 ]; then
       if find_plan_body; then
         glab mr create --title "$pr_title" --description "$pr_body" --yes
       else

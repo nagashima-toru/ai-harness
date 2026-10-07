@@ -1,0 +1,16 @@
+{
+  "task": "P-20261007-transition-basic/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 11:23",
+  "criteria": [
+    {"text": "2つの id を一度に doing にできる：try.sh std P-TEST T-01,T-02 doing の出力に exit=0・new_commits=1・subject・commit_files・plan_guard=allow、table と log の2行", "ok": true, "note": "実行コマンド: `bash try.sh std P-TEST T-01,T-02 doing`（worktree 内）/ 出力: exit=0 new_commits=1 subject=P-TEST/T-01,T-02: todo→doing commit_files=vault/log/P-TEST.md vault/plans/P-TEST.md plan_guard=allow、table に T-01/T-02 の doing 1 行、log 末尾2行が期待どおり"},
+    {"text": "attempt の規則と補足（T-04 doing／T-07 doing／T-04 review --note）", "ok": true, "note": "実行コマンド: try.sh std P-TEST T-04 doing / T-07 doing / T-04 review --note 補足の文 / 出力: すべて exit=0、T-04 doing 2・T-07 doing 2・T-04 review 1、log 末尾 'T-04 doing→review attempt=1 補足の文'"},
+    {"text": "log が無ければ作り、ほかの staged な変更をコミットに混ぜない（nolog／staged）", "ok": true, "note": "実行コマンド: try.sh nolog P-TEST T-01 doing / try.sh staged P-TEST T-01 doing / 出力: nolog は exit=0 log_changed=yes で log 節が 'T-01 todo→doing attempt=1' の1行のみ。staged は exit=0 commit_files=vault/log/P-TEST.md vault/plans/P-TEST.md staged=extra.txt"},
+    {"text": "拒否の各実行で exit=1・new_commits=0・plan_changed=no・log_changed=no（todo／approved／T-10／draft／main／T-03）", "ok": true, "note": "実行コマンド: 6件の try.sh を実行 / 出力: 全件 exit=1 new_commits=0 plan_changed=no log_changed=no"},
+    {"text": "次の各実行でも exit=1 …（T-05／T-11／T-04 blocked 質問無し／T-01,T-03）", "ok": true, "note": "実行コマンド: 4件の try.sh を実行 / 出力: 全件 exit=1 new_commits=0 plan_changed=no log_changed=no"},
+    {"text": "question の書き方と引数の誤り（@QFILE の blocked、競合指定、review に --question、引数なし）", "ok": true, "note": "実行コマンド: try.sh 4件 / 出力: --question-file @QFILE は exit=0 plan_guard=allow table '| T-04 | blocked | 1 | - | D | A／B 次の行 |'。残り3件は exit=2 new_commits=0"},
+    {"text": "既存の smoke が変わらず通る：bash scripts/smoke.sh 2>&1 | tail -1 の出力が smoke: pass=529 fail=0", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内）/ 出力: smoke: pass=529 fail=0。変更ファイル検査: 起点コミット e1caad1 以降の変更は scripts/transition.py（未追跡）のみで、除外対象の T-01.md を除き成果物外のファイル無し"}
+  ],
+  "reasons": []
+}

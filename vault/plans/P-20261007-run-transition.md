@@ -33,7 +33,7 @@ run の手順を transition.py に置き換える（D-012 フェーズ5）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | run/SKILL.md に transition.py の早見表を足し、0・0.5節と手順2の着手を置き換える | |
-| T-02 | review | 1 | T-01 | run/SKILL.md の手順3（blocked・記録行）と手順4（review）を transition.py に置き換える | |
+| T-02 | done | 1 | T-01 | run/SKILL.md の手順3（blocked・記録行）と手順4（review）を transition.py に置き換える | |
 | T-03 | todo | 0 | T-02 | run/SKILL.md の手順6（PASS の done・FAIL の doing）を transition.py に置き換える | |
 | T-04 | todo | 0 | T-03 | run/SKILL.md の中断からの再開とハング時の復旧を transition.py に置き換える | |
 | T-05 | todo | 0 | T-04 | run/SKILL.md の手順7・8・回帰確認・注意を直し、全体から printf と個別の git 操作を消す | |

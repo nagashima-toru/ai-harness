@@ -187,9 +187,9 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 
 `scripts/transition.py` の worktree 運用（2節）が書く行：再開情報の記録行は、review・blocked の時に transition.py が遷移の行の直前に、同じ日時で書く（run が別に追記する必要は無い）。差し戻しの行は `- <日時> <id> doing→doing attempt=<n+1> 宣言外の変更: <パス>, ...` で、モデル（`creator=`・`verifier=`）を付けない。done の前に blocked にした時の補足は `新規コミット無し`・`宣言外の変更: <パス>, ...`・`マージコンフリクト` のいずれか。
 
-実行したモデルの記録：遷移行の補足の先頭に、その遷移を行わせたエージェントのモデルを置く。`doing→review`・`doing→blocked` の行には `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` の行には `verifier=<モデル>` を付ける。モデルの値は `.claude/agents/<name>.md` の frontmatter の `model` とする。他の補足（理由要約など）が続く場合は、その後ろに空白区切りで書く。記録先は log だけで、verdict.json の形式は変えない。
+実行したモデルの記録：遷移行の補足の先頭に、その遷移を行わせたエージェントのモデルを置く。`doing→review`・`doing→blocked` の行には `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` の行には `verifier=<モデル>` を付ける。`verifier=` の値は `.claude/agents/verifier.md` の frontmatter の `model` とする。`creator=` の値は、環境変数 `HARNESS_CREATOR_MODEL` が空でなければその値、無ければ `.claude/agents/creator.md` の frontmatter の `model` とする（詳細は次の段落）。他の補足（理由要約など）が続く場合は、その後ろに空白区切りで書く。記録先は log だけで、verdict.json の形式は変えない。
 
-`scripts/transition.py`（2節）で遷移した時は、log の日時をスクリプトが実行時の JST（UTC+9 固定）で書く。`creator=`・`verifier=` は、対象リポジトリの `.claude/agents/creator.md`・`verifier.md` の frontmatter の `model` からスクリプトが自動で付ける（読めない時は付けない）。`--no-model` を付けると付けない（中断からの再開・ハング・worktree が無い時の行のため）。`--note` の値は、モデルの記録の後ろに補足として書かれる。
+`scripts/transition.py`（2節）で遷移した時は、log の日時をスクリプトが実行時の JST（UTC+9 固定）で書く。`creator=`・`verifier=` はスクリプトが自動で付ける（値が取れない時は付けない）。`creator=` の値は環境変数 `HARNESS_CREATOR_MODEL`（空白を除いて空でなければ）の値を優先し、無ければ対象リポジトリの `.claude/agents/creator.md` の frontmatter の `model` とする。`verifier=` の値は環境変数の影響を受けず、常に `.claude/agents/verifier.md` の frontmatter の `model` とする。`--no-model` を付けると（環境変数の有無にかかわらず）どちらも付けない（中断からの再開・ハング・worktree が無い時の行のため）。`--note` の値は、モデルの記録の後ろに補足として書かれる。
 
 - 例（creator）：`- 2026-10-01 10:30 T-01 doing→review attempt=1 creator=sonnet`
 - 例（verifier）：`- 2026-10-01 10:40 T-01 review→done attempt=1 verifier=sonnet`
@@ -204,6 +204,27 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 - 指摘あり率（`noted_rate`）：対象タスクのうち、verdict の `reasons` が空でない配列のタスクの件数 ÷ 対象タスク数（分母は `tasks` 列と同じ）。verdict の場所は log のパスから決める：log が `<base>/log/<計画ID>.md` なら `<base>/verdicts/<計画ID>/<id>.json`（archive の log も同じ規則）。log の親ディレクトリ名が `log` でない時、verdict が無い・JSON として読めない・`reasons` が無い／配列でない／空のタスクは、指摘なしとして数える（エラーにしない）。verdict の `task`・`attempt`・`result` は見ない
 
 出力はタブ区切りで、1行目を見出し `model	tasks	first_pass_rate	avg_attempt	blocked_rate	noted_rate` とし、率は小数2桁で出す。verifier のモデル別の集計は出さない（記録だけ残す）。
+
+実際に使われたモデルとトークン量の集計は `scripts/usage_stats.py` が行う。会話記録（JSONL）の Agent 呼び出し結果から agent×model の使用量を集計し、標準出力にタブ区切りで出す。会話記録の形式は公開仕様ではない（12節の扱いと同じ）ので、形式が変わっていないかは smoke のサンプルで検知する。`usage_stats.py` は会話記録・vault のどちらにも書かず、読むだけである。
+
+- 使い方：`python3 scripts/usage_stats.py [--plan <計画ID>] [ファイルかディレクトリ ...]`。ファイルの引数はそのファイルを、ディレクトリの引数はその直下の `*.jsonl` を読む（下位のディレクトリは見ない）。`--plan` を付けると、`toolUseResult` の `prompt` から `P-\d{8}-[a-z0-9-]+/T-\d{2}` で最初に一致したものの `/` より前が計画 ID と一致する呼び出しだけを数える（一致が取れない呼び出しは数えない）
+- 既定の読み込み先：引数が無ければ `~/.claude/projects/<プロジェクトの絶対パスの英数字以外をすべて - に置き換えたもの>/*.jsonl`。プロジェクトの絶対パスはスクリプトの2つ上のディレクトリ（realpath にしない）、`~` は `HOME` で決める。既定の読み込み先のディレクトリが無ければ見出し行だけを出して終了コード0
+- 読む項目：各行を JSON として読み、`toolUseResult` が辞書で、`agentType`（文字列）・`resolvedModel`（文字列）・`totalTokens`（数）・`totalDurationMs`（数）・`totalToolUseCount`（数）がそろっているものを1回の呼び出しとして数える（bool は数として扱わない）。この5つが必須のキーで、`prompt`（文字列）は `--plan` の時だけ使う
+- 読み飛ばす行：JSON でない行・空行・`toolUseResult` が無い／辞書でない行・必須のキーが欠けている／型が違う行は、黙って読み飛ばす
+- `agentId` の重複：`toolUseResult` に文字列の `agentId` があれば、同じ `agentId` は全ファイルを通して最初の1回だけ数える。`agentId` が無い呼び出しは毎回数える
+- `resolvedModel` は完全なモデル ID（例：`claude-sonnet-5`）で、変換せずそのまま出す。log の `creator=` の alias（例：`sonnet`）とは表記が違う
+
+出力はタブ区切りで、1行目を見出し `agent	model	calls	tokens_total	tokens_avg	duration_avg_s	tool_uses_avg` とし、2行目以降は `agent`、次に `model` の昇順に並べる。数える呼び出しが0件なら見出し行だけを出す。各列の定義は次のとおり：
+
+- `agent`：`agentType`
+- `model`：`resolvedModel`
+- `calls`：呼び出し回数
+- `tokens_total`：`totalTokens` の合計（整数）
+- `tokens_avg`：`tokens_total` ÷ `calls`（小数1桁）
+- `duration_avg_s`：`totalDurationMs` の平均を秒にしたもの（小数1桁）
+- `tool_uses_avg`：`totalToolUseCount` の平均（小数1桁）
+
+終了コードは 0（出力した。0件を含む）・1（引数のパスが存在しない。標準エラーに `usage_stats.py: 見つかりません: <パス>` を出し、何も出力しない）・2（引数の誤り。argparse の既定）。
 
 ## 8. 粒度の基準（planner と人が共有する）
 

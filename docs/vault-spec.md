@@ -25,6 +25,8 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 引数なしの `scripts/vcs_finish.sh` は、現在のブランチ（`work/<計画IDの英小文字>`）の計画が見つかれば、PR/MR のタイトルを `<計画ID>: <ゴールの1行目>`、本文を `scripts/pr_body.py` が出す「タスク履歴」表（タスク ID・title・`<計画ID>/<id>: done`（従来の run）か `<計画ID>/<id>: review→done`（transition.py。複数 id の `<計画ID>/T-01,T-02: review→done` も含む）のコミットの短縮ハッシュ・verdict）にする。PR がスカッシュマージされて main にタスクごとのコミットが残らなくても、この表から辿れる。マージ方式の運用は `docs/runbook.md` 3節を参照。
 
+環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh pr create --title <タイトル> --body-file <パス>`（パスをそのまま渡す）、GitLab は `glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID・`scripts/pr_body.py` のタスク一覧・「verifier の指摘」節）を渡す（6節）。
+
 ## 2. 状態（5つで固定、英小文字）
 
 | status | 意味 | 誰が付けるか |
@@ -167,6 +169,8 @@ frontmatter は `id` と `status` の2つ。
   - 基準が緩いと判断した場合（確認コマンドは通るが、タスク票の「目的」の達成を保証しない）
   - 宣言外ファイルの変更を検出した場合（タスク票の「成果物」に書かれていないファイルが変わっていた）
 
+`reasons` の使われ方：`reasons` は言い換えず、分類しない。`scripts/verdict_notes.py <計画ID> [--dir <ディレクトリ>]` が、計画の verdict のうち `reasons` が空でないものを要素ごとに `<id>: <reason>` の1行で標準出力に出す（`<id>` はファイル名から `.json` を除いたもの、ファイル名順、要素内の改行は空白1つにする）。出す行が無ければ `指摘なし` の1行だけを出す。読み込み先は既定で `vault/verdicts/<計画ID>/` の `*.json` で、`--dir` を渡すとそのディレクトリ（`<id>.json` を直接持つ。archive など）を読み、計画 ID は使わない。JSON として読めない・`reasons` が無い／配列でない verdict は読み飛ばし、標準エラーに出す。ファイルには書き込まない。終了コードは 0（出力した。「指摘なし」を含む）・1（読み込み先のディレクトリが無い）・2（引数の誤り）。run の手順7（全タスクが done になった後）で、この出力を PR 本文の「verifier の指摘」節と完了報告に入れる（本文は `HARNESS_PR_BODY_FILE` で `scripts/vcs_finish.sh` に渡す。1節）。また `model_stats.py` の指摘あり率（7節）の元になる。
+
 ## 7. ログ `vault/log/<計画ID>.md`
 
 計画ごとに1ファイル。追記のみ。1行 = `- YYYY-MM-DD HH:MM T-01 doing→review attempt=1 補足`
@@ -197,8 +201,9 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 - 1回目 PASS 率：`review→done attempt=1` で終わった件数 ÷ 対象タスク数
 - 平均 attempt：最後の遷移行の `attempt=` の平均
 - blocked 率：`→blocked` で終わった件数 ÷ 対象タスク数
+- 指摘あり率（`noted_rate`）：対象タスクのうち、verdict の `reasons` が空でない配列のタスクの件数 ÷ 対象タスク数（分母は `tasks` 列と同じ）。verdict の場所は log のパスから決める：log が `<base>/log/<計画ID>.md` なら `<base>/verdicts/<計画ID>/<id>.json`（archive の log も同じ規則）。log の親ディレクトリ名が `log` でない時、verdict が無い・JSON として読めない・`reasons` が無い／配列でない／空のタスクは、指摘なしとして数える（エラーにしない）。verdict の `task`・`attempt`・`result` は見ない
 
-出力はタブ区切りで、1行目を見出し `model	tasks	first_pass_rate	avg_attempt	blocked_rate` とし、率は小数2桁で出す。verifier のモデル別の集計は出さない（記録だけ残す）。
+出力はタブ区切りで、1行目を見出し `model	tasks	first_pass_rate	avg_attempt	blocked_rate	noted_rate` とし、率は小数2桁で出す。verifier のモデル別の集計は出さない（記録だけ残す）。
 
 ## 8. 粒度の基準（planner と人が共有する）
 

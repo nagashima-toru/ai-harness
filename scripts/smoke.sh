@@ -1557,11 +1557,31 @@ cat > "$MS_DIR/P-MS.md" <<'MSEOF'
 - 2026-10-01 15:10 T-06 review→doing attempt=2 verifier=opus 理由
 - 2026-10-01 15:15 T-06 doing→blocked attempt=2 creator=haiku 質問
 MSEOF
-ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\nhaiku\t4\t0.00\t1.50\t0.75\nsonnet\t1\t1.00\t1.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00')"
+ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\tnoted_rate\nhaiku\t4\t0.00\t1.50\t0.75\t0.00\nsonnet\t1\t1.00\t1.00\t0.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00\t0.00')"
 ms_got="$(python3 "$MS_PY" "$MS_DIR/P-MS.md")"
 expect_eq "(ms-1) フィクスチャ log の集計出力（見出し行・モデル別の行）が期待値と一致" "$ms_want" "$ms_got"
-expect_eq "(ms-1) 見出し行がタブ区切りの5列" "5" "$(echo "$ms_got" | head -1 | awk -F'\t' '{print NF}')"
-expect_eq "(ms-5) doing→blocked creator= で終わるタスクも creator のモデルに集計される（haiku 4件・blocked 率 0.75）" "$(printf 'haiku\t4\t0.00\t1.50\t0.75')" "$(echo "$ms_got" | grep '^haiku')"
+expect_eq "(ms-1) 見出し行がタブ区切りの6列" "6" "$(echo "$ms_got" | head -1 | awk -F'\t' '{print NF}')"
+expect_eq "(ms-5) doing→blocked creator= で終わるタスクも creator のモデルに集計される（haiku 4件・blocked 率 0.75）" "$(printf 'haiku\t4\t0.00\t1.50\t0.75\t0.00')" "$(echo "$ms_got" | grep '^haiku')"
+# (ms-6) noted_rate: <base>/log/<計画ID>.md から <base>/verdicts/<計画ID>/<id>.json を読む
+mkdir -p "$MS_DIR/nt/vault/log" "$MS_DIR/nt/vault/verdicts/P-NT"
+cat > "$MS_DIR/nt/vault/log/P-NT.md" <<'MSEOF'
+- 2026-10-01 10:00 T-01 todo→doing attempt=1
+- 2026-10-01 10:05 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-01 10:10 T-01 review→done attempt=1 verifier=opus
+- 2026-10-01 11:00 T-02 todo→doing attempt=1
+- 2026-10-01 11:05 T-02 doing→review attempt=1 creator=sonnet
+- 2026-10-01 11:10 T-02 review→done attempt=1 verifier=opus
+- 2026-10-01 12:00 T-03 todo→doing attempt=1
+- 2026-10-01 12:05 T-03 doing→blocked attempt=1 creator=sonnet 質問
+- 2026-10-01 13:00 T-04 todo→doing attempt=1
+- 2026-10-01 13:05 T-04 doing→review attempt=1 creator=haiku
+- 2026-10-01 13:10 T-04 review→done attempt=1 verifier=opus
+MSEOF
+printf '%s' '{"task":"T-01","reasons":["r1"]}' > "$MS_DIR/nt/vault/verdicts/P-NT/T-01.json"
+printf '%s' '{"task":"T-02","reasons":[]}' > "$MS_DIR/nt/vault/verdicts/P-NT/T-02.json"
+printf '%s' 'not json' > "$MS_DIR/nt/vault/verdicts/P-NT/T-04.json"
+ms_want6="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\tnoted_rate\nhaiku\t1\t1.00\t1.00\t0.00\t0.00\nsonnet\t3\t0.67\t1.00\t0.33\t0.33')"
+expect_eq "(ms-6) noted_rate は verdict の reasons が空でないタスクの割合（verdict 無し・壊れた JSON は指摘なし）" "$ms_want6" "$(python3 "$MS_PY" "$MS_DIR/nt/vault/log/P-NT.md")"
 python3 "$MS_PY" >/dev/null 2>&1; msrc=$?
 expect_eq "(ms-2) 引数なしの実行が現在の vault/log に対して終了コード0" "0" "$msrc"
 mkdir -p "$MS_DIR/root/scripts" "$MS_DIR/root/vault/log" "$MS_DIR/root/vault/archive/2026-01"
@@ -1593,6 +1613,30 @@ expect "(ms-4) 補足付き log・plan_guard: 正常な計画票 → 許可" all
 make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0001 | done | 1 | - | B | |"
 expect "(ms-4) 補足付き log・plan_guard: id 重複 → ブロック（判定が変わらない）" block "$(run_plan_guard)" "重複"
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP/vault/plans"
+
+echo "== verdict_notes.py =="
+VN_PY="$ROOT/scripts/verdict_notes.py"
+VN_DIR="$(mktemp -d)"
+mkdir -p "$VN_DIR/vault/verdicts/P-VN" "$VN_DIR/other" "$VN_DIR/empty/vault/verdicts/P-VN"
+printf '%s' '{"task":"T-01","reasons":["r1"]}' > "$VN_DIR/vault/verdicts/P-VN/T-01.json"
+printf '%s' '{"task":"T-02","reasons":[]}' > "$VN_DIR/vault/verdicts/P-VN/T-02.json"
+printf '%s' '{"task":"T-03","reasons":["a\nb","c"]}' > "$VN_DIR/vault/verdicts/P-VN/T-03.json"
+printf '%s' '{"task":"T-09","reasons":[]}' > "$VN_DIR/empty/vault/verdicts/P-VN/T-09.json"
+printf '%s' '{"task":"T-07","reasons":["other"]}' > "$VN_DIR/other/T-07.json"
+vn_out="$(cd "$VN_DIR" && python3 "$VN_PY" P-VN 2>/dev/null)"
+expect_eq "(vn-1) 既定の読み込み先で reasons を <id>: <reason> の行にする" $'T-01: r1\nT-03: a b\nT-03: c' "$vn_out"
+vn_out="$(cd "$VN_DIR/empty" && python3 "$VN_PY" P-VN 2>/dev/null)"
+expect_eq "(vn-2) reasons が全部空なら 指摘なし だけ" "指摘なし" "$vn_out"
+vn_out="$(cd "$VN_DIR" && python3 "$VN_PY" P-VN --dir other 2>/dev/null)"
+expect_eq "(vn-3) --dir 指定は計画 ID の既定ディレクトリでなくそちらを読む" "T-07: other" "$vn_out"
+printf '%s' 'not json' > "$VN_DIR/other/T-08.json"
+vn_out="$(cd "$VN_DIR" && python3 "$VN_PY" P-VN --dir other 2>/dev/null)"; vn_rc=$?
+expect_eq "(vn-4) 壊れた JSON が混じっても終了コード0で他の行は出る" "0:T-07: other" "$vn_rc:$vn_out"
+( cd "$VN_DIR" && python3 "$VN_PY" P-VN --dir nonexistent >/dev/null 2>&1 ); vn_rc=$?
+expect_eq "(vn-5) 読み込み先のディレクトリが無ければ終了コード1" "1" "$vn_rc"
+( cd "$VN_DIR" && python3 "$VN_PY" >/dev/null 2>&1 ); vn_rc=$?
+expect_eq "(vn-6) 引数なしは終了コード2" "2" "$vn_rc"
+rm -rf "$VN_DIR"
 
 echo "== vcs_finish.sh =="
 VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
@@ -1664,6 +1708,37 @@ if [ "$(cat "$VF_REC" 2>/dev/null)" = $'pr\ncreate\n--title\nT\n--body\nB' ]; th
   echo "  ok   (vcs_finish-body) github・計画あり・引数あり → そのまま"; PASS_N=$((PASS_N+1))
 else
   echo "  NG   (vcs_finish-body) github・計画あり・引数あり → そのまま (got='$(tr '\n' ' ' < "$VF_REC" 2>/dev/null)')"; FAIL_N=$((FAIL_N+1))
+fi
+
+# HARNESS_PR_BODY_FILE と HARNESS_PR_TITLE で本文とタイトルを渡す経路
+VF_NOTES="$TMP/vf_notes.md"; printf 'notes line 1\nnotes line 2\n' > "$VF_NOTES"
+vf_notes_run() { # $1=リポジトリ $2=host $3...=env 代入
+  local repo="$1" host="$2"; shift 2
+  rm -f "$VF_REC"
+  ( cd "$repo" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST="$host" "$@" bash "$ROOT/scripts/vcs_finish.sh" ) >/dev/null 2>&1
+}
+vf_notes_ok() { # $1=name $2=want
+  local got; got="$(cat "$VF_REC" 2>/dev/null || true)"
+  if [ "$got" = "$2" ]; then
+    echo "  ok   $1"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $1 (want='$(echo "$2" | tr '\n' ' ')' got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
+vf_notes_ok "(vf-notes-1) github・本文ファイルとタイトル → --title と --body-file" $'pr\ncreate\n--title\nNT\n--body-file\n'"$VF_NOTES"
+vf_notes_run "$VF_REPO" gitlab HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
+vf_notes_ok "(vf-notes-2) gitlab・本文ファイルとタイトル → --description に中身と --yes" $'mr\ncreate\n--title\nNT\n--description\nnotes line 1\nnotes line 2\n--yes'
+vf_notes_run "$VF_REPO2" github HARNESS_PR_BODY_FILE="$VF_NOTES"
+vf_notes_ok "(vf-notes-3) タイトル無し → 計画ID" $'pr\ncreate\n--title\nP-20990101-vf\n--body-file\n'"$VF_NOTES"
+rm -f "$VF_REC"
+( cd "$VF_REPO2" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE=X bash "$ROOT/scripts/vcs_finish.sh" --title T --body B ) >/dev/null 2>&1
+vf_notes_ok "(vf-notes-4) 引数あり → 環境変数を無視してそのまま" $'pr\ncreate\n--title\nT\n--body\nB'
+vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$TMP/vf_no_such_file.md"; vf_rc=$?
+if [ "$vf_rc" = 2 ] && [ ! -e "$VF_REC" ]; then
+  echo "  ok   (vf-notes-5) 本文ファイルが読めない → 終了コード2で gh を呼ばない"; PASS_N=$((PASS_N+1))
+else
+  echo "  NG   (vf-notes-5) rc=$vf_rc rec=$([ -e "$VF_REC" ] && echo yes || echo no)"; FAIL_N=$((FAIL_N+1))
 fi
 
 echo "== archive_plans.sh =="

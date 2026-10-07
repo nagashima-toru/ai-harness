@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-diff-gate/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 14:06",
+  "criteria": [
+    {"text": "見出しは6つのまま順序も変わらない：`grep '^## ' vault/templates/task.md` の出力が `## 目的`・`## 入力`・`## 成果物`・`## 受け入れ基準`・`## 決定済み`・`## 進捗` の6行（この順）", "ok": true, "note": "実行コマンド: `grep -n '^## ' vault/templates/task.md` / 出力: 3:目的 6:入力 9:成果物 14:受け入れ基準 18:決定済み 21:進捗 の6行、順序どおり"},
+    {"text": "既存の粒度基準の行が残っている：`grep -nF -e '- 1つに特定する（1ファイル / 1PR / 1関数）' vault/templates/task.md` の出力が1行で、その行番号が `grep -n '^## ' vault/templates/task.md` の `## 成果物` の行と `## 受け入れ基準` の行の間にある", "ok": true, "note": "実行コマンド: `grep -nF -e '- 1つに特定する（1ファイル / 1PR / 1関数）' vault/templates/task.md` / 出力: 10行目の1行のみ。成果物(9)と受け入れ基準(14)の間"},
+    {"text": "記法の行がある：`grep -nF 'creator が変えるファイルはすべて、バッククォートで囲んだリポジトリ相対パスで書く' vault/templates/task.md` の出力が1行で、その行番号が `## 成果物` と `## 受け入れ基準` の行の間にあり、同じ行に `末尾を `/` にする` を含む", "ok": true, "note": "実行コマンド: 同grep / 出力: 11行目の1行のみ（9と14の間）。行内に「（ディレクトリは末尾を `/` にする）」を含む"},
+    {"text": "例の行がある：``grep -nF -e '- 例：`src/foo.py`（1ファイル）' vault/templates/task.md`` の出力が1行で、その行番号が `## 成果物` と `## 受け入れ基準` の行の間にある", "ok": true, "note": "実行コマンド: 同grep / 出力: 12行目の1行のみ（9と14の間）"},
+    {"text": "smoke が通る（「参照される scripts の存在チェック」を含む）：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=559 fail=0。成果物外検査: `git diff --name-only 40821f8..HEAD` は空、`git status --porcelain` は vault/templates/task.md と T-03.md（進捗、除外対象）のみで宣言外なし"}
+  ],
+  "reasons": []
+}

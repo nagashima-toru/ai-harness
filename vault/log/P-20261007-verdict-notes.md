@@ -18,3 +18,4 @@
 - 2026-10-08 00:58 T-05 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a55724a8dd531a6c3 branch=worktree-agent-a55724a8dd531a6c3 plan_head=ffbeb2a4370f83d90e5f69e6703f9dd86be623b5
 - 2026-10-08 00:58 T-05 doing→review attempt=1 creator=sonnet
 - 2026-10-08 01:02 T-05 review→done attempt=1 verifier=sonnet
+- 2026-10-08 07:16 T-04 blocked→todo 人の指示: /plan unblock P-20261007-verdict-notes T-04

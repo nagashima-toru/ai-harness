@@ -7,3 +7,5 @@
 - 2026-10-07 09:07 T-02 doing→review attempt=1 creator=sonnet
 - 2026-10-07 09:09 T-01 review→done attempt=1 verifier=sonnet
 - 2026-10-07 09:09 T-02 review→done attempt=1 verifier=sonnet
+- 2026-10-07 09:09 T-03 todo→doing attempt=1
+- 2026-10-07 09:09 T-04 todo→doing attempt=1

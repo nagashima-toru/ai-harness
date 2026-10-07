@@ -1594,6 +1594,30 @@ make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0001 | done
 expect "(ms-4) 補足付き log・plan_guard: id 重複 → ブロック（判定が変わらない）" block "$(run_plan_guard)" "重複"
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP/vault/plans"
 
+echo "== verdict_notes.py =="
+VN_PY="$ROOT/scripts/verdict_notes.py"
+VN_DIR="$(mktemp -d)"
+mkdir -p "$VN_DIR/vault/verdicts/P-VN" "$VN_DIR/other" "$VN_DIR/empty/vault/verdicts/P-VN"
+printf '%s' '{"task":"T-01","reasons":["r1"]}' > "$VN_DIR/vault/verdicts/P-VN/T-01.json"
+printf '%s' '{"task":"T-02","reasons":[]}' > "$VN_DIR/vault/verdicts/P-VN/T-02.json"
+printf '%s' '{"task":"T-03","reasons":["a\nb","c"]}' > "$VN_DIR/vault/verdicts/P-VN/T-03.json"
+printf '%s' '{"task":"T-09","reasons":[]}' > "$VN_DIR/empty/vault/verdicts/P-VN/T-09.json"
+printf '%s' '{"task":"T-07","reasons":["other"]}' > "$VN_DIR/other/T-07.json"
+vn_out="$(cd "$VN_DIR" && python3 "$VN_PY" P-VN 2>/dev/null)"
+expect_eq "(vn-1) 既定の読み込み先で reasons を <id>: <reason> の行にする" $'T-01: r1\nT-03: a b\nT-03: c' "$vn_out"
+vn_out="$(cd "$VN_DIR/empty" && python3 "$VN_PY" P-VN 2>/dev/null)"
+expect_eq "(vn-2) reasons が全部空なら 指摘なし だけ" "指摘なし" "$vn_out"
+vn_out="$(cd "$VN_DIR" && python3 "$VN_PY" P-VN --dir other 2>/dev/null)"
+expect_eq "(vn-3) --dir 指定は計画 ID の既定ディレクトリでなくそちらを読む" "T-07: other" "$vn_out"
+printf '%s' 'not json' > "$VN_DIR/other/T-08.json"
+vn_out="$(cd "$VN_DIR" && python3 "$VN_PY" P-VN --dir other 2>/dev/null)"; vn_rc=$?
+expect_eq "(vn-4) 壊れた JSON が混じっても終了コード0で他の行は出る" "0:T-07: other" "$vn_rc:$vn_out"
+( cd "$VN_DIR" && python3 "$VN_PY" P-VN --dir nonexistent >/dev/null 2>&1 ); vn_rc=$?
+expect_eq "(vn-5) 読み込み先のディレクトリが無ければ終了コード1" "1" "$vn_rc"
+( cd "$VN_DIR" && python3 "$VN_PY" >/dev/null 2>&1 ); vn_rc=$?
+expect_eq "(vn-6) 引数なしは終了コード2" "2" "$vn_rc"
+rm -rf "$VN_DIR"
+
 echo "== vcs_finish.sh =="
 VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
 mkdir -p "$VF_BIN" "$VF_REPO"

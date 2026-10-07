@@ -166,19 +166,19 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 
 ## 9. Stop フックの判定
 
-`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。
+`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。approved な計画票を1件に特定した直後に、status が done の行それぞれについて、attempt が一致する正しい PASS の verdict があるかを検査する（doing/review の行の検査より前。条件と理由の順は10節の done の行の verdict の検査と同じ）。続いて、doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。
 
 | 状況 | 判定 |
 |---|---|
 | `stop_hook_active` が真 | 許可（`HARNESS_STRICT_STOP=1` なら無視して判定を続ける） |
 | 未コミットの変更がある（git の作業ツリーかどうかは `git rev-parse --is-inside-work-tree` で判定し、`.git` がファイルの worktree も対象にする） | ブロック：作業ステップごとにコミットしてから終了する |
+| done の行に attempt が一致する正しい PASS の verdict が無い（verdict が無い・JSON として読めない・task / attempt が不一致・result が PASS でない・形式が不正） | ブロック：表の上から最初のその行について、status を review に戻し verifier を実行するよう指示する |
 | doing / review のタスクが無い | 許可 |
 | verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く |
 | verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数（5節の数え方）と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
 | FAIL かつ attempt < 上限 | ブロック：doing に戻し attempt を +1 して修正 |
 | FAIL かつ attempt ≥ 上限 | ブロック：blocked にし question を書く（既に blocked なら許可） |
 | PASS だが status が done でない | ブロック：done にし log に追記 |
-| PASS かつ done | 許可 |
 
 ## 10. plan_guard フックの判定
 
@@ -189,6 +189,8 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 - 計画票：タスク表のデータ行が7行を超えるとブロックする（1計画は7タスク以下）
 - 計画票の status が draft でなくなった後（approved 以降）は、これらの粒度検査は行わない
 - 各基準が「真偽で判定できる文か」は機械では判定できず、planner・verifier の運用に残る
+
+done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1）。自分のブランチの approved な計画票のタスク表で status が done の行それぞれについて、vault/verdicts/<計画ID>/<id>.json があり、JSON として読め、task が <計画ID>/<id>、attempt がタスク表の値と一致し、result が PASS で、形式が正しい（9節の「verdict が不正」の条件に当たらない）ことを、この順に確かめる。満たさない行があれば、表の上から最初の1行についてブロックし、その行の status を review に戻して verifier を実行するよう指示する。この検査は上の段落の検査（列数・status・依存・blocked の question・id の重複）の後に行い、それらのブロック理由が先に出る。検査の本体は .claude/hooks/_hooklib.py の done_rows_without_pass で、Stop フック（9節）と共通。done のタスクの verdict への書き込みは agent_write_guard が拒否する（12節）ため、直す手順は review に戻してから verifier を実行する順になる。draft・done の計画票と vault/archive/ は検査しない。
 
 承認の裏付けの検査も plan_guard が行う（D-010 フェーズ4）。Bash による書き込みは PreToolUse 側では内容を組み立てられず取りこぼすため、その補完として、作業ツリーの計画票（status が approved のもの）を `git show HEAD:<path>` の版と比べ、HEAD では approved でない（HEAD 無し・未追跡を含む）ものを「今回承認された」計画票とみなす。その計画 ID について、会話記録の人の発言に `/plan approve <計画ID>` が無ければブロックし、`git restore vault/plans/<計画ID>.md` で元に戻すよう指示する。会話記録が読めない時（定義は12節）はブロックせず、`additionalContext` で「承認の裏付けを検査できなかった」旨の警告を出す。非 git ディレクトリでは何もしない。同じ承認に何度も当たらないよう、`/plan approve` は承認の直後にコミットする（HEAD が approved になれば対象外）。人の発言の定義・コマンドの一致規則は12節を参照する。
 

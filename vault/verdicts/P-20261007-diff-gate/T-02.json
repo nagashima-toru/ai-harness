@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-diff-gate/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 14:14",
+  "criteria": [
+    {"text": "smoke が全件通り、件数が20件以上増える：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含み、pass が 579 以上", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree） / 出力: smoke: pass=594 fail=0"},
+    {"text": "足したケースが実際に動いて通っている：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (diff_gate) '` の出力が 20 以上", "ok": true, "note": "実行コマンド: smoke 出力を `grep -c '^  ok   (diff_gate) '` / 出力: 35"},
+    {"text": "決定済みの必須ケース20件がそれぞれ1件以上ある：`bash scripts/smoke.sh 2>&1 | grep '^  ok   (diff_gate) '` の出力に、決定済みの一覧の各ケース名の先頭（`(diff_gate) 01 ` 〜 `(diff_gate) 20 `）がすべて現れる", "ok": true, "note": "実行コマンド: 01〜20 each を `grep -q \"^  ok   (diff_gate) NN \"` でループ / 出力: missing の行なし（20件すべて存在）"},
+    {"text": "節の見出しが1つある：`grep -c '^echo \"== diff_gate.py（D-012 フェーズ3） ==\"' scripts/smoke.sh` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -c / 出力: 1"},
+    {"text": "planner のフィクスチャに依存しない（install 先には無い）：`grep -c 'fixtures/try.sh' scripts/smoke.sh` の出力が `0`", "ok": true, "note": "実行コマンド: 上記 grep -c / 出力: 0。なお変更ファイル検査（起点 fd4f007）: `git diff --name-only fd4f007..HEAD` は空、`git status --porcelain` は scripts/smoke.sh とタスク票 T-02.md のみ。成果物外のファイルなし"}
+  ],
+  "reasons": []
+}

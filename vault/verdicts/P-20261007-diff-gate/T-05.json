@@ -1,0 +1,15 @@
+{
+  "task": "P-20261007-diff-gate/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 14:14",
+  "criteria": [
+    {"text": "5節に呼び出しの形がそのまま書かれている：`grep -nF 'python3 scripts/diff_gate.py <計画ID> <id> <base> <branch>' docs/vault-spec.md` の出力が1行以上で、その行番号が `grep -n '^## ' docs/vault-spec.md` の `## 5.` の行と `## 6.` の行の間にある", "ok": true, "note": "実行コマンド: grep -nF で呼び出し字句を検索 / 出力: 121行目の1件。見出しは ## 5. が109行、## 6. が136行で間にある"},
+    {"text": "5節に記法が書かれている：`grep -nF 'バッククォートで囲んだリポジトリ相対パス' docs/vault-spec.md` の出力に、`## 5.` と `## 6.` の行の間の行番号で、`末尾を `/` にする` を含む行がある", "ok": true, "note": "実行コマンド: grep -nF 'バッククォートで囲んだリポジトリ相対パス' / 出力: 118行目、同じ行に「末尾を `/` にする」あり（109〜136の間）"},
+    {"text": "5節に常に違反にするディレクトリが書かれている：4ディレクトリの字句の grep の出力に、`## 5.` と `## 6.` の行の間の行番号の行がある", "ok": true, "note": "実行コマンド: grep -nF で4ディレクトリの字句を検索 / 出力: 126行目の1件（109〜136の間）"},
+    {"text": "5節の diff_gate.py の記述に、決定済みの「書く内容」の各項目がすべて書かれている（Read で5節を読んで確かめる）", "ok": true, "note": "Read で docs/vault-spec.md 109〜135行を確認。差分の取り方(122)・base 版のタスク票(123)・宣言の読み方(124)・判定の順と理由(125-129)・.claude/ 3つの扱い(130)・出力(131)・終了コード0/1/2(132)・check()(133)・run からまだ呼ばない(134)がすべてある"},
+    {"text": "節の構成が変わっていない：`grep -c '^## ' docs/vault-spec.md` の出力が `13`", "ok": true, "note": "実行コマンド: grep -c '^## ' docs/vault-spec.md / 出力: 13"},
+    {"text": "smoke が通る（「参照される scripts の存在チェック」を含む）：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1（worktree 内） / 出力: smoke: pass=559 fail=0"}
+  ],
+  "reasons": []
+}

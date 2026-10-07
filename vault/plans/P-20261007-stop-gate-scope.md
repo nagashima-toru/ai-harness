@@ -31,7 +31,7 @@ Stop フックの適用範囲と無人実行での厳格化（D-013 フェーズ
 | T-01 | done | 1 | - | stop_gate.py の判定順を変え、承認済みの計画票が0件なら未コミットの検査もせずに許可する | |
 | T-02 | done | 1 | T-01 | run_unattended.py で HARNESS_STRICT_STOP が未設定なら子プロセスに 1 を渡す | |
 | T-03 | done | 1 | T-01 | docs/vault-spec.md 9節の判定表を新しい判定の順序に直す | |
-| T-04 | review | 1 | T-02 | docs/runbook.md の無人実行の説明に HARNESS_STRICT_STOP の既定を書く | |
+| T-04 | done | 1 | T-02 | docs/runbook.md の無人実行の説明に HARNESS_STRICT_STOP の既定を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

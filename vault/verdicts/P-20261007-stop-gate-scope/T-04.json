@@ -1,0 +1,13 @@
+{
+  "task": "P-20261007-stop-gate-scope/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 20:25",
+  "criteria": [
+    {"text": "3節に決定済みの1行がある：`sed -n '/^## 3\\./,/^## 4\\./p' docs/runbook.md | grep -cF '環境変数 `HARNESS_STRICT_STOP`：未設定ならラッパーが `1` を入れて子プロセスに渡す'` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -cF（worktree で実行） / 出力: 1。3節6行目に該当行あり"},
+    {"text": "同じ行か直後の行に、`HARNESS_STRICT_STOP=0` を明示すれば従来の動き（`stop_hook_active` が真なら許可）になることが書かれている：`sed -n '/^## 3\\./,/^## 4\\./p' docs/runbook.md | grep -cF 'HARNESS_STRICT_STOP=0'` の出力が `1`（内容は Read で確認）", "ok": true, "note": "実行コマンド: grep -cF 'HARNESS_STRICT_STOP=0' / 出力: 1。同じ行に「HARNESS_STRICT_STOP=0 を明示すれば従来の動き（2回目の停止は通す）になる」とある（sed で行内容を確認）"},
+    {"text": "書いた既定が実装と一致する：`env -u HARNESS_STRICT_STOP HARNESS_RUN_CMD='printenv HARNESS_STRICT_STOP' python3 scripts/run_unattended.py` の標準出力が `1`", "ok": true, "note": "実行コマンド: 上記 env ... run_unattended.py / 出力: 1"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=658 fail=0。変更ファイル一覧の検査: タスク票の進捗に「起点コミット」の記録が無いため、この検査は行っていない"}
+  ],
+  "reasons": []
+}

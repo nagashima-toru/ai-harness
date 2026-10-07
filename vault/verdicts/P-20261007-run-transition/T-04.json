@@ -1,0 +1,15 @@
+{
+  "task": "P-20261007-run-transition/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 19:09",
+  "criteria": [
+    {"text": "再開とハングの節から、log の遷移行のひな形と表を直接書き換える言い回しが消えている（grep -cE '<日時> <id> [a-z]+→' が0、ハング節の 'status を|attempt を \\+1' が0）", "ok": true, "note": "worktree で両コマンドを実行 / 出力: 0 と 0"},
+    {"text": "手順2の2の再開の4つの場面が transition.py の呼び出しで書かれている（出力が4）", "ok": true, "note": "実行コマンド: sed -n '/^## 2\\./,/^## 3\\./p' | grep -cE -- '--no-model --note \"(...)\"' / 出力: 4"},
+    {"text": "「ハング時の復旧」の3つの場面が transition.py の呼び出しで書かれている（出力が3）", "ok": true, "note": "実行コマンド: sed -n '/^## ハング時の復旧/,/^## 6\\./p' | grep -cE -- '--no-model --note \"(...)\"' / 出力: 3"},
+    {"text": "手順2の2に上限未満なら doing・達していれば blocked の分岐、review の行は最後の記録行から worktree・branch・PLAN_HEAD を復元、creator のハングでは discard_worktree.sh で破棄してから呼ぶことが書かれている（Read で確認）", "ok": true, "note": "確認方法: SKILL.md の手順2の2とハング節を出力して確認。上限分岐、最後の記録行からの復元（plan_head）、ハング節1の discard_worktree.sh による破棄がいずれも記載あり"},
+    {"text": "早見表の行数と終了コードの表は変わっていない（transition.py 行が7、終了コード表が5）", "ok": true, "note": "実行コマンド: grep -cE の2本 / 出力: 7 と 5"},
+    {"text": "既存の smoke が通る（smoke: pass=654 fail=0）", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1 / 出力: smoke: pass=654 fail=0"}
+  ],
+  "reasons": []
+}

@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-run-transition/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 19:02",
+  "criteria": [
+    {"text": "古い前提の記述が消えている：`grep -c 'PASS の後' .claude/agents/verifier.md` の出力が `0`、`grep -c 'git status --porcelain' .claude/agents/verifier.md` の出力が `0`", "ok": true, "note": "実行コマンド: worktree で `grep -c` 2本 / 出力: 0 と 0。手順10(32行目)に古い前提の記述は無い"},
+    {"text": "手順10に新しい前提の文がある：`grep -c 'verifier を呼ぶ前にオーケストレーターが' .claude/agents/verifier.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c 'verifier を呼ぶ前にオーケストレーターが' .claude/agents/verifier.md` / 出力: 1。手順10に決定済みの文がそのまま入っている"},
+    {"text": "手順10の宣言外の検査そのもの（起点コミットを「進捗」から読み、`git diff --name-only <起点コミット>..HEAD` の一覧と「成果物」を照らし合わせ、見つけたら `note` と `reasons` に書いて `ok: false` にはしない）が残っている：`grep -c 'git diff --name-only <起点コミット>..HEAD' .claude/agents/verifier.md` の出力が `1`、`grep -c 'ok: false. にはしない' .claude/agents/verifier.md` の出力が `1` 以上", "ok": true, "note": "実行コマンド: 該当 grep -c 2本 / 出力: 1 と 2。手順10を Read して検査・除外パス・起点コミット無しの扱いが残っていることも確認。起点コミットの記録がタスク票「進捗」に無いため、宣言外ファイルの検査は行わなかった（reasons には入れない）"},
+    {"text": "frontmatter と手順の数は変わっていない：`grep -c '^model: sonnet$' .claude/agents/verifier.md` の出力が `1`、`grep -c '^tools: Read, Grep, Glob, Bash, Write$' .claude/agents/verifier.md` の出力が `1`、`grep -cE '^1[0-2]\\. ' .claude/agents/verifier.md` の出力が `3`", "ok": true, "note": "実行コマンド: grep -c 3本 / 出力: 1, 1, 3"},
+    {"text": "既存の smoke が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=654 fail=0`", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1`（120秒超でバックグラウンド実行にした） / 出力: smoke: pass=654 fail=0"}
+  ],
+  "reasons": []
+}

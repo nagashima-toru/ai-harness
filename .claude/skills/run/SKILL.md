@@ -57,16 +57,24 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う
 2. 選んだタスクそれぞれについて、Agent ツールで `creator` サブエージェントを呼ぶ。呼び出しには `isolation: "worktree"` オプションを付ける（計画ブランチ＝現在のブランチから分岐した隔離 worktree 上で creator を作業させる）。prompt は既存どおりタスク ID だけ（例：`<計画ID>/<id> の成果物を作ってください`）。作業の経緯・言い訳は渡さない。タスク票の読み込み・ルール読み込み・成果物作成・確認コマンドの実行・「進捗」への追記は creator が行う（creator は計画票のタスク表と `vault/log/<計画ID>.md` には書き込まない）。この呼び出しは `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順4のreview化・手順6のverdict判定が呼び出し結果に依存するため）
 3. 選んだタスクが複数件の場合、上記の呼び出しをタスクの数だけ**1メッセージの中で**行う（Agent ツールを複数回呼び、並行に実行させる）。選んだタスクが1件だけの場合も同じ経路を通し、呼び出しが1回になるだけとする（専用の逐次フォールバックは作らない）
-4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する。この対応は後続の verifier 呼び出しと、T-03 で扱うマージ処理で使うほか、手順3.7で `vault/log/<計画ID>.md` に記録して再開に使う
+4. 各呼び出しの完了時に返る worktree のパス・ブランチ名を、タスク ID に紐づけて run のセッション内で保持する。この対応は後続の review・verifier 呼び出しと、マージ処理で使う。再開に使う記録行は、手順3.8・手順4の呼び出しで transition.py が log に書く
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：
    `git -C <worktree のパス> merge-base --is-ancestor <PLAN_HEAD> HEAD`
    終了コードが `0` なら、その worktree は計画ブランチ（`PLAN_HEAD`）から分岐している。`git worktree list` でパスとブランチ名の対応も確認できる
-6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに対象タスクの計画票の該当行を `blocked` にし、question に「worktree の分岐元が計画ブランチと一致しない（手順5の確認コマンドの出力要点）」のように状況を書き、人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
-7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する。あわせて、creator の完了報告を受けたタスク（blocked 報告のタスクも worktree があれば記録してよい）について、受領直後に `vault/log/<計画ID>.md` へ再開情報の記録行を1タスク1行で追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（`<パス>`・`<ブランチ名>` は手順3.4で保持した worktree の値、`<sha>` は手順3.1で控えた `PLAN_HEAD` の完全な sha）。複数タスクの場合も手順3の中でまとめて追記する。書式の正本は `docs/vault-spec.md` 7節
-8. blocked のタスクが1件以上あれば、それら全部について計画票の該当行の status を `blocked` にし、question 列に creator の質問文をそのまま書き写す（言い換えない）。この書き込みは対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→blocked attempt=<n> creator=<モデル> 理由要約` の形で追記する（`creator=<モデル>` は手順0.5。書式は `docs/vault-spec.md` 7節）。選んだタスクの中に blocked 以外が無ければここで終わる
+6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに、質問文（「worktree の分岐元が計画ブランチと一致しない」と、手順5の確認コマンドの出力の要点）を Write ツールで一時ファイルに書き、3.8 と同じ呼び出しで対象タスクを blocked にして人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
+7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する
+8. 報告が「blocked: <質問文>」のタスクについて、質問文を言い換えずに Write ツールで一時ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書き、`python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` を id ごとに1回呼ぶ。worktree は transition.py が残す。終了コードは4（blocked にした）が正常。選んだタスクの中に blocked 以外が無ければここで終わる
 
 ## 4. review にする
-blocked ではない完了報告を受けたタスク全部について、status を `review` にする。この計画票への書き込みは、手順2の一括反映と同様に、対象タスクごとに分けず本手順の中でまとめて行う。`vault/log/<計画ID>.md` にも対象タスク分をまとめて `- <日時> <id> doing→review attempt=<n> creator=<モデル>` の形で追記する（`creator=<モデル>` は手順0.5。書式は `docs/vault-spec.md` 7節）。この反映もこの時点でコミットする。手順5で verifier が対象タスクの worktree を絶対パスで検証するため、コミットされていない変更はその worktree には反映されず verifier から見えない。
+blocked ではない完了報告を受けたタスクについて、id ごとに1回ずつ、計画票のタスク表の上から順に次を呼ぶ（並行に呼ばない）：
+`python3 scripts/transition.py <計画ID> <id> review --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>`
+この1回で、worktree の未コミット分の収集コミット・新規コミットの判定・差分ゲート・再開情報の記録行・doing→review とそのコミットが行われる。creator の成果物は worktree 側にコミット済みになり、verifier はそれを検証する。
+
+終了コードごとの次の行動：
+- 0：review になった。手順5で verifier を呼ぶ対象にする
+- 3：差分ゲートの違反で差し戻した（doing のまま attempt+1。worktree は破棄済み）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直して、その id の creator を呼び直す（transition.py のコミットで計画ブランチの HEAD が進むため取り直す）
+- 4：blocked にした（新規コミット無し、または差し戻しが上限）。標準出力の1行を完了報告に写し、その id を終える。worktree は残っている
+- 1・2：早見表の終了コードの表のとおり（人に報告して止める／呼び出しを直す）
 
 ## 5. 検証する
 1. review にした（＝blocked ではなかった）タスクそれぞれについて、Agent ツールで `verifier` サブエージェントを呼ぶ。`isolation` オプションは付けない通常の呼び出しにする。prompt はタスク ID と、手順3で保持した対象タスクの worktree のパスの2つだけ（例：`<計画ID>/<id> を検証して vault/verdicts/<計画ID>/<id>.json を書いてください。対象 worktree: <worktree のパス>`）。作業内容の説明や言い訳は渡さない。この呼び出しも `run_in_background: false` を指定し、完了を同期的に待つ（後続の手順6のverdict判定が呼び出し結果に依存するため）

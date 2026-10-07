@@ -1557,11 +1557,31 @@ cat > "$MS_DIR/P-MS.md" <<'MSEOF'
 - 2026-10-01 15:10 T-06 review→doing attempt=2 verifier=opus 理由
 - 2026-10-01 15:15 T-06 doing→blocked attempt=2 creator=haiku 質問
 MSEOF
-ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\nhaiku\t4\t0.00\t1.50\t0.75\nsonnet\t1\t1.00\t1.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00')"
+ms_want="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\tnoted_rate\nhaiku\t4\t0.00\t1.50\t0.75\t0.00\nsonnet\t1\t1.00\t1.00\t0.00\t0.00\nunknown\t1\t1.00\t1.00\t0.00\t0.00')"
 ms_got="$(python3 "$MS_PY" "$MS_DIR/P-MS.md")"
 expect_eq "(ms-1) フィクスチャ log の集計出力（見出し行・モデル別の行）が期待値と一致" "$ms_want" "$ms_got"
-expect_eq "(ms-1) 見出し行がタブ区切りの5列" "5" "$(echo "$ms_got" | head -1 | awk -F'\t' '{print NF}')"
-expect_eq "(ms-5) doing→blocked creator= で終わるタスクも creator のモデルに集計される（haiku 4件・blocked 率 0.75）" "$(printf 'haiku\t4\t0.00\t1.50\t0.75')" "$(echo "$ms_got" | grep '^haiku')"
+expect_eq "(ms-1) 見出し行がタブ区切りの6列" "6" "$(echo "$ms_got" | head -1 | awk -F'\t' '{print NF}')"
+expect_eq "(ms-5) doing→blocked creator= で終わるタスクも creator のモデルに集計される（haiku 4件・blocked 率 0.75）" "$(printf 'haiku\t4\t0.00\t1.50\t0.75\t0.00')" "$(echo "$ms_got" | grep '^haiku')"
+# (ms-6) noted_rate: <base>/log/<計画ID>.md から <base>/verdicts/<計画ID>/<id>.json を読む
+mkdir -p "$MS_DIR/nt/vault/log" "$MS_DIR/nt/vault/verdicts/P-NT"
+cat > "$MS_DIR/nt/vault/log/P-NT.md" <<'MSEOF'
+- 2026-10-01 10:00 T-01 todo→doing attempt=1
+- 2026-10-01 10:05 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-01 10:10 T-01 review→done attempt=1 verifier=opus
+- 2026-10-01 11:00 T-02 todo→doing attempt=1
+- 2026-10-01 11:05 T-02 doing→review attempt=1 creator=sonnet
+- 2026-10-01 11:10 T-02 review→done attempt=1 verifier=opus
+- 2026-10-01 12:00 T-03 todo→doing attempt=1
+- 2026-10-01 12:05 T-03 doing→blocked attempt=1 creator=sonnet 質問
+- 2026-10-01 13:00 T-04 todo→doing attempt=1
+- 2026-10-01 13:05 T-04 doing→review attempt=1 creator=haiku
+- 2026-10-01 13:10 T-04 review→done attempt=1 verifier=opus
+MSEOF
+printf '%s' '{"task":"T-01","reasons":["r1"]}' > "$MS_DIR/nt/vault/verdicts/P-NT/T-01.json"
+printf '%s' '{"task":"T-02","reasons":[]}' > "$MS_DIR/nt/vault/verdicts/P-NT/T-02.json"
+printf '%s' 'not json' > "$MS_DIR/nt/vault/verdicts/P-NT/T-04.json"
+ms_want6="$(printf 'model\ttasks\tfirst_pass_rate\tavg_attempt\tblocked_rate\tnoted_rate\nhaiku\t1\t1.00\t1.00\t0.00\t0.00\nsonnet\t3\t0.67\t1.00\t0.33\t0.33')"
+expect_eq "(ms-6) noted_rate は verdict の reasons が空でないタスクの割合（verdict 無し・壊れた JSON は指摘なし）" "$ms_want6" "$(python3 "$MS_PY" "$MS_DIR/nt/vault/log/P-NT.md")"
 python3 "$MS_PY" >/dev/null 2>&1; msrc=$?
 expect_eq "(ms-2) 引数なしの実行が現在の vault/log に対して終了コード0" "0" "$msrc"
 mkdir -p "$MS_DIR/root/scripts" "$MS_DIR/root/vault/log" "$MS_DIR/root/vault/archive/2026-01"

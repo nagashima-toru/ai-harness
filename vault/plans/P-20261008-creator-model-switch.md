@@ -1,6 +1,6 @@
 ---
 id: P-20261008-creator-model-switch
-status: approved
+status: done
 ---
 # ゴール
 creator のモデルを環境変数 HARNESS_CREATOR_MODEL で切り替えられるようにし、使用量を集計する（D-013 フェーズ3）

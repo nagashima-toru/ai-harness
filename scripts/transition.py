@@ -20,7 +20,7 @@ doing→review・doing→blocked の行に creator=<model>、review→done・rev
 review→blocked の行に verifier=<model> を付ける（対象リポジトリの .claude/agents/<name>.md の
 frontmatter の model。無ければ付けない）。`--no-model` で付けない。
 
---worktree（フェーズ4。今は遷移先 review だけ。id は1つ）:
+--worktree（フェーズ4。遷移先 review と done だけ。id は1つ）:
   creator が作業した worktree を渡すと、review の前の処理を1コマンドで行う。
   --worktree と --branch は両方そろえ、review では --plan-head も必須。--note は下で決まる
   自動の補足の後ろに付く。
@@ -36,6 +36,20 @@ frontmatter の model。無ければ付けない）。`--no-model` で付けな�
   5. 違反あり: attempt+1 が HARNESS_MAX_ATTEMPTS 以内なら、タスク票の「進捗」に差し戻しの
      1行を足し、doing→doing（attempt+1）にして worktree とブランチを破棄する（終了コード3）。
      超えるなら doing→blocked にして worktree を残す（終了コード4）
+
+--worktree の done（review→done。--plan-head 必須。worktree の未コミット・未追跡分は
+  マージに入れない＝収集しない）:
+  検査（どれかに当たれば何も変えず終了コード1）: フェーズ2の検査と PASS の verdict の検査、
+  worktree とブランチの検証、--plan-head の40桁への解決。通った後:
+  1. plan_head..branch の新規コミットが無ければ review→blocked（終了コード4）
+  2. diff_gate の check で宣言外の変更を調べる（GateError は終了コード1）。違反があれば
+     review→blocked（終了コード4。タスク票の「進捗」には書かない）
+  3. メインの作業ツリーで `git merge --no-ff <branch> -m "<計画ID>/<id>: マージ"` を行う
+  4. 成功したらフェーズ2と同じ review→done（計画票・log・verdict をコミット）をして、
+     `git worktree remove --force` と `git branch -d` で後始末する（終了コード0。後始末の
+     失敗は警告だけで0のまま。状態のコミットに失敗したらマージ済みと断って終了コード1）
+  5. マージに失敗したら衝突ファイルを取ってから merge --abort で中止し、review→blocked にして
+     worktree とブランチを残す（終了コード4）
 
 終了コード:
     0  review／done にした
@@ -154,13 +168,13 @@ def parse_args(argv):
             p.error("--worktree には --branch も指定します")
         if len(ids) != 1:
             p.error("--worktree を使う時の id は1つだけです")
-        if args.target != "review":
+        if args.target not in ("review", "done"):
             p.error(
-                "--worktree は遷移先 review にだけ対応しています（%s はまだ対応していません）"
+                "--worktree は遷移先 review と done にだけ対応しています（%s はまだ対応していません）"
                 % args.target
             )
         if args.plan_head is None:
-            p.error("review で --worktree を使う時は --plan-head が必要です")
+            p.error("%s で --worktree を使う時は --plan-head が必要です" % args.target)
 
     question = None
     if args.question is not None or args.question_file is not None:
@@ -455,6 +469,88 @@ def review_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_bytes, pla
     return 4
 
 
+def merge_branch(root, plan_id, tid, branch):
+    """計画ブランチへ --no-ff でマージする。(成功か, question, 補足) を返す。
+
+    失敗したら衝突ファイルを取り、マージ中の状態があれば中止して残さない。
+    """
+    r = run_git(root, "merge", "--no-ff", branch, "-m", "%s/%s: マージ" % (plan_id, tid))
+    if r.returncode == 0:
+        return True, "", ""
+    err_first = (r.stderr.strip().splitlines() or [""])[0]
+    u = run_git(root, "diff", "--name-only", "--diff-filter=U")
+    conflicts = [x for x in u.stdout.splitlines() if x.strip()]
+    gp = run_git(root, "rev-parse", "--git-path", "MERGE_HEAD").stdout.strip()
+    if gp:
+        if not os.path.isabs(gp):
+            gp = os.path.join(root, gp)
+        if os.path.exists(gp):
+            run_git(root, "merge", "--abort")
+    if conflicts:
+        return False, clean_text("マージで衝突したファイル: %s" % ", ".join(conflicts)), "マージコンフリクト"
+    return False, clean_text("マージに失敗した: %s" % err_first), "マージ失敗"
+
+
+def done_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid, cur,
+                       model):
+    """--worktree 付きの review→done。終了コードを返す。"""
+    worktree = verify_worktree(root, args.worktree, args.branch)
+    plan_head = resolve_commit(root, args.plan_head)
+    branch = args.branch
+    log_path = os.path.join(root, log_rel)
+    verdict_rel = "vault/verdicts/%s/%s.json" % (plan_id, tid)
+
+    def finish(new, question, note):
+        new_plan = rewrite_rows(plan_lines, positions, [(tid, "review", new, cur)], question)
+        full_note = (note + " " + args.note_text).strip() if args.note_text else note
+        m = model if ("review", new) in MODEL_AGENT else None
+        now = now_jst()
+        new_log, _before = log_with_lines(
+            log_path, [transition_line(now, tid, "review", new, cur, m, full_note)]
+        )
+        files = [(plan_rel, new_plan), (log_rel, new_log)]
+        paths = [plan_rel, log_rel]
+        if new == "done":
+            paths.append(verdict_rel)
+        commit_files(root, files, "%s/%s: review→%s" % (plan_id, tid, new), paths)
+
+    def block(question, note):
+        finish("blocked", question, note)
+        print("%s/%s: review→blocked attempt=%d %s。worktree を残した" % (plan_id, tid, cur, question))
+        return 4
+
+    if count_new_commits(root, plan_head, branch) == 0:
+        return block(
+            clean_text("worktree に新規コミットが無い（マージ対象の差分が無い）"), "新規コミット無し"
+        )
+    violations = run_diff_gate(root, plan_id, tid, plan_head, branch)
+    if violations:
+        text = clean_text("宣言外の変更: %s" % ", ".join(v[0] for v in violations))
+        return block(text, text)
+
+    ok, question, note = merge_branch(root, plan_id, tid, branch)
+    if not ok:
+        return block(question, note)
+
+    try:
+        finish("done", "", "")
+    except SystemExit:
+        sys.stderr.write(
+            "[transition] マージは済んでいます（マージコミットは取り消していません）。"
+            "状態のコミットだけ失敗したため、計画票と log は元に戻しました\n"
+        )
+        raise
+
+    r = run_git(root, "worktree", "remove", "--force", worktree)
+    if r.returncode != 0:
+        sys.stderr.write("[transition] worktree の削除に失敗しました: %s\n" % r.stderr.strip())
+    r = run_git(root, "branch", "-d", branch)
+    if r.returncode != 0:
+        sys.stderr.write("[transition] ブランチの削除に失敗しました: %s\n" % r.stderr.strip())
+    print("%s/%s: review→done attempt=%d" % (plan_id, tid, cur))
+    return 0
+
+
 def main(argv):
     args = parse_args(argv)
     plan_id = args.plan_id
@@ -546,6 +642,13 @@ def main(argv):
             model = agent_model(root, MODEL_AGENT[(old_all, target)])
         elif args.worktree is not None:
             model = agent_model(root, "creator")
+
+    if args.worktree is not None and target == "done":
+        tid = args.id_list[0]
+        return done_with_worktree(
+            args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid,
+            cur_attempts[tid], model,
+        )
 
     if args.worktree is not None:
         tid = args.id_list[0]

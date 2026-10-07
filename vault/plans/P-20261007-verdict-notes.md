@@ -29,7 +29,7 @@ verifier の指摘を見えるようにする（D-013 フェーズ2）
 | T-01 | done | 1 | - | verdict の reasons を一覧にする scripts/verdict_notes.py を新設する | |
 | T-02 | done | 1 | T-01 | vcs_finish.sh に HARNESS_PR_BODY_FILE と HARNESS_PR_TITLE で本文とタイトルを渡す経路を足す | |
 | T-03 | doing | 1 | T-02 | model_stats.py の出力の末尾に noted_rate 列を足す | |
-| T-04 | doing | 1 | T-01,T-02 | run/SKILL.md の手順7で verdict_notes.py の出力を PR 本文と完了報告に入れる | |
+| T-04 | blocked | 1 | T-01,T-02 | run/SKILL.md の手順7で verdict_notes.py の出力を PR 本文と完了報告に入れる | 手順7の MCP 代替の文への追記（本文には本文ファイルの中身、タイトルには HARNESS_PR_TITLE の値を使う）が auto mode classifier に拒否されました（理由の表示は「Instruction Poisoning」のみ）。この追記を許可して続行してよいですか。それとも別の書き方にしますか。 |
 | T-05 | todo | 0 | T-01,T-02,T-03 | docs/vault-spec.md の1節・6節・7節に verdict_notes.py・PR 本文の経路・noted_rate を書く | |
 
 ## 計画の受け入れ基準

@@ -19,6 +19,8 @@ attempt が一致する時だけ行い、verdict もコミットに含める。
 doing→review・doing→blocked の行に creator=<model>、review→done・review→doing・
 review→blocked の行に verifier=<model> を付ける（対象リポジトリの .claude/agents/<name>.md の
 frontmatter の model。無ければ付けない）。`--no-model` で付けない。
+creator= の値は環境変数 HARNESS_CREATOR_MODEL（空白を除いて空でなければ）を優先し、無ければ
+creator.md の frontmatter の model。値の検査はしない。verifier= は環境変数を見ない。
 
 --worktree（フェーズ4。遷移先 review・done・doing・blocked。id は1つ）:
   creator が作業した worktree を渡すと、review の前の処理を1コマンドで行う。
@@ -125,6 +127,18 @@ def agent_model(root, name):
             return _hooklib.frontmatter_value(f.read(), "model")
     except (OSError, UnicodeDecodeError):
         return None
+
+
+def creator_model(root):
+    """creator のモデル。環境変数 HARNESS_CREATOR_MODEL（空白を除いて空でなければ）を優先し、無ければ frontmatter の model。"""
+    env = os.environ.get("HARNESS_CREATOR_MODEL", "").strip()
+    if env:
+        return env
+    return agent_model(root, "creator")
+
+
+def transition_model(root, name):
+    return creator_model(root) if name == "creator" else agent_model(root, name)
 
 
 class Refuse(Exception):
@@ -742,9 +756,9 @@ def main(argv):
     model = None
     if not args.no_model:
         if (old_all, target) in MODEL_AGENT:
-            model = agent_model(root, MODEL_AGENT[(old_all, target)])
+            model = transition_model(root, MODEL_AGENT[(old_all, target)])
         elif args.worktree is not None:
-            model = agent_model(root, "creator")
+            model = creator_model(root)
 
     if args.worktree is not None and target == "doing":
         tid = args.id_list[0]

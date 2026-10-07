@@ -30,7 +30,7 @@ creator のモデルを環境変数 HARNESS_CREATOR_MODEL で切り替えられ�
 | T-02 | done | 1 | T-01 | 会話記録から agent×model の使用量を集計する scripts/usage_stats.py を新設する | |
 | T-03 | done | 1 | T-01 | run/SKILL.md の creator の呼び出しで HARNESS_CREATOR_MODEL を Agent ツールの model に渡す | |
 | T-04 | done | 1 | T-01,T-02 | docs/vault-spec.md 7節に creator= の値の決め方と usage_stats.py の定義を書く | |
-| T-05 | review | 1 | T-02,T-03 | docs/runbook.md に haiku を試して sonnet と比べる手順を書く | |
+| T-05 | done | 1 | T-02,T-03 | docs/runbook.md に haiku を試して sonnet と比べる手順を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -1,0 +1,15 @@
+{
+  "task": "P-20261007-verdict-notes/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 07:30",
+  "criteria": [
+    {"text": "手順7に、全タスクが done になった後に `python3 scripts/verdict_notes.py <計画ID>` を実行することが書かれている：`grep -n 'python3 scripts/verdict_notes.py <計画ID>' .claude/skills/run/SKILL.md` の出力が1行以上で、行番号がすべて `## 7. 次へ・完了` と `## 8. ハーネス振り返り` の見出しの行の間にある", "ok": true, "note": "実行コマンド: `grep -n 'python3 scripts/verdict_notes.py <計画ID>' .claude/skills/run/SKILL.md` と `grep -n '^## '` / 出力: 136行のみ。見出しは7が132行、8が144行で範囲内"},
+    {"text": "手順7の `vcs_finish.sh` の呼び出しが、本文ファイルを環境変数で渡す形になっている：`grep -nF 'env HARNESS_PR_BODY_FILE=<本文ファイル> HARNESS_PR_TITLE=\"<計画ID>: <ゴールの1行目>\" bash scripts/vcs_finish.sh' .claude/skills/run/SKILL.md` の出力が1行以上で、行番号が手順7の範囲にある", "ok": true, "note": "実行コマンド: 上記 grep -nF / 出力: 138行（132〜144の範囲内）に該当"},
+    {"text": "手順7に、本文ファイルの中身が次の3つであることが書かれている（Read で確認）：計画 ID、タスク一覧（`python3 scripts/pr_body.py <計画ID>` の出力をそのまま）、`## verifier の指摘` 節（`verdict_notes.py` の出力をそのまま）", "ok": true, "note": "確認方法: SKILL.md を Read / 137行に、計画 ID の1行・pr_body.py の出力（タスク一覧）・`## verifier の指摘` の見出しと verdict_notes.py の出力の3つを、そのまま写すと記載"},
+    {"text": "手順7に、`verdict_notes.py` の出力（「指摘なし」の時もそのまま）を完了報告に含めることと、`gh`/`glab` が無い時の MCP の代替では本文ファイルの中身を本文に使うことが書かれている（Read で確認）", "ok": true, "note": "確認方法: SKILL.md を Read / 139行に完了報告へそのまま含める（指摘なしも1行）、141行に MCP 代替で本文は本文ファイルの中身、タイトルは HARNESS_PR_TITLE の値と記載"},
+    {"text": "見出しの行は変わっていない：`git diff work/p-20261007-verdict-notes -- .claude/skills/run/SKILL.md | grep -E '^[+-]#'` の出力が空", "ok": true, "note": "実行コマンド: 上記 git diff | grep / 出力: 空"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -3`（worktree 内）/ 出力: smoke: pass=670 fail=0。変更ファイル検査: タスク票の「進捗」に起点コミットの記録が無いため検査は行わない（参考で見た差分は SKILL.md と計画票・log・タスク票のみ）"}
+  ],
+  "reasons": []
+}

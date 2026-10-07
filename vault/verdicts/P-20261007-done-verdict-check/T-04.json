@@ -1,0 +1,13 @@
+{
+  "task": "P-20261007-done-verdict-check/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 09:14",
+  "criteria": [
+    {"text": "done の行の verdict が正しくないとブロックする（表の上から最初の T-02 で止まる）：`printf '{\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Edit\"}' | env GIT_DIR=/nonexistent CLAUDE_PROJECT_DIR=vault/tasks/P-20261007-done-verdict-check/fixtures/mixed python3 .claude/hooks/plan_guard.py` の出力が次の1行と完全に一致する", "ok": true, "note": "実行コマンド: worktree で上記コマンドを実行 / 出力: {\"decision\": \"block\", \"reason\": \"[plan_guard] P-FIX/T-02 は done ですが、attempt=1 の PASS の verdict がありません（verdict がありません）。計画票の T-02 の status を review に戻し、verifier を実行してください。\"} 基準の1行と一致"},
+    {"text": "done の行に正しい PASS の verdict があれば許可する：ok フィクスチャで plan_guard.py の出力が空", "ok": true, "note": "実行コマンド: ok フィクスチャに対し plan_guard.py を実行し wc -c / 出力: 0（空）"},
+    {"text": "検査を `_hooklib.py` の関数で行い、plan_guard.py に verdict の検査関数を持たない：grep -c の出力が 0 かつ 1", "ok": true, "note": "実行コマンド: grep -c -E '^def (validate_verdict|done_rows_without_pass)\\(' と grep -c 'H.done_rows_without_pass(' を plan_guard.py に実行 / 出力: 0 と 1"},
+    {"text": "既存の検査が先にブロックすることを含め、既存の smoke が全件通り件数も変わらない：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=519 fail=0`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree） / 出力: smoke: pass=519 fail=0。変更ファイル検査: タスク票の進捗に起点コミットの記録が無いため行わなかった（git status の変更は plan_guard.py とタスク票のみ）"}
+  ],
+  "reasons": []
+}

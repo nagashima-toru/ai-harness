@@ -1,0 +1,1 @@
+- 2026-10-07 14:00 - draft→approved 人の指示: /plan approve P-20261007-diff-gate

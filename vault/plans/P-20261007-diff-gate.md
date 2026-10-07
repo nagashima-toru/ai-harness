@@ -1,6 +1,6 @@
 ---
 id: P-20261007-diff-gate
-status: draft
+status: approved
 ---
 # ゴール
 差分ゲート diff_gate.py と「成果物」の記法（D-012 フェーズ3）

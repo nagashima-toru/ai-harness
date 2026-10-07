@@ -1,1 +1,2 @@
 - 2026-10-07 20:08 - draft→approved 人の指示: /plan approve P-20261007-stop-gate-scope
+- 2026-10-07 20:09 T-01 todo→doing attempt=1

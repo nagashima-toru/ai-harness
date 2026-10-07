@@ -7,10 +7,35 @@ argument-hint: [task-id（省略時は先頭）]
 自分のブランチの計画を1タスク処理する。状態の正本は承認済みの計画票（`vault/plans/<計画ID>.md` のタスク表）、仕様は `docs/vault-spec.md`。
 
 ## 0. 現在時刻
-`TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で取る。ログ・verdict の日時はこれを使う。
+log の日時は transition.py が実時刻で書くので、run は書かない。`TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` は verifier が verdict の `checked_at` に使う。
 
 ## 0.5 実行モデルの記録
-手順3.8・4・6 の遷移行の補足の先頭に、その遷移を行わせたエージェントのモデルを付ける（`doing→review`・`doing→blocked` は `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` は `verifier=<モデル>`）。モデルの値は固定せず、実行時に `.claude/agents/creator.md`・`.claude/agents/verifier.md` の frontmatter の `model` を読んで書く。ほかの遷移行（`todo→doing`、再開時の `doing→doing`、ハング由来の行など）には付けない。書式の正本は `docs/vault-spec.md` 7節で、ここでは重ねて定義しない。
+モデルの記録は transition.py が自動で付ける。`doing→review`・`doing→blocked` は `creator=<モデル>`、`review→done`・`review→doing`・`review→blocked` は `verifier=<モデル>` で、値は `.claude/agents/creator.md`・`.claude/agents/verifier.md` の frontmatter の `model` から transition.py が読む。ほかの遷移（`todo→doing`、再開・ハング・worktree が無い時の `doing→doing`・`review→doing`・blocked など）は `--no-model` を付けて呼ぶ。書式の正本は `docs/vault-spec.md` 7節で、ここでは重ねて定義しない。
+
+## transition.py の呼び出し（早見表）
+計画票のタスク表と `vault/log/<計画ID>.md` は transition.py で変える。log の日時・モデルの記録・コミットは transition.py が行う。
+
+| 場面 | 呼び出し |
+|---|---|
+| 着手（手順2。todo→doing。複数 id をカンマでつないで1回） | `python3 scripts/transition.py <計画ID> <id>[,<id>...] doing` |
+| creator の blocked の報告・分岐元の不一致（手順3。doing→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
+| review にする（手順4。収集コミット・新規コミットの判定・差分ゲート・再開情報の記録行を含む） | `python3 scripts/transition.py <計画ID> <id> review --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
+| PASS（手順6。マージ・done・後始末） | `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
+| FAIL（手順6。再試行、上限なら blocked） | `python3 scripts/transition.py <計画ID> <id> doing --worktree <worktree> --branch <branch>` |
+| 中断からの再開・ハング・worktree が無い時の再試行（doing→doing・review→doing） | `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "<補足>"` |
+| 中断・ハング・worktree が無い時の上限での blocked（doing→blocked・review→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "<補足>"` |
+
+複数の id の review・done・blocked・doing（`--worktree` 付き）は1回に1 id ずつ、1つの Bash 呼び出しで1回だけ呼び、並行に呼ばない（transition.py がコミットするため）。todo→doing だけは複数 id を1回で呼ぶ。`blocked` の質問文は Write ツールで一時ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書いて `--question-file` で渡す（言い換えずに書き写すため。引用符の問題とガードの誤検知を避けるため）。
+
+終了コードごとの次の行動：
+
+| 終了コード | 次の行動 |
+|---|---|
+| 0 | 遷移した。次の手順へ進む。`--worktree` 無しの呼び出し（着手・再開・ハング・上限での blocked）は成功すると blocked でも 0 |
+| 1 | 前提を満たさず何も変えていない。標準エラーの `[transition] ` の理由を添えて人に報告し、そのタスクの処理を止める（計画票や log を Edit・printf で直さない） |
+| 2 | 引数の誤り。早見表の形と見比べて呼び出しを直す |
+| 3 | 差し戻した（creator を呼び直す）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直してその id の creator を呼び直す |
+| 4 | blocked にした。標準出力の1行を完了報告に写し、その id を終えて次の対象タスクへ進む（worktree は残っている） |
 
 ## 1. 計画票を見つける
 1. `bash scripts/current_plan.sh` を実行する（frontmatter の `status` が `approved` の計画票の計画 ID を1行1件で出力する）
@@ -26,8 +51,7 @@ argument-hint: [task-id（省略時は先頭）]
    - 記録行が無く場所が分からない worktree（`doing` の中断で残ったもの等）は自動で削除しない。完了報告に `git worktree list` の出力を添えて人に知らせる
 3. 無ければ、`todo` かつ `after` に列挙された全タスクの `status` が `done`（`after` が `-` なら無条件）である行を、タスク表の上から順に並べたものを「着手可能集合」とする。引数 `$ARGUMENTS` に ID があれば、着手可能集合をその1行だけに絞る。着手可能集合の先頭から環境変数 `HARNESS_MAX_PARALLEL`（既定 3。未設定時は3を使う。`HARNESS_MAX_ATTEMPTS` と同じ環境変数パターン）件までを選ぶ
 4. 選べる行が無ければ「取れるタスクがありません」と報告して終わる
-5. 選んだ行**全部**について、status を `doing`、attempt を `1` にする。この計画票への書き込みは、選んだタスクごとに分けず、他の処理を挟まず本手順の中でまとめて（一括で）行う。`vault/log/<計画ID>.md` への追記も同様に、選んだタスク全部について `- <日時> <id> todo→doing attempt=1` を本手順の中で連続してまとめて行う
-6. 直前の一括反映（doing への状態更新＋ログ追記）をこの時点でコミットする。手順3で `isolation: "worktree"` を指定して creator を呼ぶと、その時点の計画ブランチのコミット済み HEAD から新しい worktree が分岐するため、ここでコミットしておかないと今回の doing 反映が新しい worktree に含まれない
+5. 選んだ行の id をカンマでつないで早見表1の呼び出し `python3 scripts/transition.py <計画ID> <id>[,<id>...] doing` を1回行う（計画票・log の書き換えとコミットを transition.py が行う。コミットが要る理由：手順3の worktree はコミット済みの HEAD から分岐するため）。終了コード1なら人に報告して止める
 
 ## 3. 作る
 1. 手順2で選んだタスク全部について、`git rev-parse HEAD`（このブランチ＝計画ブランチの現在の HEAD）を1回だけ控える（以下 `PLAN_HEAD`）。手順2の一括反映（doing への更新・ログ追記）が済んだ直後の値を使う

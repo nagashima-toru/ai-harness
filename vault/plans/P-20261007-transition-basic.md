@@ -1,6 +1,6 @@
 ---
 id: P-20261007-transition-basic
-status: draft
+status: approved
 ---
 # ゴール
 状態遷移スクリプト transition.py の基本（D-012 フェーズ2）

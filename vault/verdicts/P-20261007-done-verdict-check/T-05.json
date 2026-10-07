@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-done-verdict-check/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 09:22",
+  "criteria": [
+    {"text": "全件通り、ちょうど10件増える：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=529 fail=0`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree で実行）/ 出力: smoke: pass=529 fail=0。起点コミット 333311b からの変更ファイルは scripts/smoke.sh のみ（未コミット分も同じ）で成果物外のファイルは無し"},
+    {"text": "stop_gate のケースが5件通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (done-verdict stop_gate) '` の出力が `5`", "ok": true, "note": "実行コマンド: smoke 出力に `grep -c '^  ok   (done-verdict stop_gate) '` / 出力: 5"},
+    {"text": "plan_guard のケースが5件通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (done-verdict plan_guard) '` の出力が `5`", "ok": true, "note": "実行コマンド: smoke 出力に `grep -c '^  ok   (done-verdict plan_guard) '` / 出力: 5"},
+    {"text": "ブロックのケースは reason に `<計画ID>/<id>` と done の検査の文面を含むことを確かめている：`grep -c -F '\"P-TEST/T-0001 は done ですが\"' scripts/smoke.sh` の出力が `8`", "ok": true, "note": "実行コマンド: `grep -c -F '\"P-TEST/T-0001 は done ですが\"' scripts/smoke.sh` / 出力: 8"},
+    {"text": "節の見出しがある：`grep -c -F 'echo \"== done-verdict（D-012 フェーズ1） ==\"' scripts/smoke.sh` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c -F 'echo \"== done-verdict（D-012 フェーズ1） ==\"' scripts/smoke.sh` / 出力: 1"}
+  ],
+  "reasons": []
+}

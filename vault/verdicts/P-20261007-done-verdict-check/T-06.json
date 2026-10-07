@@ -1,0 +1,15 @@
+{
+  "task": "P-20261007-done-verdict-check/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 09:22",
+  "criteria": [
+    {"text": "9節の判定表に done の行の検査の行がある：`sed -n '/^## 9\\./,/^## 10\\./p' docs/vault-spec.md | grep -c -F '| done の行に attempt が一致する正しい PASS の verdict が無い'` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で上記 sed|grep -c / 出力: 1。git diff でも決定済みの行が「未コミットの変更がある」行の直後に追加されていることを確認"},
+    {"text": "9節の判定表から「PASS かつ done → 許可」の行が消えている：`sed -n '/^## 9\\./,/^## 10\\./p' docs/vault-spec.md | grep -c -F '| PASS かつ done | 許可 |'` の出力が `0`", "ok": true, "note": "実行コマンド: worktree で上記 sed|grep -c / 出力: 0。git diff で該当行の削除のみを確認"},
+    {"text": "9節の本文に検査の位置が書かれている：`sed -n '/^## 9\\./,/^## 10\\./p' docs/vault-spec.md | grep -c -F 'status が done の行それぞれについて'` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で上記 sed|grep -c / 出力: 1。git diff で冒頭段落が決定済みの文面に置換されていることを確認"},
+    {"text": "10節に done の行の検査の段落がある：`sed -n '/^## 10\\./,/^## 11\\./p' docs/vault-spec.md | grep -c -F 'done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1）。'` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で上記 sed|grep -c / 出力: 1。git diff で「承認の裏付けの検査も…」段落の直前に段落が追加されていることを確認"},
+    {"text": "節の構成は変わらない：`grep -c '^## ' docs/vault-spec.md` の出力が `13`", "ok": true, "note": "実行コマンド: worktree で `grep -c '^## ' docs/vault-spec.md` / 出力: 13"},
+    {"text": "smoke が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=519 fail=0。変更ファイル検査: タスク票の「進捗」に起点コミットの記録が無いため検査を行っていない（参考: 未コミットは docs/vault-spec.md とタスク票のみ）"}
+  ],
+  "reasons": []
+}

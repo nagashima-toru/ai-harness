@@ -1,6 +1,6 @@
 ---
 id: P-20261007-done-verdict-check
-status: approved
+status: done
 ---
 # ゴール
 done の行の verdict をフックで検査する（D-012 フェーズ1）

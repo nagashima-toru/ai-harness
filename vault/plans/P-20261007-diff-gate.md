@@ -23,9 +23,9 @@ creator の作業ブランチの差分が、タスク票の「成果物」に宣
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | scripts/diff_gate.py を新設し、作業ブランチの差分を base の版のタスク票の「成果物」と照らし合わせる | |
+| T-01 | doing | 1 | - | scripts/diff_gate.py を新設し、作業ブランチの差分を base の版のタスク票の「成果物」と照らし合わせる | |
 | T-02 | todo | 0 | T-01 | smoke.sh に diff_gate.py のケースを20件以上足す | |
-| T-03 | todo | 0 | - | vault/templates/task.md の「成果物」に、変えるファイルをすべてバッククォートのパスで書く記法を足す | |
+| T-03 | doing | 1 | - | vault/templates/task.md の「成果物」に、変えるファイルをすべてバッククォートのパスで書く記法を足す | |
 | T-04 | todo | 0 | T-01 | .claude/agents/planner.md に「成果物」の書き方（変えるファイルをすべてバッククォートのパスで書く）を足す | |
 | T-05 | todo | 0 | T-01 | docs/vault-spec.md の5節に「成果物」の記法と diff_gate.py の判定を書く | |
 

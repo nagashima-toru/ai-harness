@@ -1,1 +1,3 @@
 - 2026-10-07 14:00 - draft→approved 人の指示: /plan approve P-20261007-diff-gate
+- 2026-10-07 14:01 T-01 todo→doing attempt=1
+- 2026-10-07 14:01 T-03 todo→doing attempt=1

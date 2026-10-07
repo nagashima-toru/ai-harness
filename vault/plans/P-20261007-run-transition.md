@@ -38,7 +38,7 @@ run の手順を transition.py に置き換える（D-012 フェーズ5）
 | T-04 | done | 1 | T-03 | run/SKILL.md の中断からの再開とハング時の復旧を transition.py に置き換える | |
 | T-05 | done | 1 | T-04 | run/SKILL.md の手順7・8・回帰確認・注意を直し、全体から printf と個別の git 操作を消す | |
 | T-06 | done | 1 | T-02 | verifier.md の手順10を「worktree の変更は verifier の前にコミット済み」の前提に直す | |
-| T-07 | todo | 0 | T-05 | docs/vault-spec.md の1・2・7節（と5・12節の古い参照）を transition.py を使う run の流れに合わせる | |
+| T-07 | doing | 1 | T-05 | docs/vault-spec.md の1・2・7節（と5・12節の古い参照）を transition.py を使う run の流れに合わせる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

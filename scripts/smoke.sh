@@ -140,6 +140,8 @@ mkdir -p "$DWSMAIN/vault/plans"
   echo "|---|---|---|---|---|---|"
   echo "| T-0001 | done | 1 | - | A | |"
 } > "$DWSMAIN/vault/plans/P-TEST.md"
+mkdir -p "$DWSMAIN/vault/verdicts/P-TEST"
+printf '%s\n' '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}' > "$DWSMAIN/vault/verdicts/P-TEST/T-0001.json"
 git -C "$DWSMAIN" add -A
 git -C "$DWSMAIN" -c user.email=t@example.com -c user.name=t commit -q -m plan
 DWSLEAF="$(mktemp -d)"; rmdir "$DWSLEAF"
@@ -723,6 +725,7 @@ expect "(a-3) doing 同士が相互に after で参照し合う → ブロック
 make_plan "P-TEST" "approved" "| T-0001 | doing | 1 | - | A | |"
 expect "(a-4) doing が単一（依存無し）→ 許可（既存シナリオの回帰確認）" allow "$(run_plan_guard)"
 make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0002 | doing | 1 | T-0001 | B | |"
+make_verdict T-0001 1 PASS
 expect "(a-5) doing の after が done なタスクを指す → 許可" allow "$(run_plan_guard)"
 make_plan "P-TEST" "approved" "| T-0001 | blocked | 1 | - | A | |"
 expect "(b) blocked なのに question が空 → ブロック" block "$(run_plan_guard)" "question"
@@ -733,6 +736,7 @@ expect "(d) id が重複 → ブロック" block "$(run_plan_guard)" "重複"
 make_plan "P-TEST" "approved" "| T-0001 | todo | 0 | - | A |"
 expect "(e) データ行の列数が6でない → ブロック" block "$(run_plan_guard)" "列数"
 make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0002 | doing | 2 | T-0001 | B | |" "| T-0003 | blocked | 1 | - | C | 方針を決めてほしい |"
+make_verdict T-0001 1 PASS
 expect "正常な計画票（doing 1件・blocked に question あり）→ 許可" allow "$(run_plan_guard)"
 make_plan "P-TEST" "approved"
 expect "データ行が無い → 許可" allow "$(run_plan_guard)"
@@ -965,6 +969,8 @@ mkdir -p "$DWPMAIN/vault/plans"
   echo "|---|---|---|---|---|---|"
   echo "| T-0001 | done | 1 | - | A | |"
 } > "$DWPMAIN/vault/plans/P-TEST.md"
+mkdir -p "$DWPMAIN/vault/verdicts/P-TEST"
+printf '%s\n' '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}' > "$DWPMAIN/vault/verdicts/P-TEST/T-0001.json"
 DWPLEAF="$(mktemp -d)"; rmdir "$DWPLEAF"
 git -C "$DWPMAIN" worktree add -q -b work/p-delegate-plan "$DWPLEAF" >/dev/null 2>&1
 mkdir -p "$DWPLEAF/.claude/hooks"

@@ -1,6 +1,6 @@
 ---
 id: P-20261007-verdict-notes
-status: approved
+status: done
 ---
 # ゴール
 verifier の指摘を見えるようにする（D-013 フェーズ2）

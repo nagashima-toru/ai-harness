@@ -1,6 +1,6 @@
 ---
 id: P-20261007-transition-basic
-status: approved
+status: done
 ---
 # ゴール
 状態遷移スクリプト transition.py の基本（D-012 フェーズ2）
@@ -28,7 +28,7 @@ status: approved
 | T-01 | done | 1 | - | scripts/transition.py を新設し遷移・attempt・拒否条件・表と log の書き換え・コミットを実装する | |
 | T-02 | done | 1 | T-01 | transition.py に review→done の verdict 検査と creator=/verifier= の自動付与を足す | |
 | T-03 | done | 1 | T-02 | smoke.sh に transition.py のケースを22件以上足す | |
-| T-04 | review | 1 | T-02 | docs/vault-spec.md の2節・7節に transition.py の使い方と推奨の経路であることを書く | |
+| T-04 | done | 1 | T-02 | docs/vault-spec.md の2節・7節に transition.py の使い方と推奨の経路であることを書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -45,6 +45,6 @@ creator のモデルを環境変数 HARNESS_CREATOR_MODEL で切り替えられ�
 ## 人への質問
 計画は次の前提で書いた。違う場合は承認前に指示してほしい。
 1. 会話記録の `resolvedModel` は完全なモデル ID（実際の記録では `claude-sonnet-5` など）で、log の `creator=` は alias（`sonnet`・`haiku`）になる。`usage_stats.py` は `resolvedModel` を変換せずそのまま出す。runbook には「両者の表記が違うので見比べる時に対応を読み替える」と書く
-2. `usage_stats.py` の既定の読み込み先は、設計どおりプロジェクトの絶対パスの `/` を `-` に置き換えたディレクトリにした。Claude Code は `.` や `_` なども `-` にするので、パスにそれらを含む導入先では既定の場所が外れる（このリポジトリのパスでは一致する）。その時は引数でディレクトリを渡す、と usage を書く。英数字以外をすべて `-` にしたい場合は指示してほしい
-3. 設計の「読む項目」に `totalToolUseCount` があるが、出力の見出しは設計で `agent model calls tokens_total tokens_avg duration_avg_s` に決まっているので、`totalToolUseCount` は出力しない（必須キーにもしない）。列を足したい場合は指示してほしい
+2. （回答済み：B）`usage_stats.py` の既定の読み込み先は、プロジェクトの絶対パスの英数字以外をすべて `-` に置き換えたディレクトリにする（Claude Code の実際の変換に合わせる）
+3. （回答済み：B）`totalToolUseCount` を読み、出力の末尾に `tool_uses_avg` 列を足す（D-013 の見出しに1列足した7列）
 4. セッションの再開（`--resume` など）で同じ Agent 呼び出しの結果が複数の会話記録に写ることがあるため、`toolUseResult` の `agentId` が同じものは1回だけ数えることにした（設計に無い追加。`agentId` が無いものは毎回数える）

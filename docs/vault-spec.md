@@ -21,7 +21,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 「自分のブランチの計画票」は `vault/plans/*.md` を走査し、frontmatter の `status` が `approved` のものを取る。2つ以上 `approved` があるのは異常（1ブランチ1計画の不変条件）。
 実際にこの走査を行うスクリプトが `scripts/current_plan.sh`（`vault/plans/*.md` の frontmatter のみを見て、approved な計画票の計画 ID を1行1件で出力する）。
 
-証跡は3層で残る。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとのマージコミット。worktree での作業を計画ブランチへ `git merge --no-ff` で取り込んだもの）と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
+証跡は3層で残る。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとの状態のコミット（transition.py の `<計画ID>/<id,...>: <旧>→<新>`）・worktree 側の収集コミット（`<計画ID>/<id>: creator 成果物をオーケストレーターが収集`）・計画ブランチへの `--no-ff` のマージコミット（`<計画ID>/<id>: マージ`））と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
 
 引数なしの `scripts/vcs_finish.sh` は、現在のブランチ（`work/<計画IDの英小文字>`）の計画が見つかれば、PR/MR のタイトルを `<計画ID>: <ゴールの1行目>`、本文を `scripts/pr_body.py` が出す「タスク履歴」表（タスク ID・title・`<計画ID>/<id>: done`（従来の run）か `<計画ID>/<id>: review→done`（transition.py。複数 id の `<計画ID>/T-01,T-02: review→done` も含む）のコミットの短縮ハッシュ・verdict）にする。PR がスカッシュマージされて main にタスクごとのコミットが残らなくても、この表から辿れる。マージ方式の運用は `docs/runbook.md` 3節を参照。
 
@@ -63,7 +63,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 - 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
 - 承認（draft→approved）と blocked の解除（`/plan approve`・`/plan unblock`）は扱わず、今の `/plan` の Edit のまま（10節の裏付けの検査が「HEAD と作業ツリーの比較」で働くため）
 - 推奨の経路であって強制ではない。Edit による計画票の直接の書き換えはフックで拒否しない。done の行の verdict の検査（9節・10節）で「PASS の無い done」が残らないことを守る
-- 今の `/run`（`.claude/skills/run/SKILL.md`）の手順はまだ `scripts/transition.py` を呼ばない
+- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、承認・blocked の解除は `/plan` の Edit のまま
 
 ## 3. ID・ファイル名・ブランチ名
 
@@ -137,7 +137,7 @@ frontmatter は `id` と `status` の2つ。
 - 出力：違反1件につき `<パス>: <理由>` を1行、標準出力に出す
 - 終了コード：0 違反なし／1 違反あり／2 引数の誤り・base にタスク票が無い・git コマンドが失敗した
 - `check(root, plan_id, task_id, base, branch)` を import して使える。違反の `(パス, 理由)` のリストを返す
-- `scripts/transition.py` の worktree 運用（2節）が `scripts/diff_gate.py` を import して `check` を使う。今の `/run`（`.claude/skills/run/SKILL.md`）の手順はまだどちらも呼ばない
+- `scripts/transition.py` の worktree 運用（2節）が `scripts/diff_gate.py` を import して `check` を使う。`/run` は手順4（review）と手順6（done）で transition.py を通して差分ゲートを使う
 
 ## 6. verdict.json
 
@@ -177,7 +177,9 @@ frontmatter は `id` と `status` の2つ。
 
 blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク ID の位置にその id を書き、次の形で1行追記する（解除の根拠の記録）：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`
 
-run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了報告の受領直後に、run が1タスク1行ずつ追記する（複数タスクの場合はタスクごとに1行）。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
+run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了後に run が transition.py の review・blocked（`--worktree` 付き）を呼ぶと、transition.py が1タスク1行ずつ書く。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
+
+再開・ハング・worktree が無い時の遷移行は、run が transition.py を `--no-model --note "<補足>"` で呼んで書く。補足は `中断から再開`・`中断が上限に達した`・`worktree が無いため作り直し`・`worktree が無いため`・`creator呼び出しハングにより再試行`・`creator呼び出しハング`・`verifier呼び出しハング` のいずれか。
 
 `scripts/transition.py` の worktree 運用（2節）が書く行：再開情報の記録行は、review・blocked の時に transition.py が遷移の行の直前に、同じ日時で書く（run が別に追記する必要は無い）。差し戻しの行は `- <日時> <id> doing→doing attempt=<n+1> 宣言外の変更: <パス>, ...` で、モデル（`creator=`・`verifier=`）を付けない。done の前に blocked にした時の補足は `新規コミット無し`・`宣言外の変更: <パス>, ...`・`マージコンフリクト` のいずれか。
 
@@ -301,7 +303,7 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - 解析できない形：コマンド置換（`$(`・バッククォート・`<(`・`>(`）、サブシェル（`(`・`)`）、`cd` などの作業ディレクトリ変更（`pushd`・`popd` を含む）、変数・グロブを含む書き込み対象（`$`・`*`・`?`・`[`・`{`）、インタプリタやラッパー（`bash -c`・`sh`・`python3`・`awk`・`perl`・`xargs`・`find`・`env`・`sudo`・`eval`・`source` 等）、シェルの制御構文（`if`・`for`・`while` 等）、`git -C` のような git の前置オプション、本文に `$(` かバッククォートがある展開されるヒアドキュメント（区切り語を引用符で囲んだ `<<'EOF'` は展開されないので解析できる）、閉じていない引用符・区切り語の行が無いヒアドキュメント
 - 6つの判定での使い方（`agent_write_guard.py` の `main` の順）：
   - `vault/rules/` 拒否・会話記録（`~/.claude/projects/`）拒否・creator の `vault/plans/`・`vault/log/` 拒否：verb を問わず、`bash_write_targets` の全ての target を、解析の成否にかかわらずそれぞれのパスで絞り込んで判定する。`vault/rules/` 拒否は、解析の成否にかかわらず先に `gh api`／`curl` 経由のリモート直叩きの検査も行う（前小節）
-  - done 判定：`git add`・`git commit` の対象を除いた target で判定する（`git add`・`git commit` はファイル内容を変えないため）。解析できない時も、`git add` / `git commit` だけのコマンドを除く判定（issue #84）は残り、それ以外は和集合の全候補で判定する。コマンド置換を含むと解析できず、コミットメッセージ中の done の verdict パスが書き込み対象とみなされて拒否されるため、done 遷移の運用では run/SKILL.md 手順6.3.4 のとおりログ追記・`git add`・`git commit` を別々の Bash 呼び出しに分け、コミットメッセージにコマンド置換を使わない（issue #87）
+  - done 判定：`git add`・`git commit` の対象を除いた target で判定する（`git add`・`git commit` はファイル内容を変えないため）。解析できない時も、`git add` / `git commit` だけのコマンドを除く判定（issue #84）は残り、それ以外は和集合の全候補で判定する。コマンド置換を含むと解析できず、コミットメッセージ中の done の verdict パスが書き込み対象とみなされて拒否されるため、run はタスクの done の遷移を transition.py で行う。手作業でコミットする時（手順7の計画票の frontmatter の approved→done など）は、ログ追記・ステージ・コミットを別々の Bash 呼び出しに分け、コミットメッセージにコマンド置換を使わない（issue #87）
   - verifier／planner の `ALLOWED` 判定：解析できた時は次の順に判定する。(1) 書き込みが無ければ許可。(2) `git-add`・`git-commit`・`git-write` が1つでもあれば拒否。(3) 全ての target が repo の外なら許可。(4) repo 内の target が `cp`／`mv` だけで、コピー・移動先（従来の抽出で求めた宛先）が全て repo の外なら許可。(5) repo 内の target が全て `redirect`・`mkdir`・`touch` で、`ALLOWED` のパス配下なら許可。いずれにも当たらなければ拒否。解析できない時は和集合の候補で判定する。書き込み動詞が無ければ許可。`extract_bash_write_targets` の対象が1つ以上あり、和集合の全候補が repo の外なら許可。リダイレクト先が1つ以上あり、和集合の全候補が `ALLOWED` 配下で、破壊的な動詞を含まなければ許可。それ以外は拒否
 - main 直接コミット拒否：main ブランチ上では、解析できた時は verb `git-commit`（`&&`・`;`・改行で連結した後ろも含む）がある時だけ拒否し、`grep "git commit"` のような読み取り・引用符内・ヒアドキュメント本文は許可する。解析できない時は（和集合の対象外で）今どおり従来の `git commit` の正規表現に加え、`git -C . commit` のような `git -<オプション> … commit` の形も拒否する。非 git リポジトリ・ブランチを取得できない時（detached HEAD 等）はこの判定を素通りする
 - 採らなかったこと：`$(cat <<'EOF' …)` の標準形のコミットメッセージを許可する案は採らない。コマンド置換の中身は任意のコマンドを実行でき、許可の形を作るとすり抜けを作りやすいため。コミットの起点を記録する欄も採らない

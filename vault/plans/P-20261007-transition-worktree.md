@@ -32,7 +32,7 @@ transition.py に worktree の運用を足す（D-012 フェーズ4）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | transition.py に --worktree の共通部品（引数・worktree の検証・収集コミット・新規コミット判定）と review を足す | |
-| T-02 | blocked | 1 | T-01 | transition.py の done に --worktree（差分ゲート・--no-ff マージ・衝突時の blocked・後始末）を足す | 受け入れ基準1（マージして done にし後始末する）の `new_commits=2` が、`--no-ff` マージの決定済みと両立しません。基準1の `new_commits=2` を、実際の値の `new_commits=3` に直してよいですか。それとも別の方針にしますか。 |
+| T-02 | todo | 0 | T-01 | transition.py の done に --worktree（差分ゲート・--no-ff マージ・衝突時の blocked・後始末）を足す |  |
 | T-03 | todo | 0 | T-02 | transition.py の doing（FAIL の再試行）と blocked に --worktree を足す | |
 | T-04 | todo | 0 | T-03,T-06 | smoke.sh に transition.py の worktree 運用と pr_body.py の件名のケースを27件以上足す | |
 | T-05 | todo | 0 | T-03,T-06 | docs/vault-spec.md の1節・2節・7節に worktree 運用のサブコマンドの動きと終了コードと pr_body の件名を書く | |

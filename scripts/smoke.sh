@@ -1887,6 +1887,133 @@ expect_eq "(bash-write-unify) 解析できない形（bash -c）でも analyze_b
 expect_guard "(bash-write-unify) 一本化で許可→拒否: verifier が引用符内の vault/tasks/<計画ID>/<id>.md を含む root 外リダイレクト" deny \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"python3 -c \"open('"'"'vault/tasks/P-X/T-01.md'"'"')\" > /tmp/x.txt"}}')"
 
+echo "== transition.py（D-012 フェーズ2） =="
+TR="$TMP/tr"
+tr_setup() { # $1=std|draft|main
+  local preset="${1:-std}" st=approved
+  [ "$preset" = "draft" ] && st=draft
+  rm -rf "$TR"
+  mkdir -p "$TR/vault/plans" "$TR/vault/log" "$TR/vault/verdicts/P-TEST" "$TR/.claude/agents"
+  {
+    echo "---"; echo "id: P-TEST"; echo "status: $st"; echo "---"
+    echo "# ゴール"; echo "確認用の計画"; echo
+    echo "## タスク表（状態の正本）"
+    echo "| id | status | attempt | after | title | question |"
+    echo "|---|---|---|---|---|---|"
+    echo "| T-01 | todo | 0 | - | A | |"
+    echo "| T-02 | todo | 0 | - | B | |"
+    echo "| T-03 | todo | 0 | T-01 | C | |"
+    echo "| T-04 | doing | 1 | - | D | |"
+    echo "| T-05 | doing | 3 | - | E | |"
+    echo "| T-06 | review | 1 | - | F | |"
+    echo "| T-07 | review | 1 | - | G | |"
+    echo "| T-08 | review | 2 | - | H | |"
+    echo "| T-09 | review | 1 | - | I | |"
+    echo "| T-10 | blocked | 1 | - | J | 既存の質問 |"
+    echo
+    echo "## 計画の受け入れ基準"; echo "- 確認用"
+  } > "$TR/vault/plans/P-TEST.md"
+  echo "- 2026-01-01 00:00 - draft→approved 人の指示: /plan approve P-TEST" > "$TR/vault/log/P-TEST.md"
+  printf -- '---\nname: creator\nmodel: smoke-creator\n---\n本文\n' > "$TR/.claude/agents/creator.md"
+  printf -- '---\nname: verifier\nmodel: smoke-verifier\n---\n本文\n' > "$TR/.claude/agents/verifier.md"
+  git -C "$TR" init -q -b main
+  git -C "$TR" config user.name smoke
+  git -C "$TR" config user.email smoke@example.com
+  git -C "$TR" add -A
+  git -C "$TR" commit -q -m init
+  [ "$preset" != "main" ] && git -C "$TR" checkout -q -b work/p-test
+  local okc='{"text":"基準","ok":true,"note":"実行コマンド: x / 出力: y"}'
+  printf '{"task":"P-TEST/T-06","attempt":1,"result":"PASS","checked_at":"2026-01-01 00:00","criteria":[%s],"reasons":[]}\n' "$okc" > "$TR/vault/verdicts/P-TEST/T-06.json"
+  printf '{"task":"P-TEST/T-07","attempt":1,"result":"FAIL","checked_at":"2026-01-01 00:00","criteria":[%s],"reasons":["r"]}\n' "$okc" > "$TR/vault/verdicts/P-TEST/T-07.json"
+  printf '{"task":"P-TEST/T-08","attempt":1,"result":"PASS","checked_at":"2026-01-01 00:00","criteria":[%s],"reasons":[]}\n' "$okc" > "$TR/vault/verdicts/P-TEST/T-08.json"
+}
+# transition.py を1回実行し、TR_RC・TR_NEW（増えたコミット数）・TR_PLAN／TR_LOG（same|diff）・TR_B／TR_A（前後の JST）を設定する
+tr_run() {
+  cp "$TR/vault/plans/P-TEST.md" "$TMP/tr_plan.before"
+  cp "$TR/vault/log/P-TEST.md" "$TMP/tr_log.before"
+  local n0 n1
+  n0="$(git -C "$TR" rev-list --count HEAD)"
+  TR_B="$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')"
+  ( cd "$TR" && python3 "$ROOT/scripts/transition.py" "$@" ) > "$TMP/tr_out" 2> "$TMP/tr_err"
+  TR_RC=$?
+  TR_A="$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')"
+  n1="$(git -C "$TR" rev-list --count HEAD)"
+  TR_NEW=$((n1 - n0))
+  cmp -s "$TMP/tr_plan.before" "$TR/vault/plans/P-TEST.md" && TR_PLAN=same || TR_PLAN=diff
+  cmp -s "$TMP/tr_log.before" "$TR/vault/log/P-TEST.md" && TR_LOG=same || TR_LOG=diff
+}
+tr_nochange() { echo "$TR_RC $TR_NEW $TR_PLAN $TR_LOG"; }
+tr_row() { grep "^| $1 |" "$TR/vault/plans/P-TEST.md"; }
+tr_lastlog() { tail -n "${1:-1}" "$TR/vault/log/P-TEST.md"; }
+
+tr_setup std; tr_run P-TEST T-01,T-02 doing
+expect_eq "(transition) 01 todo→doing で T-01 が doing・attempt=1" "1" "$(tr_row T-01 | grep -c '^| T-01 | doing | 1 |')"
+expect_eq "(transition) 01 todo→doing で T-02 が doing・attempt=1" "1" "$(tr_row T-02 | grep -c '^| T-02 | doing | 1 |')"
+expect_eq "(transition) 01 終了コードは 0" "0" "$TR_RC"
+expect_eq "(transition) 02 log に T-01 の行が追記される" "1" "$(tr_lastlog 2 | grep -c '^- [0-9-]* [0-9:]* T-01 todo→doing attempt=1$')"
+expect_eq "(transition) 02 log に T-02 の行が追記される" "1" "$(tr_lastlog 2 | grep -c '^- [0-9-]* [0-9:]* T-02 todo→doing attempt=1$')"
+expect_eq "(transition) 03 コミットが1つ増える" "1" "$TR_NEW"
+expect_eq "(transition) 03 コミットのファイルは計画票と log だけ" "vault/log/P-TEST.md vault/plans/P-TEST.md" \
+  "$(git -C "$TR" show --name-only --format= HEAD | sort | tr '\n' ' ' | sed 's/ $//')"
+LOGDT="$(tr_lastlog 2 | sed -n '1s/^- \([0-9-]* [0-9:]*\) .*/\1/p')"
+if [ "$LOGDT" = "$TR_B" ] || [ "$LOGDT" = "$TR_A" ]; then DT_OK=match; else DT_OK="mismatch($LOGDT vs $TR_B/$TR_A)"; fi
+expect_eq "(transition) 04 log の日時が実行前後の JST と一致する" "match" "$DT_OK"
+
+tr_setup std; tr_run P-TEST T-04 review
+expect_eq "(transition) 05 doing→review の log 行が creator=smoke-creator で終わる" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1 creator=smoke-creator$')"
+
+tr_setup std; tr_run P-TEST T-06 done
+expect_eq "(transition) 06 review→done で行が done になる" "1" "$(tr_row T-06 | grep -c '^| T-06 | done | 1 |')"
+expect_eq "(transition) 06 log 行が verifier=smoke-verifier で終わる" "1" \
+  "$(tr_lastlog | grep -c ' T-06 review→done attempt=1 verifier=smoke-verifier$')"
+expect_eq "(transition) 07 review→done のコミットに verdict が含まれる" "1" \
+  "$(git -C "$TR" show --name-only --format= HEAD | grep -c '^vault/verdicts/P-TEST/T-06.json$')"
+
+tr_setup std; tr_run P-TEST T-09 done
+expect_eq "(transition) 08 verdict 無しの review→done は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-07 done
+expect_eq "(transition) 09 FAIL の review→done は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-08 done
+expect_eq "(transition) 10 attempt 不一致の review→done は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-01 todo
+expect_eq "(transition) 11 遷移先が todo は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-01 approved
+expect_eq "(transition) 12 遷移先が approved は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-10 doing
+expect_eq "(transition) 13 blocked の行からの遷移は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup draft; tr_run P-TEST T-01 doing
+expect_eq "(transition) 14 計画票が draft なら何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup main; tr_run P-TEST T-01 doing
+expect_eq "(transition) 15 ブランチが main なら何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-03 doing
+expect_eq "(transition) 16 after が done でない行を doing にすると何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; HARNESS_MAX_ATTEMPTS=3 tr_run P-TEST T-05 doing
+expect_eq "(transition) 17 attempt が HARNESS_MAX_ATTEMPTS を超える再試行は何も変えない" "1 0 same same" "$(tr_nochange)"
+tr_setup std; tr_run P-TEST T-04 blocked
+expect_eq "(transition) 18 question 無しの blocked は何も変えない" "1 0 same same" "$(tr_nochange)"
+
+tr_setup std
+printf 'A|B\n次の行\n' > "$TMP/tr_q.txt"
+tr_run P-TEST T-04 blocked --question-file "$TMP/tr_q.txt"
+expect_eq "(transition) 19 question の | と改行が ／ と空白に置き換わる" "1" "$(tr_row T-04 | grep -c '^| T-04 | blocked | 1 | - | D | A／B 次の行 |$')"
+PGOUT="$(printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TR" python3 "$PLAN_GUARD_HOOK")"
+expect_eq "(transition) 19 その計画票を plan_guard.py が許可する" "0" "$(echo "$PGOUT" | grep -c '"decision": *"block"')"
+
+tr_setup std; tr_run P-TEST T-01,T-06,T-09 done
+expect_eq "(transition) 20 複数 id のうち1つが拒否されると全部変わらない" "1 0 same same" "$(tr_nochange)"
+
+tr_setup std
+echo extra > "$TR/extra.txt"; git -C "$TR" add extra.txt
+tr_run P-TEST T-01 doing
+expect_eq "(transition) 21 コミットに無関係な staged ファイルを混ぜない" "0" "$(git -C "$TR" show --name-only --format= HEAD | grep -c '^extra.txt$')"
+expect_eq "(transition) 21 無関係な staged ファイルは staged のまま残る" "extra.txt" "$(git -C "$TR" diff --cached --name-only)"
+
+tr_setup std; tr_run P-TEST T-04 review --no-model --note 中断から再開
+expect_eq "(transition) 22 --no-model で log 行にモデルが付かず補足で終わる" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1 中断から再開$')"
+expect_eq "(transition) 22 終了コードは 0" "0" "$TR_RC"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

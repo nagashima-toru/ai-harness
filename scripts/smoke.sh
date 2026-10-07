@@ -1690,6 +1690,37 @@ else
   echo "  NG   (vcs_finish-body) github・計画あり・引数あり → そのまま (got='$(tr '\n' ' ' < "$VF_REC" 2>/dev/null)')"; FAIL_N=$((FAIL_N+1))
 fi
 
+# HARNESS_PR_BODY_FILE と HARNESS_PR_TITLE で本文とタイトルを渡す経路
+VF_NOTES="$TMP/vf_notes.md"; printf 'notes line 1\nnotes line 2\n' > "$VF_NOTES"
+vf_notes_run() { # $1=リポジトリ $2=host $3...=env 代入
+  local repo="$1" host="$2"; shift 2
+  rm -f "$VF_REC"
+  ( cd "$repo" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST="$host" "$@" bash "$ROOT/scripts/vcs_finish.sh" ) >/dev/null 2>&1
+}
+vf_notes_ok() { # $1=name $2=want
+  local got; got="$(cat "$VF_REC" 2>/dev/null || true)"
+  if [ "$got" = "$2" ]; then
+    echo "  ok   $1"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $1 (want='$(echo "$2" | tr '\n' ' ')' got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
+vf_notes_ok "(vf-notes-1) github・本文ファイルとタイトル → --title と --body-file" $'pr\ncreate\n--title\nNT\n--body-file\n'"$VF_NOTES"
+vf_notes_run "$VF_REPO" gitlab HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
+vf_notes_ok "(vf-notes-2) gitlab・本文ファイルとタイトル → --description に中身と --yes" $'mr\ncreate\n--title\nNT\n--description\nnotes line 1\nnotes line 2\n--yes'
+vf_notes_run "$VF_REPO2" github HARNESS_PR_BODY_FILE="$VF_NOTES"
+vf_notes_ok "(vf-notes-3) タイトル無し → 計画ID" $'pr\ncreate\n--title\nP-20990101-vf\n--body-file\n'"$VF_NOTES"
+rm -f "$VF_REC"
+( cd "$VF_REPO2" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE=X bash "$ROOT/scripts/vcs_finish.sh" --title T --body B ) >/dev/null 2>&1
+vf_notes_ok "(vf-notes-4) 引数あり → 環境変数を無視してそのまま" $'pr\ncreate\n--title\nT\n--body\nB'
+vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$TMP/vf_no_such_file.md"; vf_rc=$?
+if [ "$vf_rc" = 2 ] && [ ! -e "$VF_REC" ]; then
+  echo "  ok   (vf-notes-5) 本文ファイルが読めない → 終了コード2で gh を呼ばない"; PASS_N=$((PASS_N+1))
+else
+  echo "  NG   (vf-notes-5) rc=$vf_rc rec=$([ -e "$VF_REC" ] && echo yes || echo no)"; FAIL_N=$((FAIL_N+1))
+fi
+
 echo "== archive_plans.sh =="
 AR_OUT="$TMP/ar_out.txt"; AR_ERR="$TMP/ar_err.txt"
 ar_init() { # $1=リポジトリ名（$TMP の下に作る）

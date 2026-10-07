@@ -1,0 +1,15 @@
+{
+  "task": "P-20261007-verdict-notes/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 01:01",
+  "criteria": [
+    {"text": "6節に `reasons` の使われ方として `scripts/verdict_notes.py` が書かれている：`grep -n 'verdict_notes.py' docs/vault-spec.md` の出力の行番号に、`## 6. verdict.json` と `## 7. ログ` の見出しの行の間のものがある。その記述に呼び出しの形（`--dir` を含む）・出力の形（`<id>: <reason>`・`指摘なし`）・run の手順7で PR 本文の「verifier の指摘」節と完了報告に入ることが書かれている（Read で確認）", "ok": true, "note": "実行コマンド: `grep -n 'verdict_notes.py\\|^## ' docs/vault-spec.md` / 出力: verdict_notes.py は172行目、6節は144行・7節は174行。172行目に `--dir`・`<id>: <reason>`・`指摘なし`・手順7・PR 本文の「verifier の指摘」節と完了報告の記述あり"},
+    {"text": "7節の `model_stats.py` の出力の見出しが6列になり、`noted_rate` の定義が書かれている：`grep -n 'noted_rate' docs/vault-spec.md` の出力が2行以上で、すべて `## 7. ログ` と `## 8. 粒度の基準` の見出しの行の間にある。定義（verdict の場所を log のパスから決めること・verdict が無い/読めないタスクは指摘なしとして数えること）は Read で確認", "ok": true, "note": "実行コマンド: `grep -n 'noted_rate\\|^## ' docs/vault-spec.md` / 出力: noted_rate は204・206行目（7節174〜208行の間）。206行目の見出しが6列、204行目に log パスからの verdict 場所決定と、無い/読めない場合は指摘なし扱いの記述あり"},
+    {"text": "1節の `vcs_finish.sh` の段落に、`HARNESS_PR_BODY_FILE` と `HARNESS_PR_TITLE` の経路（引数が無い時だけ使う・GitHub は `--body-file`・GitLab は `--description` に中身・タイトルの既定は計画 ID）が書かれている：`grep -n 'HARNESS_PR_BODY_FILE' docs/vault-spec.md` の出力に `## 1. ディレクトリ` と `## 2. 状態` の見出しの行の間のものがある（中身は Read で確認）", "ok": true, "note": "実行コマンド: `grep -n 'HARNESS_PR_BODY_FILE\\|^## ' docs/vault-spec.md` / 出力: 28行目（1節は5〜30行）。同行に引数なしの時だけ・gh は --body-file・glab は --description に中身・タイトル既定は計画 ID の記述あり"},
+    {"text": "書かれた内容が実装と食い違っていない（`--dir` の意味・終了コード・タイトルの既定・noted_rate の分母を、T-01〜T-03 の成果物の docstring・コメントと見比べる。Read で確認）", "ok": true, "note": "確認方法: scripts/verdict_notes.py・vcs_finish.sh・model_stats.py の docstring/コメントと vault-spec.md の該当行を見比べた。--dir の意味、終了コード 0/1/2、タイトル既定（HARNESS_PR_TITLE→計画ID→ブランチ名）、noted_rate の分母（tasks 列と同じ）が一致"},
+    {"text": "見出しの行は変わっていない：`git diff work/p-20261007-verdict-notes -- docs/vault-spec.md | grep -E '^[+-]#'` の出力が空", "ok": true, "note": "実行コマンド: `git diff work/p-20261007-verdict-notes -- docs/vault-spec.md | grep -E '^[+-]#'` / 出力: 空"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=670 fail=0"}
+  ],
+  "reasons": []
+}

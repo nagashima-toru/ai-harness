@@ -198,6 +198,86 @@ def count_criteria(text):
     return count
 
 
+def validate_verdict(verdict, expected_task, task_path):
+    """verdict の形式を検査し、不正な点の説明リストを返す（空なら正常）。"""
+    problems = []
+    result = verdict.get("result")
+    if str(result).upper() not in ("PASS", "FAIL"):
+        problems.append(f"result が PASS/FAIL 以外です（{result!r}）")
+    criteria = verdict.get("criteria")
+    if not isinstance(criteria, list):
+        problems.append("criteria が配列ではありません")
+    else:
+        for i, c in enumerate(criteria):
+            if not isinstance(c, dict):
+                problems.append(f"criteria[{i}] が辞書ではありません")
+                continue
+            if not all(k in c for k in ("text", "ok", "note")):
+                problems.append(f"criteria[{i}] に text/ok/note のいずれかがありません")
+                continue
+            note = c.get("note")
+            if not isinstance(note, str) or not note.strip():
+                problems.append(f"criteria[{i}].note が空です")
+        if os.path.isfile(task_path):
+            with open(task_path, encoding="utf-8") as f:
+                expected = count_criteria(f.read())
+            if len(criteria) != expected:
+                problems.append(
+                    f"criteria の行数（{len(criteria)}）がタスク票の受け入れ基準の行数（{expected}）と一致しません"
+                )
+    if not isinstance(verdict.get("reasons"), list):
+        problems.append("reasons が配列ではありません")
+    return problems
+
+
+def done_rows_without_pass(root, plan_id, tasks):
+    """タスク表（parse_tasks の戻り値）の done の行だけを表の順に検査し、
+    正しい PASS の verdict が無い行を [(id, 理由), ...] で返す（全部正しければ []）。
+
+    理由は最初に当たった1つだけ。順は、verdict が無い → JSON として読めない／オブジェクトでない →
+    task 不一致 → attempt 不一致 → result が PASS でない → validate_verdict の形式不正。
+    例外は外に出さず、ファイルへの書き込み・標準出力への出力もしない。
+    """
+    out = []
+    for t in tasks:
+        if t.get("status") != "done":
+            continue
+        tid = t.get("id", "")
+        expected_task = f"{plan_id}/{tid}"
+        vpath = os.path.join(root, "vault", "verdicts", plan_id, tid + ".json")
+        tpath = os.path.join(root, "vault", "tasks", plan_id, tid + ".md")
+        reason = None
+        try:
+            if not os.path.isfile(vpath):
+                reason = "verdict がありません"
+            else:
+                try:
+                    with open(vpath, encoding="utf-8") as f:
+                        verdict = json.load(f)
+                except Exception:
+                    verdict = None
+                if not isinstance(verdict, dict):
+                    reason = "verdict を JSON として読めません"
+                elif verdict.get("task") != expected_task:
+                    reason = f"verdict の task が {verdict.get('task')} です"
+                elif str(verdict.get("attempt")) != str(t.get("attempt")):
+                    reason = (
+                        f"verdict の attempt が {verdict.get('attempt')} です"
+                        f"（タスク表は {t.get('attempt')}）"
+                    )
+                elif str(verdict.get("result")).upper() != "PASS":
+                    reason = f"verdict の result が {verdict.get('result')} です"
+                else:
+                    problems = validate_verdict(verdict, expected_task, tpath)
+                    if problems:
+                        reason = "verdict の形式が不正です: " + "; ".join(problems)
+        except Exception:
+            reason = "verdict を JSON として読めません"
+        if reason:
+            out.append((tid, reason))
+    return out
+
+
 def human_messages(transcript_path):
     """会話記録（JSONL）から人の発言（type=user・content が文字列・isMeta が真でない行）を返す。
 

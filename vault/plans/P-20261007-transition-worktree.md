@@ -36,7 +36,7 @@ transition.py に worktree の運用を足す（D-012 フェーズ4）
 | T-03 | todo | 0 | T-02 | transition.py の doing（FAIL の再試行）と blocked に --worktree を足す | |
 | T-04 | todo | 0 | T-03,T-06 | smoke.sh に transition.py の worktree 運用と pr_body.py の件名のケースを27件以上足す | |
 | T-05 | todo | 0 | T-03,T-06 | docs/vault-spec.md の1節・2節・7節に worktree 運用のサブコマンドの動きと終了コードと pr_body の件名を書く | |
-| T-06 | review | 1 | - | pr_body.py が transition.py の done のコミット（review→done・複数 id）も辿れるようにする | |
+| T-06 | done | 1 | - | pr_body.py が transition.py の done のコミット（review→done・複数 id）も辿れるようにする | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -1,0 +1,13 @@
+{
+  "task": "P-20261007-transition-worktree/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 15:31",
+  "criteria": [
+    {"text": "従来の件名・transition.py の件名・複数 id の件名のどれでも done のコミットが出る：`bash vault/tasks/P-20261007-transition-worktree/fixtures/pr_body.sh` の出力に `exit=0` があり、stdout 節に T-01〜T-04 の4行がある", "ok": true, "note": "実行コマンド: `bash .../fixtures/pr_body.sh` / 出力: exit=0、want_T-01=f0a74aa, T-02=05afb4e, T-03=T-04=0a98e58 で、stdout の表に `| T-01 | A | f0a74aa | - |`・T-02 05afb4e・T-03 0a98e58・T-04 0a98e58 の4行が一致"},
+    {"text": "done でないコミット・別の id・行末の違う件名には当たらない：同じ出力の stdout 節に `| T-05 | E | - | - |` があり、T-02 の行のハッシュが `want_T-02` の値", "ok": true, "note": "実行コマンド: 同上 / 出力: `| T-05 | E | - | - |` あり、T-02 は 05afb4e で want_T-02 と一致"},
+    {"text": "使い方と出力の形が変わらない：`python3 scripts/pr_body.py` の終了コードが2。`python3 scripts/pr_body.py P-20261007-diff-gate` の出力の1行目が `## タスク履歴` で、表の見出しが `| id | title | commit | verdict |`", "ok": true, "note": "実行コマンド: `python3 scripts/pr_body.py; echo rc=$?` / 出力: 使い方を表示し rc=2。`python3 scripts/pr_body.py P-20261007-diff-gate` は1行目 `## タスク履歴`、5行目 `| id | title | commit | verdict |`"},
+    {"text": "既存の smoke が変わらず通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=594 fail=0`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=594 fail=0。起点コミット ed401cd 以降の変更ファイルは scripts/pr_body.py のみ（T-06.md は除外対象）で、成果物外のファイルは無い"}
+  ],
+  "reasons": []
+}

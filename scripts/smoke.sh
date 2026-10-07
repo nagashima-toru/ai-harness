@@ -10,6 +10,7 @@ RULES_SH="$ROOT/scripts/rules.sh"
 CURRENT_PLAN_SH="$ROOT/scripts/current_plan.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+unset HARNESS_CREATOR_MODEL
 PASS_N=0; FAIL_N=0
 
 make_plan() { # $1=planID $2=planStatus $3...=「## タスク表」のデータ行（複数可）
@@ -2075,6 +2076,19 @@ expect_eq "(transition) 06 log 行が verifier=smoke-verifier で終わる" "1" 
   "$(tr_lastlog | grep -c ' T-06 review→done attempt=1 verifier=smoke-verifier$')"
 expect_eq "(transition) 07 review→done のコミットに verdict が含まれる" "1" \
   "$(git -C "$TR" show --name-only --format= HEAD | grep -c '^vault/verdicts/P-TEST/T-06.json$')"
+
+tr_setup std; export HARNESS_CREATOR_MODEL=haiku; tr_run P-TEST T-04 review; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-1) HARNESS_CREATOR_MODEL=haiku で doing→review の行が creator=haiku で終わる" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1 creator=haiku$')"
+tr_setup std; export HARNESS_CREATOR_MODEL=haiku; tr_run P-TEST T-06 done; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-2) 環境変数があっても review→done は verifier=smoke-verifier のまま" "1" \
+  "$(tr_lastlog | grep -c ' T-06 review→done attempt=1 verifier=smoke-verifier$')"
+tr_setup std; export HARNESS_CREATOR_MODEL=; tr_run P-TEST T-04 review; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-3) 空文字なら creator=smoke-creator" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1 creator=smoke-creator$')"
+tr_setup std; export HARNESS_CREATOR_MODEL=haiku; tr_run P-TEST T-04 review --no-model; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-4) --no-model なら環境変数があってもモデルを付けない" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1$')"
 
 tr_setup std; tr_run P-TEST T-09 done
 expect_eq "(transition) 08 verdict 無しの review→done は何も変えない" "1 0 same same" "$(tr_nochange)"

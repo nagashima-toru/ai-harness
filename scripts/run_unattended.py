@@ -4,6 +4,8 @@
 環境変数:
   HARNESS_RUN_CMD     実行するコマンド（既定: claude -p "/run"）。shlex.split で分割し、シェルは経由しない
   HARNESS_RUN_TIMEOUT 秒（整数、既定: 3600）
+  HARNESS_STRICT_STOP 未設定（キーが無い）なら 1 を入れて子に渡す（Stop フックを厳格判定にする）。
+                      設定済みなら値を変えない。0 を明示すれば従来の動き（stop_hook_active が真なら許可）
 
 終了コード:
   子の終了コード / シグナルで死んだ子は 128+シグナル番号 / タイムアウト 124
@@ -50,8 +52,12 @@ def main():
         print("run_unattended: empty HARNESS_RUN_CMD", file=sys.stderr)
         return 2
 
+    env = dict(os.environ)
+    if "HARNESS_STRICT_STOP" not in env:
+        env["HARNESS_STRICT_STOP"] = "1"
+
     try:
-        proc = subprocess.Popen(argv, start_new_session=True)
+        proc = subprocess.Popen(argv, start_new_session=True, env=env)
     except FileNotFoundError:
         print("run_unattended: command not found: %s" % argv[0], file=sys.stderr)
         return 127

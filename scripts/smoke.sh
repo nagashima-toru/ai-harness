@@ -1526,6 +1526,8 @@ while [ -n "$ru_gpid" ] && kill -0 "$ru_gpid" 2>/dev/null && [ "$ru_i" -lt 20 ];
 done
 kill -0 "$ru_gpid" 2>/dev/null; rurc=$?
 expect_eq "(ru-3) タイムアウト後に孫プロセスが生きていない（kill -0 が失敗）" "1" "$rurc"
+expect_eq "(ru-4) HARNESS_STRICT_STOP 未設定なら子に 1 が渡る" "1" "$(env -u HARNESS_STRICT_STOP HARNESS_RUN_CMD='printenv HARNESS_STRICT_STOP' HARNESS_RUN_TIMEOUT=5 python3 "$RU_PY")"
+expect_eq "(ru-5) HARNESS_STRICT_STOP=0 なら値を変えず 0 が渡る" "0" "$(env HARNESS_STRICT_STOP=0 HARNESS_RUN_CMD='printenv HARNESS_STRICT_STOP' HARNESS_RUN_TIMEOUT=5 python3 "$RU_PY")"
 rm -f "$RU_PID" "$RU_ERR"
 
 echo "== model_stats.py =="

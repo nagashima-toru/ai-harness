@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-transition-basic/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 11:36",
+  "criteria": [
+    {"text": "2節に呼び出しの形がそのまま書かれている：grep -nF '<呼び出しの形>' docs/vault-spec.md の出力が1行以上で、その行番号が ## 2. の行と ## 3. の行の間にある", "ok": true, "note": "実行コマンド: `grep -nF '<形>' docs/vault-spec.md` / 出力: 50行目に一致。## 2. は28行、## 3. は62行なので範囲内"},
+    {"text": "2節に推奨の経路であることが書かれている：grep -n '推奨の経路' docs/vault-spec.md の出力に、## 2. と ## 3. の間の行番号の行があり、その行か同じ段落に scripts/transition.py がある", "ok": true, "note": "実行コマンド: `grep -n '推奨の経路' docs/vault-spec.md` / 出力: 48行と59行（28〜62の間）。48行に scripts/transition.py も同じ行にある"},
+    {"text": "2節の transition.py の記述に、許す7つの遷移、attempt の規則、拒否して何も変えない条件、複数 id、終了コード 0・1・2、承認と blocked の解除は扱わないこと、Edit による直接の書き換えは拒否しないこと、が書かれている（Read で2節を読んで確かめる）", "ok": true, "note": "確認方法: 2節を sed で読んだ。7遷移、attempt 規則（todo→doing で1、doing→doing・review→doing で+1）、拒否7条件、複数 id は全部許される時のみ・コミット1回、終了コード0/1/2、承認・unblock 非対象、Edit を拒否しないこと、が全て記載されている"},
+    {"text": "7節に、transition.py が log の日時を実行時の JST（UTC+9 固定）で書くことと、creator=・verifier= の自動付与、--no-model で付けないことが書かれている：grep -n -- '--no-model' docs/vault-spec.md の出力に ## 7. と ## 8. の間の行番号の行がある", "ok": true, "note": "実行コマンド: `grep -n -- '--no-model' docs/vault-spec.md` / 出力: 159行（## 7. は145行、## 8. は174行）。159行に JST（UTC+9 固定）、creator=・verifier= の自動付与、--no-model で付けないことが書かれている"},
+    {"text": "smoke が通る（「参照される scripts の存在チェック」を含む）：bash scripts/smoke.sh 2>&1 | tail -1 の出力が fail=0 を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内）/ 出力: smoke: pass=529 fail=0。変更ファイル検査: タスク票の進捗に起点コミットの記録が無いため検査を行わない。参考として git status --porcelain の変更は docs/vault-spec.md のみ"}
+  ],
+  "reasons": []
+}

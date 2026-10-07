@@ -1,0 +1,14 @@
+{
+  "task": "P-20261007-transition-basic/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 11:36",
+  "criteria": [
+    {"text": "smoke が全件通り、件数が22件以上増える：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含み、pass が 551 以上", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree で実行）/ 出力: smoke: pass=559 fail=0"},
+    {"text": "足したケースが実際に動いて通っている：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (transition) '` の出力が 22 以上", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh | grep -c '^  ok   (transition) '` / 出力: 30"},
+    {"text": "決定済みの必須ケース22件がそれぞれ1件以上ある：出力に `(transition) 01 ` 〜 `(transition) 22 ` がすべて現れる", "ok": true, "note": "実行コマンド: 01〜22 それぞれ `grep -c '^  ok   (transition) NN '` / 出力: 全番号 1 以上（最小1、最大3）"},
+    {"text": "節の見出しが1つある：`grep -c '^echo \"== transition.py（D-012 フェーズ2） ==\"' scripts/smoke.sh` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -c（worktree の scripts/smoke.sh）/ 出力: 1"},
+    {"text": "planner のフィクスチャに依存しない（install 先には無い）：`grep -c 'fixtures/try.sh' scripts/smoke.sh` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c 'fixtures/try.sh' scripts/smoke.sh` / 出力: 0。変更ファイル検査: タスク票に起点コミットの記録が無いため行わなかった（参考: git status の変更は scripts/smoke.sh とタスク票 T-03.md のみ）"}
+  ],
+  "reasons": []
+}

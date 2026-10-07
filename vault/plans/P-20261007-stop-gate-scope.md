@@ -1,6 +1,6 @@
 ---
 id: P-20261007-stop-gate-scope
-status: draft
+status: approved
 ---
 # ゴール
 Stop フックの適用範囲と無人実行での厳格化（D-013 フェーズ1）

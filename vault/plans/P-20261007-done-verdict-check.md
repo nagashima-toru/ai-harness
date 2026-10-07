@@ -38,7 +38,7 @@ done の行の verdict をフックで検査する（D-012 フェーズ1）
 | T-03 | done | 1 | T-01,T-02 | stop_gate.py で done の行の verdict を検査し validate_verdict を _hooklib.py に切り替える | |
 | T-04 | done | 1 | T-01,T-02 | plan_guard.py で done の行の verdict を検査する | |
 | T-05 | done | 1 | T-03,T-04 | smoke.sh に done の行の verdict 検査のケースを両フック5件ずつ足す | |
-| T-06 | review | 1 | T-03,T-04 | docs/vault-spec.md の9節・10節に done の行の verdict の検査を書く | |
+| T-06 | done | 1 | T-03,T-04 | docs/vault-spec.md の9節・10節に done の行の verdict の検査を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

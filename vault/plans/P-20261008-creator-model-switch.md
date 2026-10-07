@@ -26,7 +26,7 @@ creator のモデルを環境変数 HARNESS_CREATOR_MODEL で切り替えられ�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | transition.py の creator= に HARNESS_CREATOR_MODEL を優先させる | |
+| T-01 | done | 1 | - | transition.py の creator= に HARNESS_CREATOR_MODEL を優先させる | |
 | T-02 | todo | 0 | T-01 | 会話記録から agent×model の使用量を集計する scripts/usage_stats.py を新設する | |
 | T-03 | todo | 0 | T-01 | run/SKILL.md の creator の呼び出しで HARNESS_CREATOR_MODEL を Agent ツールの model に渡す | |
 | T-04 | todo | 0 | T-01,T-02 | docs/vault-spec.md 7節に creator= の値の決め方と usage_stats.py の定義を書く | |

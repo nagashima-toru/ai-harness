@@ -3,6 +3,8 @@
 
 使い方: python3 scripts/pr_body.py <計画ID> [<rev>]
 <rev> は done コミットを探す起点（省略時は HEAD）。ファイルには書き込まない。
+done コミットの件名は `<計画ID>/<id>: done`（従来）と transition.py の
+`<計画ID>/<id>: review→done`（複数 id は `<計画ID>/T-01,T-02: review→done`）の両方を探す。
 """
 import json
 import os
@@ -53,11 +55,18 @@ def parse_tasks(text):
     return tasks
 
 
+def ere_escape(s):
+    """ERE の特殊文字の前にバックスラッシュを付ける（re.escape は使わない）。"""
+    return re.sub(r"([.\[\]()*+?{}|^$\\])", r"\\\1", s)
+
+
 def commit_of(plan_id, task_id, rev):
+    pattern = "^%s/([^:]*,)?%s(,[^:]*)?: (review→)?done$" % (
+        ere_escape(plan_id), ere_escape(task_id))
     try:
         r = subprocess.run(
-            ["git", "log", "--format=%h", "-n", "1",
-             "--grep=^%s/%s: done$" % (plan_id, task_id), rev],
+            ["git", "log", "--format=%h", "-n", "1", "--extended-regexp",
+             "--grep=" + pattern, rev],
             capture_output=True, text=True)
     except OSError:
         return "-"

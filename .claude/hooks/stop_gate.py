@@ -4,6 +4,10 @@
 自分のブランチの計画票（vault/plans/*.md のうち status: approved の1件）のタスク表と
 vault/verdicts/<計画ID>/<タスクID>.json を読んで判定する。
 
+判定順（D-013）：委譲 → stop_hook_active → approved な計画票の件数 → 未コミットの変更 →
+done の行 → doing/review の行。承認済みの計画票が0件なら未コミットの検査もせずに許可する
+（main など計画ブランチ以外では止めない）。2件以上は件数でブロックし、1件の時だけ未コミットを検査する。
+
 入力  : stdin に Claude Code の Stop フック JSON
 出力  : ブロック時は stdout に {"decision": "block", "reason": "..."}、許可時は何も出さず exit 0
 環境  : HARNESS_MAX_ATTEMPTS（既定 3）、HARNESS_STRICT_STOP=1 で stop_hook_active を無視
@@ -96,12 +100,6 @@ def main():
 
     root = project_dir(payload)
 
-    if has_uncommitted_changes(root):
-        block(
-            "[stop_gate] 未コミットの変更があります。"
-            "作業ステップごとにコミットしてから終了してください（git status --porcelain の出力を確認）。"
-        )
-
     plans = H.approved_plans(root)
 
     if len(plans) == 0:
@@ -112,6 +110,12 @@ def main():
         block(
             f"[stop_gate] approved な計画票が{len(plans)}件あります（{ids}）。"
             f"1つだけ approved にしてください。"
+        )
+
+    if has_uncommitted_changes(root):
+        block(
+            "[stop_gate] 未コミットの変更があります。"
+            "作業ステップごとにコミットしてから終了してください（git status --porcelain の出力を確認）。"
         )
 
     plan_id, plan_path = plans[0]

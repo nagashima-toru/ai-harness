@@ -111,16 +111,44 @@ expect "(d) note が空白のみ → ブロック（不正）" block "$(run_stop
 make_plan_task T-0001 review 1; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"'],"reasons":"none"}'
 expect "(e) reasons が配列でない → ブロック（不正）" block "$(run_stop)" "不正"
 
+sg_plan() { # $1=dir $2=planID: approved の計画票（タスク表は todo の1行）を置く（stop_gate 用）
+  mkdir -p "$1/vault/plans"
+  printf -- '---\nid: %s\nstatus: approved\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-0001 | todo | 0 | - | A | |\n' "$2" > "$1/vault/plans/$2.md"
+}
 SGTMP="$(mktemp -d)"
 mkdir -p "$SGTMP/vault/plans"
 git -C "$SGTMP" init -q -b main
-git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+sg_plan "$SGTMP" P-SG
+git -C "$SGTMP" add -A
+git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q -m init
 echo dirty > "$SGTMP/x.txt"
 expect "(f) 未コミットの変更がある → ブロック" block \
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "コミット"
 rm -f "$SGTMP/x.txt"
 expect "(g) 未コミットの変更が無い → 許可（既存判定へ進む）" allow \
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
+rm -rf "$SGTMP"
+
+# approved な計画票が0件・2件の git リポジトリ（未コミットの検査より先に件数で判定する）
+SGTMP="$(mktemp -d)"
+mkdir -p "$SGTMP/vault/plans"
+git -C "$SGTMP" init -q -b main
+touch "$SGTMP/vault/plans/.gitkeep"
+git -C "$SGTMP" add -A
+git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q -m init
+echo dirty > "$SGTMP/x.txt"
+expect "(stop-scope-1) approved な計画票が0件・未コミットの変更あり → 許可" allow \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
+rm -rf "$SGTMP"
+SGTMP="$(mktemp -d)"
+mkdir -p "$SGTMP/vault/plans"
+git -C "$SGTMP" init -q -b main
+sg_plan "$SGTMP" P-SG-A; sg_plan "$SGTMP" P-SG-B
+git -C "$SGTMP" add -A
+git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q -m init
+echo dirty > "$SGTMP/x.txt"
+expect "(stop-scope-2) approved な計画票が2件・未コミットの変更あり → 件数でブロック" block \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "approved な計画票が2件"
 rm -rf "$SGTMP"
 
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テスト・
@@ -1498,6 +1526,8 @@ while [ -n "$ru_gpid" ] && kill -0 "$ru_gpid" 2>/dev/null && [ "$ru_i" -lt 20 ];
 done
 kill -0 "$ru_gpid" 2>/dev/null; rurc=$?
 expect_eq "(ru-3) タイムアウト後に孫プロセスが生きていない（kill -0 が失敗）" "1" "$rurc"
+expect_eq "(ru-4) HARNESS_STRICT_STOP 未設定なら子に 1 が渡る" "1" "$(env -u HARNESS_STRICT_STOP HARNESS_RUN_CMD='printenv HARNESS_STRICT_STOP' HARNESS_RUN_TIMEOUT=5 python3 "$RU_PY")"
+expect_eq "(ru-5) HARNESS_STRICT_STOP=0 なら値を変えず 0 が渡る" "0" "$(env HARNESS_STRICT_STOP=0 HARNESS_RUN_CMD='printenv HARNESS_STRICT_STOP' HARNESS_RUN_TIMEOUT=5 python3 "$RU_PY")"
 rm -f "$RU_PID" "$RU_ERR"
 
 echo "== model_stats.py =="
@@ -1794,9 +1824,10 @@ WTBASE="$(mktemp -d)"
 WTMAIN="$WTBASE/main"; LEAF="$WTBASE/leaf"
 mkdir -p "$WTMAIN"
 git -C "$WTMAIN" init -q -b main
-git -C "$WTMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+sg_plan "$WTMAIN" P-SG
+git -C "$WTMAIN" add -A
+git -C "$WTMAIN" -c user.email=t@example.com -c user.name=t commit -q -m init
 git -C "$WTMAIN" worktree add -q "$LEAF" -b wt-leaf
-mkdir -p "$LEAF/vault/plans"
 expect_eq "(stop_gate worktree) 前提: worktree の .git がファイルである" "yes" "$([ -f "$LEAF/.git" ] && echo yes || echo no)"
 echo dirty > "$LEAF/x.txt"
 expect "(stop_gate worktree) 未コミットのファイルがある → ブロック" block \

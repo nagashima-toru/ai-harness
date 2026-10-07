@@ -30,6 +30,7 @@
 - 無人：`python3 scripts/run_unattended.py` を cron / CI から定期実行（素の `claude -p "/run"` を直接呼ばず、タイムアウト付きラッパー経由にしてハングで居座らないようにする）
   - 環境変数 `HARNESS_RUN_CMD`：実行するコマンド。未設定なら既定の `claude -p "/run"` が実行される
   - 環境変数 `HARNESS_RUN_TIMEOUT`：制限時間（秒、既定 3600）。超えると SIGTERM を送り、10秒待っても終わらなければ SIGKILL し、終了コード124で終わる。時間内に終わった場合は子の終了コードをそのまま返す
+  - 環境変数 `HARNESS_STRICT_STOP`：未設定ならラッパーが `1` を入れて子プロセスに渡す。Stop フックが `stop_hook_active` の真でも判定を続け、verdict の無い終了を止める。`HARNESS_STRICT_STOP=0` を明示すれば従来の動き（2回目の停止は通す）になる。承認済みの計画票が0件なら Stop フックは何もしない
   - タイムアウトは標準エラーの `run_unattended: timeout <秒>s` で分かる（cron のログや CI のログで確認できる）。ラッパーは vault のファイルに書かない
   - タイムアウトで止めた後は、次回の `/run` が `.claude/skills/run/SKILL.md` 手順2.2（再開手順）で中断した地点から続きを再開する。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で blocked になって止まる
   - 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）

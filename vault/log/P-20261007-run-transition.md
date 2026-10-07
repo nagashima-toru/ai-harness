@@ -1,1 +1,2 @@
 - 2026-10-07 17:46 - draft→approved 人の指示: /plan approve P-20261007-run-transition
+- 2026-10-07 18:44 T-01 todo→doing attempt=1

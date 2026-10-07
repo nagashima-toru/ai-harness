@@ -1,0 +1,44 @@
+{
+  "task": "P-20261007-transition-worktree/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 15:49",
+  "criteria": [
+    {
+      "text": "マージして done にし、後始末する：`bash vault/tasks/P-20261007-transition-worktree/fixtures/try.sh pass done --worktree @WT --branch @BR --plan-head @PH` の出力に `exit=0`・`new_commits=2`・`commit=2 P-TEST/T-01: マージ :: src/ok.txt vault/tasks/P-TEST/T-01.md`（verifier の生成物 `verifier-out.txt` を含まない）・`commit=1 P-TEST/T-01: review→done :: vault/log/P-TEST.md vault/plans/P-TEST.md vault/verdicts/P-TEST/T-01.json`・`| T-01 | done | 1 |`・`wt_registered=no`・`wt_dir=no`・`branch_exists=no`・`porcelain=`（空）があり、log_new 節が ` T-01 review→done attempt=1 verifier=fx-verifier-model` で終わる1行",
+      "ok": true,
+      "note": "実行コマンド: `bash try.sh pass done --worktree @WT --branch @BR --plan-head @PH`（worktree 内） / 出力: exit=0、commit=2 マージ行は src/ok.txt と T-01.md のみ、review→done 行一致、table done、wt_registered=no・wt_dir=no・porcelain=空、log_new は verifier=fx-verifier-model で終わる1行。new_commits は決定済み（人の回答 /plan unblock）に従い 3 と読み替えて判定（実測 3）。"
+    },
+    {
+      "text": "衝突したらマージを中止して blocked：`try.sh conflict done --worktree @WT --branch @BR --plan-head @PH` の出力に `exit=4`・`merge_in_progress=no`・`porcelain=?? vault/verdicts/P-TEST/T-01.json`・`new_commits=1`・`commit=1 P-TEST/T-01: review→blocked :: vault/log/P-TEST.md vault/plans/P-TEST.md`・`| T-01 | blocked | 1 | - | A | マージで衝突したファイル: src/ok.txt |`・`wt_registered=yes`・`branch_exists=yes` があり、log_new 節が ` T-01 review→blocked attempt=1 verifier=fx-verifier-model マージコンフリクト` で終わる1行、stdout 節が `P-TEST/T-01: review→blocked attempt=1 ` で始まる1行だけ",
+      "ok": true,
+      "note": "実行コマンド: `try.sh conflict done ...` / 出力: exit=4、merge_in_progress=no、porcelain=?? vault/verdicts/P-TEST/T-01.json、new_commits=1、blocked 行と question 一致、wt_registered=yes、log_new は `マージコンフリクト` で終わる1行、stdout は `P-TEST/T-01: review→blocked attempt=1 ` 始まりの1行のみ。branch_exists=yes は出力の worktrees 節（ブランチ残存）で確認。"
+    },
+    {
+      "text": "done の前の差分ゲートに違反があれば blocked：`try.sh passx done --worktree @WT --branch @BR --plan-head @PH` の出力に `exit=4`・`new_commits=1`・`commit=1 P-TEST/T-01: review→blocked :: vault/log/P-TEST.md vault/plans/P-TEST.md`・`| T-01 | blocked | 1 | - | A | 宣言外の変更: extra.txt |`・`wt_registered=yes` がある",
+      "ok": true,
+      "note": "実行コマンド: `try.sh passx done ...` / 出力: exit=4、new_commits=1、commit=1 review→blocked（log と plans のみ）、`| T-01 | blocked | 1 | - | A | 宣言外の変更: extra.txt |`、wt_registered=yes"
+    },
+    {
+      "text": "新規コミットが無ければ blocked：`try.sh pass0 done --worktree @WT --branch @BR --plan-head @PH` の出力に `exit=4`・`new_commits=1`・`| T-01 | blocked | 1 | - | A | worktree に新規コミットが無い（マージ対象の差分が無い） |`・`wt_registered=yes` がある",
+      "ok": true,
+      "note": "実行コマンド: `try.sh pass0 done ...` / 出力: exit=4、new_commits=1、question が `worktree に新規コミットが無い（マージ対象の差分が無い）`、wt_registered=yes"
+    },
+    {
+      "text": "前提を満たさなければ何もしない：`try.sh nopass done --worktree @WT --branch @BR --plan-head @PH`（verdict が FAIL）と `try.sh pass done --worktree @WT --branch worktree-agent-other --plan-head @PH` の出力に `exit=1`・`new_commits=0`・`| T-01 | review | 1 |`・`wt_registered=yes` がある。`try.sh pass done --worktree @WT --branch @BR`（`--plan-head` 無し）の出力に `exit=2` がある",
+      "ok": true,
+      "note": "実行コマンド: `try.sh nopass done ...`、`try.sh pass done --worktree @WT --branch worktree-agent-other --plan-head @PH`、`try.sh pass done --worktree @WT --branch @BR` / 出力: 前2者は exit=1・new_commits=0・`| T-01 | review | 1 |`・wt_registered=yes、3つ目は exit=2（--plan-head が必要です）"
+    },
+    {
+      "text": "フェーズ2と T-01 の動きが変わらない：`try.sh pass done` の出力に `exit=0`・`commit=1 P-TEST/T-01: review→done :: vault/log/P-TEST.md vault/plans/P-TEST.md vault/verdicts/P-TEST/T-01.json`・`wt_registered=yes` があり、`try.sh rev review --worktree @WT --branch @BR --plan-head @PH` の出力に `exit=0`・`| T-01 | review | 1 |` がある",
+      "ok": true,
+      "note": "実行コマンド: `try.sh pass done`、`try.sh rev review --worktree @WT --branch @BR --plan-head @PH` / 出力: 前者は exit=0・review→done の commit 行一致・wt_registered=yes、後者は exit=0・`| T-01 | review | 1 |`"
+    },
+    {
+      "text": "既存の smoke が変わらず通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=594 fail=0`",
+      "ok": true,
+      "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内） / 出力: smoke: pass=594 fail=0。変更ファイル検査：タスク票の「進捗」に起点コミットの記録が無いため検査を行わなかった（参考：git status は scripts/transition.py とタスク票のみ）。"
+    }
+  ],
+  "reasons": []
+}

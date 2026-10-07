@@ -2212,5 +2212,252 @@ PY
 expect_eq "(diff_gate) 20 check() が 02 と同じ変更で違反のパスのリストを返す" "extra.txt" "$DG_CHK"
 
 echo
+echo "== transition.py worktree（D-012 フェーズ4） =="
+TW="$TMP/tw"
+TWR="$TW/repo"
+TWW="$TW/wt"
+TWB="worktree-agent-sm"
+TW_OUT="$TMP/tw_out.txt"
+TW_ERR="$TMP/tw_err.txt"
+tw_setup() { # $1=T-01 の status $2=attempt（一時リポジトリと worktree を作り直す。verdict は置かない）
+  local st="$1" at="$2"
+  rm -rf "$TW"
+  mkdir -p "$TWR/vault/plans" "$TWR/vault/log" "$TWR/vault/verdicts/P-TEST" "$TWR/vault/tasks/P-TEST" "$TWR/src" "$TWR/.claude/agents"
+  {
+    echo "---"; echo "id: P-TEST"; echo "status: approved"; echo "---"
+    echo "# ゴール"; echo "確認用の計画"; echo
+    echo "## タスク表（状態の正本）"
+    echo "| id | status | attempt | after | title | question |"
+    echo "|---|---|---|---|---|---|"
+    echo "| T-01 | $st | $at | - | A | |"
+    echo "| T-02 | todo | 0 | T-01 | B | |"
+    echo
+    echo "## 計画の受け入れ基準"; echo "- 確認用"
+  } > "$TWR/vault/plans/P-TEST.md"
+  {
+    echo "# T-01 確認用"; echo
+    echo "## 目的"; echo "確認用"; echo
+    echo "## 入力"; echo "- なし"; echo
+    echo "## 成果物"; echo '- `src/ok.txt`（1ファイル）'; echo
+    echo "## 受け入れ基準"; echo "- 基準"; echo
+    echo "## 決定済み"; echo "- なし"; echo
+    echo "## 進捗"
+  } > "$TWR/vault/tasks/P-TEST/T-01.md"
+  echo "- 2026-01-01 00:00 - draft→approved 人の指示: /plan approve P-TEST" > "$TWR/vault/log/P-TEST.md"
+  echo base > "$TWR/src/ok.txt"
+  printf -- '---\nname: creator\nmodel: smoke-creator\n---\n本文\n' > "$TWR/.claude/agents/creator.md"
+  printf -- '---\nname: verifier\nmodel: smoke-verifier\n---\n本文\n' > "$TWR/.claude/agents/verifier.md"
+  git -C "$TWR" init -q -b main
+  git -C "$TWR" config user.name smoke
+  git -C "$TWR" config user.email smoke@example.com
+  git -C "$TWR" add -A
+  git -C "$TWR" commit -q -m init
+  git -C "$TWR" checkout -q -b work/p-test
+  TW_PH="$(git -C "$TWR" rev-parse HEAD)"
+  git -C "$TWR" worktree add -q -b "$TWB" "$TWW" "$TW_PH"
+  TW_RP="$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$TWW")"
+}
+tw_mod() { echo changed > "$TWW/src/ok.txt"; printf -- '- 進捗の追記\n' >> "$TWW/vault/tasks/P-TEST/T-01.md"; }
+tw_commit() { git -C "$TWW" add -A; git -C "$TWW" commit -q -m "creator のコミット"; }
+tw_verdict() { # $1=PASS|FAIL $2=attempt（未追跡で置く。FAIL の reasons は長い2件。TW_NOTE・TW_QUEST に期待値を入れる）
+  python3 - "$TWR" "$1" "$2" <<'PY'
+import json, os, re, sys
+root, res, at = sys.argv[1], sys.argv[2], int(sys.argv[3])
+r1 = "一つ目の理由|縦棒" + "あ" * 100
+r2 = "二つ目の理由" + "い" * 150
+def clean(s):
+    return re.sub(r"\r\n|\r|\n", " ", s.replace("|", "／")).strip()
+v = {"task": "P-TEST/T-01", "attempt": at, "result": res, "checked_at": "2026-01-01 00:00",
+     "criteria": [{"text": "基準", "ok": res == "PASS", "note": "実行コマンド: x / 出力: y"}],
+     "reasons": [] if res == "PASS" else [r1, r2]}
+with open(os.path.join(root, "vault/verdicts/P-TEST/T-01.json"), "w", encoding="utf-8") as f:
+    json.dump(v, f, ensure_ascii=False); f.write("\n")
+with open(os.path.join(root, "..", "expect.txt"), "w", encoding="utf-8") as f:
+    f.write(clean(r1)[:80] + "\n" + clean("／".join([r1, r2]))[:200] + "\n")
+PY
+  TW_NOTE="$(sed -n 1p "$TW/expect.txt")"
+  TW_QUEST="$(sed -n 2p "$TW/expect.txt")"
+}
+tw_wtcount() { git -C "$TWR" rev-list --count "$TW_PH..$TWB" 2>/dev/null || echo gone; }
+tw_run() { # transition.py を1回実行。TW_RC・TW_NEW・TW_PLAN・TW_WTN（worktree 側のコミットの増減）を設定する
+  cp "$TWR/vault/plans/P-TEST.md" "$TW/plan.before"
+  local n0 w0 w1
+  n0="$(git -C "$TWR" rev-parse HEAD)"
+  w0="$(tw_wtcount)"
+  ( cd "$TWR" && python3 "$ROOT/scripts/transition.py" "$@" ) > "$TW_OUT" 2> "$TW_ERR"
+  TW_RC=$?
+  TW_N0="$n0"
+  TW_NEW="$(git -C "$TWR" rev-list --count "$n0..HEAD")"
+  cmp -s "$TW/plan.before" "$TWR/vault/plans/P-TEST.md" && TW_PLAN=same || TW_PLAN=diff
+  w1="$(tw_wtcount)"
+  if [ "$w1" = gone ]; then TW_WTN=gone; else TW_WTN=$((w1 - w0)); fi
+  TW_OL="$(wc -l < "$TW_OUT" | tr -d ' ')"
+}
+tw_nochange() { echo "$TW_RC $TW_NEW $TW_PLAN $TW_WTN"; }
+tw_row() { grep '^| T-01 |' "$TWR/vault/plans/P-TEST.md"; }
+tw_state() { echo "$(git -C "$TWR" worktree list --porcelain | grep -c "^branch refs/heads/$TWB\$") $([ -d "$TWW" ] && echo yes || echo no) $(git -C "$TWR" show-ref --verify --quiet "refs/heads/$TWB" && echo yes || echo no)"; }
+tw_logtail() { tail -n "${1:-1}" "$TWR/vault/log/P-TEST.md" | sed 's/^- [0-9-]* [0-9:]* //'; }
+tw_wtflags() { TW_A=(--worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"); }
+
+# 01〜03 review 正常
+tw_setup doing 1; tw_mod; tw_wtflags
+tw_run P-TEST T-01 review "${TW_A[@]}"
+expect_eq "(transition-wt) 01 未コミット分が worktree で収集コミットされる" "P-TEST/T-01: creator 成果物をオーケストレーターが収集" \
+  "$(git -C "$TWR" log -1 --format=%s "$TWB")"
+expect_eq "(transition-wt) 02 宣言どおりの変更は終了コード 0" "0" "$TW_RC"
+expect_eq "(transition-wt) 02 T-01 が review" "1" "$(tw_row | grep -c '^| T-01 | review | 1 |')"
+expect_eq "(transition-wt) 03 log に記録行と doing→review の行がこの順で追記される" \
+  "T-01 worktree path=$TW_RP branch=$TWB plan_head=$TW_PH
+T-01 doing→review attempt=1 creator=smoke-creator" "$(tw_logtail 2)"
+
+# 04〜06 review 宣言外
+tw_setup doing 1; tw_mod; echo extra > "$TWW/extra.txt"; tw_wtflags
+tw_run P-TEST T-01 review "${TW_A[@]}"
+expect_eq "(transition-wt) 04 宣言外のファイルがあると終了コード 3" "3" "$TW_RC"
+expect_eq "(transition-wt) 04 T-01 が doing・attempt=2" "1" "$(tw_row | grep -c '^| T-01 | doing | 2 |')"
+expect_eq "(transition-wt) 21 差し戻し（終了コード3）の標準出力は1行" "1" "$TW_OL"
+expect_eq "(transition-wt) 05 タスク票の末尾が差し戻しの1行" "- 差し戻し（attempt=1）: 宣言外の変更 extra.txt" \
+  "$(tail -n 1 "$TWR/vault/tasks/P-TEST/T-01.md")"
+expect_eq "(transition-wt) 05 log の最後の行が doing→doing で終わり creator= が無い" "T-01 doing→doing attempt=2 宣言外の変更: extra.txt" "$(tw_logtail 1)"
+expect_eq "(transition-wt) 06 worktree とブランチが消える" "0 no no" "$(tw_state)"
+
+# 07 review 上限
+tw_setup doing 3; tw_mod; echo extra > "$TWW/extra.txt"; tw_wtflags
+tw_run P-TEST T-01 review "${TW_A[@]}"
+expect_eq "(transition-wt) 07 attempt が上限で宣言外のファイルがあると終了コード 4" "4" "$TW_RC"
+expect_eq "(transition-wt) 07 T-01 が blocked で question に宣言外のパス" "1" "$(tw_row | grep '^| T-01 | blocked | 3 |' | grep -c 'extra\.txt')"
+expect_eq "(transition-wt) 07 worktree が残る" "1 yes yes" "$(tw_state)"
+expect_eq "(transition-wt) 21 blocked（終了コード4）の標準出力は1行" "1" "$TW_OL"
+
+# 08 新規コミット無し
+tw_setup doing 1; tw_wtflags
+tw_run P-TEST T-01 review "${TW_A[@]}"
+expect_eq "(transition-wt) 08 新規コミットが無い worktree は終了コード 4" "4" "$TW_RC"
+expect_eq "(transition-wt) 08 question が新規コミット無しの文面" "1" \
+  "$(tw_row | grep '^| T-01 | blocked |' | grep -c 'worktree に新規コミットが無い（マージ対象の差分が無い）')"
+
+# 09 検証に通らない worktree・ブランチ
+tw_setup doing 1; tw_mod; tw_commit
+tw_run P-TEST T-01 review --worktree "$TWW" --branch worktree-agent-zz --plan-head "$TW_PH"
+expect_eq "(transition-wt) 09 ブランチ名の不一致は何も変えない" "1 0 same 0" "$(tw_nochange)"
+tw_run P-TEST T-01 review --worktree "$TW/nowhere" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-wt) 09 未登録のパスは何も変えない" "1 0 same 0" "$(tw_nochange)"
+git -C "$TWR" worktree add -q -b feature-x "$TW/wt2" "$TW_PH"
+tw_run P-TEST T-01 review --worktree "$TW/wt2" --branch feature-x --plan-head "$TW_PH"
+expect_eq "(transition-wt) 09 worktree-agent- で始まらないブランチは何も変えない" "1 0 same 0" "$(tw_nochange)"
+
+# 10〜13 done 正常
+tw_setup review 1; tw_mod; tw_commit; echo out > "$TWW/verifier-out.txt"; tw_verdict PASS 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+TW_MC="$(git -C "$TWR" log -1 --format=%H --grep='^P-TEST/T-01: マージ$')"
+expect_eq "(transition-wt) 10 終了コード 0" "0" "$TW_RC"
+expect_eq "(transition-wt) 10 件名 P-TEST/T-01: マージ の親が2つのコミットができる" "3" \
+  "$([ -n "$TW_MC" ] && git -C "$TWR" rev-list --parents -n 1 "$TW_MC" | wc -w | tr -d ' ')"
+expect_eq "(transition-wt) 11 T-01 が done" "1" "$(tw_row | grep -c '^| T-01 | done | 1 |')"
+expect_eq "(transition-wt) 11 最後のコミットに verdict が含まれる" "1" \
+  "$(git -C "$TWR" show --name-only --format= HEAD | grep -c '^vault/verdicts/P-TEST/T-01.json$')"
+expect_eq "(transition-wt) 12 worktree とブランチが消える" "0 no no" "$(tw_state)"
+expect_eq "(transition-wt) 13 未追跡のファイルはマージコミットに入らない" "0" \
+  "$(git -C "$TWR" ls-tree -r --name-only HEAD | grep -c 'verifier-out.txt')"
+
+# 24 pr_body（10 の後のリポジトリ）
+TW_H1="$(git -C "$TWR" log -1 --format=%h --grep='^P-TEST/T-01: review→done$')"
+TW_PB="$( cd "$TWR" && python3 "$ROOT/scripts/pr_body.py" P-TEST 2>/dev/null | grep '^| T-01 |' )"
+expect_eq "(transition-wt) 24 pr_body の T-01 の commit 列が transition.py の done のコミット" "| T-01 | A | $TW_H1 " "$(echo "$TW_PB" | cut -d'|' -f1-4)"
+expect_eq "(transition-wt) 24 短縮ハッシュが空でない" "1" "$([ -n "$TW_H1" ] && echo 1 || echo 0)"
+
+# 14〜15 done 衝突
+tw_setup review 1; tw_mod; tw_commit; tw_verdict PASS 1
+echo "plan side" > "$TWR/src/ok.txt"; git -C "$TWR" add src/ok.txt; git -C "$TWR" commit -q -m "計画ブランチ側の変更"
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-wt) 14 衝突する変更は終了コード 4" "4" "$TW_RC"
+expect_eq "(transition-wt) 14 マージ中の状態が残らない" "no" \
+  "$(f="$(git -C "$TWR" rev-parse --git-path MERGE_HEAD)"; { [ -e "$f" ] || [ -e "$TWR/$f" ]; } && echo yes || echo no)"
+expect_eq "(transition-wt) 21 衝突の blocked の標準出力は1行" "1" "$TW_OL"
+expect_eq "(transition-wt) 15 T-01 が blocked で question に衝突したファイル" "1" "$(tw_row | grep '^| T-01 | blocked | 1 |' | grep -c 'src/ok\.txt')"
+expect_eq "(transition-wt) 15 worktree が残る" "1 yes yes" "$(tw_state)"
+
+# 16 done 宣言外をコミット済み
+tw_setup review 1; tw_mod; echo extra > "$TWW/extra.txt"; tw_commit; tw_verdict PASS 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-wt) 16 宣言外のコミットは終了コード 4" "4" "$TW_RC"
+expect_eq "(transition-wt) 16 マージコミットができず増えたコミットの親が1つ" "1 2" \
+  "$(git -C "$TWR" rev-list --count "$TW_N0..HEAD") $(git -C "$TWR" rev-list --parents -n 1 HEAD | wc -w | tr -d ' ')"
+expect_eq "(transition-wt) 16 T-01 が blocked" "1" "$(tw_row | grep -c '^| T-01 | blocked | 1 |')"
+
+# 17 done FAIL の verdict
+tw_setup review 1; tw_mod; tw_commit; tw_verdict FAIL 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-wt) 17 FAIL の verdict は何も変えず終了コード 1" "1 0 same 0" "$(tw_nochange)"
+expect_eq "(transition-wt) 17 worktree が残る" "1 yes yes" "$(tw_state)"
+
+# 18 doing FAIL の再試行
+tw_setup review 1; tw_mod; tw_commit; tw_verdict FAIL 1
+tw_run P-TEST T-01 doing --worktree "$TWW" --branch "$TWB"
+expect_eq "(transition-wt) 18 FAIL の verdict で終了コード 3" "3" "$TW_RC"
+expect_eq "(transition-wt) 18 T-01 が doing・attempt=2" "1" "$(tw_row | grep -c '^| T-01 | doing | 2 |')"
+expect_eq "(transition-wt) 18 log の補足が reasons の先頭を80文字で切ったもの" \
+  "T-01 review→doing attempt=2 verifier=smoke-verifier $TW_NOTE" "$(tw_logtail 1)"
+expect_eq "(transition-wt) 18 worktree とブランチが消える" "0 no no" "$(tw_state)"
+expect_eq "(transition-wt) 21 再試行（終了コード3）の標準出力は1行" "1" "$TW_OL"
+
+# 19 doing 上限の FAIL
+tw_setup review 3; tw_mod; tw_commit; tw_verdict FAIL 3
+tw_run P-TEST T-01 doing --worktree "$TWW" --branch "$TWB"
+expect_eq "(transition-wt) 19 attempt が上限の FAIL で終了コード 4" "4" "$TW_RC"
+expect_eq "(transition-wt) 19 T-01 が blocked で question が reasons を200文字で切ったもの" "| T-01 | blocked | 3 | - | A | $TW_QUEST |" "$(tw_row)"
+expect_eq "(transition-wt) 19 question は200文字" "200" "$(printf '%s' "$TW_QUEST" | python3 -c 'import sys;print(len(sys.stdin.read()))')"
+
+# 20 blocked
+tw_setup doing 1; tw_mod; printf '質問A|B\n次の行\n' > "$TW/q.txt"
+tw_run P-TEST T-01 blocked --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH" --question-file "$TW/q.txt"
+expect_eq "(transition-wt) 20 --question-file 付きの blocked は終了コード 4" "4" "$TW_RC"
+expect_eq "(transition-wt) 20 T-01 が blocked" "1" "$(tw_row | grep -c '^| T-01 | blocked | 1 | - | A | 質問A／B 次の行 |$')"
+expect_eq "(transition-wt) 20 log に記録行と doing→blocked の行がこの順で書かれる" \
+  "T-01 worktree path=$TW_RP branch=$TWB plan_head=$TW_PH
+T-01 doing→blocked attempt=1 creator=smoke-creator" "$(tw_logtail 2)"
+expect_eq "(transition-wt) 20 worktree が残り収集コミットができない" "1 yes yes 0" "$(tw_state) $TW_WTN"
+expect_eq "(transition-wt) 21 blocked の報告の標準出力は1行" "1" "$TW_OL"
+
+# 22 --worktree 無しはフェーズ2どおり
+tw_setup doing 1; tw_mod; tw_commit
+tw_run P-TEST T-01 review
+expect_eq "(transition-wt) 22 --worktree 無しの review はフェーズ2どおりで worktree に触れない" "0 1 diff 0 1 yes yes" "$TW_RC $TW_NEW $TW_PLAN $TW_WTN $(tw_state)"
+tw_setup review 1; tw_mod; tw_commit; tw_verdict PASS 1
+tw_run P-TEST T-01 done
+expect_eq "(transition-wt) 22 --worktree 無しの done はフェーズ2どおりで worktree に触れない" "0 1 diff 0 1 yes yes" "$TW_RC $TW_NEW $TW_PLAN $TW_WTN $(tw_state)"
+tw_setup doing 1; tw_mod; tw_commit
+tw_run P-TEST T-01 doing
+expect_eq "(transition-wt) 22 --worktree 無しの doing はフェーズ2どおりで worktree に触れない" "0 1 diff 0 1 yes yes" "$TW_RC $TW_NEW $TW_PLAN $TW_WTN $(tw_state)"
+
+# 23 引数の誤り
+tw_setup doing 1; tw_mod
+tw_run P-TEST T-01 review --worktree "$TWW" --branch "$TWB"
+expect_eq "(transition-wt) 23 --plan-head 無しの review は終了コード 2" "2" "$TW_RC"
+tw_run P-TEST T-01 review --worktree "$TWW" --plan-head "$TW_PH"
+expect_eq "(transition-wt) 23 --branch 無しの --worktree は終了コード 2" "2" "$TW_RC"
+tw_run P-TEST T-01,T-02 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-wt) 23 --worktree と複数の id は終了コード 2" "2" "$TW_RC"
+
+# 25 pr_body の件名のパターン
+tw_setup doing 1
+git -C "$TWR" commit -q --allow-empty -m 'P-TEST/T-01,T-02: review→done'
+TW_HA="$(git -C "$TWR" log -1 --format=%h)"
+git -C "$TWR" commit -q --allow-empty -m 'P-TEST/T-03: done'
+TW_HB="$(git -C "$TWR" log -1 --format=%h)"
+python3 - "$TWR/vault/plans/P-TEST.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s = s.replace("| T-02 | todo | 0 | T-01 | B | |", "| T-02 | todo | 0 | T-01 | B | |\n| T-03 | todo | 0 | - | C | |\n| T-04 | todo | 0 | - | D | |")
+open(p, "w", encoding="utf-8").write(s)
+PY
+TW_PB="$( cd "$TWR" && python3 "$ROOT/scripts/pr_body.py" P-TEST 2>/dev/null )"
+expect_eq "(transition-wt) 25 件名に複数 id のある done のコミットが T-01 の行に出る" "| T-01 | A | $TW_HA | - |" "$(echo "$TW_PB" | grep '^| T-01 |')"
+expect_eq "(transition-wt) 25 同じコミットが T-02 の行に出る" "| T-02 | B | $TW_HA | - |" "$(echo "$TW_PB" | grep '^| T-02 |')"
+expect_eq "(transition-wt) 25 従来の件名のコミットが T-03 の行に出る" "| T-03 | C | $TW_HB | - |" "$(echo "$TW_PB" | grep '^| T-03 |')"
+expect_eq "(transition-wt) 25 done のコミットが無いタスクの行は -" "| T-04 | D | - | - |" "$(echo "$TW_PB" | grep '^| T-04 |')"
+
+echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

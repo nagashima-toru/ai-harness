@@ -1,0 +1,16 @@
+{
+  "task": "P-20261007-transition-worktree/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-07 17:06",
+  "criteria": [
+    {"text": "2節に worktree 運用の呼び出しの形が書かれている", "ok": true, "note": "実行コマンド: grep -c -- '--worktree <パス> --branch <ブランチ> \\[--plan-head <sha>\\]' docs/vault-spec.md / 出力: 1"},
+    {"text": "2節の終了コードに3と4が加わっている", "ok": true, "note": "実行コマンド: grep -n '3 差し戻した' / '4 blocked にした' / 出力: どちらも63行目。## 3. ID の見出しは68行目で、より前"},
+    {"text": "4つのサブコマンドの動きが書かれている", "ok": true, "note": "docs/vault-spec.md 2節(55-63行)を Read で確認。review(収集コミット文面・新規コミット判定・差分ゲート・差し戻し/上限blocked)、done(収集しない・差分ゲート・merge --no-ff・merge --abort+blocked・後始末)、doing(80/200文字)、blocked(記録行・worktree残す)、--worktree無しはフェーズ2のまま、終了コード3・4で標準出力1行、が全部ある"},
+    {"text": "7節に、transition.py が書く log の行が書かれている", "ok": true, "note": "実行コマンド: grep -n '宣言外の変更: <パス>' docs/vault-spec.md / 出力: 63行と182行。182行に差し戻しの行(モデルを付けない)と記録行を遷移の行の直前に書くことがある"},
+    {"text": "「今の /run はまだ呼ばない」の記述が残り、5節は transition.py が diff_gate.py を import して使うことに合っている", "ok": true, "note": "実行コマンド: grep -c '/run.*まだ' docs/vault-spec.md / 出力: 2(66行と140行)。140行に worktree 運用(2節)が diff_gate.py を import して check を使う旨あり"},
+    {"text": "1節のタスク履歴表の説明が transition.py の件名にも合っている", "ok": true, "note": "実行コマンド: grep -n '<計画ID>/<id>: review→done' docs/vault-spec.md / 出力: 26行(pr_body.py の説明の段落)"},
+    {"text": "節の構成が変わらず、smoke が通る", "ok": true, "note": "実行コマンド: grep -c '^## [0-9]' docs/vault-spec.md → 13 / bash scripts/smoke.sh 2>&1 | tail -1 → smoke: pass=594 fail=0"}
+  ],
+  "reasons": []
+}

@@ -1013,6 +1013,32 @@ expect "(delegate plan_guard) 委譲先 subprocess が非0で終了 → フェ�
 git -C "$DWPMAIN2" worktree remove -q --force "$DWPLEAF2" >/dev/null 2>&1
 rm -rf "$DWPMAIN2" "$DWPLEAF2"
 
+echo "== done-verdict（D-012 フェーズ1） =="
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"; mkdir -p "$TMP/vault/plans"
+make_plan_task T-0001 done 1; rm -f "$TMP/vault/verdicts/P-TEST/T-0001.json"
+expect "(done-verdict stop_gate) done・verdict 無し → ブロック" block "$(run_stop)" "P-TEST/T-0001 は done ですが"
+make_plan_task T-0001 done 1; make_verdict T-0001 1 FAIL
+expect "(done-verdict stop_gate) done・FAIL → ブロック" block "$(run_stop)" "P-TEST/T-0001 は done ですが"
+make_plan_task T-0001 done 2; make_verdict T-0001 1 PASS
+expect "(done-verdict stop_gate) done・attempt 不一致 → ブロック" block "$(run_stop)" "P-TEST/T-0001 は done ですが"
+make_plan_task T-0001 done 1; make_task T-0001 3; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"','"$OK_C"'],"reasons":[]}'
+expect "(done-verdict stop_gate) done・criteria の行数不一致 → ブロック" block "$(run_stop)" "P-TEST/T-0001 は done ですが"
+rm -f "$TMP/vault/tasks/P-TEST/T-0001.md"
+make_plan_task T-0001 done 1; make_verdict T-0001 1 PASS
+expect "(done-verdict stop_gate) done・正しい PASS → 許可" allow "$(run_stop)"
+make_plan_task T-0001 done 1; rm -f "$TMP/vault/verdicts/P-TEST/T-0001.json"
+expect "(done-verdict plan_guard) done・verdict 無し → ブロック" block "$(run_plan_guard)" "P-TEST/T-0001 は done ですが"
+make_plan_task T-0001 done 1; make_verdict T-0001 1 FAIL
+expect "(done-verdict plan_guard) done・FAIL → ブロック" block "$(run_plan_guard)" "P-TEST/T-0001 は done ですが"
+make_plan_task T-0001 done 2; make_verdict T-0001 1 PASS
+expect "(done-verdict plan_guard) done・attempt 不一致 → ブロック" block "$(run_plan_guard)" "P-TEST/T-0001 は done ですが"
+make_plan_task T-0001 done 1; make_task T-0001 3; write_verdict T-0001 '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"","criteria":['"$OK_C"','"$OK_C"'],"reasons":[]}'
+expect "(done-verdict plan_guard) done・criteria の行数不一致 → ブロック" block "$(run_plan_guard)" "P-TEST/T-0001 は done ですが"
+rm -f "$TMP/vault/tasks/P-TEST/T-0001.md"
+make_plan_task T-0001 done 1; make_verdict T-0001 1 PASS
+expect "(done-verdict plan_guard) done・正しい PASS → 許可" allow "$(run_plan_guard)"
+rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"; mkdir -p "$TMP/vault/plans"
+
 echo "== rules.sh =="
 reset_rules() { rm -rf "$TMP/vault/rules"; }
 make_rules_file() { mkdir -p "$TMP/vault/rules/$1"; echo x > "$TMP/vault/rules/$1/$2"; } # $1=dir $2=filename

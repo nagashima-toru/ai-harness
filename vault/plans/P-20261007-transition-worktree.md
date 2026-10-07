@@ -1,6 +1,6 @@
 ---
 id: P-20261007-transition-worktree
-status: draft
+status: approved
 ---
 # ゴール
 transition.py に worktree の運用を足す（D-012 フェーズ4）

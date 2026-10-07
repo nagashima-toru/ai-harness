@@ -20,7 +20,7 @@ doing→review・doing→blocked の行に creator=<model>、review→done・rev
 review→blocked の行に verifier=<model> を付ける（対象リポジトリの .claude/agents/<name>.md の
 frontmatter の model。無ければ付けない）。`--no-model` で付けない。
 
---worktree（フェーズ4。遷移先 review と done だけ。id は1つ）:
+--worktree（フェーズ4。遷移先 review・done・doing・blocked。id は1つ）:
   creator が作業した worktree を渡すと、review の前の処理を1コマンドで行う。
   --worktree と --branch は両方そろえ、review では --plan-head も必須。--note は下で決まる
   自動の補足の後ろに付く。
@@ -36,6 +36,23 @@ frontmatter の model。無ければ付けない）。`--no-model` で付けな�
   5. 違反あり: attempt+1 が HARNESS_MAX_ATTEMPTS 以内なら、タスク票の「進捗」に差し戻しの
      1行を足し、doing→doing（attempt+1）にして worktree とブランチを破棄する（終了コード3）。
      超えるなら doing→blocked にして worktree を残す（終了コード4）
+
+--worktree の doing（review→doing。FAIL の再試行。id は1つ。--worktree と --branch。
+  --plan-head は使わない）:
+  今の status が review で、verdict が JSON として読め task・attempt が一致し result が FAIL
+  （大文字小文字を区別しない）の時だけ行う（それ以外・doing に付けた場合は終了コード1）。
+  reasons は verdict の reasons（空なら「verdict の reasons が空」）。log の補足は
+  clean_text(reasons[0]) の先頭80文字。
+  - attempt+1 が HARNESS_MAX_ATTEMPTS 以内: review→doing（attempt+1）の計画票と log を
+    コミットし（verdict は含めない）、worktree とブランチを破棄する（終了コード3）
+  - 超える: review→blocked（attempt はそのまま）にし、question は reasons を `／` でつないだ
+    ものを clean_text して先頭200文字。worktree は残す（終了コード4）
+
+--worktree の blocked（doing→blocked。creator の blocked の報告。--plan-head 必須。
+  --question／--question-file も必須）:
+  今の status が doing の時だけ行う（review に付けたら終了コード1）。worktree の中身には
+  触れない（収集・新規コミットの判定・差分ゲートはしない）。log に再開情報の記録行と
+  doing→blocked の行をこの順に書いてコミットし、worktree は残す（終了コード4）。
 
 --worktree の done（review→done。--plan-head 必須。worktree の未コミット・未追跡分は
   マージに入れない＝収集しない）:
@@ -55,7 +72,7 @@ frontmatter の model。無ければ付けない）。`--no-model` で付けな�
     0  review／done にした
     1  前提を満たさず何も変えていない（理由は標準エラーに `[transition] ` で出す）
     2  引数の誤り
-    3  差し戻した（doing→doing。creator を呼び直す）
+    3  差し戻した（doing→doing／review→doing。creator を呼び直す）
     4  blocked にした
 """
 import sys
@@ -64,6 +81,7 @@ sys.dont_write_bytecode = True
 
 import argparse
 import datetime
+import json
 import os
 import re
 import subprocess
@@ -168,12 +186,12 @@ def parse_args(argv):
             p.error("--worktree には --branch も指定します")
         if len(ids) != 1:
             p.error("--worktree を使う時の id は1つだけです")
-        if args.target not in ("review", "done"):
+        if args.target not in ("review", "done", "doing", "blocked"):
             p.error(
-                "--worktree は遷移先 review と done にだけ対応しています（%s はまだ対応していません）"
+                "--worktree は遷移先 review・done・doing・blocked にだけ対応しています（%s は対応していません）"
                 % args.target
             )
-        if args.plan_head is None:
+        if args.target != "doing" and args.plan_head is None:
             p.error("%s で --worktree を使う時は --plan-head が必要です" % args.target)
 
     question = None
@@ -551,6 +569,82 @@ def done_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, posit
     return 0
 
 
+def load_fail_reasons(root, plan_id, tid, cur):
+    """FAIL の verdict の reasons（文字列のリスト）を返す。前提を満たさなければ fail。"""
+    rel = "vault/verdicts/%s/%s.json" % (plan_id, tid)
+    try:
+        with open(os.path.join(root, rel), encoding="utf-8") as f:
+            v = json.load(f)
+    except (OSError, UnicodeDecodeError, ValueError):
+        fail("verdict を JSON として読めません: %s" % rel)
+    if not isinstance(v, dict):
+        fail("verdict がオブジェクトではありません: %s" % rel)
+    if v.get("task") != "%s/%s" % (plan_id, tid):
+        fail("verdict の task が一致しません: %r" % (v.get("task"),))
+    if str(v.get("attempt")) != str(cur):
+        fail("verdict の attempt=%r が表の attempt=%d と一致しません" % (v.get("attempt"), cur))
+    if not isinstance(v.get("result"), str) or v["result"].upper() != "FAIL":
+        fail("verdict の result が FAIL ではありません: %r" % (v.get("result"),))
+    reasons = v.get("reasons")
+    if not isinstance(reasons, list) or not reasons:
+        return ["verdict の reasons が空"]
+    return [r if isinstance(r, str) else str(r) for r in reasons]
+
+
+def doing_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid, cur,
+                        model, reasons):
+    """--worktree 付きの review→doing（FAIL の再試行）。上限なら review→blocked。終了コードを返す。"""
+    worktree = verify_worktree(root, args.worktree, args.branch)
+    branch = args.branch
+    log_path = os.path.join(root, log_rel)
+    note = clean_text(reasons[0])[:80]
+    full_note = (note + " " + args.note_text).strip() if args.note_text else note
+    retry = cur + 1 <= max_attempts()
+    new = "doing" if retry else "blocked"
+    attempt = cur + 1 if retry else cur
+    question = "" if retry else clean_text("／".join(reasons))[:200]
+
+    new_plan = rewrite_rows(plan_lines, positions, [(tid, "review", new, attempt)], question)
+    new_log, _before = log_with_lines(
+        log_path, [transition_line(now_jst(), tid, "review", new, attempt, model, full_note)]
+    )
+    commit_files(
+        root, [(plan_rel, new_plan), (log_rel, new_log)],
+        "%s/%s: review→%s" % (plan_id, tid, new), [plan_rel, log_rel],
+    )
+    if retry:
+        discard_worktree(root, worktree, branch)
+        print("%s/%s: review→doing attempt=%d %s。worktree を破棄した" % (plan_id, tid, attempt, full_note))
+        return 3
+    print("%s/%s: review→blocked attempt=%d %s。worktree を残した" % (plan_id, tid, attempt, question))
+    return 4
+
+
+def blocked_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid, cur,
+                          model):
+    """--worktree 付きの doing→blocked（creator の blocked の報告）。worktree は残す。"""
+    worktree = verify_worktree(root, args.worktree, args.branch)
+    plan_head = resolve_commit(root, args.plan_head)
+    branch = args.branch
+    log_path = os.path.join(root, log_rel)
+    now = now_jst()
+
+    new_plan = rewrite_rows(plan_lines, positions, [(tid, "doing", "blocked", cur)], args.question_text)
+    new_log, _before = log_with_lines(
+        log_path,
+        [
+            worktree_record(now, tid, worktree, branch, plan_head),
+            transition_line(now, tid, "doing", "blocked", cur, model, args.note_text),
+        ],
+    )
+    commit_files(
+        root, [(plan_rel, new_plan), (log_rel, new_log)],
+        "%s/%s: doing→blocked" % (plan_id, tid), [plan_rel, log_rel],
+    )
+    print("%s/%s: doing→blocked attempt=%d %s。worktree を残した" % (plan_id, tid, cur, args.question_text))
+    return 4
+
+
 def main(argv):
     args = parse_args(argv)
     plan_id = args.plan_id
@@ -615,7 +709,12 @@ def main(argv):
             new_attempt = cur + 1
         else:
             new_attempt = cur
-        if new_attempt > limit:
+        wt_retry = args.worktree is not None and target == "doing"
+        if wt_retry and old != "review":
+            fail("%s: --worktree 付きの doing は review の時だけ行えます（今は %s）" % (tid, old))
+        if args.worktree is not None and target == "blocked" and old != "doing":
+            fail("%s: --worktree 付きの blocked は doing の時だけ行えます（今は %s）" % (tid, old))
+        if new_attempt > limit and not wt_retry:
             fail("%s: attempt=%d が上限 %d を超えます" % (tid, new_attempt, limit))
         if target == "blocked" and not args.question_text:
             fail("%s: blocked にするには question が必要です" % tid)
@@ -636,12 +735,30 @@ def main(argv):
                 sys.stderr.write("[transition] %s/%s: %s\n" % (plan_id, tid, reason))
             sys.exit(1)
 
+    wt_reasons = None
+    if args.worktree is not None and target == "doing":
+        wt_reasons = load_fail_reasons(root, plan_id, args.id_list[0], cur_attempts[args.id_list[0]])
+
     model = None
     if not args.no_model:
         if (old_all, target) in MODEL_AGENT:
             model = agent_model(root, MODEL_AGENT[(old_all, target)])
         elif args.worktree is not None:
             model = agent_model(root, "creator")
+
+    if args.worktree is not None and target == "doing":
+        tid = args.id_list[0]
+        return doing_with_worktree(
+            args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid,
+            cur_attempts[tid], model, wt_reasons,
+        )
+
+    if args.worktree is not None and target == "blocked":
+        tid = args.id_list[0]
+        return blocked_with_worktree(
+            args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid,
+            cur_attempts[tid], model,
+        )
 
     if args.worktree is not None and target == "done":
         tid = args.id_list[0]

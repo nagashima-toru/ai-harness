@@ -10,6 +10,7 @@
   (c) status が todo / doing / review / blocked / done 以外
   (d) 「## タスク表」に id の重複がある
   (e) 「## タスク表」のデータ行の列数が6でない
+  (g) status が done の行に、attempt が一致する正しい PASS の verdict が無い
 
 加えて、1ブランチ1計画の不変条件を検査する：
   (f) approved な計画票が2件以上ある
@@ -386,6 +387,15 @@ def main():
         if t["id"] in seen:
             block(f"[plan_guard] {plan_id} で id {t['id']} が重複しています。id は一意にしてください。")
         seen.add(t["id"])
+
+    missing = H.done_rows_without_pass(root, plan_id, tasks)
+    if missing:
+        tid, why = missing[0]
+        attempt = next((t["attempt"] for t in tasks if t["id"] == tid), "")
+        block(
+            f"[plan_guard] {plan_id}/{tid} は done ですが、attempt={attempt} の PASS の verdict がありません"
+            f"（{why}）。計画票の {tid} の status を review に戻し、verifier を実行してください。"
+        )
 
     finish()
 

@@ -2015,5 +2015,202 @@ expect_eq "(transition) 22 --no-model で log 行にモデルが付かず補足�
 expect_eq "(transition) 22 終了コードは 0" "0" "$TR_RC"
 
 echo
+echo "== diff_gate.py（D-012 フェーズ3） =="
+DG="$TMP/dg"
+DG_OUT="$TMP/dg_out.txt"
+DG_ERR="$TMP/dg_err.txt"
+dg_task() { # $1=id $2=成果物の宣言行（複数行可）
+  printf '# %s 確認用のタスク\n\n## 目的\n確認用\n\n## 入力\n- `docs/readme.md`\n\n## 成果物\n%s\n\n## 受け入れ基準\n- 基準1\n- 基準2\n\n## 決定済み\n- なし\n\n## 進捗\n' "$1" "$2"
+}
+dg_replace() { # $1=file $2=old $3=new（最初の1か所だけ置き換える）
+  python3 - "$1" "$2" "$3" <<'PY'
+import sys
+p, old, new = sys.argv[1], sys.argv[2], sys.argv[3]
+s = open(p, encoding="utf-8").read()
+assert old in s, old
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+}
+dg_setup() { # 一時リポジトリを作り直し、main に base をコミットして work/b に切り替える
+  rm -rf "$DG"
+  mkdir -p "$DG/vault/tasks/P-TEST" "$DG/vault/plans" "$DG/vault/log" "$DG/vault/verdicts/P-TEST" \
+    "$DG/vault/rules/common" "$DG/scripts" "$DG/docs/dir" "$DG/.claude/hooks" "$DG/.claude/agents"
+  dg_task T-01 '- `scripts/foo.py`（1ファイル）
+- `docs/dir/`（ディレクトリ）
+- `.claude/hooks/x.py`
+- `vault/plans/P-TEST.md`・`vault/log/P-TEST.md`・`vault/rules/common/x.md`・`vault/verdicts/P-TEST/`
+- `check_func` 関数' > "$DG/vault/tasks/P-TEST/T-01.md"
+  dg_task T-02 '- `scripts/foo.py`' > "$DG/vault/tasks/P-TEST/T-02.md"
+  printf -- '---\nid: P-TEST\nstatus: approved\n---\n' > "$DG/vault/plans/P-TEST.md"
+  echo "- log" > "$DG/vault/log/P-TEST.md"
+  echo rule > "$DG/vault/rules/common/x.md"
+  echo "print(1)" > "$DG/scripts/foo.py"
+  echo a > "$DG/docs/dir/a.md"
+  echo readme > "$DG/docs/readme.md"
+  echo "x = 1" > "$DG/.claude/hooks/x.py"
+  echo "y = 1" > "$DG/.claude/hooks/y.py"
+  echo "{}" > "$DG/.claude/settings.json"
+  printf -- '---\nname: creator\n---\n' > "$DG/.claude/agents/creator.md"
+  git -C "$DG" init -q -b main
+  git -C "$DG" config user.name smoke
+  git -C "$DG" config user.email smoke@example.com
+  git -C "$DG" add -A
+  git -C "$DG" commit -q -m base
+  git -C "$DG" checkout -q -b work/b
+}
+dg_commit() { git -C "$DG" add -A; git -C "$DG" commit -q -m change; }
+dg_run() { # 引数は diff_gate.py へ渡す（省略時は P-TEST T-01 main work/b）
+  [ $# -gt 0 ] || set -- P-TEST T-01 main work/b
+  ( cd "$DG" && python3 "$ROOT/scripts/diff_gate.py" "$@" ) > "$DG_OUT" 2> "$DG_ERR"
+  DG_RC=$?
+}
+dg_state() { echo "$(git -C "$DG" rev-parse HEAD) $(git -C "$DG" status --porcelain | tr '\n' ' ')"; }
+dg_has() { grep -cxF -- "$1" "$DG_OUT"; }
+
+# 01 宣言どおり
+dg_setup
+echo "print(2)" > "$DG/scripts/foo.py"
+mkdir -p "$DG/docs/dir/sub"; echo b > "$DG/docs/dir/sub/b.md"
+echo "x = 2" > "$DG/.claude/hooks/x.py"
+echo "- 進捗の追記" >> "$DG/vault/tasks/P-TEST/T-01.md"
+dg_commit
+DG_S0="$(dg_state)"
+dg_run
+expect_eq "(diff_gate) 01 宣言どおりの変更は終了コード 0" "0" "$DG_RC"
+expect_eq "(diff_gate) 01 宣言どおりの変更は出力が空" "0" "$(wc -c < "$DG_OUT" | tr -d ' ')"
+expect_eq "(diff_gate) 01 実行の前後で HEAD と git status が変わらない" "$DG_S0" "$(dg_state)"
+
+# 02 03 宣言外のファイル
+dg_setup
+echo extra > "$DG/extra.txt"; dg_commit
+dg_run
+expect_eq "(diff_gate) 02 宣言外のファイルを足すと終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 03 出力に「<パス>: 「成果物」に宣言されていない」の行がある" "1" \
+  "$(dg_has 'extra.txt: 「成果物」に宣言されていない')"
+
+# 04 未コミット
+dg_setup
+echo extra > "$DG/extra.txt"
+dg_run
+expect_eq "(diff_gate) 04 未コミットの宣言外ファイルは対象外で終了コード 0" "0" "$DG_RC"
+
+# 05 git mv
+dg_setup
+git -C "$DG" mv scripts/foo.py scripts/bar.py; dg_commit
+dg_run
+expect_eq "(diff_gate) 05 宣言したファイルを宣言外の名前にすると終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 05 新しいパスが違反として出る" "1" \
+  "$(dg_has 'scripts/bar.py: 「成果物」に宣言されていない')"
+
+# 06 07 08 タスク票
+dg_setup
+dg_replace "$DG/vault/tasks/P-TEST/T-01.md" "- 基準2" "- 基準2（書き換え）"; dg_commit
+dg_run
+expect_eq "(diff_gate) 06 自分のタスク票の「受け入れ基準」を変えると終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 06 理由が「進捗」以外の節が変わっている" "1" \
+  "$(dg_has 'vault/tasks/P-TEST/T-01.md: タスク票の「進捗」以外の節が変わっている')"
+
+dg_setup
+dg_replace "$DG/vault/tasks/P-TEST/T-01.md" "# T-01 確認用のタスク" "# T-01 確認用のタスク（書き換え）"; dg_commit
+dg_run
+expect_eq "(diff_gate) 07 タスク票の最初の見出しより前を変えると終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 07 理由が「進捗」以外の節が変わっている" "1" \
+  "$(dg_has 'vault/tasks/P-TEST/T-01.md: タスク票の「進捗」以外の節が変わっている')"
+
+dg_setup
+echo "- 進捗の追記" >> "$DG/vault/tasks/P-TEST/T-02.md"; dg_commit
+dg_run
+expect_eq "(diff_gate) 08 ほかのタスク票を宣言なしで変えると終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 08 ほかのタスク票が宣言外として出る" "1" \
+  "$(dg_has 'vault/tasks/P-TEST/T-02.md: 「成果物」に宣言されていない')"
+
+# 09 10 11 12 常に違反の4ディレクトリ
+dg_setup
+echo "変更" >> "$DG/vault/plans/P-TEST.md"; dg_commit
+dg_run
+expect_eq "(diff_gate) 09 宣言のある vault/plans/ 配下の変更は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 09 理由が vault/plans/ 配下は宣言があっても変更できない" "1" \
+  "$(dg_has 'vault/plans/P-TEST.md: vault/plans/ 配下は宣言があっても変更できない')"
+
+dg_setup
+echo "- 変更" >> "$DG/vault/log/P-TEST.md"; dg_commit
+dg_run
+expect_eq "(diff_gate) 10 宣言のある vault/log/ 配下の変更は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 10 理由が vault/log/ 配下は宣言があっても変更できない" "1" \
+  "$(dg_has 'vault/log/P-TEST.md: vault/log/ 配下は宣言があっても変更できない')"
+
+dg_setup
+echo '{"result":"PASS"}' > "$DG/vault/verdicts/P-TEST/T-01.json"; dg_commit
+dg_run
+expect_eq "(diff_gate) 11 宣言のある vault/verdicts/ 配下の変更は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 11 理由が vault/verdicts/ 配下は宣言があっても変更できない" "1" \
+  "$(dg_has 'vault/verdicts/P-TEST/T-01.json: vault/verdicts/ 配下は宣言があっても変更できない')"
+
+dg_setup
+echo rule2 > "$DG/vault/rules/common/x.md"; dg_commit
+dg_run
+expect_eq "(diff_gate) 12 宣言のある vault/rules/ 配下の変更は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 12 理由が vault/rules/ 配下は宣言があっても変更できない" "1" \
+  "$(dg_has 'vault/rules/common/x.md: vault/rules/ 配下は宣言があっても変更できない')"
+
+# 13 branch 側で宣言を書き足しても base の版で判定する
+dg_setup
+dg_replace "$DG/vault/tasks/P-TEST/T-01.md" '- `check_func` 関数' '- `check_func` 関数
+- `extra.txt`'
+echo extra > "$DG/extra.txt"; dg_commit
+dg_run
+expect_eq "(diff_gate) 13 branch 側で宣言を書き足しても終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 13 書き足したファイルは宣言外のまま違反" "1" \
+  "$(dg_has 'extra.txt: 「成果物」に宣言されていない')"
+
+# 14 15 16 .claude/ 配下の宣言無し
+dg_setup
+echo "y = 2" > "$DG/.claude/hooks/y.py"; dg_commit
+dg_run
+expect_eq "(diff_gate) 14 宣言の無い .claude/hooks/ のファイルは終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 14 .claude/hooks/y.py が違反として出る" "1" \
+  "$(dg_has '.claude/hooks/y.py: 「成果物」に宣言されていない')"
+
+dg_setup
+echo '{"a": 1}' > "$DG/.claude/settings.json"; dg_commit
+dg_run
+expect_eq "(diff_gate) 15 宣言の無い .claude/settings.json は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 15 .claude/settings.json が違反として出る" "1" \
+  "$(dg_has '.claude/settings.json: 「成果物」に宣言されていない')"
+
+dg_setup
+printf -- '---\nname: creator\nmodel: m\n---\n' > "$DG/.claude/agents/creator.md"; dg_commit
+dg_run
+expect_eq "(diff_gate) 16 宣言の無い .claude/agents/ 配下は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 16 .claude/agents/creator.md が違反として出る" "1" \
+  "$(dg_has '.claude/agents/creator.md: 「成果物」に宣言されていない')"
+
+# 17 18 19 終了コード 2
+dg_setup
+echo "- 進捗の追記" >> "$DG/vault/tasks/P-TEST/T-01.md"; dg_commit
+dg_run P-TEST T-09 main work/b
+expect_eq "(diff_gate) 17 base にタスク票が無い id は終了コード 2" "2" "$DG_RC"
+expect_eq "(diff_gate) 17 標準出力は空で、理由は標準エラーに出る" "0 1" \
+  "$(wc -c < "$DG_OUT" | tr -d ' ') $(grep -c '^\[diff_gate\]' "$DG_ERR")"
+dg_run P-TEST T-01 no-such-base work/b
+expect_eq "(diff_gate) 18 存在しない base は終了コード 2" "2" "$DG_RC"
+dg_run P-TEST T-01 main
+expect_eq "(diff_gate) 19 引数が3つだと終了コード 2" "2" "$DG_RC"
+
+# 20 check() の import（02 と同じ変更）
+dg_setup
+echo extra > "$DG/extra.txt"; dg_commit
+DG_CHK="$( cd "$DG" && python3 - "$ROOT/scripts" "$DG" <<'PY'
+import sys
+sys.dont_write_bytecode = True
+sys.path.insert(0, sys.argv[1])
+import diff_gate
+v = diff_gate.check(sys.argv[2], "P-TEST", "T-01", "main", "work/b")
+print(" ".join(p for p, _ in v))
+PY
+)"
+expect_eq "(diff_gate) 20 check() が 02 と同じ変更で違反のパスのリストを返す" "extra.txt" "$DG_CHK"
+
+echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

@@ -1,1 +1,2 @@
 - 2026-10-08 08:08 - draft→approved 人の指示: /plan approve P-20261008-creator-model-switch
+- 2026-10-08 08:14 T-01 todo→doing attempt=1

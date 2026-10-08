@@ -1,6 +1,6 @@
 ---
 id: P-20261008-sandbox-enable
-status: approved
+status: done
 ---
 # ゴール
 サンドボックスを有効にする（D-013 フェーズ5）

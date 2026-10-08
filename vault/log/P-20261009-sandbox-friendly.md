@@ -56,3 +56,5 @@
 - 2026-10-09 06:27 T-03 review→done attempt=1 人の指示: 成果物はマージ済のため手動でdone
 - 2026-10-09 06:27 T-06 review→done attempt=1 人の指示: 成果物はマージ済のため手動でdone
 
+- 2026-10-09 06:34 T-04 todo→doing attempt=1
+- 2026-10-09 06:34 T-05 todo→doing attempt=1

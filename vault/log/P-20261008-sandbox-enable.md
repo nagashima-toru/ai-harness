@@ -3,3 +3,6 @@
 - 2026-10-08 22:32 T-01 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a4e677ef7f2e1666a branch=worktree-agent-a4e677ef7f2e1666a plan_head=604a21cc2312a9217db4958c9069d787aeac36c1
 - 2026-10-08 22:32 T-01 doing→review attempt=1 creator=sonnet
 - 2026-10-08 22:35 T-01 review→done attempt=1 verifier=sonnet
+- 2026-10-08 22:35 T-04 todo→doing attempt=1
+- 2026-10-08 22:35 T-05 todo→doing attempt=1
+- 2026-10-08 22:35 T-06 todo→doing attempt=1

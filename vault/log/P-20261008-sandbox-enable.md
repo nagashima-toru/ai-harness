@@ -15,3 +15,5 @@
 - 2026-10-08 23:49 T-06 doing→blocked attempt=1 smoke の扱いが未決（サンドボックス）
 - 2026-10-09 00:35 T-06 blocked→todo 人の指示: /plan unblock P-20261008-sandbox-enable T-06
 - 2026-10-09 00:35 T-06 todo→doing attempt=1
+- 2026-10-09 00:36 T-06 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-ad0a55bda16f15961 branch=worktree-agent-ad0a55bda16f15961 plan_head=bcfadbc3005c69aa4fc1a20f329e64154e619bf9
+- 2026-10-09 00:36 T-06 doing→review attempt=1 creator=sonnet

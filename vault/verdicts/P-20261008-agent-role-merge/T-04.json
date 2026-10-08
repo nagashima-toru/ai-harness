@@ -1,0 +1,14 @@
+{
+  "task": "P-20261008-agent-role-merge/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 12:00",
+  "criteria": [
+    {"text": "既存の smoke と追加したケースが全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=694 fail=0"},
+    {"text": "決定済みの (sr-1)〜(sr-7) のケースが smoke にあり、すべて通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (sr-'` の数が7以上（あわせて Read で、決定済みの7つの観点がケースになっていることを確認）", "ok": true, "note": "実行コマンド: smoke 出力を `grep -c '^  ok   (sr-'` / 出力: 13。sr-1〜sr-7 の各番号が ok で現れ、名前が決定済みの観点（複製なし・マニフェストに無い・削除と remove 行・編集済み残存と note・update 後マニフェスト・uninstall 旧版・uninstall 新版）に対応している。件数だけの緩い基準だが各番号の個別確認で補った"},
+    {"text": "smoke は、このリポジトリの6本の有無に左右されない：`grep -nE 'ROOT/vault/rules/(common|creator|verifier|planner)/' scripts/smoke.sh` の出力が空", "ok": true, "note": "実行コマンド: `grep -nE 'ROOT/vault/rules/(common|creator|verifier|planner)/' scripts/smoke.sh` / 出力: 空"},
+    {"text": "「標準4本」という古い説明が残っていない：`grep -n '標準4本' scripts/install.sh scripts/uninstall.sh scripts/smoke.sh` の出力が空", "ok": true, "note": "実行コマンド: `grep -n '標準4本' scripts/install.sh scripts/uninstall.sh scripts/smoke.sh` / 出力: 空"},
+    {"text": "`install.sh` の vault/ の複製ループと `manifest_paths()` に6本が無く、6本のパスは `--update` で削除の対象にする一覧（決定済みの `RETIRED_RULES`）にだけある（Read で確認）。`vault/rules/README.md` は今どおり複製とマニフェストの対象に残っている", "ok": true, "note": "確認方法: install.sh の該当部を sed で表示。RETIRED_RULES（71行）に6パス固定。manifest_paths() は vault/rules/README.md のみ（84行）、複製ループは rules/README.md と各 .gitkeep のみで6本なし。RETIRED_RULES は --update の python ブロックに引数で渡される（145行）。変更ファイル検査: 起点コミットの記録がタスク票の進捗に無いため検査せず（参考: 1c68b2d..HEAD の差分は install.sh・uninstall.sh・smoke.sh と vault 管理ファイルのみ）"}
+  ],
+  "reasons": []
+}

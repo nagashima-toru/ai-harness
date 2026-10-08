@@ -39,7 +39,7 @@ bash scripts/smoke.sh        # フックの動作検証
 - 1セッション=1計画=1ブランチ。複数の計画を並行して進めたい時は、計画ごとに別のセッション（別のブランチ／worktree）を使う
 
 ## 拡張ポイント（ルール）
-「ルール」を作成エージェント・verifier・planner に渡せる。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`vault/rules/common/roles.md`・`creator/creator.md`・`verifier/verifier.md`・`planner/planner.md`）と git 運用のルール（`common/git.md`・`creator/git-workflow.md`）。コーディングルール・開発標準・方式設計・テスト観点などドメイン固有のルールはインストール先で書く。
+ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある。「ルール」を作成エージェント・verifier・planner に渡せる拡張ポイントとして、コーディングルール・開発標準・方式設計・テスト観点などは導入先で `vault/rules/` に書く。
 
 | ディレクトリ | 渡す相手 |
 |---|---|
@@ -51,7 +51,7 @@ bash scripts/smoke.sh        # フックの動作検証
 - 読み込みは `bash scripts/rules.sh <creator|verifier|planner>` で一本化（`common/` → 役割ディレクトリの順、ファイル名順）
 - 受け入れ基準からルールファイルを名指しして参照する（例：「`vault/rules/common/naming.md` の命名規則に従っている」）と、verifier がそのファイルを根拠に判定する
 - エージェントは `vault/rules/` に書けない（タスクの状態を問わず `agent_write_guard.py` がフックで常に拒否する）。ルールの追加・変更は人が直接編集する。ルールの変更自体をタスクにする時は、成果物を `vault/tasks/<計画ID>/<id>-proposal.md` に下書きし、人が実体へ反映する（提案ファイル方式。`docs/vault-spec.md` の12節）
-- 導入先で積む拡張の例（ハーネス同梱の標準ルールではない）：開発案件なら、型・API・テスト雛形などの「契約」タスクを先に切り、実装タスクを `after` でそれに依存させる、というルールを `vault/rules/planner/` に置く
+- 導入先で積む拡張の例（導入先で書くルールの例）：開発案件なら、型・API・テスト雛形などの「契約」タスクを先に切り、実装タスクを `after` でそれに依存させる、というルールを `vault/rules/planner/` に置く
 
 ## 仕組み
 ```

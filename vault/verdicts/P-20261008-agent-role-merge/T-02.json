@@ -1,0 +1,15 @@
+{
+  "task": "P-20261008-agent-role-merge/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 12:00",
+  "criteria": [
+    {"text": "統合元（`verifier/verifier.md` の全箇条、`roles.md` は verifier が関わる2節、`git.md` は verifier に関係する部分）の「ルール」節の箇条が、`.claude/agents/verifier.md` に同じ意味で書かれている。ただし決定済みで落とす・言い換えると決めたものは除く（Read で統合元1本ずつ見比べて確認）", "ok": true, "note": "Read で統合元3本と verifier.md(72行)を見比べた。責務の各箇条（1行ずつ判定・コマンド実行・criteria・attempt・note非空・ルール参照・判定不能・PASS/FAIL・書込先・worktree・緩い基準3観点・起点コミット検査）は手順1〜12に、roles.md の2節は「受け渡し」節、やらないことは「禁止」「やらないこと」に同意で存在。落ちているのは決定済みの除外分のみ（ほか括弧書き『古い attempt の verdict は done の根拠にならない』は受け手側の話で、進捗に落とした旨あり）。"},
+    {"text": "今の手順と矛盾する記述が無い：`grep -nE 'PASS (の)?後にオーケストレーター|git status --porcelain|作成エージェント（run のメイン）|vault/verdicts/<id>\\.json' .claude/agents/verifier.md` の出力が空", "ok": true, "note": "実行コマンド: 指定の grep -nE を worktree で実行 / 出力: 空（ヒット0）"},
+    {"text": "失敗の例が残っている：見出し `## やらないこと` の節があり、確認コマンドが実行できなかった時に黙って置き換えないことと、T-0002 で note を必須化した理由が書かれている。確認：`grep -n 'T-0002' .claude/agents/verifier.md` の出力が1行以上（あわせて Read で節の中にあることを確認）", "ok": true, "note": "実行コマンド: `grep -n 'T-0002' .claude/agents/verifier.md` / 出力: 69行目に該当。Read で66行目 `## やらないこと` 節内（67〜69行）にあり、黙って置き換えない旨と理由が書かれていることを確認"},
+    {"text": "6本への参照が無い：`grep -nE 'vault/rules/(common/roles|common/git|creator/creator|creator/git-workflow|verifier/verifier|planner/planner|planner/ai-harness-lessons)\\.md' .claude/agents/verifier.md` の出力が空", "ok": true, "note": "実行コマンド: 指定の grep -nE / 出力: 空（ヒット0）"},
+    {"text": "frontmatter が変わっておらず、長さが150行以内：`git diff main -- .claude/agents/verifier.md | grep -E '^[+-](name|description|tools|model):'` の出力が空で、`wc -l .claude/agents/verifier.md` の数が150以下", "ok": true, "note": "実行コマンド: 指定の git diff|grep と `wc -l` / 出力: grep は空、wc は 72。変更ファイル検査: `git diff --name-only <起点>..HEAD` は .claude/agents/verifier.md とタスク票 T-02.md（進捗の記入のみ、除外対象）で宣言外なし"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=681 fail=0"}
+  ],
+  "reasons": []
+}

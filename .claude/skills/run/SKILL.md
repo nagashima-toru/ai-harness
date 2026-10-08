@@ -67,7 +67,7 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 5. 各 worktree について、分岐元がこの計画ブランチ（`PLAN_HEAD`）になっていることを次のコマンドで確認する：
    `git -C <worktree のパス> merge-base --is-ancestor <PLAN_HEAD> HEAD`
    終了コードが `0` なら、その worktree は計画ブランチ（`PLAN_HEAD`）から分岐している。`git worktree list` でパスとブランチ名の対応も確認できる
-6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに、質問文（「worktree の分岐元が計画ブランチと一致しない」と、手順5の確認コマンドの出力の要点）を Write ツールで一時ファイルに書き、手順3の8と同じ呼び出しで対象タスクを blocked にして人の判断を仰ぐ（`vault/rules/common/roles.md` の「creator → 人」節と同じ blocked 運用）
+6. worktree の分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` 設定により計画ブランチ（`PLAN_HEAD`）になる想定。直前の5.の確認で終了コードが非0（＝計画ブランチではなく `origin/main` 等から分岐してしまっている）場合、自己判断で起点を上書きして creator 呼び出しをやり直すことはしない。代わりに、質問文（「worktree の分岐元が計画ブランチと一致しない」と、手順5の確認コマンドの出力の要点）を Write ツールで一時ファイルに書き、手順3の8と同じ呼び出しで対象タスクを blocked にして人の判断を仰ぐ（`.claude/agents/creator.md` の「受け渡し」節と同じ blocked 運用）
 7. 各 creator の完了報告を受け取る。報告が「blocked: <質問文>」の形式のものと、そうでないものをタスクごとに分けて記録する
 8. 報告が「blocked: <質問文>」のタスクについて、質問文を言い換えずに Write ツールで一時ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書き、`python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` を id ごとに1回呼ぶ。worktree は transition.py が残す。終了コードは4（blocked にした）が正常。選んだタスクの中に blocked 以外が無ければここで終わる
 
@@ -113,7 +113,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 2. `vault/verdicts/<計画ID>/<id>.json`（手順1でコピーした場合はコピー後のファイル）を読み、`result` と `attempt` を確認する。`attempt` が計画票のタスク表の値と一致しない verdict は「無い」ものとして扱い、そのタスクは検証未完了として次のタスクに進まず処理を止める（人に確認する）
 3. `PASS` の場合：次を1回呼ぶ。`PLAN_HEAD` は手順3の1で控えた値（中断からの再開では log の記録行から復元した値。手順2の2）を使う。
    `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>`
-   この1回で、PASS の verdict の確認・未コミット分の収集・新規コミットの判定・差分ゲート・計画ブランチへの `--no-ff` マージ・done とそのコミット（verdict を含む）・worktree とブランチの後始末が行われる。コンフリクトは自己判断で解決しない（`vault/rules/common/git.md` の方針）。transition.py がマージを中止して blocked にする。
+   この1回で、PASS の verdict の確認・未コミット分の収集・新規コミットの判定・差分ゲート・計画ブランチへの `--no-ff` マージ・done とそのコミット（verdict を含む）・worktree とブランチの後始末が行われる。コンフリクトは自己判断で解決しない（`.claude/agents/creator.md` の `## git` 節の方針）。transition.py がマージを中止して blocked にする。
 
    終了コードごとの次の行動：
    - 0：done になった。次の対象タスクへ進む
@@ -142,7 +142,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 - どちらでもなければ、処理した ID と結果を1行ずつ報告して終わる
 
 ## 8. ハーネス振り返り
-全タスクが `done` になり `scripts/vcs_finish.sh` を実行した直後、**オーケストレーター（run のメインセッション）自身**が1回だけ行う（`creator`・`verifier` を呼ばない。`.claude/agents/creator.md`・`vault/rules/creator/`・`vault/rules/verifier/` は変更しない）。
+全タスクが `done` になり `scripts/vcs_finish.sh` を実行した直後、**オーケストレーター（run のメインセッション）自身**が1回だけ行う（`creator`・`verifier` を呼ばない。`.claude/agents/creator.md`・`.claude/agents/verifier.md` は変更しない）。
 
 1. 今回処理した計画のタスク群を振り返り、`.claude/`（スキル・エージェント定義・フック）や `vault/rules/` に対する**構造的な**改善点（スキル手順の分かりにくさ、フックの誤検知・見落とし、ルール文書の過不足など、繰り返し発生しうる問題）に気づいたかどうかを判断する。軽微な言い回し修正・タイポは対象外。頻度は「あれば書く」であり、毎回 must ではない
 2. 気づきが無ければ、ここで何もしない（issue も作らず、ログにも残さない）。以下の3・4は行わない

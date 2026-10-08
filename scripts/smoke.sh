@@ -1174,16 +1174,16 @@ expect_eq "(h) 代表2パスのハッシュが64桁16進" "True" \
   "$(python3 -c "import json,re;d=json.load(open('$NMAN'))['files'];print(bool(re.fullmatch('[0-9a-f]{64}',d['.claude/hooks/stop_gate.py'])) and bool(re.fullmatch('[0-9a-f]{64}',d['docs/vault-spec.md'])))")"
 expect_eq "(h) 利用者の資産は含まれない" "False" \
   "$(python3 -c "import json;d=json.load(open('$NMAN'))['files'];print(any(k.startswith(('vault/plans/','vault/tasks/','vault/verdicts/','vault/log/','vault/archive/','vault/designs/')) for k in d))")"
-printf -- '- 独自ルール\n' >> "$NTMP/vault/rules/common/roles.md"
+printf -- '- 独自ルール\n' >> "$NTMP/vault/rules/README.md"
 bash "$ROOT/scripts/install.sh" "$NTMP" >/dev/null 2>&1
 expect_eq "(i) 記録は src のハッシュで dst とは一致しない" "True" \
   "$(python3 -c "
 import hashlib, json
 h = lambda p: hashlib.sha256(open(p,'rb').read()).hexdigest()
-rel = 'vault/rules/common/roles.md'
+rel = 'vault/rules/README.md'
 m = json.load(open('$NMAN'))['files'][rel]
 print(m == h('$ROOT/' + rel) and m != h('$NTMP/' + rel))")"
-expect_eq "(i) 編集した行はそのまま残る" "1" "$(grep -c '^- 独自ルール$' "$NTMP/vault/rules/common/roles.md")"
+expect_eq "(i) 編集した行はそのまま残る" "1" "$(grep -c '^- 独自ルール$' "$NTMP/vault/rules/README.md")"
 rm -rf "$NTMP"
 
 echo "== 参照される scripts の存在チェック =="
@@ -1279,11 +1279,11 @@ expect_eq "(j) 上書き後のマニフェストが dst と一致する" "True" 
 import hashlib, json
 m = json.load(open('$UTMP/.claude/harness-manifest.json'))['files']['docs/vault-spec.md']
 print(m == hashlib.sha256(open('$UTMP/docs/vault-spec.md','rb').read()).hexdigest())")"
-printf -- '- 独自ルール2\n' >> "$UTMP/vault/rules/common/roles.md"
+printf -- '- 独自ルール2\n' >> "$UTMP/vault/rules/README.md"
 uout="$(bash "$ROOT/scripts/install.sh" --update "$UTMP" 2>&1)"
 expect_eq "(k) 編集済みは skip (edited) で報告される" "1" \
-  "$(echo "$uout" | grep -c '^skip (edited) vault/rules/common/roles\.md$')"
-expect_eq "(k) 編集した行は残る" "1" "$(grep -c '^- 独自ルール2$' "$UTMP/vault/rules/common/roles.md")"
+  "$(echo "$uout" | grep -c '^skip (edited) vault/rules/README\.md$')"
+expect_eq "(k) 編集した行は残る" "1" "$(grep -c '^- 独自ルール2$' "$UTMP/vault/rules/README.md")"
 rm -f "$UTMP/.claude/harness-manifest.json"
 ubefore="$(shasum "$UTMP/.claude/hooks/stop_gate.py" | cut -d' ' -f1)"
 uout="$(bash "$ROOT/scripts/install.sh" --update "$UTMP" 2>&1)"
@@ -1487,15 +1487,15 @@ rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 echo "== uninstall.sh =="
 UNTMP="$(mktemp -d)"
 bash "$ROOT/scripts/install.sh" "$UNTMP" >/dev/null 2>&1
-printf -- '- 独自ルール3\n' >> "$UNTMP/vault/rules/common/roles.md"
+printf -- '- 独自ルール3\n' >> "$UNTMP/vault/rules/README.md"
 mkdir -p "$UNTMP/vault/plans"
 echo "dummy" > "$UNTMP/vault/plans/P-DUMMY.md"
 uout="$(bash "$ROOT/scripts/uninstall.sh" "$UNTMP" 2>&1)"; urc=$?
 expect_eq "(q) uninstall.sh の終了コードが0" "0" "$urc"
 expect_eq "(q) 未編集ファイル(stop_gate.py)は削除される" "0" "$([ -f "$UNTMP/.claude/hooks/stop_gate.py" ] && echo 1 || echo 0)"
-expect_eq "(q) 編集済みファイル(roles.md)は残る" "1" "$([ -f "$UNTMP/vault/rules/common/roles.md" ] && echo 1 || echo 0)"
-expect_eq "(q) 編集した行は保持される" "1" "$(grep -c '^- 独自ルール3$' "$UNTMP/vault/rules/common/roles.md")"
-expect_eq "(q) skip (edited) が報告される" "1" "$(echo "$uout" | grep -c '^skip (edited) vault/rules/common/roles\.md$')"
+expect_eq "(q) 編集済みファイル(README.md)は残る" "1" "$([ -f "$UNTMP/vault/rules/README.md" ] && echo 1 || echo 0)"
+expect_eq "(q) 編集した行は保持される" "1" "$(grep -c '^- 独自ルール3$' "$UNTMP/vault/rules/README.md")"
+expect_eq "(q) skip (edited) が報告される" "1" "$(echo "$uout" | grep -c '^skip (edited) vault/rules/README\.md$')"
 expect_eq "(r) vault/plans のダミーファイルは無傷" "1" "$([ -f "$UNTMP/vault/plans/P-DUMMY.md" ] && echo 1 || echo 0)"
 expect_eq "(r) ダミーファイルの内容は変わらない" "dummy" "$(cat "$UNTMP/vault/plans/P-DUMMY.md")"
 expect_eq "(s) CLAUDE.md はブロックのみの内容だったため削除される（unmerge_claude_md.py）" "0" "$([ -f "$UNTMP/CLAUDE.md" ] && echo 1 || echo 0)"
@@ -1505,6 +1505,84 @@ expect_eq "(t) settings.json からハーネス由来の hooks が除去され�
 expect_eq "(t) unmerge_settings_json.py の unmerge 報告がある" "1" "$(echo "$uout" | grep -c '^unmerge .*settings\.json$')"
 expect_eq "(u) マニフェストファイル自体も削除される" "0" "$([ -f "$UNTMP/.claude/harness-manifest.json" ] && echo 1 || echo 0)"
 rm -rf "$UNTMP"
+
+echo "== 標準ルール6本を配らない（install / --update / uninstall） =="
+SR_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
+sr_count_existing() { # $1=導入先。6本のうち存在する数
+  local n=0 rel
+  for rel in $SR_RULES; do [ -e "$1/$rel" ] && n=$((n+1)); done
+  echo "$n"
+}
+sr_legacy_fixture() { # $1=導入先。新版で install した後、旧版の状態（6本があり、マニフェストにハッシュが記録されている）にする
+  local d="$1" rel
+  bash "$ROOT/scripts/install.sh" "$d" >/dev/null 2>&1
+  for rel in $SR_RULES; do
+    mkdir -p "$d/$(dirname "$rel")"
+    printf 'legacy rule %s\n' "$rel" > "$d/$rel"
+  done
+  python3 -c "
+import hashlib, json, sys
+d = sys.argv[1]
+rules = sys.argv[2:]
+mp = d + '/.claude/harness-manifest.json'
+m = json.load(open(mp))
+for rel in rules:
+    m['files'][rel] = hashlib.sha256(open(d + '/' + rel, 'rb').read()).hexdigest()
+json.dump(m, open(mp, 'w'), ensure_ascii=False, indent=2)
+" "$d" $SR_RULES
+}
+sr_manifest_count() { # $1=導入先。マニフェストの files にある6本の数
+  python3 -c "
+import json, sys
+f = json.load(open(sys.argv[1] + '/.claude/harness-manifest.json'))['files']
+print(sum(1 for r in sys.argv[2:] if r in f))
+" "$1" $SR_RULES
+}
+SR_EDITED="vault/rules/creator/creator.md"
+
+SRTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$SRTMP" >/dev/null 2>&1
+expect_eq "(sr-1) 新規 install で6本がどれも複製されない" "0" "$(sr_count_existing "$SRTMP")"
+expect_eq "(sr-2) 新規 install のマニフェストの files に6本が無い" "0" "$(sr_manifest_count "$SRTMP")"
+rm -rf "$SRTMP"
+
+SRTMP="$(mktemp -d)"
+sr_legacy_fixture "$SRTMP"
+printf -- '- 独自ルール4\n' >> "$SRTMP/$SR_EDITED"
+sout="$(bash "$ROOT/scripts/install.sh" --update "$SRTMP" 2>&1)"
+sr_removed=0; sr_gone=0
+for rel in $SR_RULES; do
+  [ "$rel" = "$SR_EDITED" ] && continue
+  echo "$sout" | grep -Fxq "remove $rel" && sr_removed=$((sr_removed+1))
+  [ -e "$SRTMP/$rel" ] || sr_gone=$((sr_gone+1))
+done
+expect_eq "(sr-3) --update で未編集の5本が削除され remove の行が出る" "5 5" "$sr_removed $sr_gone"
+expect_eq "(sr-4) 編集済みの1本は残る" "1" "$([ -f "$SRTMP/$SR_EDITED" ] && echo 1 || echo 0)"
+expect_eq "(sr-4) 編集した行が保たれる" "1" "$(grep -c '^- 独自ルール4$' "$SRTMP/$SR_EDITED")"
+expect_eq "(sr-4) 編集済みのパスを含む note の行が出る" "1" "$(echo "$sout" | grep -c "^note  $SR_EDITED ")"
+expect_eq "(sr-4) 編集済みでないパスの note は出ない" "1" "$(echo "$sout" | grep -c '^note  vault/rules/')"
+expect_eq "(sr-5) --update 後のマニフェストの files に6本が無い" "0" "$(sr_manifest_count "$SRTMP")"
+rm -rf "$SRTMP"
+
+SRTMP="$(mktemp -d)"
+sr_legacy_fixture "$SRTMP"
+printf -- '- 独自ルール5\n' >> "$SRTMP/$SR_EDITED"
+printf 'my rule\n' > "$SRTMP/vault/rules/common/my-rule.md"
+bash "$ROOT/scripts/uninstall.sh" "$SRTMP" >/dev/null 2>&1; srrc=$?
+sr_left=""
+for rel in $SR_RULES; do [ -e "$SRTMP/$rel" ] && sr_left="$sr_left $rel"; done
+expect_eq "(sr-6) 旧版のマニフェストで uninstall.sh が終了コード0" "0" "$srrc"
+expect_eq "(sr-6) 未編集の5本は削除され、編集済みの1本だけ残る" " $SR_EDITED" "$sr_left"
+expect_eq "(sr-6) 利用者が置いたルールは残る" "my rule" "$(cat "$SRTMP/vault/rules/common/my-rule.md" 2>/dev/null)"
+rm -rf "$SRTMP"
+
+SRTMP="$(mktemp -d)"
+bash "$ROOT/scripts/install.sh" "$SRTMP" >/dev/null 2>&1
+printf 'my rule\n' > "$SRTMP/vault/rules/common/my-rule.md"
+bash "$ROOT/scripts/uninstall.sh" "$SRTMP" >/dev/null 2>&1; srrc=$?
+expect_eq "(sr-7) 6本が無い導入先で uninstall.sh が終了コード0" "0" "$srrc"
+expect_eq "(sr-7) 利用者が置いたルールは残る" "my rule" "$(cat "$SRTMP/vault/rules/common/my-rule.md" 2>/dev/null)"
+rm -rf "$SRTMP"
 
 echo "== run_unattended.py =="
 RU_PY="$ROOT/scripts/run_unattended.py"

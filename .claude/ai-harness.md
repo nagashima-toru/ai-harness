@@ -21,7 +21,7 @@
 
 ## 役割
 - 作成エージェント（メイン）：タスクを取り、着手時に `bash scripts/rules.sh creator` の列挙を読み、成果物を作り、状態と log を更新する
-- `verifier` は `vault/verdicts/`、`planner` は `vault/plans/`・`vault/tasks/` にだけ書く（詳細は `vault/rules/common/roles.md`）
+- `verifier` は `vault/verdicts/`、`planner` は `vault/plans/`・`vault/tasks/` にだけ書く（詳細は `.claude/agents/` の各定義）
 
 ## スキル
 `/plan <ゴール>`（計画を draft で作りブランチを切る。`/plan approve <計画ID>` で承認、`/plan unblock <計画ID> <id> [回答]` で blocked を解除して todo に戻す）・`/run`（自分のブランチの承認済み計画を1タスク処理する）・`/design <ゴール>`（大きなゴールを設計文書にする）

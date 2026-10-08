@@ -8,7 +8,9 @@ PLAN_GUARD_HOOK="$ROOT/.claude/hooks/plan_guard.py"
 GUARD_HOOK="$ROOT/.claude/hooks/agent_write_guard.py"
 RULES_SH="$ROOT/scripts/rules.sh"
 CURRENT_PLAN_SH="$ROOT/scripts/current_plan.sh"
-TMP="$(mktemp -d)"
+smoke_tmpdir() { mktemp -d "${TMPDIR:-/tmp}/smoke.XXXXXX"; }
+abort_tmp() { echo "smoke: 一時ディレクトリを作れません（TMPDIR=${TMPDIR:-}）。中断します" >&2; exit 2; }
+TMP="$(smoke_tmpdir)" || abort_tmp
 trap 'rm -rf "$TMP"' EXIT
 unset HARNESS_CREATOR_MODEL
 PASS_N=0; FAIL_N=0
@@ -116,7 +118,7 @@ sg_plan() { # $1=dir $2=planID: approved の計画票（タスク表は todo の
   mkdir -p "$1/vault/plans"
   printf -- '---\nid: %s\nstatus: approved\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-0001 | todo | 0 | - | A | |\n' "$2" > "$1/vault/plans/$2.md"
 }
-SGTMP="$(mktemp -d)"
+SGTMP="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$SGTMP/vault/plans"
 git -C "$SGTMP" init -q -b main
 sg_plan "$SGTMP" P-SG
@@ -131,7 +133,7 @@ expect "(g) 未コミットの変更が無い → 許可（既存判定へ進む
 rm -rf "$SGTMP"
 
 # approved な計画票が0件・2件の git リポジトリ（未コミットの検査より先に件数で判定する）
-SGTMP="$(mktemp -d)"
+SGTMP="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$SGTMP/vault/plans"
 git -C "$SGTMP" init -q -b main
 touch "$SGTMP/vault/plans/.gitkeep"
@@ -141,7 +143,7 @@ echo dirty > "$SGTMP/x.txt"
 expect "(stop-scope-1) approved な計画票が0件・未コミットの変更あり → 許可" allow \
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
 rm -rf "$SGTMP"
-SGTMP="$(mktemp -d)"
+SGTMP="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$SGTMP/vault/plans"
 git -C "$SGTMP" init -q -b main
 sg_plan "$SGTMP" P-SG-A; sg_plan "$SGTMP" P-SG-B
@@ -158,7 +160,7 @@ rm -rf "$SGTMP"
 # stop_gate.py に渡す。stop_gate.py は has_uncommitted_changes() を持つため、ローカル判定に
 # フォールバックさせるテスト（二重委譲防止・委譲失敗）では、CLAUDE_PROJECT_DIR 側のリポジトリを
 # 事前に commit してクリーンな状態にしておく（さもないと未コミット変更ブロックが先に発火する）。
-DWSMAIN="$(mktemp -d)"
+DWSMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWSMAIN" init -q -b main
 git -C "$DWSMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 mkdir -p "$DWSMAIN/vault/plans"
@@ -173,7 +175,7 @@ mkdir -p "$DWSMAIN/vault/verdicts/P-TEST"
 printf '%s\n' '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}' > "$DWSMAIN/vault/verdicts/P-TEST/T-0001.json"
 git -C "$DWSMAIN" add -A
 git -C "$DWSMAIN" -c user.email=t@example.com -c user.name=t commit -q -m plan
-DWSLEAF="$(mktemp -d)"; rmdir "$DWSLEAF"
+DWSLEAF="$(smoke_tmpdir)" || abort_tmp; rmdir "$DWSLEAF"
 git -C "$DWSMAIN" worktree add -q -b work/p-delegate-stop "$DWSLEAF" >/dev/null 2>&1
 mkdir -p "$DWSLEAF/.claude/hooks"
 cat > "$DWSLEAF/.claude/hooks/stop_gate.py" <<'PYEOF'
@@ -191,7 +193,7 @@ expect "(delegate stop_gate) 呼び出し前に _HOOK_DELEGATED が既にセッ�
 git -C "$DWSMAIN" worktree remove -q --force "$DWSLEAF" >/dev/null 2>&1
 rm -rf "$DWSMAIN" "$DWSLEAF"
 
-DWSMAIN2="$(mktemp -d)"
+DWSMAIN2="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWSMAIN2" init -q -b main
 git -C "$DWSMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 mkdir -p "$DWSMAIN2/vault/plans"
@@ -204,7 +206,7 @@ mkdir -p "$DWSMAIN2/vault/plans"
 } > "$DWSMAIN2/vault/plans/P-TEST.md"
 git -C "$DWSMAIN2" add -A
 git -C "$DWSMAIN2" -c user.email=t@example.com -c user.name=t commit -q -m plan
-DWSLEAF2="$(mktemp -d)"; rmdir "$DWSLEAF2"
+DWSLEAF2="$(smoke_tmpdir)" || abort_tmp; rmdir "$DWSLEAF2"
 git -C "$DWSMAIN2" worktree add -q -b work/p-delegate-stop-fail "$DWSLEAF2" >/dev/null 2>&1
 mkdir -p "$DWSLEAF2/.claude/hooks"
 cat > "$DWSLEAF2/.claude/hooks/stop_gate.py" <<'PYEOF'
@@ -272,7 +274,7 @@ expect_guard "(h) approved な計画票が2件以上でも vault/rules/ へ Writ
   "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
-GTMP="$(mktemp -d)"
+GTMP="$(smoke_tmpdir)" || abort_tmp
 git -C "$GTMP" init -q -b main
 git -C "$GTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 expect_guard "(i) main で git commit → 拒否" deny \
@@ -323,10 +325,10 @@ expect_guard "creator が vault/log/ に Write → 拒否" deny \
 expect_guard "creator が README.md に Write → 許可" allow \
   "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
 
-WMAIN="$(mktemp -d)"
+WMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$WMAIN" init -q -b main
 git -C "$WMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
-WLEAF="$(mktemp -d)"; rmdir "$WLEAF"
+WLEAF="$(smoke_tmpdir)" || abort_tmp; rmdir "$WLEAF"
 git -C "$WMAIN" worktree add -q -b work/p-wt "$WLEAF" >/dev/null 2>&1
 mkdir -p "$WLEAF/vault/verdicts"
 expect_guard "(worktree) verifier が worktree 内の vault/verdicts/ に Write（CLAUDE_PROJECT_DIR はメインチェックアウト側のまま）→ 許可" allow \
@@ -334,10 +336,10 @@ expect_guard "(worktree) verifier が worktree 内の vault/verdicts/ に Write�
 git -C "$WMAIN" worktree remove -q --force "$WLEAF" >/dev/null 2>&1
 rm -rf "$WMAIN" "$WLEAF"
 
-WMAIN2="$(mktemp -d)"
+WMAIN2="$(smoke_tmpdir)" || abort_tmp
 git -C "$WMAIN2" init -q -b main
 git -C "$WMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
-WLEAF2="$(mktemp -d)"; rmdir "$WLEAF2"
+WLEAF2="$(smoke_tmpdir)" || abort_tmp; rmdir "$WLEAF2"
 git -C "$WMAIN2" worktree add -q -b work/p-wt-nested "$WLEAF2" >/dev/null 2>&1
 expect_guard "(worktree nested) verifier が worktree 内の未作成ネストディレクトリ vault/verdicts/P-NEW/ に Write（事前 mkdir なし）→ 許可" allow \
   "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WLEAF2"'/vault/verdicts/P-NEW/T-1.json"}}' | CLAUDE_PROJECT_DIR="$WMAIN2" python3 "$GUARD_HOOK")"
@@ -349,10 +351,10 @@ rm -rf "$WMAIN2" "$WLEAF2"
 # Write/Edit + 絶対 file_path 方式だと、mktemp が返す tmp パスと git rev-parse --show-toplevel が
 # 返す解決済みパス（macOS では /var/... が /private/var/... に解決される）が食い違い、
 # normalize() の prefix 比較が環境依存で崩れてしまうため使わない。
-DWTMAIN="$(mktemp -d)"
+DWTMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWTMAIN" init -q -b main
 git -C "$DWTMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
-DWTLEAF="$(mktemp -d)"; rmdir "$DWTLEAF"
+DWTLEAF="$(smoke_tmpdir)" || abort_tmp; rmdir "$DWTLEAF"
 git -C "$DWTMAIN" worktree add -q -b work/p-delegate "$DWTLEAF" >/dev/null 2>&1
 mkdir -p "$DWTLEAF/.claude/hooks"
 cat > "$DWTLEAF/.claude/hooks/agent_write_guard.py" <<'PYEOF'
@@ -370,10 +372,10 @@ expect_guard "(delegate) 呼び出し前に _HOOK_DELEGATED が既にセット�
 git -C "$DWTMAIN" worktree remove -q --force "$DWTLEAF" >/dev/null 2>&1
 rm -rf "$DWTMAIN" "$DWTLEAF"
 
-DWTMAIN2="$(mktemp -d)"
+DWTMAIN2="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWTMAIN2" init -q -b main
 git -C "$DWTMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
-DWTLEAF2="$(mktemp -d)"; rmdir "$DWTLEAF2"
+DWTLEAF2="$(smoke_tmpdir)" || abort_tmp; rmdir "$DWTLEAF2"
 git -C "$DWTMAIN2" worktree add -q -b work/p-delegate-fail "$DWTLEAF2" >/dev/null 2>&1
 mkdir -p "$DWTLEAF2/.claude/hooks"
 cat > "$DWTLEAF2/.claude/hooks/agent_write_guard.py" <<'PYEOF'
@@ -775,7 +777,7 @@ make_plan "P-A" "approved" "| T-0001 | todo | 0 | - | A | |"
 make_plan "P-B" "approved" "| T-0001 | todo | 0 | - | B | |"
 expect "(f) approved な計画票が2件以上 → ブロック" block "$(run_plan_guard)" "approved"
 rm -rf "$TMP/vault/plans"
-EMPTY_DIR="$(mktemp -d)"
+EMPTY_DIR="$(smoke_tmpdir)" || abort_tmp
 expect "vault/plans が無い → 許可" allow "$(printf '{}' | CLAUDE_PROJECT_DIR="$EMPTY_DIR" python3 "$PLAN_GUARD_HOOK")"
 rm -rf "$EMPTY_DIR"
 mkdir -p "$TMP/vault/plans"
@@ -882,7 +884,7 @@ expect "(approve-post) 未追跡の計画票・裏付け無し → ブロック"
 make_transcript "$T_CHAT" "$T_CMD"
 expect "(approve-post) 未追跡の計画票・裏付けあり → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
 make_transcript "$T_CHAT"
-NONGIT="$(mktemp -d)"; mkdir -p "$NONGIT/vault/plans"; cp "$AP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
+NONGIT="$(smoke_tmpdir)" || abort_tmp; mkdir -p "$NONGIT/vault/plans"; cp "$AP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
 expect "(approve-post) 非 git ディレクトリ → 何もしない（許可）" allow "$(printf '{"tool_name":"Bash","transcript_path":"%s"}' "$AP_TRANSCRIPT" | CLAUDE_PROJECT_DIR="$NONGIT" python3 "$PLAN_GUARD_HOOK")"
 rm -rf "$NONGIT"
 # block が出る時は警告を重ねない（JSON は1つだけ）：タスク表の列数不正 + 会話記録が読めない
@@ -963,7 +965,7 @@ up_reset; up_commit todo blocked; up_plan todo todo
 sed -i.bak '/^| T-02 /d' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
 expect "(unblock-post) 作業ツリーに同じ id の行が無い → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
 up_reset; up_commit todo blocked; up_plan todo todo
-NONGIT="$(mktemp -d)"; mkdir -p "$NONGIT/vault/plans"; cp "$UP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
+NONGIT="$(smoke_tmpdir)" || abort_tmp; mkdir -p "$NONGIT/vault/plans"; cp "$UP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
 expect "(unblock-post) 非 git ディレクトリ → 何もしない（許可）" allow "$(printf '{"tool_name":"Bash","transcript_path":"%s"}' "$UB_TRANSCRIPT" | CLAUDE_PROJECT_DIR="$NONGIT" python3 "$PLAN_GUARD_HOOK")"
 rm -rf "$NONGIT"
 # コミット後は HEAD の版が blocked でなくなり対象外
@@ -987,7 +989,7 @@ rm -f "$UB_TRANSCRIPT"
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テストと同じ型：
 # 一時 worktree に判定結果が変わる差し替えスクリプトを置き、cwd をその worktree に向けたペイロードを
 # メインリポジトリ側の plan_guard.py に渡す。
-DWPMAIN="$(mktemp -d)"
+DWPMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWPMAIN" init -q -b main
 git -C "$DWPMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 mkdir -p "$DWPMAIN/vault/plans"
@@ -1000,7 +1002,7 @@ mkdir -p "$DWPMAIN/vault/plans"
 } > "$DWPMAIN/vault/plans/P-TEST.md"
 mkdir -p "$DWPMAIN/vault/verdicts/P-TEST"
 printf '%s\n' '{"task":"P-TEST/T-0001","attempt":1,"result":"PASS","checked_at":"2026-01-01 00:00","criteria":[],"reasons":["r1"]}' > "$DWPMAIN/vault/verdicts/P-TEST/T-0001.json"
-DWPLEAF="$(mktemp -d)"; rmdir "$DWPLEAF"
+DWPLEAF="$(smoke_tmpdir)" || abort_tmp; rmdir "$DWPLEAF"
 git -C "$DWPMAIN" worktree add -q -b work/p-delegate-plan "$DWPLEAF" >/dev/null 2>&1
 mkdir -p "$DWPLEAF/.claude/hooks"
 cat > "$DWPLEAF/.claude/hooks/plan_guard.py" <<'PYEOF'
@@ -1018,7 +1020,7 @@ expect "(delegate plan_guard) 呼び出し前に _HOOK_DELEGATED が既にセッ
 git -C "$DWPMAIN" worktree remove -q --force "$DWPLEAF" >/dev/null 2>&1
 rm -rf "$DWPMAIN" "$DWPLEAF"
 
-DWPMAIN2="$(mktemp -d)"
+DWPMAIN2="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWPMAIN2" init -q -b main
 git -C "$DWPMAIN2" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 mkdir -p "$DWPMAIN2/vault/plans"
@@ -1029,7 +1031,7 @@ mkdir -p "$DWPMAIN2/vault/plans"
   echo "|---|---|---|---|---|---|"
   echo "| T-0001 | pending | 0 | - | A | |"
 } > "$DWPMAIN2/vault/plans/P-TEST.md"
-DWPLEAF2="$(mktemp -d)"; rmdir "$DWPLEAF2"
+DWPLEAF2="$(smoke_tmpdir)" || abort_tmp; rmdir "$DWPLEAF2"
 git -C "$DWPMAIN2" worktree add -q -b work/p-delegate-plan-fail "$DWPLEAF2" >/dev/null 2>&1
 mkdir -p "$DWPLEAF2/.claude/hooks"
 cat > "$DWPLEAF2/.claude/hooks/plan_guard.py" <<'PYEOF'
@@ -1145,7 +1147,7 @@ expect_eq "(d) マーカー外の既存本文は無傷" "1" "$(grep -c '^- 既�
 expect_eq "(d) begin の出現は1回のまま" "1" "$(grep -c 'ai-harness:begin' "$MTMP/CLAUDE.md")"
 
 echo "== install.sh の CLAUDE.md 扱い =="
-ITMP="$(mktemp -d)"
+ITMP="$(smoke_tmpdir)" || abort_tmp
 printf '# 既存プロジェクト\n\n- 既存のルール\n' > "$ITMP/CLAUDE.md"
 before="$(cat "$ITMP/CLAUDE.md")"
 bash "$ROOT/scripts/install.sh" --no-claude-md "$ITMP" >/dev/null 2>&1
@@ -1164,7 +1166,7 @@ expect_eq "(g) 不正なオプション → exit 2" "2" "$rc"
 rm -rf "$ITMP"
 
 echo "== install.sh のマニフェスト =="
-NTMP="$(mktemp -d)"
+NTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$NTMP" >/dev/null 2>&1
 NMAN="$NTMP/.claude/harness-manifest.json"
 expect_eq "(h) マニフェストが作られる" "1" "$([ -f "$NMAN" ] && echo 1 || echo 0)"
@@ -1187,7 +1189,7 @@ expect_eq "(i) 編集した行はそのまま残る" "1" "$(grep -c '^- 独自�
 rm -rf "$NTMP"
 
 echo "== 参照される scripts の存在チェック =="
-RSTMP="$(mktemp -d)"
+RSTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$RSTMP" >/dev/null 2>&1
 missing_referenced_scripts() { # $1=target dir。参照されているが <target>/scripts/ に無い名前を1行1つで返す（無ければ空）
   local target="$1" f name
@@ -1207,12 +1209,12 @@ expect_eq "新規インストール先で参照される scripts がすべて揃
 rm -rf "$RSTMP"
 
 echo "== discard_worktree.sh =="
-DWMAIN="$(mktemp -d)"
+DWMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWMAIN" init -q -b main
 git -C "$DWMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
 dw_run() { ( cd "$DWMAIN" && bash "$ROOT/scripts/discard_worktree.sh" "$1" "$2" ) >/dev/null 2>&1; } # $1=path $2=branch
 
-D_A="$(mktemp -d)"; rmdir "$D_A"
+D_A="$(smoke_tmpdir)" || abort_tmp; rmdir "$D_A"
 git -C "$DWMAIN" worktree add -q -b worktree-agent-test "$D_A"
 dw_run "$D_A" worktree-agent-test; rc_a=$?
 list_a="$(cd "$DWMAIN" && git worktree list --porcelain)"
@@ -1222,7 +1224,7 @@ result_a="False"
 if [ "$rc_a" -eq 0 ] && ! printf '%s' "$list_a" | grep -q "$D_A" && [ "$verify_rc" -ne 0 ]; then result_a="True"; fi
 expect_eq "(a) discard_worktree.sh 正常系: worktree/ブランチとも削除されrc0（git worktree list から消え rev-parse --verify worktree-agent-test が失敗）" "True" "$result_a"
 
-D_B="$(mktemp -d)"; rmdir "$D_B"
+D_B="$(smoke_tmpdir)" || abort_tmp; rmdir "$D_B"
 git -C "$DWMAIN" worktree add -q -b other-branch "$D_B"
 dw_run "$D_B" other-branch; rc_b=$?
 list_b="$(cd "$DWMAIN" && git worktree list --porcelain)"
@@ -1232,14 +1234,14 @@ expect_eq "(b) discard_worktree.sh 拒否系: ブランチ名がworktree-agent-�
 git -C "$DWMAIN" worktree remove --force "$D_B" >/dev/null 2>&1
 git -C "$DWMAIN" branch -D other-branch >/dev/null 2>&1
 
-D_C="$(mktemp -d)"; rmdir "$D_C"
+D_C="$(smoke_tmpdir)" || abort_tmp; rmdir "$D_C"
 dw_run "$D_C" worktree-agent-x; rc_c=$?
 list_c="$(cd "$DWMAIN" && git worktree list --porcelain)"
 result_c="False"
 if [ "$rc_c" -ne 0 ] && ! printf '%s' "$list_c" | grep -q "$D_C" && [ ! -d "$D_C" ]; then result_c="True"; fi
 expect_eq "(c) discard_worktree.sh 拒否系: 未登録パスは削除されず何も変更されない" "True" "$result_c"
 
-D_D="$(mktemp -d)"; rmdir "$D_D"
+D_D="$(smoke_tmpdir)" || abort_tmp; rmdir "$D_D"
 git -C "$DWMAIN" worktree add -q -b worktree-agent-real "$D_D"
 dw_run "$D_D" worktree-agent-fake; rc_d=$?
 list_d="$(cd "$DWMAIN" && git worktree list --porcelain)"
@@ -1251,7 +1253,7 @@ git -C "$DWMAIN" branch -D worktree-agent-real >/dev/null 2>&1
 
 rm -rf "$DWMAIN" "$D_A" "$D_B" "$D_C" "$D_D"
 
-D_E_TARGET="$(mktemp -d)"
+D_E_TARGET="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$D_E_TARGET" >/dev/null 2>&1
 result_e_file="False"
 [ -f "$D_E_TARGET/scripts/discard_worktree.sh" ] && result_e_file="True"
@@ -1267,7 +1269,7 @@ expect_eq "(e) discard_worktree.sh install先に配置されharness-manifest.jso
 rm -rf "$D_E_TARGET"
 
 echo "== install.sh --update =="
-UTMP="$(mktemp -d)"
+UTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$UTMP" >/dev/null 2>&1
 uout="$(bash "$ROOT/scripts/install.sh" --update "$UTMP" 2>&1)"
 expect_eq "(j) 未編集は update として報告される" "1" \
@@ -1294,7 +1296,7 @@ rm -rf "$UTMP"
 
 echo "== merge_settings_json.py =="
 SMERGE="$ROOT/scripts/merge_settings_json.py"
-STMP="$(mktemp -d)"
+STMP="$(smoke_tmpdir)" || abort_tmp
 out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/new/settings.json")"
 expect_eq "(m) dst が無い → create" "create" "${out%% *}"
 out="$(python3 "$SMERGE" "$ROOT/.claude/settings.json" "$STMP/new/settings.json")"
@@ -1402,7 +1404,7 @@ for ent in 'Bash(gh pr merge*)' 'Bash(glab mr merge*)' 'Bash(claude *)'; do
 done
 
 echo "== install.sh の settings.json 扱い =="
-WTMP="$(mktemp -d)"
+WTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$WTMP" >/dev/null 2>&1
 expect_eq "(o) merge_settings_json.py が複製される" "1" \
   "$([ -f "$WTMP/scripts/merge_settings_json.py" ] && echo 1 || echo 0)"
@@ -1435,7 +1437,7 @@ expect_eq "(al-6) --update 後も allow に削除した項目は戻らない" "F
 rm -rf "$WTMP"
 
 echo "== sandbox を導入先に入れない =="
-SBTMP="$(mktemp -d)"
+SBTMP="$(smoke_tmpdir)" || abort_tmp
 python3 -c "
 import json, pathlib
 d = json.load(open('$ROOT/.claude/settings.json'))
@@ -1518,7 +1520,7 @@ expect_eq "current_plan.sh: (e) approved が2件以上 → ファイル名順に
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 echo "== uninstall.sh =="
-UNTMP="$(mktemp -d)"
+UNTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$UNTMP" >/dev/null 2>&1
 printf -- '- 独自ルール3\n' >> "$UNTMP/vault/rules/README.md"
 mkdir -p "$UNTMP/vault/plans"
@@ -1573,13 +1575,13 @@ print(sum(1 for r in sys.argv[2:] if r in f))
 }
 SR_EDITED="vault/rules/creator/creator.md"
 
-SRTMP="$(mktemp -d)"
+SRTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$SRTMP" >/dev/null 2>&1
 expect_eq "(sr-1) 新規 install で6本がどれも複製されない" "0" "$(sr_count_existing "$SRTMP")"
 expect_eq "(sr-2) 新規 install のマニフェストの files に6本が無い" "0" "$(sr_manifest_count "$SRTMP")"
 rm -rf "$SRTMP"
 
-SRTMP="$(mktemp -d)"
+SRTMP="$(smoke_tmpdir)" || abort_tmp
 sr_legacy_fixture "$SRTMP"
 printf -- '- 独自ルール4\n' >> "$SRTMP/$SR_EDITED"
 sout="$(bash "$ROOT/scripts/install.sh" --update "$SRTMP" 2>&1)"
@@ -1597,7 +1599,7 @@ expect_eq "(sr-4) 編集済みでないパスの note は出ない" "1" "$(echo 
 expect_eq "(sr-5) --update 後のマニフェストの files に6本が無い" "0" "$(sr_manifest_count "$SRTMP")"
 rm -rf "$SRTMP"
 
-SRTMP="$(mktemp -d)"
+SRTMP="$(smoke_tmpdir)" || abort_tmp
 sr_legacy_fixture "$SRTMP"
 printf -- '- 独自ルール5\n' >> "$SRTMP/$SR_EDITED"
 printf 'my rule\n' > "$SRTMP/vault/rules/common/my-rule.md"
@@ -1609,7 +1611,7 @@ expect_eq "(sr-6) 未編集の5本は削除され、編集済みの1本だけ残
 expect_eq "(sr-6) 利用者が置いたルールは残る" "my rule" "$(cat "$SRTMP/vault/rules/common/my-rule.md" 2>/dev/null)"
 rm -rf "$SRTMP"
 
-SRTMP="$(mktemp -d)"
+SRTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$SRTMP" >/dev/null 2>&1
 printf 'my rule\n' > "$SRTMP/vault/rules/common/my-rule.md"
 bash "$ROOT/scripts/uninstall.sh" "$SRTMP" >/dev/null 2>&1; srrc=$?
@@ -1644,7 +1646,7 @@ rm -f "$RU_PID" "$RU_ERR"
 
 echo "== model_stats.py =="
 MS_PY="$ROOT/scripts/model_stats.py"
-MS_DIR="$(mktemp -d)"
+MS_DIR="$(smoke_tmpdir)" || abort_tmp
 cat > "$MS_DIR/P-MS.md" <<'MSEOF'
 # log
 - 2026-10-01 10:00 T-01 todo→doing attempt=1
@@ -1728,7 +1730,7 @@ rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP
 
 echo "== usage_stats.py =="
 US_PY="$ROOT/scripts/usage_stats.py"
-US_DIR="$(mktemp -d)"
+US_DIR="$(smoke_tmpdir)" || abort_tmp
 us_line() { # $1=agentId $2=agentType $3=model $4=tokens $5=ms $6=tools $7=prompt
   printf '{"type":"user","message":{"role":"user"},"toolUseResult":{"agentId":"%s","agentType":"%s","resolvedModel":"%s","status":"completed","prompt":"%s","totalTokens":%s,"totalDurationMs":%s,"totalToolUseCount":%s,"usage":{}}}\n' "$1" "$2" "$3" "$7" "$4" "$5" "$6"
 }
@@ -1785,7 +1787,7 @@ rm -rf "$US_DIR"
 
 echo "== verdict_notes.py =="
 VN_PY="$ROOT/scripts/verdict_notes.py"
-VN_DIR="$(mktemp -d)"
+VN_DIR="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$VN_DIR/vault/verdicts/P-VN" "$VN_DIR/other" "$VN_DIR/empty/vault/verdicts/P-VN"
 printf '%s' '{"task":"T-01","reasons":["r1"]}' > "$VN_DIR/vault/verdicts/P-VN/T-01.json"
 printf '%s' '{"task":"T-02","reasons":[]}' > "$VN_DIR/vault/verdicts/P-VN/T-02.json"
@@ -2051,7 +2053,7 @@ expect_eq "(ar-11) log の日時も同じ: ID の文字列順で前の -a だけ
 
 echo
 echo "== _hooklib.py =="
-HLB="$(mktemp -d)"
+HLB="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$HLB/.claude/hooks"
 for h in agent_write_guard plan_guard stop_gate; do cp "$ROOT/.claude/hooks/$h.py" "$HLB/.claude/hooks/$h.py"; done
 printf 'def broken(:\n' > "$HLB/.claude/hooks/_hooklib.py"
@@ -2064,7 +2066,7 @@ expect_eq "(hooklib-broken) stop_gate: stop_hook_active=false → 終了コー�
 printf '%s' '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$HLB" HARNESS_STRICT_STOP=0 python3 "$HLB/.claude/hooks/stop_gate.py" >/dev/null 2>&1; rc=$?
 expect_eq "(hooklib-broken) stop_gate: stop_hook_active=true・STRICT=0 → 終了コード 0" "0" "$rc"
 
-WTBASE="$(mktemp -d)"
+WTBASE="$(smoke_tmpdir)" || abort_tmp
 WTMAIN="$WTBASE/main"; LEAF="$WTBASE/leaf"
 mkdir -p "$WTMAIN"
 git -C "$WTMAIN" init -q -b main
@@ -2082,7 +2084,7 @@ expect "(stop_gate worktree) ファイルを消す → 許可" allow \
 git -C "$WTMAIN" worktree remove -q --force "$LEAF"
 rm -rf "$WTBASE"
 
-HPC="$(mktemp -d)"
+HPC="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$HPC/.claude/hooks"
 cp "$ROOT"/.claude/hooks/*.py "$HPC/.claude/hooks/"
 rm -rf "$HPC/.claude/hooks/__pycache__"

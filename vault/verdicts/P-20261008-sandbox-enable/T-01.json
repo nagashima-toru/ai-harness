@@ -1,0 +1,14 @@
+{
+  "task": "P-20261008-sandbox-enable/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 22:34",
+  "criteria": [
+    {"text": "`sandbox` の値が決定済みのとおりである：`python3 -c \"import json; s=json.load(open('.claude/settings.json')).get('sandbox', {}); print(s.get('enabled'), s.get('allowUnsandboxedCommands'), sorted(s.get('filesystem', {}).get('denyWrite', [])), sorted(s.get('network', {}).get('allowedDomains', [])), 'failIfUnavailable' in s, 'excludedCommands' in s)\"` の出力が `True False ['./vault/rules', '~/.claude/projects'] ['*.github.com', '*.githubusercontent.com', 'github.com'] False False`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c (worktree で実行) / 出力: True False ['./vault/rules', '~/.claude/projects'] ['*.github.com', '*.githubusercontent.com', 'github.com'] False False（期待と一致）"},
+    {"text": "最上位のキーが `sandbox` の1つだけ増えている：`python3 -c \"import json; print(sorted(json.load(open('.claude/settings.json'))))\"` の出力が `['hooks', 'permissions', 'sandbox', 'worktree']`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c / 出力: ['hooks', 'permissions', 'sandbox', 'worktree']"},
+    {"text": "`permissions`・`hooks`・`worktree` が main の版から変わっていない：`python3 -c \"import json,subprocess; a=json.load(open('.claude/settings.json')); b=json.loads(subprocess.check_output(['git','show','main:.claude/settings.json'])); print(a['permissions']==b['permissions'], a['hooks']==b['hooks'], a['worktree']==b['worktree'])\"` の出力が `True True True`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c / 出力: True True True"},
+    {"text": "`sandbox` の中のキーが決定済みの4つだけである：`python3 -c \"import json; s=json.load(open('.claude/settings.json'))['sandbox']; print(sorted(s), sorted(s['filesystem']), sorted(s['network']))\"` の出力が `['allowUnsandboxedCommands', 'enabled', 'filesystem', 'network'] ['denyWrite'] ['allowedDomains']`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c / 出力: ['allowUnsandboxedCommands', 'enabled', 'filesystem', 'network'] ['denyWrite'] ['allowedDomains']"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` (worktree) / 出力: smoke: pass=694 fail=0。変更ファイル検査: `git diff --name-only 604a21c..HEAD` は .claude/settings.json と vault/tasks/P-20261008-sandbox-enable/T-01.md（進捗のみ・検査対象外）で、成果物外のファイルは無し"}
+  ],
+  "reasons": []
+}

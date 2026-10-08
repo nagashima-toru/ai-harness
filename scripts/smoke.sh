@@ -1434,6 +1434,39 @@ expect_eq "(al-6) --update 後も allow に削除した項目は戻らない" "F
   "$(python3 -c "import json;print('Bash(jq *)' in json.load(open('$WTMP/.claude/settings.json'))['permissions']['allow'])")"
 rm -rf "$WTMP"
 
+echo "== sandbox を導入先に入れない =="
+SBTMP="$(mktemp -d)"
+python3 -c "
+import json, pathlib
+d = json.load(open('$ROOT/.claude/settings.json'))
+d['sandbox'] = {'enabled': True}
+pathlib.Path('$SBTMP/src.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+d.pop('sandbox', None)
+pathlib.Path('$SBTMP/nosb.json').write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+"
+expect_eq "(sb-1) フィクスチャの src に sandbox.enabled が入っている" "True" \
+  "$(python3 -c "import json;print(json.load(open('$SBTMP/src.json'))['sandbox']['enabled'])")"
+cp "$SBTMP/nosb.json" "$SBTMP/dst.json"
+python3 "$SMERGE" "$SBTMP/src.json" "$SBTMP/dst.json" >/dev/null
+expect_eq "(sb-2) sandbox 無しの既存 dst に merge しても sandbox が入らない" "False" \
+  "$(python3 -c "import json;print('sandbox' in json.load(open('$SBTMP/dst.json')))")"
+mkdir -p "$SBTMP/inst/.claude"
+cp "$SBTMP/nosb.json" "$SBTMP/inst/.claude/settings.json"
+bash "$ROOT/scripts/install.sh" "$SBTMP/inst" >/dev/null 2>&1
+expect_eq "(sb-3) 既存の settings.json に install.sh しても sandbox が入らない" "False" \
+  "$(python3 -c "import json;print('sandbox' in json.load(open('$SBTMP/inst/.claude/settings.json')))")"
+bash "$ROOT/scripts/install.sh" --update "$SBTMP/inst" >/dev/null 2>&1
+expect_eq "(sb-4) install.sh --update しても sandbox が入らない" "False" \
+  "$(python3 -c "import json;print('sandbox' in json.load(open('$SBTMP/inst/.claude/settings.json')))")"
+mkdir -p "$SBTMP/fresh"
+bash "$ROOT/scripts/install.sh" "$SBTMP/fresh" >/dev/null 2>&1
+expect_eq "(sb-5) 新規導入の settings.json に sandbox が入らない" "False" \
+  "$(python3 -c "import json;print('sandbox' in json.load(open('$SBTMP/fresh/.claude/settings.json')))")"
+out="$(python3 "$SMERGE" "$SBTMP/src.json" "$SBTMP/new/settings.json")"
+expect_eq "(sb-6) 存在しない dst への merge は create で sandbox が入らない" "create False" \
+  "${out%% *} $(python3 -c "import json;print('sandbox' in json.load(open('$SBTMP/new/settings.json')))")"
+rm -rf "$SBTMP"
+
 echo "== current_plan.sh =="
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 make_plan "P-CUR" "approved"

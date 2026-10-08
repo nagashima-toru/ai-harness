@@ -43,7 +43,7 @@ D-013 フェーズ5 のマージ後に分かった次の4つを直す。(1) tran
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | smoke.sh が mktemp の失敗で中断し、一時ディレクトリを $TMPDIR の下に作るようにする | |
-| T-02 | blocked | 1 | - | settings.json の sandbox.excludedCommands に vcs_finish.sh と discard_worktree.sh を足す | .claude/settings.json の編集が Claude Code の auto mode 分類器に [Self-Modification] を理由に拒否された。退避手順（/tmp/claude への写しの作成）も同じ理由で拒否され、パッチは作れておらず worktree の .claude/settings.json は未変更。人が .claude/settings.json の "allowUnsandboxedCommands": false, の次の行に次の1行を足してコミットし、/plan unblock P-20261009-sandbox-friendly T-02 で進める。 "excludedCommands": ["bash scripts/vcs_finish.sh", "bash scripts/vcs_finish.sh *", "env HARNESS_PR_BODY_FILE=* bash scripts/vcs_finish.sh", "bash scripts/discard_worktree.sh *"], |
+| T-02 | todo | 0 | - | settings.json の sandbox.excludedCommands に vcs_finish.sh と discard_worktree.sh を足す | |
 | T-03 | blocked | 1 | - | run スキルに、残った worktree を discard_worktree.sh で消す後始末の節を足す | マージに失敗した: error: unable to unlink old '.claude/skills/run/SKILL.md': Operation not permitted |
 | T-04 | todo | 0 | T-01,T-02,T-03,T-07,T-08,T-09 | docs/vault-spec.md のサンドボックスの小節と done の後始末を直す | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-07,T-08,T-09 | docs/runbook.md 9節を excludedCommands と後始末に合わせて直す | |

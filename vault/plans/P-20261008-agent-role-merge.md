@@ -27,7 +27,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | 標準ルールの creator 向けの内容を .claude/agents/creator.md に統合する | |
+| T-01 | done | 1 | - | 標準ルールの creator 向けの内容を .claude/agents/creator.md に統合する | |
 | T-02 | review | 1 | - | 標準ルールの verifier 向けの内容を .claude/agents/verifier.md に統合する | |
 | T-03 | review | 1 | - | 標準ルールの planner 向けの内容を .claude/agents/planner.md に統合する | |
 | T-04 | todo | 0 | - | install.sh が標準ルール6本を配らず、--update で未編集のものを削除する | |

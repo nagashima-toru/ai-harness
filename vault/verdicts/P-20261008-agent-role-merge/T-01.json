@@ -1,0 +1,39 @@
+{
+  "task": "P-20261008-agent-role-merge/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 11:45",
+  "criteria": [
+    {
+      "text": "統合元4本（`roles.md` は creator が関わる4節に限る）の「ルール」節の箇条が、`.claude/agents/creator.md` に同じ意味で書かれている。ただし決定済みで落とす・言い換えると決めたものは除く（Read で統合元1本ずつ見比べて確認）",
+      "ok": true,
+      "note": "確認方法: git.md・creator/creator.md・git-workflow.md・roles.md(4節) を Read し、worktree の .claude/agents/creator.md(72行)と見比べた / 結果: 責務・受け渡し・ブランチ・main直コミット禁止・コミット条件・git restore のみ・PR/マージ非実行・例外時blocked・起点コミット・FAIL後の修正範囲・proposal下書き・やらないこと各項目が対応して存在。欠落は決定済みで落とすものだけ"
+    },
+    {
+      "text": "今の手順と矛盾する記述が無く、収集のコミットの説明が直っている：`grep -nE 'は常に1件だけ|PASS (の)?後にオーケストレーター|作成エージェント（run のメイン）|状態遷移を追記したか' .claude/agents/creator.md` の出力が空で、`grep -n '収集のコミットと差分チェック' .claude/agents/creator.md` の出力が1行以上あり、その行に `transition.py` が含まれる",
+      "ok": true,
+      "note": "実行コマンド: 上記 grep -nE / grep -n / 出力: 1つ目は空、2つ目は36行目の1行で `transition.py` が収集のコミットと差分チェックを行う旨を含む"
+    },
+    {
+      "text": "失敗の例が残っている：見出し `## やらないこと（このリポジトリで実際に起きた失敗から）` の節があり、T-0002 の例（基準を書き換えず blocked にし、人が「見出し行と列構成の不変」に差し替えた）が書かれている。確認：`grep -n 'T-0002' .claude/agents/creator.md` の出力が1行以上（あわせて Read で節の中にあることを確認）",
+      "ok": true,
+      "note": "実行コマンド: `grep -n 'T-0002' .claude/agents/creator.md` / 出力: 58:（T-0002 の例）。Read で56行目の該当見出しの節内（57-58行）にあり、blocked にして人が「見出し行と列構成の不変」に差し替えた内容を確認"
+    },
+    {
+      "text": "6本への参照が無い：`grep -nE 'vault/rules/(common/roles|common/git|creator/creator|creator/git-workflow|verifier/verifier|planner/planner|planner/ai-harness-lessons)\\.md' .claude/agents/creator.md` の出力が空",
+      "ok": true,
+      "note": "実行コマンド: 上記 grep -nE / 出力: 空"
+    },
+    {
+      "text": "frontmatter が変わっておらず、長さが150行以内：`git diff main -- .claude/agents/creator.md | grep -E '^[+-](name|description|tools|model):'` の出力が空で、`wc -l .claude/agents/creator.md` の数が150以下",
+      "ok": true,
+      "note": "実行コマンド: 上記 git diff | grep と wc -l / 出力: grep は空、wc は 72"
+    },
+    {
+      "text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む",
+      "ok": true,
+      "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=681 fail=0。変更ファイル検査: `git diff --name-only 41a4b50..HEAD`(起点コミット41a4b50) は .claude/agents/creator.md と vault/tasks/.../T-01.md のみ。後者はタスク票自身(進捗の追記)であり対象外とした。成果物外の変更なし"
+    }
+  ],
+  "reasons": []
+}

@@ -340,9 +340,22 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - 一本化で変わった点（D-011 フェーズ3）：
   - verifier・planner の解析できない形のコマンドで、repo の外だけに書き込むのに引数・引用符の中に保護対象パスがあるもの（例：`python3 -c "open('vault/tasks/P/T-01.md')" > /tmp/x.txt`）：変更前は許可→変更後は拒否（和集合に repo 内の path-like 候補が入るため）
   - 変わったのは拒否する側だけで、許可が増えた形は無い
-- 残る弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。解析できない時の候補には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
+- 残る弱点：Bash とその子プロセスの `vault/rules/`・`~/.claude/projects/` への書き込みはサンドボックスで OS が拒否するので、Bash の解析はその補助になる（サンドボックスが使えない環境では解析が唯一の守りになる。解析は当面削らず残す）。以下は Bash の解析としての弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。解析できない時の候補には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
 
 **フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
+
+### サンドボックス（OS による書き込みと通信の制限）
+
+このリポジトリの `.claude/settings.json` で Claude Code のサンドボックスを有効にしている（`sandbox.enabled: true`）。値は `.claude/settings.json` を正とし、ここには各キーの意味を書く。
+
+- 対象：Bash とその子プロセス（`python3`・`bash -c` を含む）。Write・Edit などのツールの書き込みはサンドボックスの対象外で、今どおり `agent_write_guard.py` が判定する
+- `filesystem.denyWrite`：`vault/rules/` と `~/.claude/projects/`（会話記録）の2つ。ここへの Bash の書き込みは、Bash の解析の成否にかかわらず OS が拒否する。`python3 -c` による書き込みのような、解析できない形の抜け道を塞ぐ
+- `network.allowedDomains`：GitHub のドメインだけ（`github.com`・`*.github.com`・`*.githubusercontent.com`）。Anthropic の API のドメインを入れないので、入れ子の claude による会話記録の偽造もできない。前小節の `gh api` / `curl` によるリモート直叩きも、通信先がこの範囲に限られる
+- `allowUnsandboxedCommands`：`false`。サンドボックスの外で実行し直す逃げ道は無い。`excludedCommands` は設定していない
+- `failIfUnavailable`：設定しない。サンドボックスが使えない環境でも Claude Code を起動でき、その時は Bash の解析だけが守りになる
+- 導入先には既定で入れない：`merge_settings_json.py` は既存の settings.json に `sandbox` を足さない。手順は `docs/install.md` の「サンドボックスを有効にする（任意）」
+- 設定はセッションの開始時に読まれる。効き目の確かめ方は `docs/runbook.md` の「9. サンドボックスを確かめる」
+- `agent_write_guard.py` の Bash の解析は削らず、当面残す（人の回答）。サンドボックスを補助でなく主とし、解析はその補助とする
 
 ### 提案ファイル方式（ルール自体を変更するタスク用）
 

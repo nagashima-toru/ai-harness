@@ -140,6 +140,37 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 5. 注意：`usage_stats.py` の model 列は完全なモデル ID（`resolvedModel` をそのまま出す）で、log や `model_stats.py` の alias（`haiku`・`sonnet`）とは表記が違う。行を突き合わせる時は読み替える。
 6. 元に戻すには、環境変数を外して起動し直す（`HARNESS_CREATOR_MODEL` を付けなければ、これまでどおり sonnet）。
 
+## 9. サンドボックスを確かめる
+サンドボックスを有効にした後（このリポジトリでは計画のマージ後、導入先では手で足した後）、人が新しいセッションで効き目を確かめる。導入先で有効にする手順は `docs/install.md` の「サンドボックスを有効にする（任意）」を参照する。
+
+1. Claude Code を起動し直す。設定はセッションの開始時に読まれるため、設定を変えたセッションのままでは効かない。
+2. `/sandbox` を開き、サンドボックスが有効であることを確かめる。有効でない・使えないと表示された時は、手順3〜5 を飛ばして下の「使えない環境」に進む。続けて Config タブで、`denyWrite` の `./vault/rules` と `~/.claude/projects` が実際の絶対パス（このリポジトリの `vault/rules` とホームの `.claude/projects`）に解決されていることを確かめる。
+3. Bash で次を実行し、失敗する（Permission denied などで終わり、`vault/rules/x.md` が作られない）ことを確かめる。このコマンドは `agent_write_guard.py` の Bash の解析では拒否されない形なので、失敗すればサンドボックスが効いている。
+
+```
+python3 -c "open('vault/rules/x.md','w')"
+```
+
+4. 次が `fail=0` で通ることを確かめる。
+
+```
+bash scripts/smoke.sh
+```
+
+5. 計画の最後に、次の push と PR 作成が通ることを確かめる。このリポジトリでは、サンドボックスを入れた計画の次の計画の run の最後で確かめてよい。
+
+```
+bash scripts/vcs_finish.sh
+```
+
+### うまくいかなかった時
+- 3 の `python3 -c` が成功して `vault/rules/x.md` ができた時：サンドボックスが効いていない。作られたファイルは人が消し、2 の `/sandbox` の表示と `denyWrite` のパスの書き方を見直す。
+- 4 の smoke が通らない時：どのケースが落ちたかを見て、サンドボックスの書き込み・通信の制限によるものかを確かめる。直し方は別の計画で決める。
+- 5 の `vcs_finish.sh` が通らない時（`gh` の認証・ssh の remote への push）：別の計画で `excludedCommands` に `bash scripts/vcs_finish.sh` を足す。それまでは人がサンドボックスの外（ターミナル）で `bash scripts/vcs_finish.sh` を実行する。
+
+### 使えない環境
+`/sandbox` でサンドボックスが有効でない（使えない環境）と分かった時は、手順3〜5 を飛ばす。この場合の守りはフックの Bash の解析で、`bash scripts/smoke.sh` は通る。サンドボックスを使いたければ `docs/install.md` の前提（`bubblewrap`・`socat` など）を見る。
+
 ## 困ったとき
 | 症状 | 見るところ |
 |---|---|

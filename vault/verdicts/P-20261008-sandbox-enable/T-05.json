@@ -1,0 +1,15 @@
+{
+  "task": "P-20261008-sandbox-enable/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 23:04",
+  "criteria": [
+    {"text": "決定済みの見出しの節が「8. creator のモデルを比べる」と「困ったとき」の間に1つ足され、ほかの `## ` 見出しは変わっていない：`grep -n '^## 8\\. \\|^## 9\\. サンドボックスを確かめる$\\|^## 困ったとき$' docs/runbook.md` の出力がこの順の3行で、`grep -c '^## ' docs/runbook.md` の出力が `11`", "ok": true, "note": "実行コマンド: worktree で上記 grep -n / grep -c / 出力: 117:## 8. creator のモデルを比べる、143:## 9. サンドボックスを確かめる、174:## 困ったとき の3行（この順）、見出し数 11。git diff --name-only 59baba0..HEAD は docs/runbook.md とタスク票のみ"},
+    {"text": "節に、確かめることの3つがコマンドの形で書かれている：`grep -c \"python3 -c \\\"open('vault/rules/x.md','w')\\\"\\|^ *bash scripts/smoke.sh\\|^ *bash scripts/vcs_finish.sh\" docs/runbook.md` の出力が `3` 以上で、3つとも新しい節の中にある（Read）", "ok": true, "note": "実行コマンド: 上記 grep -c / 出力: 3。sed で節（143〜173行）を表示し、python3 -c（手順3）、bash scripts/smoke.sh（手順4）、bash scripts/vcs_finish.sh（手順5）のコードブロックが節内にあることを確認"},
+    {"text": "節に、`/sandbox` の Config タブで `denyWrite` の2つが実際のパスに解決されていることを確かめる手順が書かれている：`grep -n '/sandbox' docs/runbook.md` の出力が1行以上（Read で新しい節の中にあることを確認）", "ok": true, "note": "実行コマンド: `grep -n '/sandbox' docs/runbook.md` / 出力: 147, 167, 172 行（いずれも新しい節内）。147行に Config タブで ./vault/rules と ~/.claude/projects が絶対パスに解決されることを確かめる旨あり"},
+    {"text": "節に、決定済みの「うまくいかなかった時」の3つの扱いが書かれている（Read）", "ok": true, "note": "Read（sed）で「### うまくいかなかった時」に3項目（python3 -c が成功した時、smoke が通らない時、vcs_finish.sh が通らない時で excludedCommands を別計画で足す・それまで人がターミナルで実行）があることを確認"},
+    {"text": "節に、Claude Code を起動し直した新しいセッションで行うこと（設定はセッションの開始時に読まれるため）が書かれている（Read）", "ok": true, "note": "Read（sed）で節冒頭と手順1に「Claude Code を起動し直す。設定はセッションの開始時に読まれるため…」とあることを確認"},
+    {"text": "節に、`/sandbox` でサンドボックスが有効でない（使えない環境）と分かった時の扱いが書かれている：手順3〜5 を飛ばし、フックの Bash の解析が守りになること、`bash scripts/smoke.sh` は通ること、サンドボックスを使いたければ `docs/install.md` の前提（`bubblewrap`・`socat` など）を見ること（Read。`grep -n '使えない' docs/runbook.md` の出力が新しい節の中に1行以上）", "ok": true, "note": "実行コマンド: `grep -n '使えない' docs/runbook.md` / 出力: 147, 171, 172 行（新しい節内）。172行に手順3〜5を飛ばす・フックの Bash の解析が守り・smoke は通る・docs/install.md の前提（bubblewrap・socat）を見る、と全て記載。なお起点コミット 59baba0 から変更ファイルは成果物外のファイルなし（タスク票の進捗更新のみ）。サンドボックス制約の指示により smoke.sh と python3 -c は実行していない"}
+  ],
+  "reasons": []
+}

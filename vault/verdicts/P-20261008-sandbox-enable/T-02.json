@@ -1,0 +1,13 @@
+{
+  "task": "P-20261008-sandbox-enable/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 12:00",
+  "criteria": [
+    {"text": "既存の smoke と追加したケースが全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "未実行。人がサンドボックスの外で確認する（決定済みにより smoke は実行しない）。代替: `bash -n scripts/smoke.sh` / 出力: 構文OK。`git diff fa25890..HEAD --stat -- scripts/smoke.sh` は 33 行追加のみ。Read で (sb-1)〜(sb-6) の参照（SMERGE は1296行で定義済み、merge_settings_json.py は dst の親ディレクトリを mkdir して create）に問題が無いことを確認"},
+    {"text": "決定済みの (sb-1)〜(sb-6) のケースが smoke にあり、すべて通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (sb-'` の出力が `6`（あわせて Read で、決定済みの6つの観点がそれぞれケースになっていることを確認）", "ok": true, "note": "ok 件数は未実行。人がサンドボックスの外で確認する。代替: `grep -n 'sb-' scripts/smoke.sh` / 出力: 1447〜1466行に (sb-1)〜(sb-6) の6件。Read で src フィクスチャ確認、sandbox 無し dst への merge、既存への install、--update、新規 install、create 出力の各観点がケースになっており、見出し「== sandbox を導入先に入れない ==」が「install.sh の settings.json 扱い」節の直後にあることを確認"},
+    {"text": "追加したケースは、このリポジトリの `.claude/settings.json` に `sandbox` があることを前提にしていない：(sb-1)・(sb-2) の src は smoke の中で作った `sandbox` 入りのフィクスチャで、`$ROOT/.claude/settings.json` の `sandbox` を読む・期待値にする箇所が無い（Read で確認。`grep -n 'ROOT/.claude/settings.json.*sandbox' scripts/smoke.sh` の出力が空）", "ok": true, "note": "実行コマンド: `grep -n 'ROOT/.claude/settings.json.*sandbox' scripts/smoke.sh` / 出力: 空。Read で src.json は d['sandbox']={'enabled': True} で上書き、nosb.json は pop('sandbox', None) で作っており、ROOT 側の sandbox の有無に依存しない"},
+    {"text": "既存の install.sh の settings.json のケースが今どおり通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (o) \\|^  ok   (p) \\|^  ok   (al-6) '` の出力が `7`", "ok": true, "note": "未実行。人がサンドボックスの外で確認する。代替: `git diff fa25890..HEAD -- scripts/smoke.sh | grep '^-'` / 出力: ヘッダの `--- a/scripts/smoke.sh` のみで削除行なし。Read で (o)・(p)・(al-6) の既存 expect_eq が無変更で残っていることを確認。起点コミット fa25890 からの変更ファイル: scripts/smoke.sh と タスク票 T-02.md（進捗）のみで、成果物外のファイルは無し"}
+  ],
+  "reasons": []
+}

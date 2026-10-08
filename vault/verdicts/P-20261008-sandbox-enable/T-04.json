@@ -1,0 +1,14 @@
+{
+  "task": "P-20261008-sandbox-enable/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 12:00",
+  "criteria": [
+    {"text": "決定済みの見出しの小節が12節の中（`## 12.` と `## 13.` の間）に1つ足されている：`grep -n '^### サンドボックス（OS による書き込みと通信の制限）$' docs/vault-spec.md` の出力が1行で、その行番号が `grep -n '^## 12\\.\\|^## 13\\.' docs/vault-spec.md` の2行の行番号の間にある。`grep -c '^### ' docs/vault-spec.md` の出力が `11`", "ok": true, "note": "worktree の docs/vault-spec.md で実行 / 出力: 見出し 347行目の1行、## 12.=298、## 13.=371 の間、grep -c '^### ' = 11"},
+    {"text": "小節に、決定済みの書くこと（対象は Bash とその子プロセスで Write/Edit などのツールは対象外・`denyWrite` の2つ・`allowedDomains`・`allowUnsandboxedCommands` が `false`・`failIfUnavailable` を設定しない理由・導入先には既定で入れない・効き目はセッション開始時に読まれる）がすべて書かれている（Read）", "ok": true, "note": "Read docs/vault-spec.md 347-358行目 / 対象と Write/Edit 対象外、denyWrite 2つ、allowedDomains 3ドメイン、allowUnsandboxedCommands false、failIfUnavailable を設定しない理由、導入先に既定で入れない、セッション開始時に読まれる、解析を残す旨が全て記載"},
+    {"text": "「残る弱点」の行がサンドボックスがある前提になっている：`grep -n '^- 残る弱点：.*サンドボックス.*補助' docs/vault-spec.md` の出力が1行", "ok": true, "note": "実行コマンド: 上記 grep / 出力: 343行目の1行のみ"},
+    {"text": "「残る弱点」の行に、既存の3つの弱点（`ln`・`dd of=`・`rsync` を検出しない、`cp vault/rules/x /tmp/` の誤検知、`cd vault/rules/ && ...` などの取りこぼし）が残っている（Read）", "ok": true, "note": "Read 343行目 / ln・dd of=・rsync 非検出、cp の読み取り元誤検知、cd 末尾スラッシュ形の取りこぼしの3つとも残存"},
+    {"text": "12節のほかの小節と13節以降の見出しは変わっていない：`grep -n '^## \\|^### ' docs/vault-spec.md` の出力が、足した1行を除いて main の版と同じ（Read で `git show main:docs/vault-spec.md` の見出しと見比べる）", "ok": true, "note": "実行コマンド: git show main:docs/vault-spec.md | grep -n '^## \\|^### ' と worktree 版を見比べ / 出力: 差は347行目の追加1行のみ、以降は行番号が13ずれるだけで見出し文言は同一。git diff --name-only 59baba0..HEAD は docs/vault-spec.md とタスク票（進捗は対象外）のみで、成果物外のファイル無し"}
+  ],
+  "reasons": []
+}

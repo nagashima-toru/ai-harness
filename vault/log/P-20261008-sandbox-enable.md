@@ -1,0 +1,1 @@
+- 2026-10-08 22:12 - draft→approved 人の指示: /plan approve P-20261008-sandbox-enable

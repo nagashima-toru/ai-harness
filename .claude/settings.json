@@ -112,6 +112,7 @@
   "sandbox": {
     "enabled": true,
     "allowUnsandboxedCommands": false,
+    "excludedCommands": ["bash scripts/vcs_finish.sh", "bash scripts/vcs_finish.sh *", "env HARNESS_PR_BODY_FILE=* bash scripts/vcs_finish.sh", "bash scripts/discard_worktree.sh *", "python3 scripts/transition.py *"],
     "filesystem": {
       "denyWrite": ["./vault/rules", "~/.claude/projects"]
     },

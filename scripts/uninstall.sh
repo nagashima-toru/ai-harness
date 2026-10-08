@@ -29,6 +29,11 @@ if [ ! -f "$MANIFEST_FILE" ]; then
   exit 1
 fi
 
+uninstall_tmpfile() { mktemp "${TMPDIR:-/tmp}/uninstall.XXXXXX"; }
+abort_tmp() { echo "uninstall: 一時ファイルを作れません（TMPDIR=${TMPDIR:-}）。中断します" >&2; exit 2; }
+SETTINGS_SRC_TMP="$(uninstall_tmpfile)" || abort_tmp
+trap 'rm -f "$SETTINGS_SRC_TMP"' EXIT
+
 # マニフェストに記録されたファイルのうち、現状ハッシュが記録値と一致するものだけ削除する。
 # 記録はあるが現状ファイルが既に無いものは黙って無視する（報告しない）。
 python3 -c '
@@ -55,8 +60,6 @@ for rel in sorted(files):
 python3 "$SRC/scripts/unmerge_claude_md.py" "$TARGET/CLAUDE.md"
 
 # .claude/settings.json（settings_src を一時ファイルへ書き出して unmerge_settings_json.py に渡す）
-SETTINGS_SRC_TMP="$(mktemp)"
-trap 'rm -f "$SETTINGS_SRC_TMP"' EXIT
 if python3 -c '
 import json, sys
 manifest, out = sys.argv[1:3]

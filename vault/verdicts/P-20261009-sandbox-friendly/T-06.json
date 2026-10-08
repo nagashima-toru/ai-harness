@@ -1,0 +1,14 @@
+{
+  "task": "P-20261009-sandbox-friendly/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 06:17",
+  "criteria": [
+    {"text": "古い置き場の書き方が無い：`grep -cF '`/tmp/<計画ID>-<タスクID>`' .claude/agents/planner.md` の出力が `0`", "ok": true, "note": "worktree で実行コマンド: `grep -cF '`/tmp/<計画ID>-<タスクID>`' .claude/agents/planner.md` / 出力: 0"},
+    {"text": "新しい置き場が書かれている：`grep -cF '`/tmp/claude/<計画ID>-<タスクID>/`' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -cF '`/tmp/claude/<計画ID>-<タスクID>/`' .claude/agents/planner.md` / 出力: 1"},
+    {"text": "一時ファイルを消さない・人に消させないと書かれている：`grep -cF '一時ファイルは消さず、人にも消させない' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -cF '一時ファイルは消さず、人にも消させない' .claude/agents/planner.md` / 出力: 1"},
+    {"text": "frontmatter は main の版と同じ：`python3 -c \"...\"` の出力が `True`", "ok": true, "note": "タスク票記載の python3 コマンドを worktree で実行 / 出力: True"},
+    {"text": "`## ` の見出しの数は変わっていない：`grep -c '^## ' .claude/agents/planner.md` の出力が `10`", "ok": true, "note": "実行コマンド: `grep -c '^## ' .claude/agents/planner.md` / 出力: 10。なお git diff 7506bf3..HEAD の planner.md の変更は rm -rf の項目1行のみ"}
+  ],
+  "reasons": []
+}

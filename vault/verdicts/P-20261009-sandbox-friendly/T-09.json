@@ -1,0 +1,14 @@
+{
+  "task": "P-20261009-sandbox-friendly/T-09",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 05:55",
+  "criteria": [
+    {"text": "構文が正しい：`bash -n scripts/archive_plans.sh` の出力が空で終了コードが0", "ok": true, "note": "実行コマンド: `bash -n scripts/archive_plans.sh; echo rc=$?`（worktree で実行） / 出力: 空、rc=0"},
+    {"text": "`mktemp` を直接コマンド置換で呼んでいない：`grep -cF '$(mktemp' scripts/archive_plans.sh` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -cF '$(mktemp' scripts/archive_plans.sh` / 出力: 0"},
+    {"text": "中断付きの呼び出しと関数がある：`grep -cF 'CAND_FILE=\"$(archive_plans_tmpfile)\" || abort_tmp' scripts/archive_plans.sh` の出力が `1`、`grep -cF 'archive_plans_tmpfile() { mktemp \"${TMPDIR:-/tmp}/archive_plans.XXXXXX\"; }' scripts/archive_plans.sh` の出力が `1`", "ok": true, "note": "実行コマンド: 上記2つの grep -cF / 出力: 1 と 1"},
+    {"text": "一時ファイルを作れない時は中断の文言を出す：`env TMPDIR=/nonexistent-p20261009 bash scripts/archive_plans.sh --list 2>&1 | grep -cF 'archive_plans: 一時ファイルを作れません（TMPDIR=/nonexistent-p20261009）。中断します'` の出力が `1`", "ok": true, "note": "実行コマンド: 基準記載のとおり（2・3行目が真なので実行） / 出力: 1"},
+    {"text": "一時ファイルを作れる時は最後まで通る：`bash scripts/archive_plans.sh --list --keep 100000 2>&1 | grep -cx 'archive_plans: 移す計画がありません'` の出力が `1`", "ok": true, "note": "実行コマンド: 基準記載のとおり / 出力: 1"}
+  ],
+  "reasons": []
+}

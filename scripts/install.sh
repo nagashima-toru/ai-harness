@@ -37,8 +37,10 @@ mkdir -p "$DST"
 DST="$(cd "$DST" && pwd)"
 
 MANIFEST_FILE="$DST/.claude/harness-manifest.json"
-HANDLED_LIST="$(mktemp)"   # --update で処理済みの相対パス（通常の複製から除外する）
-SKIPPED_LIST="$(mktemp)"   # 編集済みとみなしてスキップした相対パス（マニフェストを据え置く）
+install_tmpfile() { mktemp "${TMPDIR:-/tmp}/install.XXXXXX"; }
+abort_tmp() { echo "install: 一時ファイルを作れません（TMPDIR=${TMPDIR:-}）。中断します" >&2; exit 2; }
+HANDLED_LIST="$(install_tmpfile)" || abort_tmp   # --update で処理済みの相対パス（通常の複製から除外する）
+SKIPPED_LIST="$(install_tmpfile)" || abort_tmp   # 編集済みとみなしてスキップした相対パス（マニフェストを据え置く）
 trap 'rm -f "$HANDLED_LIST" "$SKIPPED_LIST"' EXIT
 
 copy_if_absent() { # $1=src $2=dst
@@ -92,7 +94,7 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
 # --update：マニフェストと照合して、未編集なら上書き・編集済みならスキップして報告する。
 # 通常の複製ループより先に走らせ、ここで処理したパスは copy_if_absent の対象から外す。
 if [ "$UPDATE" -eq 1 ]; then
-  UPDATE_LIST="$(mktemp)"
+  UPDATE_LIST="$(install_tmpfile)" || abort_tmp
   manifest_paths > "$UPDATE_LIST"
   python3 -c '
 import hashlib, json, os, shutil, sys
@@ -184,7 +186,7 @@ fi
 # ハーネス本体のマニフェスト（配ったファイルの sha256 を記録する）。
 # 記録するのは src の実ファイルのハッシュ。ただし --update で「編集済み」としてスキップした
 # パスは、今回配っていないので既存の記録を据え置く。
-MANIFEST_LIST="$(mktemp)"
+MANIFEST_LIST="$(install_tmpfile)" || abort_tmp
 manifest_paths > "$MANIFEST_LIST"
 python3 -c '
 import hashlib, json, os, sys

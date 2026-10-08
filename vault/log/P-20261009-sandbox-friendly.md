@@ -19,3 +19,4 @@
 - 2026-10-09 05:53 T-07 doing→review attempt=1 creator=sonnet
 - 2026-10-09 05:53 T-08 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a2ea5cf8ef379264c branch=worktree-agent-a2ea5cf8ef379264c plan_head=7b944a545fe0eb070e8efa90b729ee7bfce99986
 - 2026-10-09 05:53 T-08 doing→review attempt=1 creator=sonnet
+- 2026-10-09 05:54 T-06 review→blocked attempt=1 verifier=sonnet マージ失敗

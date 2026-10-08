@@ -27,9 +27,9 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | 標準ルールの creator 向けの内容を .claude/agents/creator.md に統合する | |
-| T-02 | todo | 0 | - | 標準ルールの verifier 向けの内容を .claude/agents/verifier.md に統合する | |
-| T-03 | todo | 0 | - | 標準ルールの planner 向けの内容を .claude/agents/planner.md に統合する | |
+| T-01 | doing | 1 | - | 標準ルールの creator 向けの内容を .claude/agents/creator.md に統合する | |
+| T-02 | doing | 1 | - | 標準ルールの verifier 向けの内容を .claude/agents/verifier.md に統合する | |
+| T-03 | doing | 1 | - | 標準ルールの planner 向けの内容を .claude/agents/planner.md に統合する | |
 | T-04 | todo | 0 | - | install.sh が標準ルール6本を配らず、--update で未編集のものを削除する | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | 文書に残る標準ルール6本への参照を「役割定義は .claude/agents/ にある」に書き換える | |
 | T-06 | todo | 0 | T-05 | vault/rules/README.md の書き換え案を提案ファイルに書く | |

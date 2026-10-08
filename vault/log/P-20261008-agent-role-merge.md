@@ -1,1 +1,4 @@
 - 2026-10-08 11:32 - draft→approved 人の指示: /plan approve P-20261008-agent-role-merge
+- 2026-10-08 11:38 T-01 todo→doing attempt=1
+- 2026-10-08 11:38 T-02 todo→doing attempt=1
+- 2026-10-08 11:38 T-03 todo→doing attempt=1

@@ -22,3 +22,4 @@
 - 2026-10-09 05:54 T-06 review→blocked attempt=1 verifier=sonnet マージ失敗
 - 2026-10-09 05:54 T-07 review→done attempt=1 verifier=sonnet
 - 2026-10-09 05:54 T-08 review→done attempt=1 verifier=sonnet
+- 2026-10-09 05:54 T-09 todo→doing attempt=1

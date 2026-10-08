@@ -41,3 +41,4 @@
 - 2026-10-09 06:12 T-02 review→done attempt=1 verifier=sonnet
 - 2026-10-09 06:12 T-03 review→blocked attempt=1 verifier=sonnet マージ失敗
 - 2026-10-09 06:13 T-06 review→blocked attempt=1 verifier=sonnet マージ失敗
+- 2026-10-09 06:15 T-03 blocked→todo 人の指示: /plan unblock P-20261009-sandbox-friendly T-03

@@ -1,1 +1,2 @@
 - 2026-10-08 22:12 - draft→approved 人の指示: /plan approve P-20261008-sandbox-enable
+- 2026-10-08 22:29 T-01 todo→doing attempt=1

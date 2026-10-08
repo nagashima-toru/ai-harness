@@ -25,7 +25,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | .claude/settings.json にサンドボックスの設定を足す | |
+| T-01 | doing | 1 | - | .claude/settings.json にサンドボックスの設定を足す | |
 | T-02 | todo | 0 | T-01,T-06 | 導入先の settings.json に sandbox が入らないことを smoke で確かめる | |
 | T-03 | todo | 0 | T-01,T-06 | docs/install.md に導入先でサンドボックスを有効にする手順と既知の制約を書く | |
 | T-04 | todo | 0 | T-01 | docs/vault-spec.md 12節にサンドボックスの小節を足し「残る弱点」を直す | |

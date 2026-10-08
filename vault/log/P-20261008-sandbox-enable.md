@@ -13,3 +13,4 @@
 - 2026-10-08 23:05 T-04 review→done attempt=1 verifier=sonnet
 - 2026-10-08 23:05 T-05 review→done attempt=1 verifier=sonnet
 - 2026-10-08 23:49 T-06 doing→blocked attempt=1 smoke の扱いが未決（サンドボックス）
+- 2026-10-09 00:35 T-06 blocked→todo 人の指示: /plan unblock P-20261008-sandbox-enable T-06

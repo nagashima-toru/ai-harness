@@ -78,7 +78,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 
 終了コードごとの次の行動：
 - 0：review になった。手順5で verifier を呼ぶ対象にする
-- 3：差分ゲートの違反で差し戻した（doing のまま attempt+1。worktree は破棄済み）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直して、その id の creator を呼び直す（transition.py のコミットで計画ブランチの HEAD が進むため取り直す）
+- 3：差分ゲートの違反で差し戻した（doing のまま attempt+1。worktree は破棄済み）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直して、その id の creator を呼び直す（transition.py のコミットで計画ブランチの HEAD が進むため取り直す）。続けて「worktree の後始末（サンドボックス）」の節を行う。
 - 4：blocked にした（新規コミット無し、または差し戻しが上限）。標準出力の1行を完了報告に写し、その id を終える。worktree は残っている
 - 1・2：早見表の終了コードの表のとおり（人に報告して止める／呼び出しを直す）
 
@@ -116,7 +116,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
    この1回で、PASS の verdict の確認・未コミット分の収集・新規コミットの判定・差分ゲート・計画ブランチへの `--no-ff` マージ・done とそのコミット（verdict を含む）・worktree とブランチの後始末が行われる。コンフリクトは自己判断で解決しない（`.claude/agents/creator.md` の `## git` 節の方針）。transition.py がマージを中止して blocked にする。
 
    終了コードごとの次の行動：
-   - 0：done になった。次の対象タスクへ進む
+   - 0：done になった。続けて「worktree の後始末（サンドボックス）」の節を行う。次の対象タスクへ進む
    - 4：blocked にした（新規コミット無し・宣言外の変更・マージコンフリクトのいずれか。コンフリクトはマージを中止済み）。標準出力の1行を完了報告に写す。worktree は残っている。他の対象タスクの処理は止めず次へ進む
    - 1：何もしていない（PASS の verdict が無い・attempt 不一致など）か、マージ済みだが状態のコミットに失敗した。標準エラーの理由を添えて人に報告し、処理を止める
 4. `FAIL` の場合：計画ブランチへはマージしない。次を1回呼ぶ。
@@ -124,10 +124,21 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
    再試行するか blocked にするかの上限の判断（`HARNESS_MAX_ATTEMPTS`）は transition.py が行うので、run は attempt を比べない。
 
    終了コードごとの次の行動：
-   - 3：再試行に回した（review→doing で試行回数を進め、worktree とブランチを破棄済み）。手順3の1から `PLAN_HEAD` を取り直して、その id の creator を呼び直す（verdict の `reasons` を読んで直すのは creator の役目）
+   - 3：再試行に回した（review→doing で試行回数を進め、worktree とブランチを破棄済み）。手順3の1から `PLAN_HEAD` を取り直して、その id の creator を呼び直す（verdict の `reasons` を読んで直すのは creator の役目）。続けて「worktree の後始末（サンドボックス）」の節を行う。
    - 4：上限に達したので reasons を question にして blocked にした。worktree は残っている。標準出力の1行を完了報告に写して次へ進む
    - 1：verdict が FAIL でない・attempt 不一致など。人に報告して止める
 5. 次の対象タスクがあれば同様に処理する。対象タスク全部の処理が終わったら手順7へ進む
+
+## worktree の後始末（サンドボックス）
+サンドボックスの中では transition.py の後始末（`git worktree remove --force` と `git branch -D`）が `.git/worktrees/` への書き込みを拒否されて失敗し、worktree とブランチが残る（transition.py は警告を標準エラーに出すだけで終了コードは変えない）。そこで run は、done（終了コード0）・FAIL の再試行（終了コード3）・差分ゲートの差し戻し（終了コード3）の後に、`git worktree list --porcelain` にその worktree のパス（`worktree <パス>` の行）がまだあれば、次を1回実行する。
+
+`bash scripts/discard_worktree.sh <worktree> <branch>`
+
+`<worktree>`・`<branch>` は transition.py に渡したものと同じ。`discard_worktree.sh` と `vcs_finish.sh` は `.claude/settings.json` の `sandbox.excludedCommands` によりサンドボックスの外で実行される（だから `.git/worktrees/` や `.git/config` に書ける）。`bash scripts/discard_worktree.sh` の前に `cd` や `env` を付けない（パターン `bash scripts/discard_worktree.sh *` に一致させるため）。
+
+- 終了コードが0以外の時は、別の手段（`git worktree prune`・`git update-ref -d`・`rm` など）で消そうとせず、標準エラーと `git worktree list --porcelain` の出力を完了報告に写して次へ進む（タスクの状態は変えない。人に知らせるだけ）
+- サンドボックスが無い環境では transition.py の後始末が成功するので、`git worktree list --porcelain` にパスが無く、何もしない
+- blocked（終了コード4）の時は worktree を残す（今までどおり。この節の対象外）
 
 ## 7. 次へ・完了
 - 計画票に取れる行が残っていれば手順2に戻る
@@ -135,7 +146,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
   1. 計画票 frontmatter の `status` を `done` にする
   2. `python3 scripts/pr_body.py <計画ID>` と `python3 scripts/verdict_notes.py <計画ID>` を実行し、出力を読む
   3. 本文ファイルを Write ツールで一時ファイル（例：`/tmp/<計画ID>-pr-body.md`。手順3の質問ファイルと同じ書き方）に書く。中身は次の3つで、出力は言い換えずにそのまま写す：計画 ID の1行、タスク一覧（`python3 scripts/pr_body.py <計画ID>` の出力。計画 ID・id・title・commit・verdict の表）、`## verifier の指摘` の見出しと `verdict_notes.py` の出力。`verdict_notes.py` が終了コード0以外で終わった時も PR は作り、この節に標準エラーの内容を書く（指摘の一覧が無いことで PR 作成を止めない）
-  4. `env HARNESS_PR_BODY_FILE=<本文ファイル> HARNESS_PR_TITLE="<計画ID>: <ゴールの1行目>" bash scripts/vcs_finish.sh` を実行する（`env` で始めるのは許可リストの `Bash(env *)` で通すため）。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名とマージの案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
+  4. `env HARNESS_PR_BODY_FILE=<本文ファイル> HARNESS_PR_TITLE="<計画ID>: <ゴールの1行目>" bash scripts/vcs_finish.sh` を実行する（`env` で始めるのは許可リストの `Bash(env *)` で通すため）。このコマンドはサンドボックスの外で実行される。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名とマージの案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
   5. 完了報告に `verdict_notes.py` の出力をそのまま含める（「指摘なし」の時も1行で含める）
   - 引数なしの `bash scripts/vcs_finish.sh`（`HARNESS_PR_BODY_FILE` 無し）は `/design` などが使う経路として残る。現在のブランチが `work/<計画IDの英小文字>` で `vault/plans/` に計画票があれば、`scripts/pr_body.py` のタスク履歴表を本文にして `--title "<計画ID>: <ゴールの1行目>"` で PR/MR を作り、計画が見つからない時（`design/d-xxx` など）は `gh pr create --fill` / `glab mr create --fill --yes` を使う。引数がある時は既定を付けず、そのまま渡す
   - `bash scripts/vcs_finish.sh` が `gh`/`glab` コマンド自体が無いことによる失敗（`command not found` 相当の終了コード127、または本スクリプトが出す「`gh`/`glab` コマンドが見つかりません」という明示エラー）で終了した場合：GitHub であれば GitHub MCP ツール（例：実行環境で使える `mcp__github__create_pull_request` 等）で同内容の PR を作成してよい。`gh pr create "$@"` に渡すはずだったブランチ名・PR タイトル・本文は、そのまま MCP ツールの引数に引き継ぐ（本文には本文ファイルの中身、タイトルには `HARNESS_PR_TITLE` の値を使う）。GitLab（`glab`）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段が使える環境ではそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる。いずれの代替経路を使った場合も `gh pr merge`/`glab mr merge` は実行しない（マージは人が行うという既存方針は変わらない）。認証エラー・ネットワークエラー等、コマンド自体は存在するが実行に失敗するケースはこの代替の対象外とする
@@ -156,7 +167,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 2. `vault/log/<計画ID>.md`：対象タスクについて `todo→doing` → `doing→review` →（`review→done` または `review→doing`（再試行）または `review→blocked`）の各遷移が transition.py によって1行ずつ、他のタスクと同じ書式（`- <日時> <id> <遷移> attempt=<n> [補足]`）で記録されている。日時は transition.py の実時刻である。着手可能集合が1件だけなので、フェーズ2の版と行数・書式が一致する
 3. 成果物：計画ブランチ上の対象ファイルの差分（`git diff <PLAN_HEAD>..HEAD -- <成果物のパス>`）が、creator が worktree 内で作った変更内容と一致し、マージコミット以外の余分な差分が無い（worktree 側に収集コミット `<計画ID>/<id>: creator 成果物をオーケストレーターが収集` がありうる）
 4. `vault/verdicts/<計画ID>/<id>.json` の `attempt` が計画票のタスク表の値と一致している（Stop フックの整合性検査を通過する点もフェーズ2と同じ）
-5. worktree・作業ブランチが最終状態で残っていない（PASS で `done` になれば transition.py の done が削除済み。`blocked`（新規コミット無し・宣言外の変更・コンフリクト・上限到達）の時だけ残っていてよい）
+5. worktree・作業ブランチが最終状態で残っていない（PASS で `done` になれば transition.py の done か worktree の後始末（サンドボックス）の節の `discard_worktree.sh` が削除済み。`blocked`（新規コミット無し・宣言外の変更・コンフリクト・上限到達）の時だけ残っていてよい）
 
 上記1〜5がいずれも成立すれば、着手可能集合が1件だけのケースの最終状態はフェーズ2までの逐次フローと同じ結果とみなす。差異があれば手順6・7の実装を見直す。
 

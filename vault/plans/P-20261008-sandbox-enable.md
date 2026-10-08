@@ -26,8 +26,8 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | .claude/settings.json にサンドボックスの設定を足す | |
-| T-02 | todo | 0 | T-01,T-06 | 導入先の settings.json に sandbox が入らないことを smoke で確かめる | |
-| T-03 | todo | 0 | T-01,T-06 | docs/install.md に導入先でサンドボックスを有効にする手順と既知の制約を書く | |
+| T-02 | doing | 1 | T-01,T-06 | 導入先の settings.json に sandbox が入らないことを smoke で確かめる | |
+| T-03 | doing | 1 | T-01,T-06 | docs/install.md に導入先でサンドボックスを有効にする手順と既知の制約を書く | |
 | T-04 | done | 1 | T-01 | docs/vault-spec.md 12節にサンドボックスの小節を足し「残る弱点」を直す | |
 | T-05 | done | 1 | T-01 | docs/runbook.md に新しいセッションでサンドボックスの効き目を確かめる手順を書く | |
 | T-06 | done | 1 | T-01 | merge_settings_json.py が新規作成の時に sandbox キーを書かないようにする | |

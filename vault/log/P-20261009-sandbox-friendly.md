@@ -10,3 +10,6 @@
 - 2026-10-09 05:51 T-03 doing→review attempt=1 creator=sonnet
 - 2026-10-09 05:51 T-01 review→done attempt=1 verifier=sonnet
 - 2026-10-09 05:51 T-03 review→blocked attempt=1 verifier=sonnet マージ失敗
+- 2026-10-09 05:51 T-06 todo→doing attempt=1
+- 2026-10-09 05:51 T-07 todo→doing attempt=1
+- 2026-10-09 05:51 T-08 todo→doing attempt=1

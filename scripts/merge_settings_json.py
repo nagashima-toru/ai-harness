@@ -6,7 +6,9 @@
 
 src はハーネス側の settings.json、dst はインストール先の settings.json。
 
-- dst が無い        → src の内容で作成し `create <dst>`
+- dst が無い        → src から `sandbox` を除いた内容で作成し `create <dst>`
+                      （`sandbox` は導入先が手で足すもの。docs/install.md の
+                      「サンドボックスを有効にする（任意）」。merge でも足さない）
 - 足すものがある    → 足してから `merge <dst>`
 - 足すものが無い    → 何もせず `skip <dst>`
 
@@ -22,7 +24,7 @@ src はハーネス側の settings.json、dst はインストール先の settin
 ハーネスが上書きしてよいものではないため）。
 ただし dst が既にある時（merge/skip の経路）は、src の `permissions.allow` のうち dst に無いもの
 （文字列の完全一致で判定。パターンの包含関係は見ない）を `note` 行1本で案内する。変更はしない。
-dst が無く `create` する時は src がそのまま書かれるので出さない。allow の不足は足す数に数えず、
+dst が無く `create` する時は src（`sandbox` を除く）がそのまま書かれるので出さない。allow の不足は足す数に数えず、
 allow だけが不足している時も `skip` のままで dst は書き換えない。
 
 merge の時だけ `<dst>.bak-<YYYYMMDDHHMMSS>` を残す。ファイルは消さない。
@@ -174,7 +176,13 @@ def main(argv):
 
     if not dst.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_text(dump(src_data), encoding="utf-8")
+        # 導入先には既定でサンドボックスを入れない（sandbox は書かない）
+        new_data = (
+            {k: v for k, v in src_data.items() if k != "sandbox"}
+            if isinstance(src_data, dict)
+            else src_data
+        )
+        dst.write_text(dump(new_data), encoding="utf-8")
         print(f"create {dst}")
         return 0
 

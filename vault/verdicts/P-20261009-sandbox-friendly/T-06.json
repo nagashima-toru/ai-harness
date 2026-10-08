@@ -2,13 +2,13 @@
   "task": "P-20261009-sandbox-friendly/T-06",
   "attempt": 1,
   "result": "PASS",
-  "checked_at": "2026-10-09 05:53",
+  "checked_at": "2026-10-09 06:12",
   "criteria": [
-    {"text": "古い置き場の書き方が無い：`grep -cF '`/tmp/<計画ID>-<タスクID>`' .claude/agents/planner.md` の出力が `0`", "ok": true, "note": "実行コマンド: worktree で `grep -cF '`/tmp/<計画ID>-<タスクID>`' .claude/agents/planner.md` / 出力: 0"},
-    {"text": "新しい置き場が書かれている：`grep -cF '`/tmp/claude/<計画ID>-<タスクID>/`' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同形の grep -cF / 出力: 1"},
-    {"text": "一時ファイルを消さない・人に消させないと書かれている：`grep -cF '一時ファイルは消さず、人にも消させない' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同形の grep -cF / 出力: 1"},
-    {"text": "frontmatter は main の版と同じ：`python3 -c \"...\"` の出力が `True`", "ok": true, "note": "実行コマンド: タスク票記載の python3 -c / 出力: True"},
-    {"text": "`## ` の見出しの数は変わっていない：`grep -c '^## ' .claude/agents/planner.md` の出力が `10`", "ok": true, "note": "実行コマンド: `grep -c '^## ' .claude/agents/planner.md` / 出力: 10。変更ファイル検査: `git diff --name-only 7b944a5..HEAD` は .claude/agents/planner.md と タスク票 vault/tasks/.../T-06.md(進捗追記)のみで、成果物外の追加ファイルなし"}
+    {"text": "古い置き場の書き方が無い：`grep -cF '`/tmp/<計画ID>-<タスクID>`' .claude/agents/planner.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -cF '`/tmp/<計画ID>-<タスクID>`' .claude/agents/planner.md`（worktree内） / 出力: 0"},
+    {"text": "新しい置き場が書かれている：`grep -cF '`/tmp/claude/<計画ID>-<タスクID>/`' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同上の新パス版 grep -cF / 出力: 1"},
+    {"text": "一時ファイルを消さない・人に消させないと書かれている：`grep -cF '一時ファイルは消さず、人にも消させない' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: grep -cF '一時ファイルは消さず、人にも消させない' .claude/agents/planner.md / 出力: 1"},
+    {"text": "frontmatter は main の版と同じ：`python3 -c \"import subprocess; a=open('.claude/agents/planner.md').read().split('---')[1]; b=subprocess.run(['git','show','main:.claude/agents/planner.md'],capture_output=True,text=True).stdout.split('---')[1]; print(a==b)\"` の出力が `True`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c（worktree内で実行） / 出力: True"},
+    {"text": "`## ` の見出しの数は変わっていない：`grep -c '^## ' .claude/agents/planner.md` の出力が `10`", "ok": true, "note": "実行コマンド: grep -c '^## ' .claude/agents/planner.md / 出力: 10。変更ファイル検査: `git diff --name-only e00b201..HEAD` は .claude/agents/planner.md と vault/tasks/P-20261009-sandbox-friendly/T-06.md（進捗追記）のみで、成果物外のファイルは無し"}
   ],
   "reasons": []
 }

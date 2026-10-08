@@ -1,0 +1,13 @@
+{
+  "task": "P-20261008-agent-role-merge/T-07",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-08 12:00",
+  "criteria": [
+    {"text": "提案ファイルが、`grep -nE 'planner\\.md|標準ルール' vault/rules/planner/ai-harness-lessons.md` に出る行（計画作成時点で2・3・7・36・37行目）すべてについて、行番号・今の文・直し後の文の3つを並べている（Read で見比べて確認）", "ok": true, "note": "実行コマンド: 上記 grep と Read で提案ファイルを比較 / 出力: ヒットは2,3,7,36,37行目の5行で、提案に5項目とも行番号・今の文・直し後が並び、今の文は原文と一致"},
+    {"text": "直し後の文は、`planner.md` の「やらないこと」を `.claude/agents/planner.md` の実在する節を指す形に直している：`grep -n '^## やらないこと$' .claude/agents/planner.md` の出力が1行で、提案ファイルの直し後の文がこの節を指している（Read で確認）", "ok": true, "note": "実行コマンド: `grep -n '^## やらないこと$' .claude/agents/planner.md` / 出力: 63:## やらないこと（1行）。直し後は2・3・7・36行目とも .claude/agents/planner.md の「やらないこと」節を指す"},
+    {"text": "直し後の文に6本のパスが無く、「`install.sh` の標準ルールの列挙」は今の `install.sh` の実態（このファイルは配らない・マニフェストにも削除の対象の一覧にも入れない）に合う形になっている（Read で `scripts/install.sh` と見比べて確認）", "ok": true, "note": "実行コマンド: Read で提案と `grep -nE 'RETIRED|manifest' scripts/install.sh` を照合 / 出力: 直し後に6本のパス無し。3・37行目は「配るファイル（マニフェストに載るもの）」「削除の対象の一覧」と言い換え済みで決定済みの言い方に沿う。RETIRED_RULES は install.sh に未実装（T-04 未完了）"},
+    {"text": "提案ファイルのほかに変えたファイルが無い：`git status --porcelain -- vault/rules .claude scripts docs` の出力が空", "ok": true, "note": "実行コマンド: `git status --porcelain -- vault/rules .claude scripts docs`（worktree で） / 出力: 空。進捗に起点コミットの記録が無いため、変更ファイル一覧の検査（手順10）は行っていない"}
+  ],
+  "reasons": []
+}

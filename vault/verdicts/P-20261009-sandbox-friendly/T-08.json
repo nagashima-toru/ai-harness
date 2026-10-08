@@ -1,0 +1,16 @@
+{
+  "task": "P-20261009-sandbox-friendly/T-08",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 05:55",
+  "criteria": [
+    {"text": "構文が正しい：`bash -n scripts/uninstall.sh` の出力が空で終了コードが0", "ok": true, "note": "実行コマンド: `bash -n scripts/uninstall.sh; echo rc=$?` / 出力: 空、rc=0"},
+    {"text": "`mktemp` を直接コマンド置換で呼んでいない：`grep -cF '$(mktemp' scripts/uninstall.sh` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -cF '$(mktemp' scripts/uninstall.sh` / 出力: 0"},
+    {"text": "中断付きの呼び出しと関数がある：`grep -cF 'SETTINGS_SRC_TMP=\"$(uninstall_tmpfile)\" || abort_tmp' scripts/uninstall.sh` の出力が `1`、`grep -cF 'uninstall_tmpfile() { mktemp \"${TMPDIR:-/tmp}/uninstall.XXXXXX\"; }' scripts/uninstall.sh` の出力が `1`", "ok": true, "note": "実行コマンド: 両方の grep -cF / 出力: 1 と 1"},
+    {"text": "一時ファイルはファイルを消すより前に作る：`grep -nF -e 'SETTINGS_SRC_TMP=\"$(uninstall_tmpfile)\"' -e 'os.remove(p)' scripts/uninstall.sh | head -1` の出力が `SETTINGS_SRC_TMP=` を含む", "ok": true, "note": "実行コマンド: 上記 grep | head -1 / 出力: 34:SETTINGS_SRC_TMP=\"$(uninstall_tmpfile)\" || abort_tmp"},
+    {"text": "一時ファイルを作れない時は中断の文言を出す：`env TMPDIR=/nonexistent-p20261009 bash scripts/uninstall.sh /tmp/claude/P-20261009-sandbox-friendly-T-08/dst 2>&1 | grep -cF 'uninstall: 一時ファイルを作れません（TMPDIR=/nonexistent-p20261009）。中断します'` の出力が `1`", "ok": true, "note": "準備(mkdir と python3 -m json.tool)を実行後、指定コマンドを実行 / 出力: 1"},
+    {"text": "中断した時はマニフェストを消していない：`test -f /tmp/claude/P-20261009-sandbox-friendly-T-08/dst/.claude/harness-manifest.json` の終了コードが0", "ok": true, "note": "実行コマンド: `test -f .../dst/.claude/harness-manifest.json; echo rc=$?` / 出力: rc=0"},
+    {"text": "一時ファイルを作れる時は最後まで通る：`bash scripts/uninstall.sh /tmp/claude/P-20261009-sandbox-friendly-T-08/dst 2>&1 | grep -cx 'remove .claude/harness-manifest.json'` の出力が `1`", "ok": true, "note": "実行コマンド: 指定コマンド / 出力: 1。目的(消す前に中断)との整合も、2行目5〜6行目の結果と grep -n で34行目が最初の削除処理より前であることから確認済み。変更ファイル検査: `git diff --name-only 7b944a5..HEAD` は scripts/uninstall.sh とタスク票のみで成果物外の混入なし"}
+  ],
+  "reasons": []
+}

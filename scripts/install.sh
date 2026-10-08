@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>
-# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・役割定義の標準ルール・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
+# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
 # 状態は vault/plans/<計画ID>.md が持つ（キューは無い）。既存ファイルは上書きしない。
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
 # permissions.deny の不足分、worktree.baseRef（導入先に無ければ足す。別の値が入っていれば
@@ -13,6 +13,8 @@
 # --no-claude-md を付けると CLAUDE.md には触れず、既存があれば案内だけを出す。
 # --update を付けると、マニフェストと照合してハーネス本体を更新する。dst のハッシュがマニフェストと
 # 一致（＝配った時のまま）なら上書きし、一致しなければ利用者が編集したとみなしてスキップし報告する。
+# 旧版が配っていた標準ルール6本（RETIRED_RULES）はもう配らない。--update では、導入先にあるもののうち
+# マニフェストのハッシュと一致する（未編集の）ものを削除し、編集済みのものは残して note で案内する。
 USAGE="usage: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>"
 set -eu
 NO_CLAUDE_MD=0
@@ -63,8 +65,13 @@ scripts_list() { # SRC の scripts/ 直下にある *.sh・*.py を SCRIPTS_EXCL
   done
 }
 
+# 旧版が配っていた標準ルール6本（リポジトリ相対パス、スペース区切り）。役割定義は .claude/agents/ に
+# 統合されたので、もう複製もマニフェストへの記録もしない。--update で未編集のものを削除する対象。
+# $SRC に実ファイルがあるかどうかでは動きを変えない（固定で持つ）。
+RETIRED_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
+
 # ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
-# 利用者の資産（vault/plans, tasks, verdicts, log, archive, designs の中身、標準4本以外の
+# 利用者の資産（vault/plans, tasks, verdicts, log, archive, designs の中身、README 以外の
 # vault/rules/、settings.local.json）は含めない。.claude/settings.json は専用マージャの対象。
 manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存在するものだけ）
   {
@@ -74,11 +81,7 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
       find .claude/agents -name '*.md' -type f 2>/dev/null
       find .claude/skills -name 'SKILL.md' -type f 2>/dev/null
       find vault/templates -name '*.md' -type f 2>/dev/null
-      for p in .claude/ai-harness.md docs/vault-spec.md \
-               vault/rules/README.md vault/rules/common/roles.md \
-               vault/rules/common/git.md vault/rules/creator/creator.md \
-               vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md \
-               vault/rules/planner/planner.md; do
+      for p in .claude/ai-harness.md docs/vault-spec.md vault/rules/README.md; do
         [ -f "$p" ] && echo "$p"
       done
     ) | sed 's|^\./||'
@@ -93,7 +96,7 @@ if [ "$UPDATE" -eq 1 ]; then
   manifest_paths > "$UPDATE_LIST"
   python3 -c '
 import hashlib, json, os, shutil, sys
-src, dst, manifest, listfile, handled, skipped = sys.argv[1:7]
+src, dst, manifest, listfile, handled, skipped, retired = sys.argv[1:8]
 old = {}
 if os.path.isfile(manifest):
     try:
@@ -124,11 +127,22 @@ for rel in rels:
     else:
         print("skip (edited) " + rel)
         s_out.append(rel)
+# 旧版の標準ルール: 未編集（マニフェストのハッシュと一致）なら削除、それ以外は残して案内する
+for rel in retired.split():
+    dp = os.path.join(dst, rel)
+    if not os.path.isfile(dp):
+        continue
+    recorded = old.get(rel)
+    if recorded is not None and recorded == sha(dp):
+        os.remove(dp)
+        print("remove " + rel)
+    else:
+        print("note  " + rel + " は編集されているため残しました。役割定義は .claude/agents/ にあります。不要なら削除してください")
 with open(handled, "w", encoding="utf-8") as fh:
     fh.write("".join(r + "\n" for r in h_out))
 with open(skipped, "w", encoding="utf-8") as fh:
     fh.write("".join(r + "\n" for r in s_out))
-' "$SRC" "$DST" "$MANIFEST_FILE" "$UPDATE_LIST" "$HANDLED_LIST" "$SKIPPED_LIST"
+' "$SRC" "$DST" "$MANIFEST_FILE" "$UPDATE_LIST" "$HANDLED_LIST" "$SKIPPED_LIST" "$RETIRED_RULES"
   rm -f "$UPDATE_LIST"
 fi
 
@@ -140,10 +154,10 @@ chmod +x "$DST"/.claude/hooks/*.py
 
 # vault/（空ディレクトリ構成のみ作る。計画票は /plan が作るので配らない）
 for d in plans tasks verdicts log designs archive templates rules; do mkdir -p "$DST/vault/$d"; done
-# vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）と、役割定義の標準ルール4本を複製する。
-# ドメイン固有のルール（コーディングルール・方式設計・テスト観点など）は複製・上書きの対象にしない。
-# 標準ルールも copy_if_absent なので、インストール先で編集したものは上書きしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep rules/common/roles.md rules/common/git.md rules/creator/creator.md rules/creator/git-workflow.md rules/verifier/verifier.md rules/planner/planner.md; do
+# vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）だけを複製する。
+# 役割定義の標準ルール6本（RETIRED_RULES）は配らない。ドメイン固有のルール（コーディングルール・
+# 方式設計・テスト観点など）も複製・上書きの対象にしない。
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 

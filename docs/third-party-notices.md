@@ -44,16 +44,13 @@ Markdown・Python・JSON であり、外部プロジェクトからのコピー�
 対象ファイル一覧（実ファイルを1つずつ読んで確認。`.gitkeep` は空ファイルのため内容確認は不要）：
 
 - `vault/rules/README.md`
-- `vault/rules/common/git.md`
-- `vault/rules/common/roles.md`
 - `vault/rules/common/.gitkeep`
-- `vault/rules/creator/creator.md`
-- `vault/rules/creator/git-workflow.md`
 - `vault/rules/creator/.gitkeep`
-- `vault/rules/planner/planner.md`
 - `vault/rules/planner/.gitkeep`
-- `vault/rules/verifier/verifier.md`
 - `vault/rules/verifier/.gitkeep`
+
+旧版にあった役割定義のルール6本の内容は `.claude/agents/creator.md`・`verifier.md`・`planner.md` に統合された
+（この3本は `.claude` 配下の確認結果に載っている）。
 
 **確認結果：該当なし。**
 いずれも本リポジトリの役割定義（planner / creator / verifier の責務、git 運用方針）を記述した

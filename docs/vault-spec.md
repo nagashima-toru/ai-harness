@@ -164,7 +164,7 @@ frontmatter は `id` と `status` の2つ。
   - 書式の例：`実行コマンド: \`<command>\` / 出力: <判定に使った部分の要点>`
   - 確認コマンドが実行できなかった場合（権限拒否・ツール不足など）は、その旨と代替の確認方法、その結果をセットで書く。例：`\`awk ...\` は権限拒否で実行不可。代替として README.md を Read で確認し、使い方節に cron の行が1行あった`
   - 受け入れ基準がルールを根拠にした場合（`vault/rules/` 配下のファイル名や「コーディングルールに従う」等を参照する行）は、参照したルールファイルのパスを `note` に書く
-- `reasons` は FAIL の理由だけでなく、次の3つの記録にも使う（`vault/rules/verifier/verifier.md` を根拠とする）。いずれも `result` を FAIL にはしない。
+- `reasons` は FAIL の理由だけでなく、次の3つの記録にも使う（`.claude/agents/verifier.md` を根拠とする）。いずれも `result` を FAIL にはしない。
   - 基準が曖昧で判定不能だった場合
   - 基準が緩いと判断した場合（確認コマンドは通るが、タスク票の「目的」の達成を保証しない）
   - 宣言外ファイルの変更を検出した場合（タスク票の「成果物」に書かれていないファイルが変わっていた）
@@ -271,7 +271,9 @@ blocked の解除の裏付けの検査も plan_guard が行う（D-010 フェー
 
 ## 11. ルール（`vault/rules/`）
 
-「ルール」を作成エージェント・verifier・planner に渡す拡張ポイント。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`common/roles.md`・`creator/creator.md`・`verifier/verifier.md`・`planner/planner.md`）と、git 運用のルール（`common/git.md`・`creator/git-workflow.md`）。コーディングルール・開発標準・方式設計・テスト標準・テスト観点などドメイン固有のルールは、置き場と読み込み口だけを用意し、インストール先で書く。
+ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。
+
+旧版の install で配った役割定義のルール6本は、`bash scripts/install.sh --update` がマニフェストのハッシュで未編集と判定したものだけ削除し（`remove <path>` と表示）、編集済みのものは残して `note` の行で案内する（役割定義は `.claude/agents/` にある）。
 
 ### ディレクトリと振り分け
 ```

@@ -33,7 +33,7 @@ status: approved
 | T-04 | review | 1 | - | install.sh が標準ルール6本を配らず、--update で未編集のものを削除する | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | 文書に残る標準ルール6本への参照を「役割定義は .claude/agents/ にある」に書き換える | |
 | T-06 | todo | 0 | T-05 | vault/rules/README.md の書き換え案を提案ファイルに書く | |
-| T-07 | doing | 1 | T-03 | ai-harness-lessons.md の planner.md への参照の直し案を提案ファイルに書く | |
+| T-07 | review | 1 | T-03 | ai-harness-lessons.md の planner.md への参照の直し案を提案ファイルに書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

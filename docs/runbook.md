@@ -144,29 +144,36 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 サンドボックスを有効にした後（このリポジトリでは計画のマージ後、導入先では手で足した後）、人が新しいセッションで効き目を確かめる。導入先で有効にする手順は `docs/install.md` の「サンドボックスを有効にする（任意）」を参照する。
 
 1. Claude Code を起動し直す。設定はセッションの開始時に読まれるため、設定を変えたセッションのままでは効かない。
-2. `/sandbox` を開き、サンドボックスが有効であることを確かめる。有効でない・使えないと表示された時は、手順3〜5 を飛ばして下の「使えない環境」に進む。続けて Config タブで、`denyWrite` の `./vault/rules` と `~/.claude/projects` が実際の絶対パス（このリポジトリの `vault/rules` とホームの `.claude/projects`）に解決されていることを確かめる。
+2. `/sandbox` を開き、サンドボックスが有効であることを確かめる。有効でない・使えないと表示された時は、手順3〜5 を飛ばして下の「使えない環境」に進む。続けて Config タブで、`denyWrite` の `./vault/rules` と `~/.claude/projects` が実際の絶対パス（このリポジトリの `vault/rules` とホームの `.claude/projects`）に解決されていることと、`excludedCommands` に `.claude/settings.json` の4つのパターン（`bash scripts/vcs_finish.sh`・`bash scripts/vcs_finish.sh *`・`env HARNESS_PR_BODY_FILE=* bash scripts/vcs_finish.sh`・`bash scripts/discard_worktree.sh *`）が出ていることを確かめる。
 3. Bash で次を実行し、失敗する（Permission denied などで終わり、`vault/rules/x.md` が作られない）ことを確かめる。このコマンドは `agent_write_guard.py` の Bash の解析では拒否されない形なので、失敗すればサンドボックスが効いている。
 
 ```
 python3 -c "open('vault/rules/x.md','w')"
 ```
 
-4. 次が `fail=0` で通ることを確かめる。
+4. サンドボックスを有効にしたセッションの Bash で次を実行し、`fail=0` を確かめる。smoke はサンドボックスの中でも通る（`scripts/smoke.sh`・`scripts/install.sh`・`scripts/uninstall.sh`・`scripts/archive_plans.sh` が一時ファイルを `${TMPDIR:-/tmp}` の下に作り、作れない時は中断するため）。人がサンドボックスの外で流す必要は無い。ただし、サンドボックスの中で全件が通ることは未確認（計画 P-20261009-sandbox-friendly の run の後に、人がこの手順で1回確かめる）。
 
 ```
 bash scripts/smoke.sh
 ```
 
-5. 計画の最後に、次の push と PR 作成が通ることを確かめる。このリポジトリでは、サンドボックスを入れた計画の次の計画の run の最後で確かめてよい。
+5. `vcs_finish.sh` は `excludedCommands` によりサンドボックスの外で実行される。run の最後に、次の push と PR の作成が人の手を介さずに通ることを確かめる。
 
 ```
 bash scripts/vcs_finish.sh
 ```
 
+6. 計画の run が終わった後、次を実行し、done のタスクの worktree（`worktree-agent-` で始まるブランチ）が残っていないことを確かめる。blocked のタスクの worktree は残っていてよい。
+
+```
+git worktree list
+```
+
 ### うまくいかなかった時
 - 3 の `python3 -c` が成功して `vault/rules/x.md` ができた時：サンドボックスが効いていない。作られたファイルは人が消し、2 の `/sandbox` の表示と `denyWrite` のパスの書き方を見直す。
-- 4 の smoke が通らない時：どのケースが落ちたかを見て、サンドボックスの書き込み・通信の制限によるものかを確かめる。直し方は別の計画で決める。
-- 5 の `vcs_finish.sh` が通らない時（`gh` の認証・ssh の remote への push）：別の計画で `excludedCommands` に `bash scripts/vcs_finish.sh` を足す。それまでは人がサンドボックスの外（ターミナル）で `bash scripts/vcs_finish.sh` を実行する。
+- 4 の smoke が通らない時：どのケースが落ちたかを見て、サンドボックスの書き込み・通信の制限によるものかを確かめる。`smoke: 一時ディレクトリを作れません` などの中断の文言が出た時は `$TMPDIR` を確かめる（文言はスクリプトごとに `install:`・`uninstall:`・`archive_plans:` で始まり、smoke.sh 以外は「一時ファイルを作れません」）。ほかのケースが落ちた時の直し方は別の計画で決める。
+- 5 の `vcs_finish.sh` が通らない時（`gh` の認証・ssh の remote への push）：`/sandbox` の Config タブで `excludedCommands` が出ているかを確かめる。出ていなければ、managed の設定か `--settings` で `allowUnsandboxedCommands: false` が設定されていないかを見る（その時はプロジェクトの設定の `excludedCommands` が無視される）。出ているのに通らない時は、run の呼び出しがパターンに一致していないので、呼び出しの形かパターンを直す計画を立てる。
+- 6 で done のタスクの worktree が残った時：run の完了報告に写された `discard_worktree.sh` の標準エラーと `git worktree list --porcelain` の出力を見る。
 
 ### 使えない環境
 `/sandbox` でサンドボックスが有効でない（使えない環境）と分かった時は、手順3〜5 を飛ばす。この場合の守りはフックの Bash の解析で、`bash scripts/smoke.sh` は通る。サンドボックスを使いたければ `docs/install.md` の前提（`bubblewrap`・`socat` など）を見る。

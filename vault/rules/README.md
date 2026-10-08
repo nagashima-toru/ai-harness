@@ -1,6 +1,6 @@
 # vault/rules/ の書き方
 
-作成エージェント・verifier・planner に渡す「ルール」の置き場。ハーネスは planner / creator / verifier の役割定義を標準ルールとして同梱する（`common/roles.md`・`creator/creator.md`・`verifier/verifier.md`・`planner/planner.md`）と、git 運用のルール（`common/git.md`・`creator/git-workflow.md`）。コーディングルール・開発標準・方式設計・テスト観点などドメイン固有のルールはインストール先で書く。
+ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` にある）。`vault/rules/` は導入先のルール専用の置き場で、作成エージェント・verifier・planner に渡すコーディングルール・開発標準・方式設計・テスト観点などをインストール先で書く。旧版の install で配った役割定義のルールは、`bash scripts/install.sh --update` が未編集なら削除し、編集済みなら残して note で案内する。
 
 ## 振り分け（ディレクトリだけで決める）
 - `common/`：作成エージェント・verifier・planner の全員に渡す

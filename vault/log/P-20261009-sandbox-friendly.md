@@ -28,3 +28,4 @@
 - 2026-10-09 05:55 T-09 review→done attempt=1 verifier=sonnet
 - 2026-10-09 06:09 T-02 blocked→todo 人の指示: /plan unblock P-20261009-sandbox-friendly T-02
 - 2026-10-09 06:10 T-03 blocked→todo 人の指示: /plan unblock P-20261009-sandbox-friendly T-03
+- 2026-10-09 06:10 T-06 blocked→todo 人の指示: /plan unblock P-20261009-sandbox-friendly T-06

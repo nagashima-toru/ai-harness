@@ -1,6 +1,6 @@
 ---
 id: P-20261008-agent-role-merge
-status: approved
+status: done
 ---
 # ゴール
 標準の役割定義6本をエージェント定義に統合し、`vault/rules/` を導入先のルール専用にする（D-013 フェーズ4）

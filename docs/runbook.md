@@ -9,7 +9,7 @@
 /design <ゴール（自然文）>
 ```
 受け入れ基準が7行に収まらない・成果物が複数ファイルにまたがる・人に聞くことがある、のいずれかに当てはまる時だけ使う。調査と質問を経て `vault/designs/D-xxx.md` ができるので、フェーズのゴール文を1つずつ次の `/plan` に渡す。小さい要求はここを飛ばして `/plan` に直行してよい。
-考える工程なので、強いモデル（opus）のセッション（`claude --model opus` か、セッション内の `/model opus`）で実行する。スキルにモデルは固定していないので、人がセッションのモデルを選ぶ。実行する工程（`/run`。creator・verifier）は sonnet のまま。
+考える工程なので、強いモデル（opus）のセッション（`claude --model opus` か、セッション内の `/model opus`）で実行する。スキルにモデルは固定していないので、人がセッションのモデルを選ぶ。実行する工程（`/run`。creator・verifier）は sonnet のまま（creator は 8 節の手順で試せる）。
 
 ## 1. ゴールを入れる
 ```
@@ -17,7 +17,7 @@
 ```
 計画 ID（`P-YYYYMMDD-<slug>`）を決めてブランチ `work/<計画ID>` を作り、planner が計画票 `vault/plans/<計画ID>.md`（draft）とタスク票 `vault/tasks/<計画ID>/T-01.md` 以降を作り、一覧を提示して止まる。
 粒度が粗い・依存がおかしい時は修正指示を出す。基準は `docs/vault-spec.md` の第8節。
-`/plan` も考える工程なので、強いモデル（opus）のセッションで実行する（選び方は 0 節と同じ）。実行する工程（`/run`）に入る時は sonnet のセッションに戻す。creator・verifier は sonnet のまま。
+`/plan` も考える工程なので、強いモデル（opus）のセッションで実行する（選び方は 0 節と同じ）。実行する工程（`/run`）に入る時は sonnet のセッションに戻す。creator・verifier は sonnet のまま（creator は 8 節の手順で試せる）。
 
 ## 2. 計画を承認する
 ```
@@ -113,6 +113,32 @@ bash /path/to/ai-harness/scripts/install.sh --update /path/to/your-project
 ```
 
 未編集のファイルは `update <path>` で最新化され、組み込み先で編集したファイルは `skip (edited) <path>` と報告されるだけで上書きされない。`.claude/settings.json` は hooks の欠落エントリと `permissions.deny` の不足分だけが足される。詳細は `docs/install.md` の「ハーネスを更新する（2回目以降）」。
+
+## 8. creator のモデルを比べる
+creator のモデルだけを haiku に替えて計画を回し、sonnet の時と成績・使用量を比べる。verifier・planner のモデルは変えない。どの計画で試すか、採用するかどうかは人が決める。
+
+1. 環境変数 `HARNESS_CREATOR_MODEL=haiku` を付けて回す。対話は、セッションの起動時に設定する（起動後に変えても run の Bash には効かない場合があるので、変えたい時は起動し直す）。
+
+   ```bash
+   HARNESS_CREATOR_MODEL=haiku claude        # 対話：起動後に /run
+   env HARNESS_CREATOR_MODEL=haiku python3 scripts/run_unattended.py   # 無人（ラッパーは環境変数を子に引き継ぐ）
+   ```
+
+2. 値が効いているかは、run の中で `echo "${HARNESS_CREATOR_MODEL:-}"` を実行して確かめる。`haiku` と出れば効いている。空なら効いていない。
+3. haiku が受け付けられない値などで creator の呼び出しが失敗した時は、run が止まって報告する（`.claude/skills/run/SKILL.md` 手順3）。
+4. 計画が終わったら、次の2つで sonnet の時と比べる。
+
+   ```bash
+   python3 scripts/model_stats.py
+   python3 scripts/usage_stats.py --plan <haiku で回した計画ID>
+   python3 scripts/usage_stats.py --plan <sonnet で回した計画ID>
+   ```
+
+   - `model_stats.py` の出力で `haiku` と `sonnet` の行を見比べる（1回目 PASS 率・平均 attempt・blocked 率・指摘あり率）。
+   - `usage_stats.py` は2つの計画の creator の行を見比べる（calls＝呼び出し回数、tokens_total／tokens_avg＝トークン数、duration_avg_s＝所要時間）。
+   - archive 済みの計画は 5 節と同じく、log や会話記録を引数で明示する（例：`python3 scripts/model_stats.py vault/archive/*/log/*.md`）。
+5. 注意：`usage_stats.py` の model 列は完全なモデル ID（`resolvedModel` をそのまま出す）で、log や `model_stats.py` の alias（`haiku`・`sonnet`）とは表記が違う。行を突き合わせる時は読み替える。
+6. 元に戻すには、環境変数を外して起動し直す（`HARNESS_CREATOR_MODEL` を付けなければ、これまでどおり sonnet）。
 
 ## 困ったとき
 | 症状 | 見るところ |

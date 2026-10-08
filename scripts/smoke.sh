@@ -10,6 +10,7 @@ RULES_SH="$ROOT/scripts/rules.sh"
 CURRENT_PLAN_SH="$ROOT/scripts/current_plan.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+unset HARNESS_CREATOR_MODEL
 PASS_N=0; FAIL_N=0
 
 make_plan() { # $1=planID $2=planStatus $3...=「## タスク表」のデータ行（複数可）
@@ -1614,6 +1615,63 @@ make_plan "P-TEST" "approved" "| T-0001 | done | 1 | - | A | |" "| T-0001 | done
 expect "(ms-4) 補足付き log・plan_guard: id 重複 → ブロック（判定が変わらない）" block "$(run_plan_guard)" "重複"
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/log"; mkdir -p "$TMP/vault/plans"
 
+echo "== usage_stats.py =="
+US_PY="$ROOT/scripts/usage_stats.py"
+US_DIR="$(mktemp -d)"
+us_line() { # $1=agentId $2=agentType $3=model $4=tokens $5=ms $6=tools $7=prompt
+  printf '{"type":"user","message":{"role":"user"},"toolUseResult":{"agentId":"%s","agentType":"%s","resolvedModel":"%s","status":"completed","prompt":"%s","totalTokens":%s,"totalDurationMs":%s,"totalToolUseCount":%s,"usage":{}}}\n' "$1" "$2" "$3" "$7" "$4" "$5" "$6"
+}
+{
+  us_line a1 creator claude-haiku-x 1000 10000 3 "x"
+  us_line a2 creator claude-haiku-x 2000 21000 4 "x"
+  us_line a3 creator claude-haiku-x 2001 12000 4 "x"
+  us_line a4 creator claude-sonnet-x 300 2000 1 "x"
+  us_line a5 verifier claude-sonnet-x 5000 30000 10 "x"
+} > "$US_DIR/ok.jsonl"
+us_want="$(printf 'agent\tmodel\tcalls\ttokens_total\ttokens_avg\tduration_avg_s\ttool_uses_avg\ncreator\tclaude-haiku-x\t3\t5001\t1667.0\t14.3\t3.7\ncreator\tclaude-sonnet-x\t1\t300\t300.0\t2.0\t1.0\nverifier\tclaude-sonnet-x\t1\t5000\t5000.0\t30.0\t10.0')"
+expect_eq "(us-1) agentType×resolvedModel ごとの集計が見出し付きのタブ区切りで出る" "$us_want" "$(python3 "$US_PY" "$US_DIR/ok.jsonl")"
+{
+  echo 'not json'
+  us_line a1 creator claude-haiku-x 1000 10000 3 "x"
+  echo ''
+  echo '{"type":"user","message":"no result"}'
+  us_line a2 creator claude-haiku-x 2000 21000 4 "x"
+  echo '{"type":"user","toolUseResult":"just a string"}'
+  echo '{"type":"user","toolUseResult":{"agentType":"creator","resolvedModel":"claude-haiku-x","totalDurationMs":1,"totalToolUseCount":1}}'
+  us_line a3 creator claude-haiku-x 2001 12000 4 "x"
+  echo '{"type":"user","toolUseResult":{"agentType":"creator","resolvedModel":"claude-haiku-x","totalTokens":1,"totalDurationMs":1}}'
+  us_line a4 creator claude-sonnet-x 300 2000 1 "x"
+  us_line a5 verifier claude-sonnet-x 5000 30000 10 "x"
+  printf '\n'
+} > "$US_DIR/messy.jsonl"
+us_got="$(python3 "$US_PY" "$US_DIR/messy.jsonl" 2>/dev/null)"; us_rc=$?
+expect_eq "(us-2) 壊れた行・欠けた行を読み飛ばし終了コード0で (us-1) と同じ集計" "0:$us_want" "$us_rc:$us_got"
+{
+  us_line p1 creator claude-sonnet-x 100 1000 1 "do P-20990101-aa/T-01 now"
+  us_line p2 creator claude-sonnet-x 200 3000 2 "do P-20990101-bb/T-02 now"
+  us_line p3 creator claude-sonnet-x 300 5000 3 "no plan id here"
+  us_line p4 creator claude-sonnet-x 400 7000 4 "P-20990101-aa/T-03"
+} > "$US_DIR/plan.jsonl"
+expect_eq "(us-3) --plan は計画IDが一致する呼び出しだけを集計する" "$(printf 'agent\tmodel\tcalls\ttokens_total\ttokens_avg\tduration_avg_s\ttool_uses_avg\ncreator\tclaude-sonnet-x\t2\t500\t250.0\t4.0\t2.5')" "$(python3 "$US_PY" --plan P-20990101-aa "$US_DIR/plan.jsonl")"
+US_ROOT="$US_DIR/home/my_root.v2"
+US_KEY="$(printf '%s' "$US_ROOT" | sed 's/[^A-Za-z0-9]/-/g')"
+mkdir -p "$US_ROOT/scripts" "$US_DIR/home/.claude/projects/$US_KEY"
+cp "$US_PY" "$US_ROOT/scripts/usage_stats.py"
+cp "$US_DIR/ok.jsonl" "$US_DIR/home/.claude/projects/$US_KEY/a.jsonl"
+expect_eq "(us-4) 引数なしは HOME 配下の既定の読み込み先を読む" "$us_want" "$(env HOME="$US_DIR/home" python3 "$US_ROOT/scripts/usage_stats.py")"
+mkdir -p "$US_DIR/dir"
+us_line d1 creator claude-haiku-x 1000 10000 3 "x" > "$US_DIR/dir/a.jsonl"
+us_line d2 creator claude-haiku-x 3000 20000 5 "x" > "$US_DIR/dir/b.jsonl"
+us_line d3 creator claude-haiku-x 90000 90000 9 "x" > "$US_DIR/dir/c.txt"
+expect_eq "(us-5) ディレクトリ引数は直下の *.jsonl だけを合わせて集計する" "$(printf 'agent\tmodel\tcalls\ttokens_total\ttokens_avg\tduration_avg_s\ttool_uses_avg\ncreator\tclaude-haiku-x\t2\t4000\t2000.0\t15.0\t4.0')" "$(python3 "$US_PY" "$US_DIR/dir")"
+mkdir -p "$US_DIR/dup"
+us_line same creator claude-haiku-x 1000 10000 3 "x" > "$US_DIR/dup/a.jsonl"
+us_line same creator claude-haiku-x 1000 10000 3 "x" > "$US_DIR/dup/b.jsonl"
+expect_eq "(us-6) 同じ agentId は全ファイルを通して1回だけ数える" "$(printf 'agent\tmodel\tcalls\ttokens_total\ttokens_avg\tduration_avg_s\ttool_uses_avg\ncreator\tclaude-haiku-x\t1\t1000\t1000.0\t10.0\t3.0')" "$(python3 "$US_PY" "$US_DIR/dup/a.jsonl" "$US_DIR/dup/b.jsonl")"
+python3 "$US_PY" "$US_DIR/nonexistent.jsonl" >/dev/null 2>&1; us_rc=$?
+expect_eq "(us-7) 存在しないパスを渡すと終了コード1" "1" "$us_rc"
+rm -rf "$US_DIR"
+
 echo "== verdict_notes.py =="
 VN_PY="$ROOT/scripts/verdict_notes.py"
 VN_DIR="$(mktemp -d)"
@@ -2075,6 +2133,19 @@ expect_eq "(transition) 06 log 行が verifier=smoke-verifier で終わる" "1" 
   "$(tr_lastlog | grep -c ' T-06 review→done attempt=1 verifier=smoke-verifier$')"
 expect_eq "(transition) 07 review→done のコミットに verdict が含まれる" "1" \
   "$(git -C "$TR" show --name-only --format= HEAD | grep -c '^vault/verdicts/P-TEST/T-06.json$')"
+
+tr_setup std; export HARNESS_CREATOR_MODEL=haiku; tr_run P-TEST T-04 review; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-1) HARNESS_CREATOR_MODEL=haiku で doing→review の行が creator=haiku で終わる" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1 creator=haiku$')"
+tr_setup std; export HARNESS_CREATOR_MODEL=haiku; tr_run P-TEST T-06 done; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-2) 環境変数があっても review→done は verifier=smoke-verifier のまま" "1" \
+  "$(tr_lastlog | grep -c ' T-06 review→done attempt=1 verifier=smoke-verifier$')"
+tr_setup std; export HARNESS_CREATOR_MODEL=; tr_run P-TEST T-04 review; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-3) 空文字なら creator=smoke-creator" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1 creator=smoke-creator$')"
+tr_setup std; export HARNESS_CREATOR_MODEL=haiku; tr_run P-TEST T-04 review --no-model; unset HARNESS_CREATOR_MODEL
+expect_eq "(transition-model-4) --no-model なら環境変数があってもモデルを付けない" "1" \
+  "$(tr_lastlog | grep -c ' T-04 doing→review attempt=1$')"
 
 tr_setup std; tr_run P-TEST T-09 done
 expect_eq "(transition) 08 verdict 無しの review→done は何も変えない" "1 0 same same" "$(tr_nochange)"

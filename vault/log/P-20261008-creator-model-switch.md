@@ -1,0 +1,21 @@
+- 2026-10-08 08:08 - draft→approved 人の指示: /plan approve P-20261008-creator-model-switch
+- 2026-10-08 08:14 T-01 todo→doing attempt=1
+- 2026-10-08 08:22 T-01 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a854df17a341cabb4 branch=worktree-agent-a854df17a341cabb4 plan_head=cc6385a599677ea501809ebc94b141b79c6cdd94
+- 2026-10-08 08:22 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-08 08:26 T-01 review→done attempt=1 verifier=sonnet
+- 2026-10-08 08:26 T-02 todo→doing attempt=1
+- 2026-10-08 08:26 T-03 todo→doing attempt=1
+- 2026-10-08 08:33 T-02 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-aaf3b982abdec3d6b branch=worktree-agent-aaf3b982abdec3d6b plan_head=c09dd35a8eef32f4183eed00493962534872e9d7
+- 2026-10-08 08:33 T-02 doing→review attempt=1 creator=sonnet
+- 2026-10-08 08:33 T-03 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-af99f8ee2472fa525 branch=worktree-agent-af99f8ee2472fa525 plan_head=c09dd35a8eef32f4183eed00493962534872e9d7
+- 2026-10-08 08:33 T-03 doing→review attempt=1 creator=sonnet
+- 2026-10-08 08:38 T-02 review→done attempt=1 verifier=sonnet
+- 2026-10-08 08:38 T-03 review→done attempt=1 verifier=sonnet
+- 2026-10-08 08:38 T-04 todo→doing attempt=1
+- 2026-10-08 08:38 T-05 todo→doing attempt=1
+- 2026-10-08 08:41 T-04 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-a5bc67f6b43d48a19 branch=worktree-agent-a5bc67f6b43d48a19 plan_head=1c1467319239b782b2b9e37fe39a401050ba5143
+- 2026-10-08 08:41 T-04 doing→review attempt=1 creator=sonnet
+- 2026-10-08 08:41 T-05 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-aea77b2b59b8ade55 branch=worktree-agent-aea77b2b59b8ade55 plan_head=1c1467319239b782b2b9e37fe39a401050ba5143
+- 2026-10-08 08:41 T-05 doing→review attempt=1 creator=sonnet
+- 2026-10-08 08:44 T-04 review→done attempt=1 verifier=sonnet
+- 2026-10-08 08:44 T-05 review→done attempt=1 verifier=sonnet

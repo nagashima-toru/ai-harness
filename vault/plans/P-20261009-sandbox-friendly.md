@@ -44,7 +44,7 @@ D-013 フェーズ5 のマージ後に分かった次の4つを直す。(1) tran
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | smoke.sh が mktemp の失敗で中断し、一時ディレクトリを $TMPDIR の下に作るようにする | |
 | T-02 | todo | 0 | - | settings.json の sandbox.excludedCommands に vcs_finish.sh と discard_worktree.sh を足す | |
-| T-03 | blocked | 1 | - | run スキルに、残った worktree を discard_worktree.sh で消す後始末の節を足す | マージに失敗した: error: unable to unlink old '.claude/skills/run/SKILL.md': Operation not permitted |
+| T-03 | todo | 0 | - | run スキルに、残った worktree を discard_worktree.sh で消す後始末の節を足す | |
 | T-04 | todo | 0 | T-01,T-02,T-03,T-07,T-08,T-09 | docs/vault-spec.md のサンドボックスの小節と done の後始末を直す | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-07,T-08,T-09 | docs/runbook.md 9節を excludedCommands と後始末に合わせて直す | |
 | T-06 | blocked | 1 | - | planner.md の一時ファイルの置き場を /tmp/claude/ にし、人に消させないと書く | マージに失敗した: error: unable to unlink old '.claude/agents/planner.md': Operation not permitted |

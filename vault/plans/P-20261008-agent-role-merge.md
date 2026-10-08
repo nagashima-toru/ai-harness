@@ -32,7 +32,7 @@ status: approved
 | T-03 | done | 1 | - | 標準ルールの planner 向けの内容を .claude/agents/planner.md に統合する | |
 | T-04 | done | 1 | - | install.sh が標準ルール6本を配らず、--update で未編集のものを削除する | |
 | T-05 | done | 1 | T-01,T-02,T-03,T-04 | 文書に残る標準ルール6本への参照を「役割定義は .claude/agents/ にある」に書き換える | |
-| T-06 | doing | 1 | T-05 | vault/rules/README.md の書き換え案を提案ファイルに書く | |
+| T-06 | review | 1 | T-05 | vault/rules/README.md の書き換え案を提案ファイルに書く | |
 | T-07 | done | 1 | T-03 | ai-harness-lessons.md の planner.md への参照の直し案を提案ファイルに書く | |
 
 ## 計画の受け入れ基準

@@ -19,6 +19,8 @@
 # NG が1件でもあれば何も移さず終了コード1。--apply でもコミットはしない。
 set -eu
 export LC_ALL=C
+archive_plans_tmpfile() { mktemp "${TMPDIR:-/tmp}/archive_plans.XXXXXX"; }
+abort_tmp() { echo "archive_plans: 一時ファイルを作れません（TMPDIR=${TMPDIR:-}）。中断します" >&2; exit 2; }
 
 USAGE="usage: bash scripts/archive_plans.sh (--list|--dry-run|--apply) [--keep <N>] [--base <ref>] [--from-file <path>] [<計画ID> ...]"
 
@@ -180,7 +182,7 @@ check_candidate() {
 }
 
 # 候補を集めて古い順に並べる
-CAND_FILE="$(mktemp)"
+CAND_FILE="$(archive_plans_tmpfile)" || abort_tmp
 trap 'rm -f "$CAND_FILE"' EXIT
 shopt -s nullglob
 for f in vault/plans/*.md; do

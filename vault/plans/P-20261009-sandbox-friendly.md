@@ -1,6 +1,6 @@
 ---
 id: P-20261009-sandbox-friendly
-status: approved
+status: done
 ---
 # ゴール
 サンドボックスを有効にしたことで人の手作業が増えた不具合を直す（人の操作は計画の承認・blocked の解除・マージだけに戻す）

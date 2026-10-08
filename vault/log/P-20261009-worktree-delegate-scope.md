@@ -1,1 +1,2 @@
 - 2026-10-09 07:20 - draft→approved 人の指示: /plan approve P-20261009-worktree-delegate-scope
+- 2026-10-09 07:28 T-01 todo→doing attempt=1

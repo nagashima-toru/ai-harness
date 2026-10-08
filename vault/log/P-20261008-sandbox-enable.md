@@ -12,3 +12,4 @@
 - 2026-10-08 23:04 T-05 doing→review attempt=1 creator=sonnet
 - 2026-10-08 23:05 T-04 review→done attempt=1 verifier=sonnet
 - 2026-10-08 23:05 T-05 review→done attempt=1 verifier=sonnet
+- 2026-10-08 23:49 T-06 doing→blocked attempt=1 smoke の扱いが未決（サンドボックス）

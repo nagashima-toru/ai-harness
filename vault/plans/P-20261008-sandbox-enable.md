@@ -30,7 +30,7 @@ status: approved
 | T-03 | todo | 0 | T-01,T-06 | docs/install.md に導入先でサンドボックスを有効にする手順と既知の制約を書く | |
 | T-04 | done | 1 | T-01 | docs/vault-spec.md 12節にサンドボックスの小節を足し「残る弱点」を直す | |
 | T-05 | done | 1 | T-01 | docs/runbook.md に新しいセッションでサンドボックスの効き目を確かめる手順を書く | |
-| T-06 | doing | 1 | T-01 | merge_settings_json.py が新規作成の時に sandbox キーを書かないようにする | |
+| T-06 | blocked | 1 | T-01 | merge_settings_json.py が新規作成の時に sandbox キーを書かないようにする | T-06 の受け入れ基準に bash scripts/smoke.sh の fail=0 があるが、サンドボックスが有効なこのセッションでは mktemp -d が失敗し、smoke.sh が worktree と共有 .git を壊す（前回 main が壊れた）。smoke を人がサンドボックスの外で流す（案1）、settings.json の sandbox を直す（案2）、基準から smoke を外す（案3）のどれで進めるか決めてほしい。あわせて、前回の破壊で creator の編集は消えており、worktree も無い。 |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

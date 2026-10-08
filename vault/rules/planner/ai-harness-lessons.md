@@ -1,6 +1,6 @@
 ## 目的
 `.claude/agents/planner.md` の「やらないこと」節が生まれた、このリポジトリ（ai-harness）固有の経緯（T-xxxx・計画 ID・issue 番号と、何が起きたか）を集めた経緯集。
-汎汎用の教訓の本文は `.claude/agents/planner.md` の「やらないこと」節に残してあり、ここには経緯だけを置く。このファイルは導入先に配布しない（`install.sh` が配るファイル（マニフェストに載るもの）にも、削除の対象の一覧にも加えない）。
+汎用の教訓の本文は `.claude/agents/planner.md` の「やらないこと」節に残してあり、ここには経緯だけを置く。このファイルは導入先に配布しない（`install.sh` が配るファイル（マニフェストに載るもの）にも、削除の対象の一覧にも加えない）。
 `vault/rules/planner/` に置くため、このリポジトリ自身の planner が `bash scripts/rules.sh planner` で読む。
 
 ## ルール

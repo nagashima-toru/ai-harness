@@ -35,6 +35,7 @@ status: draft
 - 依存に循環がない
 - 1タスクが1コンテキストで終わる粒度である
 - `bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む
+- サンドボックス無しでも動く：`scripts/agent_write_guard.py` と `.claude/settings.json` の `permissions`・`hooks` が main の版から変わっておらず（`git diff main -- scripts/agent_write_guard.py` が空）、smoke がサンドボックスの無いこのセッションで `fail=0` で通る（上の smoke の基準と同じ確認）
 - `scripts/merge_settings_json.py` が変わっていない（`git status --porcelain -- scripts/merge_settings_json.py` が空で、計画ブランチのコミットにも含まれない。人への質問1で案A を選んだ場合はこの行を外す）
 
 ## マージ後に人が行う作業

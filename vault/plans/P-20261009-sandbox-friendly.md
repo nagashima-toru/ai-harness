@@ -50,7 +50,7 @@ D-013 フェーズ5 のマージ後に分かった次の4つを直す。(1) tran
 | T-06 | blocked | 1 | - | planner.md の一時ファイルの置き場を /tmp/claude/ にし、人に消させないと書く | マージに失敗した: error: unable to unlink old '.claude/agents/planner.md': Operation not permitted |
 | T-07 | done | 1 | - | install.sh が mktemp の失敗で中断し、一時ファイルを $TMPDIR の下に作るようにする | |
 | T-08 | done | 1 | - | uninstall.sh が mktemp の失敗で中断し、一時ファイルを $TMPDIR の下に作るようにする | |
-| T-09 | doing | 1 | - | archive_plans.sh が mktemp の失敗で中断し、一時ファイルを $TMPDIR の下に作るようにする | |
+| T-09 | review | 1 | - | archive_plans.sh が mktemp の失敗で中断し、一時ファイルを $TMPDIR の下に作るようにする | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

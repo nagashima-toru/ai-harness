@@ -596,22 +596,78 @@ def bash_write_targets(cmd, root):
     return result
 
 
+def main_repo_root():
+    """メインリポジトリのルート（delegate_to_worktree の self_root と同じ求め方）。求まらなければ None。"""
+    return os.environ.get("CLAUDE_PROJECT_DIR") or H.git_toplevel(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _is_vault_rules_path(t, root, main_root):
+    """書き込み対象 t が vault/rules/ 配下か。絶対パス（`~` 展開後）は main_root 基準でも見る。"""
+    if not t:
+        return False
+    t = os.path.expanduser(t)
+    if normalize(t, root).startswith("vault/rules/"):
+        return True
+    if main_root and os.path.isabs(t) and os.path.realpath(main_root) != os.path.realpath(root):
+        return normalize(t, main_root).startswith("vault/rules/")
+    return False
+
+
 def targets_vault_rules(tool, tool_input, root):
     """この呼び出しが vault/rules/ 配下への書き込みを試みているか判定する。
 
     Bash は bash_write_targets の書き込み対象（解析できない時は従来の判定の候補の和集合）を
-    パスで絞り込んで判定する。
+    パスで絞り込んで判定する。絶対パスの対象は、root 基準に加えてメインリポジトリのルート基準でも見る
+    （cwd が worktree の時、メインリポジトリの絶対パスが `../...` になって拒否に当たらないのを防ぐ）。
     """
+    main_root = main_repo_root()
     if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
         path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
-        return normalize(path, root).startswith("vault/rules/")
+        return _is_vault_rules_path(path, root, main_root)
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
         if targets_vault_rules_remote(cmd):
             return True
         _, writes = bash_write_targets(cmd, root)
-        return any(normalize(t, root).startswith("vault/rules/") for _, t in writes if t)
+        return any(_is_vault_rules_path(t, root, main_root) for _, t in writes if t)
     return False
+
+
+def writes_inside_worktree(tool, tool_input, payload):
+    """書き込み対象がすべて worktree の中（または書き込み対象なし）なら True。worktree への委譲の可否に使う。
+
+    worktree のルートが求まらない時は True（delegate_to_worktree がどのみち委譲しない）。
+    解析できない Bash で対象を特定できない（legacy-unknown）時と、リモート書き込み（gh api 等）は False。
+    """
+    cwd = payload.get("cwd") or ""
+    wt_root = H.git_toplevel(cwd) if cwd else None
+    if not wt_root:
+        return True
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        targets = [tool_input.get("file_path") or tool_input.get("notebook_path") or ""]
+    elif tool == "Bash":
+        cmd = tool_input.get("command") or ""
+        if targets_vault_rules_remote(cmd):
+            return False
+        _, writes = bash_write_targets(cmd, wt_root)
+        if any(v == "legacy-unknown" for v, _ in writes):
+            return False
+        targets = [t for _, t in writes]
+    else:
+        return True
+    real_root = os.path.realpath(wt_root)
+    for t in targets:
+        if t == "":
+            if tool == "Bash":
+                continue  # cwd を指す（git commit など）
+            return False
+        p = os.path.expanduser(t)
+        if not os.path.isabs(p):
+            p = os.path.join(cwd, p)
+        rp = os.path.realpath(p)
+        if not (rp == real_root or rp.startswith(real_root + "/")):
+            return False
+    return True
 
 
 def transcript_dir():
@@ -875,13 +931,14 @@ def main():
     except Exception:
         sys.exit(0)
 
-    delegated_stdout = H.delegate_to_worktree(payload, "agent_write_guard.py")
-    if delegated_stdout is not None:
-        sys.stdout.write(delegated_stdout)
-        sys.exit(0)
-
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input") or {}
+    if writes_inside_worktree(tool, tool_input, payload):
+        delegated_stdout = H.delegate_to_worktree(payload, "agent_write_guard.py")
+        if delegated_stdout is not None:
+            sys.stdout.write(delegated_stdout)
+            sys.exit(0)
+
     root = resolve_root(tool, tool_input, payload)
 
     # main 直接コミット拒否：agent_type を問わず、現在のブランチが main の時は git commit を拒否する。

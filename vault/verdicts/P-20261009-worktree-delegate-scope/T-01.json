@@ -1,0 +1,15 @@
+{
+  "task": "P-20261009-worktree-delegate-scope/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 11:42",
+  "criteria": [
+    {"text": "worktree の外を書き込み対象に含む呼び出しは、委譲先が常に allow を返す差し替えでも、メインリポジトリ側の判定で拒否される（Write でメインリポジトリの `vault/rules/`・Bash でメインリポジトリの `vault/rules/` の絶対パス・Bash で `~/.claude/projects/`・解析できない Bash で候補にメインリポジトリの `vault/rules/` の絶対パス）：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(wds-[1-4]\\) '` の出力が `4`", "ok": true, "note": "worktree で smoke.sh を実行し grep -E '\\((wds-[1-6]|delegate)\\)' で確認 / 出力: ok (wds-1)〜(wds-4) の4行（いずれも委譲せず拒否）"},
+    {"text": "書き込み対象がすべて worktree の中の呼び出し（解析できない Bash で候補が worktree の中だけ）と、書き込み対象が無い呼び出し（読み取りだけの Bash）は、今どおり委譲先の判定が使われる：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(wds-[56]\\) '` の出力が `2`", "ok": true, "note": "同じ smoke 出力 / ok (wds-5) と ok (wds-6) の2行"},
+    {"text": "既存の委譲のケースが今どおり通る：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(delegate\\) '` の出力が `3`", "ok": true, "note": "同じ smoke 出力 / ok (delegate) 3行"},
+    {"text": "`main()` で、委譲の判定の関数が `H.delegate_to_worktree` の呼び出しより前にある：`grep -nE 'if writes_inside_worktree\\(tool, tool_input, payload\\)|H\\.delegate_to_worktree\\(payload, \"agent_write_guard\\.py\"\\)' .claude/hooks/agent_write_guard.py` の出力が2行で、1行目が `writes_inside_worktree`、2行目が `delegate_to_worktree`（計画作成時点は `delegate_to_worktree` の1行だけ）", "ok": true, "note": "実行コマンド: 基準記載の grep -nE / 出力: 936行目 if writes_inside_worktree(...)、937行目 H.delegate_to_worktree(...) の2行"},
+    {"text": "構文が正しい：`python3 -c \"import ast; ast.parse(open('.claude/hooks/agent_write_guard.py').read()); print('ok')\"` の出力が `ok`", "ok": true, "note": "実行コマンド: 基準記載の python3 -c ast.parse / 出力: ok"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh（grep で最終行を抽出）/ 出力: smoke: pass=706 fail=0"}
+  ],
+  "reasons": []
+}

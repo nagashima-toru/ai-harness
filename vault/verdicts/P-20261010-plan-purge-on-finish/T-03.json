@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-plan-purge-on-finish/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 08:32",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（主な文書の参照切れの検査 `(ref-1)` と、新規インストール先で参照される scripts の検査を含む）", "ok": true, "note": "worktree で実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=503 fail=0"},
+    {"text": "既存の3ケースと足した2ケースが通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (run-skill-[1-5])'` の出力が `5`", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: 5"},
+    {"text": "手順7の中で、計画票のコミット・計画の記録・除去・除去のコミット・PR 作成がこの順に書かれている（`(run-skill-4)` が確かめる）。確認：`awk '/^## 7\\./,/^## 8\\./' .claude/skills/run/SKILL.md | grep -nF -e ... ` の出力で、各文字列が最初に現れる行番号がこの順に増える", "ok": true, "note": "実行コマンド: 基準の awk|grep -nF / 出力: 最初の出現は git add=5, plan_record=6, purge_plan=14, 除去commit=16, vcs_finish=17 で昇順（.claude/skills/run/SKILL.md）"},
+    {"text": "手順7の本文ファイルの節が D-016 の構成の順に書かれている（`(run-skill-5)` が確かめる）。確認：`awk '/^## 7\\./,/^## 8\\./' .claude/skills/run/SKILL.md | grep -nF -e '## verifier の指摘' -e '## 計画の記録' -e '## 取り出した情報'` の出力で、3つの文字列が最初に現れる行番号がこの順に増える", "ok": true, "note": "実行コマンド: 基準の awk|grep -nF / 出力: 10 (verifier の指摘), 11 (計画の記録), 12 (取り出した情報) で昇順"},
+    {"text": "手順8の見出しと「除去の後に実行する」旨がある。確認：`grep -c '^## 8\\. ハーネス振り返り$' .claude/skills/run/SKILL.md` の出力が `1`、かつ `awk '/^## 8\\./,/^## 回帰確認/' .claude/skills/run/SKILL.md | grep -cF '計画一式の除去の後'` の出力が `1`", "ok": true, "note": "実行コマンド: 基準の2コマンド / 出力: 1 と 1"}
+  ],
+  "reasons": []
+}

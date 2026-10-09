@@ -27,7 +27,6 @@ worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree 
 import json
 import os
 import re
-import subprocess
 import sys
 
 sys.dont_write_bytecode = True
@@ -150,140 +149,6 @@ def plan_size_violation(payload, root):
     )
 
 
-def newly_approved_plans(root):
-    """作業ツリーで approved かつ HEAD では approved でない計画票を [(plan_id, file_name), ...] で返す。
-
-    HEAD の取得失敗（HEAD 無し・未追跡）は「HEAD では approved でない」として扱う。
-    非 git ディレクトリ・git が使えない場合は空リスト（何もしない）。
-    """
-    plans_dir = os.path.join(root, "vault", "plans")
-    if not os.path.isdir(plans_dir):
-        return []
-    try:
-        inside = subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True, timeout=5, cwd=root,
-        )
-    except Exception:
-        return []
-    if inside.returncode != 0 or inside.stdout.strip() != "true":
-        return []
-    out = []
-    for name in sorted(os.listdir(plans_dir)):
-        if not name.endswith(".md"):
-            continue
-        plan_id, status = H.plan_id_and_status(os.path.join(plans_dir, name))
-        if status != "approved":
-            continue
-        head_status = None
-        try:
-            shown = subprocess.run(
-                ["git", "show", f"HEAD:./vault/plans/{name}"],
-                capture_output=True, text=True, timeout=5, cwd=root,
-            )
-            if shown.returncode == 0:
-                head_status = H.frontmatter_status(shown.stdout)
-        except Exception:
-            pass
-        if head_status != "approved":
-            out.append((plan_id, name))
-    return out
-
-
-def approval_check(payload, root):
-    """今回承認された計画票の裏付けを会話記録で検査する。(block 理由 or None, 警告 or None) を返す。"""
-    warnings = []
-    transcript_path = payload.get("transcript_path")
-    humans = None
-    for plan_id, _name in newly_approved_plans(root):
-        if humans is None:
-            humans = H.human_messages(transcript_path if isinstance(transcript_path, str) else None)
-        if not humans:
-            warnings.append(
-                f"[plan_guard] {plan_id} が draft から approved に書き換えられていますが、"
-                f"会話記録が読めないため承認の裏付けを検査できませんでした。"
-                f"人が /plan approve {plan_id} で指示した時だけ承認できます。"
-            )
-            continue
-        if not any(H.is_approve_command(t, plan_id) for t in humans):
-            return (
-                f"[plan_guard] {plan_id} が draft から approved に書き換えられていますが、"
-                f"人の /plan approve {plan_id} の指示が会話記録にありません。"
-                f"git restore vault/plans/{plan_id}.md で元に戻してください"
-                f"（承認は人が /plan approve {plan_id} で指示した時だけ行えます）。"
-            ), None
-    return None, ("\n".join(warnings) if warnings else None)
-
-
-def unblocked_rows(root):
-    """作業ツリーで blocked でなく、HEAD では blocked だった行を [(plan_id, file_name, task_id), ...] で返す。
-
-    対象は計画票すべて。HEAD の取得失敗（HEAD 無し・未追跡）は blocked の行が無い扱い。
-    作業ツリーに同じ id の行が無ければ検査しない。非 git ディレクトリ・git が使えない場合は空リスト。
-    """
-    plans_dir = os.path.join(root, "vault", "plans")
-    if not os.path.isdir(plans_dir):
-        return []
-    try:
-        inside = subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True, timeout=5, cwd=root,
-        )
-    except Exception:
-        return []
-    if inside.returncode != 0 or inside.stdout.strip() != "true":
-        return []
-    out = []
-    for name in sorted(os.listdir(plans_dir)):
-        if not name.endswith(".md"):
-            continue
-        path = os.path.join(plans_dir, name)
-        try:
-            shown = subprocess.run(
-                ["git", "show", f"HEAD:./vault/plans/{name}"],
-                capture_output=True, text=True, timeout=5, cwd=root,
-            )
-            if shown.returncode != 0:
-                continue
-            with open(path, encoding="utf-8") as f:
-                current = f.read()
-        except Exception:
-            continue
-        head_blocked = {c[0] for c in H.raw_rows(shown.stdout) if len(c) >= 2 and c[1] == "blocked"}
-        if not head_blocked:
-            continue
-        plan_id, _ = H.plan_id_and_status(path)
-        for cells in H.raw_rows(current):
-            if len(cells) >= 2 and cells[0] in head_blocked and cells[1] != "blocked":
-                out.append((plan_id, name, cells[0]))
-    return out
-
-
-def unblock_check(payload, root):
-    """blocked の解除の裏付けを会話記録で検査する。(block 理由 or None, 警告 or None) を返す。"""
-    warnings = []
-    transcript_path = payload.get("transcript_path")
-    humans = None
-    for plan_id, _name, task_id in unblocked_rows(root):
-        if humans is None:
-            humans = H.human_messages(transcript_path if isinstance(transcript_path, str) else None)
-        if not humans:
-            warnings.append(
-                f"[plan_guard] {plan_id}/{task_id} が blocked から書き換えられていますが、"
-                f"会話記録が読めないため解除の裏付けを検査できませんでした。"
-                f"人が /plan unblock {plan_id} {task_id} で指示した時だけ解除できます。"
-            )
-            continue
-        if not any(H.is_unblock_command(t, plan_id, task_id) for t in humans):
-            return (
-                f"[plan_guard] {plan_id}/{task_id} が blocked から書き換えられていますが、"
-                f"人の /plan unblock {plan_id} {task_id} の指示が会話記録にありません。"
-                f"git restore vault/plans/{plan_id}.md で元に戻してください"
-                f"（blocked の解除は人が /plan unblock {plan_id} {task_id} で指示した時だけ行えます）。"
-            ), None
-    return None, ("\n".join(warnings) if warnings else None)
-
-
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     sys.exit(0)
@@ -312,19 +177,7 @@ def main():
     if violation:
         block(violation)
 
-    reason, warning = approval_check(payload, root)
-    if reason:
-        block(reason)
-    reason2, warning2 = unblock_check(payload, root)
-    if reason2:
-        block(reason2)
-    warning = "\n".join(w for w in (warning, warning2) if w) or None
-
     def finish():
-        """終了経路。既存の検査がブロックしなかった時だけ、承認の裏付け警告を1回出して終わる。"""
-        if warning:
-            print(json.dumps({"hookSpecificOutput": {
-                "hookEventName": "PostToolUse", "additionalContext": warning}}, ensure_ascii=False))
         sys.exit(0)
 
     plans = H.approved_plans(root)

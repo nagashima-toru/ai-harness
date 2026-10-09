@@ -1,0 +1,15 @@
+{
+  "task": "P-20261009-auto-approve/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 22:50",
+  "criteria": [
+    {"text": "`agent_write_guard.py` に承認の判定が無い。確認：`grep -c \"find_plan_approval\\|is_approve_command\" .claude/hooks/agent_write_guard.py` の出力が `0`", "ok": true, "note": "実行コマンド: grep -c で worktree の agent_write_guard.py を検索 / 出力: 0"},
+    {"text": "`_hooklib.py` から `is_approve_command` が消え、unblock の判定が使う2つの関数は残る。確認：`grep -c \"def is_approve_command\" .claude/hooks/_hooklib.py` の出力が `0`、`grep -c \"def human_messages\\|def is_unblock_command\" .claude/hooks/_hooklib.py` の出力が `2`", "ok": true, "note": "実行コマンド: 上記2つの grep -c / 出力: 0 と 2"},
+    {"text": "会話記録に `/plan approve` が無くても、メインセッションの計画票の draft→approved の Edit・MultiEdit・Write は許可される。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (approve-free-'` の出力が `3`", "ok": true, "note": "実行コマンド: smoke.sh の出力を grep -c '^  ok   (approve-free-' / 出力: 3"},
+    {"text": "旧ケースが残っていない。確認：`bash scripts/smoke.sh 2>&1 | grep -c '(approve-pre)'` の出力が `0`", "ok": true, "note": "実行コマンド: smoke.sh の出力を grep -c '(approve-pre)' / 出力: 0"},
+    {"text": "unblock の判定の既存ケースは変わらず通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (unblock-pre)'` の出力が `41`", "ok": true, "note": "実行コマンド: smoke.sh の出力を grep -c '^  ok   (unblock-pre)' / 出力: 41"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1 / 出力: smoke: pass=636 fail=0。変更ファイル検査: git diff --name-only da815f4..HEAD は _hooklib.py・agent_write_guard.py・smoke.sh とタスク票(除外対象)のみで、成果物の宣言外のファイルは無し"}
+  ],
+  "reasons": []
+}

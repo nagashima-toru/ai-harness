@@ -602,71 +602,18 @@ bpc "計画票の git add → 拒否" deny 'git add vault/plans/P-X.md'
 bpc "コマンド置換の中のログへのリダイレクト → 拒否（従来判定）" deny 'echo \"$(echo x >> vault/log/P-X.md)\"'
 bpc "改行区切りの後ろのログの rm → 拒否" deny 'echo a\nrm vault/log/P-X.md'
 
-# 計画票の承認（draft→approved）の会話記録による裏付け（D-010 フェーズ4 / T-03）。
-# make_transcript は T-04 でも流用する。パスは $TMP 配下（実行ごとに一意。引数の各行を JSONL として書く）
+# 計画票の承認（draft→approved）は判定しない（D-015 フェーズ2。/plan が自動で承認する）
+# make_transcript は後ろの節でも流用する。パスは $TMP 配下（実行ごとに一意。引数の各行を JSONL として書く）
 AP_TRANSCRIPT="$TMP/approve-transcript.jsonl"
 AP_NONEXIST="$TMP/approve-nonexistent.jsonl"
 make_transcript() { printf '%s\n' "$@" > "$AP_TRANSCRIPT"; }
-T_CMD='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>approve P-TEST</command-args>"}}'
-T_CMD_SP='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>  approve P-TEST  </command-args>"}}'
-T_SENT='{"type":"user","message":{"role":"user","content":"/plan approve P-TEST"}}'
-T_OTHER_ID='{"type":"user","message":{"role":"user","content":"/plan approve P-OTHER"}}'
-T_PREFIX_ID='{"type":"user","message":{"role":"user","content":"/plan approve P-TEST2"}}'
 T_CHAT='{"type":"user","message":{"role":"user","content":"こんにちは"}}'
-T_TOOLRES='{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"/plan approve P-TEST"}]}}'
-T_META='{"type":"user","isMeta":true,"message":{"role":"user","content":"/plan approve P-TEST"}}'
-expect_ap() { # $1=name $2=deny|allow $3=payload json（deny の時は reason に /plan approve を含むことも確認）
-  local out; out="$(run_guard "$3")"
-  if [ "$2" = deny ]; then expect_guard "(approve-pre) $1" deny "$out" "/plan approve"
-  else expect_guard "(approve-pre) $1" allow "$out"; fi
-}
-AP_EDIT='"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"status: draft","new_string":"status: approved"}'
-AP_MULTI='"tool_name":"MultiEdit","tool_input":{"file_path":"vault/plans/P-TEST.md","edits":[{"old_string":"# ゴール","new_string":"# ゴール2"},{"old_string":"status: draft","new_string":"status: approved"}]}'
-AP_WRITE='"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nid: P-TEST\nstatus: approved\n---\n# ゴール\n"}'
 TP='"transcript_path":"'"$AP_TRANSCRIPT"'"'
 make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
-for form in "$T_CMD" "$T_CMD_SP" "$T_SENT"; do
-  make_transcript "$T_CHAT" "$form"
-  for tool in "$AP_EDIT" "$AP_MULTI" "$AP_WRITE"; do
-    expect_ap "コマンドあり・メイン・${tool%%,*} → 許可" allow "{$TP,$tool}"
-  done
-done
-make_transcript "$T_CHAT" "$T_CMD"
-expect_ap "コマンドあり・agent_type=planner → 拒否" deny "{$TP,\"agent_type\":\"planner\",$AP_EDIT}"
-expect_ap "コマンドあり・agent_type=creator → 拒否" deny "{$TP,\"agent_type\":\"creator\",$AP_WRITE}"
 make_transcript "$T_CHAT"
-expect_ap "コマンド無し（無関係な発言のみ）→ 拒否" deny "{$TP,$AP_EDIT}"
-expect_ap "コマンド無し・Write → 拒否" deny "{$TP,$AP_WRITE}"
-expect_ap "コマンド無し・MultiEdit → 拒否" deny "{$TP,$AP_MULTI}"
-make_transcript "$T_CHAT" "$T_OTHER_ID"
-expect_ap "別の計画 ID（approve P-OTHER）だけ → 拒否" deny "{$TP,$AP_EDIT}"
-make_transcript "$T_CHAT" "$T_PREFIX_ID"
-expect_ap "前方一致の計画 ID（approve P-TEST2）だけ → 拒否" deny "{$TP,$AP_EDIT}"
-make_transcript "$T_CHAT" "$T_TOOLRES"
-expect_ap "tool_result（content が配列）にしかコマンドが無い → 拒否" deny "{$TP,$AP_EDIT}"
-make_transcript "$T_CHAT" "$T_META"
-expect_ap "isMeta の行にしかコマンドが無い → 拒否" deny "{$TP,$AP_EDIT}"
-# 会話記録が読めない時は許可
-make_transcript "$T_TOOLRES" "$T_META"
-expect_ap "人の発言が1件も無い → 許可（読めない扱い）" allow "{$TP,$AP_EDIT}"
-make_transcript "not json" "{broken"
-expect_ap "どの行も JSON でない → 許可（読めない扱い）" allow "{$TP,$AP_EDIT}"
-expect_ap "transcript_path が無い → 許可" allow "{$AP_EDIT}"
-expect_ap "transcript_path のファイルが無い → 許可" allow '{"transcript_path":"'"$AP_NONEXIST"'",'"$AP_EDIT"'}'
-expect_ap "読めない時でも agent_type=planner は拒否" deny "{\"agent_type\":\"planner\",$AP_EDIT}"
-# 承認に当たらない書き込みは会話記録と無関係に許可
-make_transcript "$T_CHAT"
-make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
-expect_ap "draft→draft の Edit → 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"# ゴール","new_string":"# ゴール2"}}'
-expect_ap "draft→draft の Write → 許可" allow '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nstatus: draft\n---\n本文に status: approved\n"}}'
-expect_ap "本文中の status: approved は無視（Edit）→ 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"# ゴール","new_string":"status: approved"}}'
-expect_ap "old_string が見つからない Edit → 許可（Claude Code 側が失敗させる）" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"存在しない","new_string":"status: approved"}}'
-make_plan "P-TEST" "approved" "| T-01 | todo | 0 | - | A | |"
-expect_ap "approved→approved の Edit → 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| todo |","new_string":"| doing |"}}'
-make_plan "P-TEST" "done" "| T-01 | done | 1 | - | A | |"
-expect_ap "done→done の Edit → 許可" allow '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"# ゴール","new_string":"# ゴール2"}}'
-expect_ap "他ファイル（README.md）への approved 内容の Write → 許可" allow '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"README.md","content":"---\nstatus: approved\n---\n"}}'
-expect_ap "新規の計画票（ファイル無し）を approved で Write・コマンド無し → 拒否" deny '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-NEW.md","content":"---\nstatus: approved\n---\n"}}'
+expect_guard "(approve-free-1) /plan approve 無し・メインの Edit で draft→approved → 許可" allow "$(run_guard '{'"$TP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"status: draft","new_string":"status: approved"}}')"
+expect_guard "(approve-free-2) /plan approve 無し・メインの MultiEdit で draft→approved → 許可" allow "$(run_guard '{'"$TP"',"tool_name":"MultiEdit","tool_input":{"file_path":"vault/plans/P-TEST.md","edits":[{"old_string":"# ゴール","new_string":"# ゴール2"},{"old_string":"status: draft","new_string":"status: approved"}]}}')"
+expect_guard "(approve-free-3) /plan approve 無し・メインの Write で approved の計画票 → 許可" allow "$(run_guard '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nid: P-TEST\nstatus: approved\n---\n# ゴール\n"}}')"
 rm -f "$AP_TRANSCRIPT"
 
 # blocked の解除（blocked→他）の会話記録による裏付け（D-010 フェーズ5 / T-01）
@@ -866,62 +813,14 @@ run_ap_post() { # $1=transcript_path（空なら省略）
   printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"sed -i x"}%s}' "$tp" \
     | CLAUDE_PROJECT_DIR="$AP_REPO" python3 "$PLAN_GUARD_HOOK"
 }
+# 承認と unblock の裏付けの検査はしない（D-015 フェーズ2）
+NC_TRANSCRIPT="$TMP/no-check-transcript.jsonl"
+printf '%s\n' '{"type":"user","message":{"role":"user","content":"こんにちは"}}' > "$NC_TRANSCRIPT"
 ap_reset; ap_commit_plan draft; ap_plan approved
-make_transcript "$T_CHAT"
-out="$(run_ap_post "$AP_TRANSCRIPT")"
-expect "(approve-post) 裏付け無し → ブロック（計画 ID を含む）" block "$out" "P-TEST"
-expect "(approve-post) 裏付け無し → reason に git restore を含む" block "$out" "git restore vault/plans/P-TEST.md"
-for form in "$T_CMD" "$T_CMD_SP" "$T_SENT"; do
-  make_transcript "$T_CHAT" "$form"
-  expect "(approve-post) 人の /plan approve P-TEST あり → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
-done
-make_transcript "$T_CHAT" "$T_TOOLRES"
-expect "(approve-post) tool_result にしか無い → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
-make_transcript "$T_CHAT" "$T_META"
-expect "(approve-post) isMeta にしか無い → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
-make_transcript "$T_CHAT" "$T_OTHER_ID"
-expect "(approve-post) 別の計画 ID だけ → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
-make_transcript "$T_CHAT" "$T_PREFIX_ID"
-expect "(approve-post) 前方一致の計画 ID だけ → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
-# 会話記録が読めない時は警告（ブロックしない）
-ap_warn() { # $1=name $2=transcript_path
-  local o; o="$(run_ap_post "$2")"
-  expect "(approve-post) $1 → 警告（ブロックしない）" allow "$o" "会話記録が読めないため承認の裏付けを検査できませんでした"
-  if echo "$o" | grep -q '"additionalContext"' && echo "$o" | grep -q '"hookEventName": *"PostToolUse"' && echo "$o" | grep -q 'P-TEST'; then
-    echo "  ok   (approve-post) $1 → hookSpecificOutput.additionalContext に計画 ID"; PASS_N=$((PASS_N+1))
-  else
-    echo "  NG   (approve-post) $1 → additionalContext の形式"; FAIL_N=$((FAIL_N+1))
-  fi
-}
-make_transcript "$T_TOOLRES" "$T_META"; ap_warn "人の発言が1件も無い" "$AP_TRANSCRIPT"
-make_transcript "not json" "{broken"; ap_warn "どの行も JSON でない" "$AP_TRANSCRIPT"
-ap_warn "transcript_path が無い" ""
-ap_warn "transcript_path のファイルが無い" "$AP_NONEXIST"
-# 承認済み・draft・HEAD 無し・未追跡・非 git
-make_transcript "$T_CHAT"
-ap_commit_plan approved
-expect "(approve-post) HEAD で既に approved → 検査しない（許可）" allow "$(run_ap_post "$AP_TRANSCRIPT")"
-if [ -z "$(run_ap_post "$AP_TRANSCRIPT")" ]; then echo "  ok   (approve-post) HEAD で既に approved → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (approve-post) HEAD で既に approved → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
-ap_reset; ap_commit_plan draft
-expect "(approve-post) draft のまま → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
-ap_reset; ap_plan approved
-expect "(approve-post) HEAD が無い（未コミット）・裏付け無し → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
-ap_reset; echo x > "$AP_REPO/other.txt"; ap_git add other.txt; ap_git commit -q -m other; ap_plan approved
-expect "(approve-post) 未追跡の計画票・裏付け無し → ブロック" block "$(run_ap_post "$AP_TRANSCRIPT")" "P-TEST"
-make_transcript "$T_CHAT" "$T_CMD"
-expect "(approve-post) 未追跡の計画票・裏付けあり → 許可" allow "$(run_ap_post "$AP_TRANSCRIPT")"
-make_transcript "$T_CHAT"
-NONGIT="$(smoke_tmpdir)" || abort_tmp; mkdir -p "$NONGIT/vault/plans"; cp "$AP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
-expect "(approve-post) 非 git ディレクトリ → 何もしない（許可）" allow "$(printf '{"tool_name":"Bash","transcript_path":"%s"}' "$AP_TRANSCRIPT" | CLAUDE_PROJECT_DIR="$NONGIT" python3 "$PLAN_GUARD_HOOK")"
-rm -rf "$NONGIT"
-# block が出る時は警告を重ねない（JSON は1つだけ）：タスク表の列数不正 + 会話記録が読めない
-ap_reset; ap_commit_plan draft; ap_plan approved
+if [ -z "$(run_ap_post "$NC_TRANSCRIPT")" ]; then echo "  ok   (no-approve-check-1) HEAD は draft・作業ツリーは approved・/plan approve 無し → 出力なし)"; PASS_N=$((PASS_N+1)); else echo "  NG   (no-approve-check-1) 出力あり)"; FAIL_N=$((FAIL_N+1)); fi
+if [ -z "$(run_ap_post "")" ]; then echo "  ok   (no-approve-check-2) 会話記録が無い → 出力なし（警告も出さない）)"; PASS_N=$((PASS_N+1)); else echo "  NG   (no-approve-check-2) 出力あり)"; FAIL_N=$((FAIL_N+1)); fi
 sed -i.bak 's/| T-01 | todo | 0 | - | A | |/| T-01 | todo | 0 | - | A |/' "$AP_REPO/vault/plans/P-TEST.md"; rm -f "$AP_REPO/vault/plans/P-TEST.md.bak"
-make_transcript "not json"
-cnt="$(run_ap_post "$AP_TRANSCRIPT" | grep -c '^{')"
-if [ "$cnt" = 1 ]; then echo "  ok   (approve-post) 警告と block が競合する時は JSON 1つ"; PASS_N=$((PASS_N+1)); else echo "  NG   (approve-post) JSON が $cnt 個"; FAIL_N=$((FAIL_N+1)); fi
-expect "(approve-post) 警告と block が競合する時は block を優先" block "$(run_ap_post "$AP_TRANSCRIPT")" "列数"
-rm -f "$AP_TRANSCRIPT"
+expect "(no-approve-check-3) 列数の不正は今どおりブロック" block "$(run_ap_post "$NC_TRANSCRIPT")" "列数"
 
 # blocked の解除の裏付け検査（PostToolUse・D-010 フェーズ5 / T-02）。HEAD の blocked 行が作業ツリーで変わったかを見る
 UP_REPO="$TMP/unblock-post-repo"
@@ -944,74 +843,9 @@ run_up_post() { # $1=transcript_path（空なら省略）
     | CLAUDE_PROJECT_DIR="$UP_REPO" python3 "$PLAN_GUARD_HOOK"
 }
 up_reset; up_commit todo blocked; up_plan todo todo
-make_ub_transcript "$T_CHAT"
-out="$(run_up_post "$UB_TRANSCRIPT")"
-expect "(unblock-post) 裏付け無し → ブロック（計画 ID・タスク ID を含む）" block "$out" "P-TEST/T-02"
-expect "(unblock-post) 裏付け無し → reason に git restore を含む" block "$out" "git restore vault/plans/P-TEST.md"
-for form in "$U_CMD" "$U_CMD_SP" "$U_SENT"; do
-  make_ub_transcript "$T_CHAT" "$form"
-  expect "(unblock-post) 人の /plan unblock P-TEST T-02 あり → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-done
-make_ub_transcript "$T_CHAT" "$U_TOOLRES"
-expect "(unblock-post) tool_result にしか無い → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
-make_ub_transcript "$T_CHAT" "$U_META"
-expect "(unblock-post) isMeta にしか無い → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
-make_ub_transcript "$T_CHAT" "$U_OTHER_PLAN"
-expect "(unblock-post) 別の計画 ID だけ → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
-make_ub_transcript "$T_CHAT" "$U_OTHER_TASK"
-expect "(unblock-post) 別のタスク ID だけ → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
-make_ub_transcript "$T_CHAT" "$U_PREFIX"
-expect "(unblock-post) 前方一致のタスク ID だけ → ブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-02"
-up_warn() { # $1=name $2=transcript_path
-  local o; o="$(run_up_post "$2")"
-  expect "(unblock-post) $1 → 警告（ブロックしない）" allow "$o" "解除の裏付けを検査できませんでした"
-  if echo "$o" | grep -q '"additionalContext"' && echo "$o" | grep -q '"hookEventName": *"PostToolUse"' && echo "$o" | grep -q 'P-TEST/T-02'; then
-    echo "  ok   (unblock-post) $1 → hookSpecificOutput.additionalContext に計画 ID・タスク ID"; PASS_N=$((PASS_N+1))
-  else
-    echo "  NG   (unblock-post) $1 → additionalContext の形式"; FAIL_N=$((FAIL_N+1))
-  fi
-}
-make_ub_transcript "$U_TOOLRES" "$U_META"; up_warn "人の発言が1件も無い" "$UB_TRANSCRIPT"
-make_ub_transcript "not json" "{broken"; up_warn "どの行も JSON でない" "$UB_TRANSCRIPT"
-up_warn "transcript_path が無い" ""
-up_warn "transcript_path のファイルが無い" "$UB_NONEXIST"
-# 対象外：blocked のまま・HEAD でも blocked でない・HEAD 無し・未追跡・行が無い・非 git
-make_ub_transcript "$T_CHAT"
-up_reset; up_commit todo blocked; up_plan doing blocked
-expect "(unblock-post) blocked→blocked（他の行だけ変更）→ 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-if [ -z "$(run_up_post "$UB_TRANSCRIPT")" ]; then echo "  ok   (unblock-post) blocked→blocked → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) blocked→blocked → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
-up_reset; up_commit todo todo; up_plan doing doing
-expect "(unblock-post) HEAD でも blocked でない（todo→doing）→ 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-if [ -z "$(run_up_post "$UB_TRANSCRIPT")" ]; then echo "  ok   (unblock-post) todo→doing → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) todo→doing → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
-up_reset; UP_STATUS=draft up_plan todo todo
-expect "(unblock-post) HEAD が無い（未コミット）→ 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-up_reset; echo x > "$UP_REPO/other.txt"; up_git add other.txt; up_git commit -q -m other; UP_STATUS=draft up_plan todo todo
-expect "(unblock-post) 未追跡の計画票 → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-if [ -z "$(run_up_post "$UB_TRANSCRIPT")" ]; then echo "  ok   (unblock-post) 未追跡の計画票 → 出力なし"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) 未追跡の計画票 → 出力あり"; FAIL_N=$((FAIL_N+1)); fi
-up_reset; up_commit todo blocked; up_plan todo todo
-sed -i.bak '/^| T-02 /d' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
-expect "(unblock-post) 作業ツリーに同じ id の行が無い → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-up_reset; up_commit todo blocked; up_plan todo todo
-NONGIT="$(smoke_tmpdir)" || abort_tmp; mkdir -p "$NONGIT/vault/plans"; cp "$UP_REPO/vault/plans/P-TEST.md" "$NONGIT/vault/plans/"
-expect "(unblock-post) 非 git ディレクトリ → 何もしない（許可）" allow "$(printf '{"tool_name":"Bash","transcript_path":"%s"}' "$UB_TRANSCRIPT" | CLAUDE_PROJECT_DIR="$NONGIT" python3 "$PLAN_GUARD_HOOK")"
-rm -rf "$NONGIT"
-# コミット後は HEAD の版が blocked でなくなり対象外
-up_git add vault/plans/P-TEST.md; up_git commit -q -m unblock
-expect "(unblock-post) 解除をコミットした後 → 許可" allow "$(run_up_post "$UB_TRANSCRIPT")"
-# 複数行の解除：最初の裏付けの無い行でブロック
-up_reset; printf -- '---\nid: P-TEST\nstatus: approved\n---\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-02 | blocked | 1 | - | B | q |\n| T-03 | blocked | 1 | - | C | q |\n' > "$UP_REPO/vault/plans/P-TEST.md"
-up_git add vault/plans/P-TEST.md; up_git commit -q -m plan
-sed -i.bak 's/blocked/todo/; s/| q |/| |/' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
-make_ub_transcript "$T_CHAT" "$U_CMD"
-expect "(unblock-post) 複数行の解除・T-02 だけ裏付けあり → T-03 でブロック" block "$(run_up_post "$UB_TRANSCRIPT")" "P-TEST/T-03"
-# block が出る時は警告を重ねない（JSON は1つだけ）：列数不正 + 会話記録が読めない
-up_reset; up_commit todo blocked; up_plan todo todo
-sed -i.bak 's/| T-01 | todo | 0 | - | A | |/| T-01 | todo | 0 | - | A |/' "$UP_REPO/vault/plans/P-TEST.md"; rm -f "$UP_REPO/vault/plans/P-TEST.md.bak"
-make_ub_transcript "not json"
-cnt="$(run_up_post "$UB_TRANSCRIPT" | grep -c '^{')"
-if [ "$cnt" = 1 ]; then echo "  ok   (unblock-post) 警告と block が競合する時は JSON 1つ"; PASS_N=$((PASS_N+1)); else echo "  NG   (unblock-post) JSON が $cnt 個"; FAIL_N=$((FAIL_N+1)); fi
-expect "(unblock-post) 警告と block が競合する時は block を優先" block "$(run_up_post "$UB_TRANSCRIPT")" "列数"
-rm -f "$UB_TRANSCRIPT"
+if [ -z "$(run_up_post "$NC_TRANSCRIPT")" ]; then echo "  ok   (no-unblock-check-1) HEAD で blocked の T-02 が作業ツリーで todo・/plan unblock 無し → 出力なし)"; PASS_N=$((PASS_N+1)); else echo "  NG   (no-unblock-check-1) 出力あり)"; FAIL_N=$((FAIL_N+1)); fi
+if [ -z "$(run_up_post "")" ]; then echo "  ok   (no-unblock-check-2) 会話記録が無い → 出力なし（警告も出さない）)"; PASS_N=$((PASS_N+1)); else echo "  NG   (no-unblock-check-2) 出力あり)"; FAIL_N=$((FAIL_N+1)); fi
+rm -f "$NC_TRANSCRIPT"
 
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テストと同じ型：
 # 一時 worktree に判定結果が変わる差し替えスクリプトを置き、cwd をその worktree に向けたペイロードを

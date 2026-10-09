@@ -15,15 +15,13 @@
 ```
 /plan <ゴール（自然文）>
 ```
-計画 ID（`P-YYYYMMDD-<slug>`）を決めてブランチ `work/<計画ID>` を作り、planner が計画票 `vault/plans/<計画ID>.md`（draft）とタスク票 `vault/tasks/<計画ID>/T-01.md` 以降を作り、一覧を提示して止まる。
-粒度が粗い・依存がおかしい時は修正指示を出す。基準は `docs/vault-spec.md` の第8節。
-`/plan` も考える工程なので、強いモデル（opus）のセッションで実行する（選び方は 0 節と同じ）。実行する工程（`/run`）に入る時は sonnet のセッションに戻す。creator・verifier は sonnet のまま（creator は 8 節の手順で試せる）。
+計画 ID（`P-YYYYMMDD-<slug>`）を決めてブランチ `work/<計画ID>` を作り、planner が計画票 `vault/plans/<計画ID>.md`（draft）とタスク票 `vault/tasks/<計画ID>/T-01.md` 以降を作る。粒度の確認を通ると計画票の `status` を `approved` にしてコミットし、続けて `/run` を実行する（人の承認を待たない）。planner に人への質問がある時だけ、質問を提示して止まる。会話で答えると、回答を反映してから承認と `/run` に進む。
+粒度の基準は `docs/vault-spec.md` の第8節。
+`/plan` も考える工程なので、強いモデル（opus）のセッションで実行する（選び方は 0 節と同じ）。続けて実行する `/run` もそのセッションのモデルのまま動く。creator・verifier はサブエージェントで、それぞれの定義のモデル（sonnet）で動く（creator は 8 節の手順で試せる）。
 
-## 2. 計画を承認する
-```
-/plan approve <計画ID>
-```
-計画票 frontmatter の `status` が `approved` になる。承認前のタスクには着手しない。1ブランチにつき approved は1件（`plan_guard.py` が2件以上を検出する）。
+## 2. 計画は自動で承認される
+`/plan` が計画票の `status` を `approved` にし、`vault/log/<計画ID>.md` に `- <日時> - draft→approved /plan による自動承認` を追記してコミットする。人が承認のコマンドを打つことは無い。計画の中身は、最後にできる PR で人が確認する。1ブランチにつき approved は1件（`plan_guard.py` が2件以上を検出する）。
+計画を直したい時は、`/run` の途中でも止めて指示を出してよい。PR の段階で気づいた時は、マージせずに指示を出す。
 
 ## 3. キューを回す
 - 対話：`/run`（1件処理して報告。続けて呼べば次へ）

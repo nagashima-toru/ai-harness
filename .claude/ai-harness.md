@@ -24,7 +24,7 @@
 - `verifier` は `vault/verdicts/`、`planner` は `vault/plans/`・`vault/tasks/` にだけ書く（詳細は `.claude/agents/` の各定義）
 
 ## スキル
-`/plan <ゴール>`（計画を draft で作りブランチを切る。`/plan approve <計画ID>` で承認、`/plan unblock <計画ID> <id> [回答]` で blocked を解除して todo に戻す）・`/run`（自分のブランチの承認済み計画の取れるタスクを、全部 done になるまで処理し、PR を作る）・`/design <ゴール>`（大きなゴールを設計文書にする）
+`/plan <ゴール>`（計画を draft で作りブランチを切り、粒度の確認を通ったら approved にしてコミットし、続けて `/run` を実行する。`/plan unblock <計画ID> <id> [回答]` で blocked を解除して todo に戻す）・`/run`（自分のブランチの承認済み計画の取れるタスクを、全部 done になるまで処理し、PR を作る）・`/design <ゴール>`（大きなゴールを設計文書にする）
 
 ## 禁止
 - `done` のタスク票・verdict を編集すること（フックで拒否される）

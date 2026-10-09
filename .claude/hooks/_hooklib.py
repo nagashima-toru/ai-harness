@@ -305,16 +305,6 @@ def human_messages(transcript_path):
     return out
 
 
-def is_approve_command(text, plan_id):
-    """人の発言が `/plan approve <plan_id>`（スラッシュコマンド形式または文形式）か判定する。"""
-    if "<command-name>/plan</command-name>" in text:
-        for args in re.findall(r"<command-args>(.*?)</command-args>", text, re.S):
-            if args.strip() == f"approve {plan_id}":
-                return True
-    m = re.match(r"^/plan\s+approve\s+(\S+)", text.lstrip())
-    return bool(m) and m.group(1) == plan_id
-
-
 def is_unblock_command(text, plan_id, task_id):
     """人の発言が `/plan unblock <plan_id> <task_id>`（スラッシュコマンド形式または文形式）か判定する。
 

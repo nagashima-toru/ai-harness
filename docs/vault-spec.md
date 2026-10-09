@@ -63,7 +63,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 - doing（review→doing。verifier の FAIL の再試行。review からだけ）：verdict が JSON として読め、task・attempt が一致し、result が FAIL の時だけ行う。attempt+1 が上限以内なら review→doing にして worktree とブランチを破棄する。log の補足は reasons の先頭1件を80文字で切ったもの。上限を超えるなら、reasons を `／` でつないで200文字で切ったものを question にして review→blocked にし、worktree を残す
 - blocked（doing→blocked。creator の blocked の報告。doing からだけ）：`--question` か `--question-file` が必須。再開情報の記録行（7節）と doing→blocked の行を書いてコミットし、worktree は残す。worktree の中身には触れない（収集・差分ゲートはしない）
 - 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
-- 承認（draft→approved）と blocked の解除（`/plan approve`・`/plan unblock`）は扱わず、今の `/plan` の Edit のまま（10節の裏付けの検査が「HEAD と作業ツリーの比較」で働くため）
+- 承認（draft→approved。`/plan` の自動承認）と blocked の解除（`/plan unblock`）は扱わず、`/plan` の Edit のまま
 - 推奨の経路であって強制ではない。Edit による計画票の直接の書き換えはフックで拒否しない。done の行の verdict の検査（9節・10節）で「PASS の無い done」が残らないことを守る
 - `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、承認・blocked の解除は `/plan` の Edit のまま
 
@@ -94,8 +94,8 @@ frontmatter は `id` と `status` の2つ。
 
 | status | 意味 |
 |---|---|
-| `draft` | planner が作った直後。人の承認待ちで、まだ着手しない |
-| `approved` | 人が承認した。このブランチで進行中の計画 |
+| `draft` | planner が書いている間。粒度の検査（8節・10節）の対象で、まだ着手しない |
+| `approved` | `/plan` が粒度の確認を通した後に自動で承認した。このブランチで進行中の計画 |
 | `done` | 全タスクが `done` になり `scripts/vcs_finish.sh` を実行済み |
 
 `done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。
@@ -177,7 +177,7 @@ frontmatter は `id` と `status` の2つ。
 
 ファイル名で計画が特定できるので、行の中のタスク ID は計画スコープの短い形（`T-01`）でよい。計画のブランチ内に閉じるので、並行するセッションの追記と競合しない。
 
-タスクに紐づかない計画単位の行は、タスク ID の位置を `-` にする。`/plan approve` の承認は次の形で1行追記する（承認の根拠の記録）：`- <日時> - draft→approved 人の指示: /plan approve <計画ID>`
+タスクに紐づかない計画単位の行は、タスク ID の位置を `-` にする。`/plan` の自動承認は次の形で1行追記する：`- <日時> - draft→approved /plan による自動承認`。D-015 フェーズ2 より前の承認の行（補足が `人の指示:` で始まるもの）は書き換えない
 
 blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク ID の位置にその id を書き、次の形で1行追記する（解除の根拠の記録）：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`
 
@@ -265,9 +265,7 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 
 done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1）。自分のブランチの approved な計画票のタスク表で status が done の行それぞれについて、vault/verdicts/<計画ID>/<id>.json があり、JSON として読め、task が <計画ID>/<id>、attempt がタスク表の値と一致し、result が PASS で、形式が正しい（9節の「verdict が不正」の条件に当たらない）ことを、この順に確かめる。満たさない行があれば、表の上から最初の1行についてブロックし、その行の status を review に戻して verifier を実行するよう指示する。この検査は上の段落の検査（列数・status・依存・blocked の question・id の重複）の後に行い、それらのブロック理由が先に出る。検査の本体は .claude/hooks/_hooklib.py の done_rows_without_pass で、Stop フック（9節）と共通。done のタスクの verdict への書き込みは agent_write_guard が拒否する（12節）ため、直す手順は review に戻してから verifier を実行する順になる。draft・done の計画票と vault/archive/ は検査しない。
 
-承認の裏付けの検査も plan_guard が行う（D-010 フェーズ4）。Bash による書き込みは PreToolUse 側では内容を組み立てられず取りこぼすため、その補完として、作業ツリーの計画票（status が approved のもの）を `git show HEAD:<path>` の版と比べ、HEAD では approved でない（HEAD 無し・未追跡を含む）ものを「今回承認された」計画票とみなす。その計画 ID について、会話記録の人の発言に `/plan approve <計画ID>` が無ければブロックし、`git restore vault/plans/<計画ID>.md` で元に戻すよう指示する。会話記録が読めない時（定義は12節）はブロックせず、`additionalContext` で「承認の裏付けを検査できなかった」旨の警告を出す。非 git ディレクトリでは何もしない。同じ承認に何度も当たらないよう、`/plan approve` は承認の直後にコミットする（HEAD が approved になれば対象外）。人の発言の定義・コマンドの一致規則は12節を参照する。
-
-blocked の解除の裏付けの検査も plan_guard が行う（D-010 フェーズ5）。承認と同じ理由で PreToolUse を補完するため、作業ツリーの各計画票のタスク表を `git show HEAD:<path>` の版と比べ、HEAD では status が `blocked` で、作業ツリーでは同じ id の行が `blocked` でないものを「今回解除された」行とみなす（HEAD 無し・未追跡は blocked の行が無い扱い）。その計画 ID・タスク ID について、会話記録の人の発言に `/plan unblock <計画ID> <id>` が無ければブロックし、`git restore vault/plans/<計画ID>.md` で元に戻すよう指示する。会話記録が読めない時（定義は12節）はブロックせず、`additionalContext` で「解除の裏付けを検査できなかった」旨の警告を出す。非 git ディレクトリでは何もしない。同じ解除に何度も当たらないよう、`/plan unblock` は解除の直後にコミットする（HEAD で blocked でなくなれば対象外）。
+承認（draft→approved）と blocked の解除は、plan_guard では検査しない（D-015 フェーズ2 で廃止）。承認は `/plan` が粒度の確認を通した後に自動で行う。
 
 ## 11. ルール（`vault/rules/`）
 
@@ -303,18 +301,16 @@ vault/rules/
 |---|---|
 | 対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`vault/rules/ へは書き込めません` を reason に含める。タスクの状態（`todo`/`doing`/`review`）・承認済み計画の有無は問わない。解除口は無い |
 | 対象が `vault/tasks/<計画ID>/<id>.md` または `vault/verdicts/<計画ID>/<id>.json` で、該当 id の計画票（`vault/plans/<計画ID>.md`）のタスク表上の status が `done`（計画票が無い・読めない・該当 id の行が無い場合はこの判定の対象外。Bash の書き込み動詞が `git add` / `git commit` だけのコマンドも対象外：ステージ・コミットはファイル内容を変えないため。リダイレクト・`cp`/`mv`/`rm`・`sed -i`・`tee`・`git rm` など内容を変える書き込みが混在する場合は対象） | ブロック：`done` のタスク票・verdict は編集できません。agent_type を問わず（メインセッション含む）拒否する。`git add` / `git commit` のみのコマンドが対象外なのは判定範囲の定義であって解除口ではなく、内容を変える書き込みが混在すれば従来どおり拒否する。解除口は無い |
-| 対象が `vault/plans/<計画ID>.md` で、Write/Edit/MultiEdit により frontmatter の status を approved 以外（ファイルが無い場合を含む）から approved にする（承認：draft→approved） | メインセッション（`agent_type` が空）かつ会話記録の人の発言に `/plan approve <計画ID>` がある時だけ許可。`agent_type` が空でない（planner・creator 等）、または会話記録が読めたのに該当する発言が無い時はブロック：`/plan approve <計画ID>` で指示した時だけ許可される旨を reason に含める。会話記録が読めない時（定義は下記）はブロックしない（許可。警告は plan_guard が出す：10節） |
-| 対象が `~/.claude/projects/` 配下（会話記録。`~` は `os.path.expanduser` で展開して判定する）への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash の書き込み対象パス） | ブロック：`~/.claude/projects/ 配下（会話記録）へは書き込めません` を reason に含める。`agent_type`・タスクの状態を問わず、解除口は無い。承認の裏付けが会話記録に依るため、エージェントによる改ざんを防ぐ |
-| 対象が `vault/plans/<計画ID>.md` で、Write/Edit/MultiEdit により、書き込み前に status が `blocked` の行が、書き込み後に同じ id の行の status が `blocked` 以外になる（解除：blocked→他。行が消えるだけの場合・書き込み後の内容を組み立てられない場合は対象外） | メインセッション（`agent_type` が空）かつ会話記録の人の発言に `/plan unblock <計画ID> <id>` がある時だけ許可。`agent_type` が空でない、または会話記録が読めたのに該当する発言が無い時はブロック：`/plan unblock <計画ID> <id>` で指示した時だけ許可される旨を reason に含める。会話記録が読めない時（定義は下記）はブロックしない（許可。警告は plan_guard が出す：10節）。1回の書き込みで複数行を解除する場合は、行ごとに一致する発言を要求する |
+| 対象が `~/.claude/projects/` 配下（会話記録。`~` は `os.path.expanduser` で展開して判定する）への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash の書き込み対象パス） | ブロック：`~/.claude/projects/ 配下（会話記録）へは書き込めません` を reason に含める。`agent_type`・タスクの状態を問わず、解除口は無い。blocked の解除の裏付けが会話記録に依るため、エージェントによる改ざんを防ぐ |
+| 対象が `vault/plans/<計画ID>.md` で、Write/Edit/MultiEdit により、書き込み前に status が `blocked` の行が、書き込み後に同じ id の行の status が `blocked` 以外になる（解除：blocked→他。行が消えるだけの場合・書き込み後の内容を組み立てられない場合は対象外） | メインセッション（`agent_type` が空）かつ会話記録の人の発言に `/plan unblock <計画ID> <id>` がある時だけ許可。`agent_type` が空でない、または会話記録が読めたのに該当する発言が無い時はブロック：`/plan unblock <計画ID> <id>` で指示した時だけ許可される旨を reason に含める。会話記録が読めない時（定義は下記）はブロックしない（許可）。1回の書き込みで複数行を解除する場合は、行ごとに一致する発言を要求する |
 | 上記に該当しない（`vault/rules/` 以外への書き込み、または `done` でないタスクへの書き込み） | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
 
 この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、この判定で先に拒否される。
 
-**承認の裏付けの判定に使う会話記録**（agent_write_guard.py と plan_guard.py の両方が、フックに渡される `transcript_path` の会話記録（JSONL）を同じ規則で読む。解析は共通モジュール `.claude/hooks/_hooklib.py` の関数を使う。10節はここを参照する）：
+**blocked の解除の裏付けの判定に使う会話記録**（agent_write_guard.py が、フックに渡される `transcript_path` の会話記録（JSONL）を読む。解析は共通モジュール `.claude/hooks/_hooklib.py` の関数を使う）：
 - 人の発言：`type` が `user`、`message.content` が文字列、`isMeta` が真でない行だけ。`content` が配列の行（`tool_result` など）と `isMeta` の行は対象外。探す範囲はそのセッションの会話記録全体
-- コマンドの一致：人の発言が `<command-name>/plan</command-name>` と、引数が `approve <計画ID>` の `<command-args>` を含む（スラッシュコマンドとして打った場合）か、先頭が `/plan approve <計画ID>` である（文として打った場合）。計画 ID は完全一致で比べる
-- 「読めない」：`transcript_path` が無い・ファイルが無い・どの行も JSON として読めない・人の発言が1件も無い、のいずれか。この時はブロックせず許可し、警告に落とす。読めたうえでコマンドが無い時はブロックする
-- `unblock` のコマンドの一致：承認と同じ形（スラッシュコマンドの `<command-args>`、または先頭が `/plan` の文）で、引数の先頭3トークンが `unblock <計画ID> <id>` であること。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べ、後ろに回答が続いてよい。1回のコマンドで解除するのは1行だけで、複数行を解除するにはコマンドをその行数だけ打つ。`/run` の遷移（todo→doing→review→done/doing）には blocked から出るものが無いので、この判定に当たるのは `/plan unblock` だけ
+- 「読めない」：`transcript_path` が無い・ファイルが無い・どの行も JSON として読めない・人の発言が1件も無い、のいずれか。この時はブロックせず許可する。読めたうえでコマンドが無い時はブロックする
+- `unblock` のコマンドの一致：人の発言が `<command-name>/plan</command-name>` を含みその `<command-args>` の、または先頭が `/plan` の文の、引数の先頭3トークンが `unblock <計画ID> <id>` であること。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べ、後ろに回答が続いてよい。1回のコマンドで解除するのは1行だけで、複数行を解除するにはコマンドをその行数だけ打つ。`/run` の遷移（todo→doing→review→done/doing）には blocked から出るものが無いので、この判定に当たるのは `/plan unblock` だけ
 - 対象外（今回やらないこと）：自然文での解除、AskUserQuestion への回答での解除、計画票からの行の削除の検査
 - 会話記録の形式は Claude Code の公開仕様ではなく、変わりうる。形式の変化は `scripts/smoke.sh` のサンプルで検知する
 

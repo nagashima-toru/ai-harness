@@ -2,3 +2,5 @@
 - 2026-10-09 19:42 T-01 todo→doing attempt=1
 - 2026-10-09 19:42 T-02 todo→doing attempt=1
 - 2026-10-09 19:42 T-03 todo→doing attempt=1
+- 2026-10-09 19:43 T-02 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a2c494305ba6328cf branch=worktree-agent-a2c494305ba6328cf plan_head=5a88ff002b4537a86217c139bc121ee97c5c331b
+- 2026-10-09 19:43 T-02 doing→blocked attempt=1 creator=sonnet

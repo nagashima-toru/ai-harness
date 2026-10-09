@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-plan-purge-on-finish/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 08:26",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree で実行） / 出力: smoke: pass=501 fail=0"},
+    {"text": "plan_record.py のケースが6つとも通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (prec-[1-6])'` の出力が `6`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (prec-[1-6])'` / 出力: 6"},
+    {"text": "このリポジトリの既存の計画で、出力の1行目が見出しになる。確認：`python3 scripts/plan_record.py P-20261010-harness-improvements-followup | head -1` の出力が `## 計画の記録`", "ok": true, "note": "実行コマンド: `python3 scripts/plan_record.py P-20261010-harness-improvements-followup | head -1` / 出力: ## 計画の記録"},
+    {"text": "同じ計画で、タスク表の7行がそのまま出る。確認：`python3 scripts/plan_record.py P-20261010-harness-improvements-followup | grep -c '^| T-0[1-7] | done | 1 |'` の出力が `7`", "ok": true, "note": "実行コマンド: 上記の grep -c / 出力: 7"},
+    {"text": "計画票の無い計画 ID では終了コード1で終わる。確認：`python3 scripts/plan_record.py P-20990101-no-such-plan` の終了コードが `1`、標準出力が空", "ok": true, "note": "実行コマンド: `python3 scripts/plan_record.py P-20990101-no-such-plan; echo rc=$?` / 出力: rc=1、stderr に見つかりません 2行。`2>/dev/null | wc -c` は 0（標準出力は空）"}
+  ],
+  "reasons": []
+}

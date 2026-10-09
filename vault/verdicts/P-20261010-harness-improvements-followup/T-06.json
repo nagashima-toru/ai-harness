@@ -1,0 +1,17 @@
+{
+  "task": "P-20261010-harness-improvements-followup/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 07:56",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（主な文書の参照切れの検査 `(ref-1)` を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree） / 出力: smoke: pass=487 fail=0"},
+    {"text": "「`vault/rules/` は宣言があっても違反」「フックでも拒否される」の記述がリポジトリに残っていない（grep -rnF 7パターン が何も出力しない）", "ok": true, "note": "実行コマンド: 基準記載の `grep -rnF --exclude=decisions.md -e ... README.md docs/ vault/rules/ .claude/ scripts/` / 出力: 空"},
+    {"text": "起点コミットの検査と verifier による宣言外の変更の記録の記述が残っていない（grep が何も出力しない）", "ok": true, "note": "実行コマンド: 基準記載の `grep -rn --exclude=decisions.md --exclude=smoke.sh '起点コミット\\|宣言外ファイルの変更を検出した場合' ...` / 出力: 空"},
+    {"text": "GraphQL を使う PR・issue の作成の記述が残っていない（grep が何も出力しない）", "ok": true, "note": "実行コマンド: 基準記載の `grep -rn --exclude=decisions.md --exclude=smoke.sh 'gh issue create\\|gh pr create --' ...` / 出力: 空"},
+    {"text": "12節の (b) の行が新しい判定になっている（誤検知許容の語が0、新しい対象の字面が1）", "ok": true, "note": "実行コマンド: 基準の2つの `grep -cF` / 出力: 0 と 1"},
+    {"text": "仕様に REST の PR 作成と提案ファイルの運用がある", "ok": true, "note": "実行コマンド: `grep -cF 'gh api -X POST repos/<owner>/<repo>/pulls' docs/vault-spec.md` / 出力: 1。`grep -lF 'vault/harness-improvements/<計画ID>.md' docs/vault-spec.md docs/runbook.md` / 出力: 両方のパス"},
+    {"text": "仕様の2節に計画票の done のコミットがある", "ok": true, "note": "実行コマンド: `grep -cF 'git add vault/plans/<計画ID>.md' docs/vault-spec.md` / 出力: 1。なお grep はいずれも字面の確認で、5節・6節・11節・runbook・README の文意の直しまでは基準が保証しない（緩い基準）。"}
+  ],
+  "reasons": [],
+  "_scope_note": "起点コミット 581678f からの変更ファイルは README.md・docs/runbook.md・docs/vault-spec.md・vault/rules/README.md と除外対象のみで、成果物外の変更なし。"
+}

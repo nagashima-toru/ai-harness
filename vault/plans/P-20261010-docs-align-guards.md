@@ -1,6 +1,6 @@
 ---
 id: P-20261010-docs-align-guards
-status: approved
+status: done
 ---
 # ゴール
 文書を守りを絞った後の姿に揃える（D-015 フェーズ5）

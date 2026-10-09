@@ -13,9 +13,6 @@
 | `vault/designs/D-001.md` | 設計文書（テンプレート：`vault/templates/design.md`）。`/plan` に渡す前の下ごしらえ |
 | `vault/harness-improvements/<計画ID>.md` | run の振り返り（`.claude/skills/run/SKILL.md` 手順8）で issue の起票に失敗した時の改善提案。提案に対応した計画が、その計画の中で削除する。5状態遷移の対象ではない |
 | `vault/rules/` | 作成エージェント・verifier・planner に渡すルール（「ルール（`vault/rules/`）」の節を見る） |
-| `vault/archive/<年-月>/{plans,tasks,verdicts,log}/` | done かつ PR がマージ済みの計画一式の移動先（`vault/` と同じ種別ごとのサブディレクトリ。詳細は表の後の段落）。参照用で、消しても運用に影響しない |
-
-archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手順は `docs/runbook.md` 5節）。エージェントは `--list`・`--dry-run` だけを使う。計画票が `status: done`・タスク表が全行 `done`・`main` でも `status: done`（マージ済み）・log に日時行がある計画を候補にし、新しい順に --keep（既定5）件を残す。それより古い全部を移す。現在のブランチの計画は候補に入れず、5件に数えない。「新しい」の基準は log の最初の日時行（`- YYYY-MM-DD HH:MM ` で始まる最初の行）の日時で、同じなら計画 ID の文字列順で後ろのものを新しいとみなす。`<年-月>` は計画 ID の日付部分から決める。移した後のファイルは agent_write_guard.py の done 判定の対象外になる（フックは `vault/tasks/`・`vault/verdicts/` だけを見る）。`vault/archive/` 配下はいざという時の参照用で、編集のチェックは不要。
 
 計画をまたぐキューは持たない。**1セッション = 1計画 = 1ブランチ**で、計画の作成から実行・PR までを1本のブランチに閉じる。状態ファイルが計画ごとに分かれるので、複数のエージェントセッションが別々の計画を同時に進めても競合しない。
 
@@ -25,6 +22,8 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 証跡は3層で残る（計画ブランチの中の証跡。マージ後は PR の本文とコミット履歴から辿る）。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとの状態のコミット（transition.py の `<計画ID>/<id,...>: <旧>→<新>`）・worktree 側の収集コミット（`<計画ID>/<id>: creator 成果物をオーケストレーターが収集`）・計画ブランチへの `--no-ff` のマージコミット（`<計画ID>/<id>: マージ`））と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
 
 計画一式4種（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）は、run の手順7で PR を作る直前に除去し、`main` には入れない。除去は `bash scripts/purge_plan.sh [--dry-run] <計画ID>` で行う。条件は、ブランチが `work/<計画IDの英小文字>`・計画票が `status: done`・タスク表が1行以上で全行 `done`・対象パスに未コミットの変更が無いこと。存在しないパスは飛ばす。`--dry-run` は消す予定のパスを1行1件で出し、何も変えない。終了コードは 0（消した／dry-run で出した）・1（条件を満たさない、または `git rm` の失敗）・2（引数の誤り、git リポジトリの外）。スクリプトはコミットしない（オーケストレーターが `<計画ID>: 計画一式を除去` でコミットする）。`vault/harness-improvements/<ファイル名>` は除去の対象外。
+
+`bash scripts/purge_plan.sh --merged (--list|--report|--apply)` は、`main` にマージ済みのまま残った計画一式をまとめて扱う。対象は、計画 ID が `P-YYYYMMDD-<slug>` の形・現在のブランチの計画でない・計画票が `status: done`・タスク表が1行以上で全行 `done`・`main` の版の計画票も `status: done`、の全部を満たす計画。`--list` は対象の計画 ID を1行1件で出す。`--report` は log の `→blocked` の行の補足（`<計画ID>/<id>: blocked <補足>`）と verdict の空でない `reasons`（`<計画ID>/<id>: reasons <理由>`）を出す。どちらも何も変えない。`purge_plan.sh --merged --apply` は対象の4種と `vault/archive/`（旧方式の移動先。中身を問わず丸ごと）を `git rm` し、コミットはしない。対象パスに未コミットの変更があれば何も消さずに終了コード1。--merged --apply は人だけが実行する（他の計画の done のタスク票・verdict を消すのは、フックと差分ゲートを通らない経路になるため）。エージェントは --list・--report だけを使う。手順は `docs/runbook.md` 5節
 
 証跡は PR に残る。PR 本文に計画のゴール・タスク表・log の全行・verifier の指摘が写り、タスク票と verdict の中身は PR のコミット履歴から辿る。残すべき情報は、除去の前に docs への追記か Issue 化で取り出す（取り出した結果は PR 本文の `## 取り出した情報` に載る）。
 
@@ -95,7 +94,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 frontmatter は `id` と `status` の2つ。
 
-1行目の `---` から次の `---` の行（無ければ末尾）までを frontmatter として読む。値は前後の引用符を外して読む（例：`status: "approved"` も approved として扱う）。この読み方は `.claude/hooks/_hooklib.py` の `frontmatter_value` にあり、`scripts/current_plan.sh`・`scripts/archive_plans.sh` も同じ規則で読む。
+1行目の `---` から次の `---` の行（無ければ末尾）までを frontmatter として読む。値は前後の引用符を外して読む（例：`status: "approved"` も approved として扱う）。この読み方は `.claude/hooks/_hooklib.py` の `frontmatter_value` にあり、`scripts/current_plan.sh`・`scripts/purge_plan.sh` も同じ規則で読む。
 
 | status | 意味 |
 |---|---|
@@ -203,7 +202,7 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 
 log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は `python3 scripts/plan_record.py <計画ID>`。出力は `## 計画の記録` の下に `### ゴール`・`### タスク表`・`### log` を順に並べ、log は `<details>` で畳む。ファイルには書き込まない。終了コードは 0（出力した）・1（計画票か log が無い）・2（引数の誤り）。log は除去されて `main` に残らないので、`scripts/model_stats.py` の既定（`vault/log/*.md`）で計画をまたいで集計できるのは計画ブランチの中と除去より前の分だけで、除去後の集計は PR 本文の log から人が行う。
 
-モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。`vault/archive/` 配下の log は既定の対象に含めず、引数で明示的に渡した時だけ集計する（例：`python3 scripts/model_stats.py vault/archive/*/log/*.md`。log のファイル名が `<計画ID>.md` のまま残るので計画 ID が取れる）。定義は次のとおり：
+モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。定義は次のとおり：
 
 - 対象タスク：`計画ID/id` の最後の遷移行が `→done` または `→blocked` のもの（計画 ID は log のファイル名から取る）
 - 集計キー：そのタスクの `doing→review`・`doing→blocked` 行のうち、`creator=` が付いた最後の行の値。`creator=` が付いていない行は読み飛ばす。`creator=` 付きの行が1つも無いタスクは `unknown` として扱う（エラーにしない）
@@ -271,7 +270,7 @@ log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は 
 - 計画票の status が draft でなくなった後（approved 以降）は、これらの粒度検査は行わない
 - 各基準が「真偽で判定できる文か」は機械では判定できず、planner・verifier の運用に残る
 
-done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1）。自分のブランチの approved な計画票のタスク表で status が done の行それぞれについて、vault/verdicts/<計画ID>/<id>.json があり、JSON として読め、task が <計画ID>/<id>、attempt がタスク表の値と一致し、result が PASS で、形式が正しい（9節の「verdict が不正」の条件に当たらない）ことを、この順に確かめる。満たさない行があれば、表の上から最初の1行についてブロックし、その行の status を review に戻して verifier を実行するよう指示する。この検査は上の段落の検査（列数・status・依存・blocked の question・id の重複）の後に行い、それらのブロック理由が先に出る。検査の本体は .claude/hooks/_hooklib.py の done_rows_without_pass で、Stop フック（9節）と共通。done のタスクの verdict への書き込みは agent_write_guard が拒否する（12節）ため、直す手順は review に戻してから verifier を実行する順になる。draft・done の計画票と vault/archive/ は検査しない。
+done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1）。自分のブランチの approved な計画票のタスク表で status が done の行それぞれについて、vault/verdicts/<計画ID>/<id>.json があり、JSON として読め、task が <計画ID>/<id>、attempt がタスク表の値と一致し、result が PASS で、形式が正しい（9節の「verdict が不正」の条件に当たらない）ことを、この順に確かめる。満たさない行があれば、表の上から最初の1行についてブロックし、その行の status を review に戻して verifier を実行するよう指示する。この検査は上の段落の検査（列数・status・依存・blocked の question・id の重複）の後に行い、それらのブロック理由が先に出る。検査の本体は .claude/hooks/_hooklib.py の done_rows_without_pass で、Stop フック（9節）と共通。done のタスクの verdict への書き込みは agent_write_guard が拒否する（12節）ため、直す手順は review に戻してから verifier を実行する順になる。draft・done の計画票は検査しない。
 
 承認（draft→approved）と blocked の解除は、plan_guard では検査しない（D-015 フェーズ2 で廃止）。承認は `/plan` が粒度の確認を通した後に自動で行う。
 

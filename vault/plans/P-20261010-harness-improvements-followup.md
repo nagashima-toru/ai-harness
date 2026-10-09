@@ -36,7 +36,7 @@ status: approved
 | T-02 | done | 1 | T-01 | agent_write_guard の main 上の git commit の拒否を各部分の先頭だけにし smoke にケースを足す | |
 | T-03 | done | 1 | T-02 | diff_gate の FORBIDDEN_PREFIXES から vault/rules/ を外し smoke のケースを直す | |
 | T-04 | done | 1 | T-03 | run・design スキルを REST の起票・計画票のコミット・提案ファイルの運用・vault/rules の注意に合わせる | |
-| T-05 | doing | 1 | T-04 | creator・verifier の起点コミットの手順を削り、エージェント定義の vault/rules の記述を差分ゲートに合わせる | |
+| T-05 | review | 1 | T-04 | creator・verifier の起点コミットの手順を削り、エージェント定義の vault/rules の記述を差分ゲートに合わせる | |
 | T-06 | todo | 0 | T-05 | vault-spec・runbook・README・rules/README を今回の変更に揃え、古い記述が残っていないことを確かめる | |
 | T-07 | todo | 0 | T-06 | 対応済みの提案ファイル（vault/harness-improvements/ の4ファイル）を削除する | |
 

@@ -9,7 +9,7 @@
 4. 「次は何をやる？」と聞かれたら、承認済み計画票のタスク表を読んで先頭タスクの ID と title を答える
 
 ## 状態遷移（5つで固定）
-`todo → doing → review → (done | doing[attempt+1] | blocked)`。`blocked → todo` は人が `/plan unblock <計画ID> <id> [回答]` で指示した時だけ（フックが会話記録で確認する。エージェントの独断は不可）。
+`todo → doing → review → (done | doing[attempt+1] | blocked)`。`blocked → todo` は人が `/plan unblock <計画ID> <id> [回答]` で指示した時だけ（フックでは確かめないが、エージェントの独断は不可）。
 - `doing`/`review` は `after` 依存の無い集合（着手可能集合）に限り複数件になりうる。計画票・log への書き込みは常にオーケストレーター1プロセス（run のメインセッション）に集約する
 - `done` にできるのは `vault/verdicts/<計画ID>/<id>.json` が PASS で、`attempt` が計画票のタスク表と一致する時だけ
 - 状態を変えたら `scripts/transition.py` が `vault/log/<計画ID>.md` に1行追記する（`- YYYY-MM-DD HH:MM T-01 doing→review attempt=1 補足` の書式。日時は transition.py が実時刻で書くので、エージェントは書かない）

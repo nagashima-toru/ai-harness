@@ -1,6 +1,6 @@
 ---
 id: P-20261009-sandbox-remove
-status: draft
+status: approved
 ---
 # ゴール
 サンドボックスと不要な deny を外す（D-015 フェーズ1）

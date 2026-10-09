@@ -31,7 +31,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | runbook.md の人の仕事・困ったときの git 復旧・権限モードの選び方・unblock とルールの記述を今の状態に揃える | |
+| T-01 | review | 1 | - | runbook.md の人の仕事・困ったときの git 復旧・権限モードの選び方・unblock とルールの記述を今の状態に揃える | |
 | T-02 | doing | 1 | - | vault-spec.md の unblock の記述・vault/rules と差分ゲート・やめた判定の書き方を揃える | |
 | T-03 | doing | 1 | - | install.md のサンドボックスの節の古い理由と人の仕事を揃える | |
 | T-04 | todo | 0 | - | decisions.md に守りを絞った判断を1行足し、vision.md から承認を外す | |

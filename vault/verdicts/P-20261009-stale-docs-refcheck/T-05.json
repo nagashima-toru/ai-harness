@@ -1,0 +1,13 @@
+{
+  "task": "P-20261009-stale-docs-refcheck/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 20:34",
+  "criteria": [
+    {"text": "構文が正しい：`bash -n scripts/smoke.sh` の終了コードが0", "ok": true, "note": "実行コマンド: `bash -n scripts/smoke.sh; echo rc=$?`（worktree内） / 出力: rc=0"},
+    {"text": "参照切れの検査の4ケースが通る（今の文書に参照切れが無い・存在しないパスを対象の文書の種類ごとに見つけ、対象外の文書は見ない・雛形と除外は数えない・導入先では検査しない）：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(ref-[1-4]\\) '` の出力が `4`", "ok": true, "note": "実行コマンド: smoke.sh の出力を変数に取り `grep -cE '^  ok   \\(ref-[1-4]\\) '` / 出力: 4（ref-1〜ref-4 が各 ok）。ref-1 は今の文書全体を検査するので目的（参照切れ検出）と対象が一致。ref-2〜4 はフィクスチャ付きで判定が実質的"},
+    {"text": "既存の smoke が全件 PASS する：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` 相当 / 出力: smoke: pass=710 fail=0"},
+    {"text": "廃止した `vault/todo.md` を除外にしていない：`grep -c 'vault/todo.md' scripts/smoke.sh` の出力が `2`（既存の238・239行目の planner の拒否のケースだけ。計画作成時も `2`）", "ok": true, "note": "実行コマンド: `grep -c 'vault/todo.md' scripts/smoke.sh` / 出力: 2。変更ファイル検査: `git diff --name-only bb4dd09..HEAD` の出力は scripts/smoke.sh と タスク票 T-05.md（進捗の記録）のみで、成果物外の追加ファイルなし"}
+  ],
+  "reasons": []
+}

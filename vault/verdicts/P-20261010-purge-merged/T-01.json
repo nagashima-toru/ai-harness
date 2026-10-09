@@ -1,0 +1,15 @@
+{
+  "task": "P-20261010-purge-merged/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 08:57",
+  "criteria": [
+    {"text": "smoke に `(pm-1)`〜`(pm-6)` の6件があり、全部 ok になる（決定済みの各ケースを確かめる）。確認：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(pm-[1-6]\\) '` が `6`", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh` の出力を grep -cE '^  ok   \\(pm-[1-6]\\) ' / 出力: 6"},
+    {"text": "このリポジトリで `bash scripts/purge_plan.sh --merged --list` を実行すると、`main` で done の計画 `P-20261010-docs-align-guards` が1行で出て、旧形式の `P-019` と現在の計画 `P-20261010-purge-merged` は出ない。", "ok": true, "note": "実行コマンド: `--merged --list | grep -c '^P-20261010-docs-align-guards$'` / 出力: 1。`grep -cE '^(P-019|P-20261010-purge-merged)$'` / 出力: 0"},
+    {"text": "このリポジトリで `bash scripts/purge_plan.sh --merged --report` を実行すると、log の `→blocked` の行と verdict の空でない `reasons` が `<計画ID>/<id>: <種別> <内容>` の形で出る。", "ok": true, "note": "実行コマンド: `--merged --report | grep -c` で hooklib-extract/T-01 の blocked 行 / 出力: 1、T-06 の reasons 行 / 出力: 1"},
+    {"text": "スクリプト冒頭のコメントに、`--merged --apply` は人だけが実行しエージェントは `--list`・`--report` だけを使うことが書かれている。", "ok": true, "note": "実行コマンド: `grep -c '^# .*--merged --apply は人だけが実行する' scripts/purge_plan.sh` / 出力: 1"},
+    {"text": "既存の単一計画モードの smoke（`(pp-1)`〜`(pp-8)`）が全部 ok のまま。", "ok": true, "note": "実行コマンド: smoke 出力を `grep -cE '^  ok   \\(pp-[1-8]\\) '` / 出力: 8"},
+    {"text": "smoke 全体が通る。確認：`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=509 fail=0"}
+  ],
+  "reasons": []
+}

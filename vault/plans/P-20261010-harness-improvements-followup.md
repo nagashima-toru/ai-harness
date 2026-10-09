@@ -1,6 +1,6 @@
 ---
 id: P-20261010-harness-improvements-followup
-status: approved
+status: done
 ---
 # ゴール
 `vault/harness-improvements/` の4ファイル（D-015 の各フェーズの振り返り）の提案に対応し、対応が済んだ提案ファイルをこの計画の中で削除する

@@ -25,7 +25,7 @@ agent_write_guard を3つの判定に絞る（D-015 フェーズ3）
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | doing | 1 | - | agent_write_guard.py を3つの判定と worktree への委譲だけにし、使われなくなった _hooklib.py の関数を削る | |
+| T-01 | review | 1 | - | agent_write_guard.py を3つの判定と worktree への委譲だけにし、使われなくなった _hooklib.py の関数を削る | |
 | T-02 | todo | 0 | T-01 | smoke.sh の agent_write_guard のケースを3つの判定に合わせて消し・足す | |
 | T-03 | todo | 0 | T-01,T-02 | vault-spec.md の11〜12節を3つの判定に合わせ、提案ファイル方式・改ざん防止の記述を消す | |
 

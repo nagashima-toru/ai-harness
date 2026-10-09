@@ -154,7 +154,7 @@ note .claude/settings.json: permissions.allow にハーネスが使う許可が 
 判定は文字列の完全一致で、パターンの包含関係は見ない。たとえば導入先に `Bash(git:*)` があっても `Bash(git *)` は不足として出る。またスクリプトは利用者の個人設定を含め `~/.claude/settings.json` は読まない（そこで許可していれば実際は確認が出ないこともある）。
 
 ## サンドボックスを有効にする（任意）
-Claude Code のサンドボックスは、Bash とその子プロセス（`python3`・`bash -c` を含む）の書き込みと通信を OS で制限する。フックの Bash の解析の抜け道（`python3 -c` による `vault/rules/` への書き込みなど）を塞ぐための追加の守りで、ハーネス本体（ai-harness）では有効にしてある。
+Claude Code のサンドボックスは、Bash とその子プロセス（`python3`・`bash -c` を含む）の書き込みと通信を OS で制限する。フックの Bash の解析の抜け道（`python3 -c` による `vault/rules/` への書き込みなど）を塞ぐための追加の守りで、ハーネス本体（ai-harness）では使っていない（理由は `docs/vault-spec.md` 12節の「サンドボックス（使っていない）」）。
 
 サンドボックスは任意の追加の守りで、ハーネスはサンドボックス無しでも同じに動く（フック・`permissions`・`agent_write_guard.py` は変わらない）。使える前提は、macOS はそのまま、Linux と WSL2 は `bubblewrap` と `socat` が要ること（導入先のパッケージマネージャで入れる。コマンドはディストリビューションごとに違う）。使えるかどうかは Claude Code の `/sandbox` で確かめる。
 
@@ -188,12 +188,13 @@ Claude Code のサンドボックスは、Bash とその子プロセス（`pytho
 
 **既知の制約**
 
+- ハーネス自身（`.claude/`）を変える作業には向かない：サンドボックスは `.claude/` の下（`settings.json`・`skills/`・`agents/` など）と `.git` への Bash の書き込みを止めるので、ハーネスのフック・スキル・設定を変える計画では、creator の編集・worktree の後始末・PR の作成が詰まる。そうした作業をするリポジトリ（ハーネス本体など）では有効にしない
 - Windows は WSL2 だけで使える（WSL1・ネイティブの Windows では使えない）
 - `gh` の認証：キーチェーンなど OS の資格情報を読めず、サンドボックスの中で `gh` が認証に失敗することがある
 - ssh の remote：通信先の制限は HTTP(S) の通信が対象で、`git@github.com:` の形の remote への ssh の push は通らないことがある。その時は https の remote にするか、人がサンドボックスの外で push する
 - `failIfUnavailable` を設定していないので、サンドボックスが使えない環境では制限なしで起動する。その時はフックの Bash の解析だけが守りになる
 
-設定はセッションの開始時に読まれるので、足した後は Claude Code を起動し直し、[docs/runbook.md](runbook.md) の「9. サンドボックスを確かめる」の手順で確かめる。
+設定はセッションの開始時に読まれるので、足した後は Claude Code を起動し直し、`/sandbox` で有効になっていることを確かめる。
 
 `uninstall.sh` が取り除くのは足したもの（hooks など）だけで、手で足した `sandbox` は残る。不要になったら人が消す。
 

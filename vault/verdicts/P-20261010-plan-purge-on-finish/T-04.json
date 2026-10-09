@@ -1,0 +1,16 @@
+{
+  "task": "P-20261010-plan-purge-on-finish/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 08:37",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（主な文書の参照切れの検査 `(ref-1)` と、新規インストール先で参照される scripts の検査を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内） / 出力: smoke: pass=503 fail=0"},
+    {"text": "仕様の1節に、計画一式が PR の直前に除去されて `main` に入らないことと、証跡が PR に残ることがある。", "ok": true, "note": "実行コマンド: 基準記載の awk|grep -cF 2本（docs/vault-spec.md 1節） / 出力: 『PR を作る直前に除去し、`main` には入れない』=1、『証跡は PR に残る』=1"},
+    {"text": "仕様の1節に purge_plan.sh の使い方がある。", "ok": true, "note": "実行コマンド: 基準記載の awk|grep -cF 'bash scripts/purge_plan.sh [--dry-run] <計画ID>' / 出力: 1"},
+    {"text": "仕様の7節に、log の全行が plan_record.py で PR 本文に写されることと使い方がある。", "ok": true, "note": "実行コマンド: 基準記載の awk|grep -cF 2本（docs/vault-spec.md 7節） / 出力: 『log の全行は `scripts/plan_record.py` が PR 本文に写す』=1、『python3 scripts/plan_record.py <計画ID>』=1"},
+    {"text": "古い PR 本文の構成の記述がリポジトリに残っていない。", "ok": true, "note": "実行コマンド: `grep -rnF --exclude=decisions.md -e '「verifier の指摘」節）を渡す' -e '中身は次の3つで' README.md docs/ .claude/ scripts/` / 出力: 無し（rc=1）"},
+    {"text": "runbook の3節に除去の手順がある。", "ok": true, "note": "実行コマンド: `grep -cF 'scripts/purge_plan.sh' docs/runbook.md` と 3節 awk|grep -cF / 出力: 1 と 1"},
+    {"text": "ai-harness.md の役割に、オーケストレーターの取り出しと除去の例外がある。", "ok": true, "note": "実行コマンド: `grep -c '^- オーケストレーター.*取り出し（docs への追記・Issue 化）.*scripts/purge_plan.sh' .claude/ai-harness.md` / 出力: 1"}
+  ],
+  "reasons": []
+}

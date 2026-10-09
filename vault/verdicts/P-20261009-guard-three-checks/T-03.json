@@ -1,0 +1,14 @@
+{
+  "task": "P-20261009-guard-three-checks/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 23:26",
+  "criteria": [
+    {"text": "`docs/vault-spec.md` に「提案ファイル」と「改ざん防止」の語が無い。確認：`grep -c \"提案ファイル\" docs/vault-spec.md` が `0`、`grep -c \"改ざん防止\" docs/vault-spec.md` が `0`", "ok": true, "note": "実行コマンド: worktree の docs/vault-spec.md に対し両 grep -c / 出力: 0 と 0"},
+    {"text": "12節の見出しが `## 12. agent_write_guard フックの判定` で、判定表に (a)(b)(c) の3行がある。確認：`grep -c '^## 12\\. agent_write_guard フックの判定$' docs/vault-spec.md` が `1`、`sed -n '/^## 12\\./,/^## 13\\./p' docs/vault-spec.md | grep -cE '^\\| \\((a|b|c)\\) '` が `3`", "ok": true, "note": "実行コマンド: 見出し grep -c と sed|grep -cE / 出力: 1 と 3"},
+    {"text": "12節に削った判定の説明が残っていない。確認：`sed -n '/^## 12\\./,/^## 13\\./p' docs/vault-spec.md | grep -cE 'bash_write_targets|analyze_bash_writes|gh api|ALLOWED|transcript_path|DENIED_FOR_CREATOR'` が `0`", "ok": true, "note": "実行コマンド: 指定の sed|grep -cE / 出力: 0"},
+    {"text": "11節の小節が「ディレクトリと振り分け」「ルールと受け入れ基準の関係」の2つだけで、会話記録の人の発言の判定の説明が無い。確認：`sed -n '/^## 11\\./,/^## 12\\./p' docs/vault-spec.md | grep -c '^### '` が `2`、`grep -c \"人の発言\" docs/vault-spec.md` が `0`", "ok": true, "note": "実行コマンド: 11節の '^### ' 抽出 / 出力: 「ディレクトリと振り分け」「ルールと受け入れ基準の関係」の2行。grep -c 人の発言 は 0"},
+    {"text": "smoke 全体（参照切れの検査を含む）が通る。確認：`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内）/ 出力: smoke: pass=471 fail=0。起点コミットの記録がタスク票の進捗に無いため、変更ファイル一覧の検査は行っていない"}
+  ],
+  "reasons": []
+}

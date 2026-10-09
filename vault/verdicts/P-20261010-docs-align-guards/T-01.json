@@ -1,0 +1,39 @@
+{
+  "task": "P-20261010-docs-align-guards/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 04:42",
+  "criteria": [
+    {
+      "text": "冒頭の人の仕事が4つに直っていて、「計画を承認する」が残っていない。確認：`grep -c '人の仕事は「ゴールを入れる」「blocked に答える」「PR をマージする」「月次で片づける」の4つ。' docs/runbook.md` が `1`、`grep -c '計画を承認する' docs/runbook.md` が `0`",
+      "ok": true,
+      "note": "実行コマンド: 両grep（worktree内） / 出力: 1 と 0"
+    },
+    {
+      "text": "「## 困ったとき」に git の半端な状態を直す手順がある。確認：merge --abort・rebase --abort・reset --hard.*main.*では使わない がどれも1以上",
+      "ok": true,
+      "note": "実行コマンド: sed|grep -c 3本 / 出力: 1,1,1"
+    },
+    {
+      "text": "「## 9. 権限モードの選び方」の節がある。確認：見出しが1、節内で acceptEdits・auto モード・Self-Modification・/plan unblock がどれも1以上",
+      "ok": true,
+      "note": "実行コマンド: grep -c 見出し、sed|grep -c 4語 / 出力: 1、2,3,1,1"
+    },
+    {
+      "text": "下書きファイル方式・フックが常に拒否・会話記録による裏付けの記述が残っていない。確認：grep -n '...' docs/runbook.md が何も出力しない",
+      "ok": true,
+      "note": "実行コマンド: 指定の grep -n / 出力: 空"
+    },
+    {
+      "text": "6節がルールの変更を差分ゲートで説明している。確認：6節に scripts/diff_gate.py が1以上",
+      "ok": true,
+      "note": "実行コマンド: sed 6節|grep -c / 出力: 1"
+    },
+    {
+      "text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` を含む（主な文書の参照切れの検査を含む）",
+      "ok": true,
+      "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1（worktree内） / 出力: smoke: pass=472 fail=0。変更ファイル検査: タスク票の進捗に起点コミットの記録が無いため未実施"
+    }
+  ],
+  "reasons": []
+}

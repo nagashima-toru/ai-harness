@@ -2775,6 +2775,61 @@ expect_eq "(transition-wt) 25 同じコミットが T-02 の行に出る" "| T-0
 expect_eq "(transition-wt) 25 従来の件名のコミットが T-03 の行に出る" "| T-03 | C | $TW_HB | - |" "$(echo "$TW_PB" | grep '^| T-03 |')"
 expect_eq "(transition-wt) 25 done のコミットが無いタスクの行は -" "| T-04 | D | - | - |" "$(echo "$TW_PB" | grep '^| T-04 |')"
 
+# --- 主な文書の参照切れの検査 ---
+refcheck() { # $1=ルート。存在しないパスを <文書>:<行>: <パス> で出す
+  python3 - "$1" <<'PY'
+import glob, os, re, sys
+root = sys.argv[1]
+if os.path.exists(os.path.join(root, ".claude/harness-manifest.json")):
+    sys.exit(0)
+docs = [".claude/ai-harness.md"]
+docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/skills/*/SKILL.md")))
+docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/agents/*.md")))
+docs += ["README.md", "docs/vault-spec.md", "docs/runbook.md", "docs/install.md"]
+excl = {"vault/designs/D-xxx.md", ".claude/projects", ".claude/harness-manifest.json", ".claude/settings.local.json"}
+for d in docs:
+    f = os.path.join(root, d)
+    if not os.path.isfile(f):
+        continue
+    with open(f, encoding="utf-8") as fh:
+        for n, line in enumerate(fh, 1):
+            for m in re.finditer(r"`([^`\n]+)`", line):
+                p = m.group(1)
+                if not p.startswith(("vault/", "scripts/", "docs/", ".claude/")):
+                    continue
+                if re.search(r"[<*{$\s]", p) or p.startswith("vault/rules/") or p in excl:
+                    continue
+                if not os.path.exists(os.path.join(root, p)):
+                    print(f"{d}:{n}: {p}")
+PY
+}
+
+RC="$TMP/refcheck"
+expect_eq "(ref-1) 主な文書のバッククォート内のパスがすべて存在する" "" "$(refcheck "$ROOT")"
+
+mkdir -p "$RC/a/.claude/skills/x" "$RC/a/.claude/agents" "$RC/a/docs"
+printf '`scripts/no-such-a.sh`\n' > "$RC/a/.claude/ai-harness.md"
+printf '`docs/no-such-b.md`\n' > "$RC/a/.claude/skills/x/SKILL.md"
+printf '`vault/no-such-c.md`\n' > "$RC/a/.claude/agents/y.md"
+printf 'なし\n`.claude/no-such-d.md`\n' > "$RC/a/README.md"
+printf '`docs/no-such-e.md`\n`docs/install.md`\n' > "$RC/a/docs/install.md"
+printf '`docs/no-such-f.md`\n' > "$RC/a/docs/decisions.md"
+RC_WANT='.claude/ai-harness.md:1: scripts/no-such-a.sh
+.claude/skills/x/SKILL.md:1: docs/no-such-b.md
+.claude/agents/y.md:1: vault/no-such-c.md
+README.md:2: .claude/no-such-d.md
+docs/install.md:1: docs/no-such-e.md'
+expect_eq "(ref-2) 存在しないパスを対象の文書ごとに見つけ、対象外の文書は見ない" "$RC_WANT" "$(refcheck "$RC/a")"
+
+mkdir -p "$RC/b"
+printf '%s\n' '`vault/<id>.md`' '`scripts/*.sh`' '`docs/{a,b}.md`' '`vault/$X.md`' '`docs/a b.md`' '`vault/rules/x.md`' '`vault/designs/D-xxx.md`' '`.claude/projects`' '`.claude/harness-manifest.json`' '`.claude/settings.local.json`' > "$RC/b/README.md"
+expect_eq "(ref-3) 雛形・vault/rules/ 配下・除外リストは数えない" "" "$(refcheck "$RC/b")"
+
+mkdir -p "$RC/c/.claude"
+printf '{}' > "$RC/c/.claude/harness-manifest.json"
+printf '`scripts/no-such.sh`\n' > "$RC/c/README.md"
+expect_eq "(ref-4) 導入先（.claude/harness-manifest.json がある）では検査しない" "" "$(refcheck "$RC/c")"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

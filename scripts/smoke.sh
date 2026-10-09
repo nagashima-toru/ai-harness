@@ -348,9 +348,8 @@ rm -rf "$WMAIN2" "$WLEAF2"
 
 # 委譲判定を確認するテストでは、Bash + 相対パスの vault/rules/ ターゲット（cp x.txt vault/rules/...）を
 # ローカル判定の目印として使う（既存の「root 内の許可外パスへ cp」テストと同じ相対パス方式）。
-# Write/Edit + 絶対 file_path 方式だと、mktemp が返す tmp パスと git rev-parse --show-toplevel が
-# 返す解決済みパス（macOS では /var/... が /private/var/... に解決される）が食い違い、
-# normalize() の prefix 比較が環境依存で崩れてしまうため使わない。
+# 絶対 file_path の Write は (wds-1) で使う。フックが realpath で比べるので、mktemp が返す tmp パスと
+# git rev-parse --show-toplevel の解決済みパス（macOS の /var → /private/var）の食い違いは吸収される。
 DWTMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWTMAIN" init -q -b main
 git -C "$DWTMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
@@ -742,6 +741,34 @@ expect_ub "doing→blocked → 許可" allow "{$UTP,$(ub_edit T-02 doing blocked
 rm -f "$UB_TRANSCRIPT"
 
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
+
+# worktree 委譲の範囲（D-013 フェーズ6）：書き込み対象が worktree の外なら委譲せず、メインリポジトリ側で判定する。
+WDSMAIN="$(smoke_tmpdir)" || abort_tmp
+git -C "$WDSMAIN" init -q -b main
+git -C "$WDSMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+WDSLEAF="$(smoke_tmpdir)" || abort_tmp; rmdir "$WDSLEAF"
+git -C "$WDSMAIN" worktree add -q -b work/p-wds "$WDSLEAF" >/dev/null 2>&1
+mkdir -p "$WDSMAIN/vault/rules" "$WDSLEAF/.claude/hooks"
+cat > "$WDSLEAF/.claude/hooks/agent_write_guard.py" <<'PYEOF'
+#!/usr/bin/env python3
+import json, sys
+json.load(sys.stdin)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": "(wds-stub)"}}))
+PYEOF
+expect_guard "(wds-1) worktree 外（メインの vault/rules/）への Write → 委譲せず拒否" deny \
+  "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$WDSMAIN"'/vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "vault/rules/"
+expect_guard "(wds-2) Bash でメインの vault/rules/ の絶対パスへ touch → 委譲せず拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"touch '"$WDSMAIN"'/vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "vault/rules/"
+expect_guard "(wds-3) Bash で ~/.claude/projects/ へ touch → 委譲せず拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"touch ~/.claude/projects/x.jsonl"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "会話記録"
+expect_guard "(wds-4) 解析できない Bash で候補がメインの vault/rules/ → 委譲せず拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo $(date) > '"$WDSMAIN"'/vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "vault/rules/"
+expect_guard "(wds-5) 解析できない Bash で候補が worktree の中だけ → 委譲される" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo $(date) > vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
+expect_guard "(wds-6) 読み取りだけの Bash（ls）→ 委譲される" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"ls"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
+git -C "$WDSMAIN" worktree remove -q --force "$WDSLEAF" >/dev/null 2>&1
+rm -rf "$WDSMAIN" "$WDSLEAF"
 
 echo "== plan_guard.py =="
 run_plan_guard() { printf '{"hook_event_name":"PostToolUse","tool_name":"Edit"}' | CLAUDE_PROJECT_DIR="$TMP" python3 "$PLAN_GUARD_HOOK"; }

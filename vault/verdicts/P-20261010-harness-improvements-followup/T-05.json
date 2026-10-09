@@ -1,0 +1,15 @@
+{
+  "task": "P-20261010-harness-improvements-followup/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 07:52",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む。かつ `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (agents-1)'` の出力が `1`", "ok": true, "note": "worktree で実行 / tail -1: smoke: pass=487 fail=0、grep -c: 1"},
+    {"text": "`.claude/` の下に起点コミットの記述が残っていない。確認：`grep -rn '起点コミット' .claude/` が何も出力しない", "ok": true, "note": "実行コマンド: `grep -rn '起点コミット' .claude/` / 出力: なし"},
+    {"text": "verifier の手順が11段に詰めてある。確認：awk の出力が `1.` から `11.` の11行（この順）", "ok": true, "note": "awk を .claude/agents/verifier.md に実行 / 出力: 1. 2. ... 11.（この順）"},
+    {"text": "creator の手順が6段に詰めてある。確認：awk の出力が `1.` から `6.` の6行（この順）", "ok": true, "note": "awk を .claude/agents/creator.md に実行 / 出力: 1. 2. 3. 4. 5. 6."},
+    {"text": "エージェント定義に「`vault/rules/` は宣言があっても違反」の記述が残っていない。確認：grep -rnF が何も出力しない", "ok": true, "note": "実行コマンド: `grep -rnF -e '宣言があっても差分ゲートが違反' -e 'vault/rules/` 配下は、宣言しても' .claude/agents/` / 出力: なし。creator.md 47・59行は決定済みの趣旨に直っている"},
+    {"text": "planner が `vault/rules/` を宣言すれば成果物にできると書いている。確認：grep -cF の出力が `1`", "ok": true, "note": "実行コマンド: `grep -cF '`vault/rules/` 配下は、宣言すれば成果物にできる' .claude/agents/planner.md` / 出力: 1"}
+  ],
+  "reasons": []
+}

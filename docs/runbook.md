@@ -1,6 +1,6 @@
 # Runbook（人が日々やること）
 
-ハーネスは無人で回る。人の仕事は「ゴールを入れる」「計画を承認する」「blocked に答える」「月次で片づける」の4つ。
+ハーネスは無人で回る。人の仕事は「ゴールを入れる」「blocked に答える」「PR をマージする」「月次で片づける」の4つ。
 
 まだインストールしていない場合は先に `docs/install.md` を読む。
 
@@ -52,9 +52,9 @@
 - `vault/log/<計画ID>.md` に `- YYYY-MM-DD HH:MM <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>` を追記する
 - 変更をコミットする
 
-`blocked→todo` は、人が `/plan unblock` で指示して初めて行われる。フックが会話記録の人の発言にこのコマンドがあるかを確認するので、エージェントが独断で解除することはできない。「T-03 解除して」のような自由な文や AskUserQuestion への回答では解除できない。
+`blocked→todo` は、人が `/plan unblock` で指示して初めて行われる。`/plan` スキルが `/plan unblock <計画ID> <id> [回答]` の形でない指示（「T-03 解除して」のような自由な文・AskUserQuestion への回答）を断る。フックでは確かめない（D-015 フェーズ2 で廃止）ので、エージェントは人の指示なしに解除しない。
 
-代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合フックは働かない。変更後は自分で log に上の形式の行を追記してコミットする。
+代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で log に上の形式の行を追記してコミットする。
 
 ## 5. 月次で done を archive に移す
 計画単位でまとめて移す。月次で人が `scripts/archive_plans.sh` を実行する。
@@ -82,7 +82,7 @@ git commit
 
 `--dry-run`（または `--from-file <path>`）で移動内容を確かめ、`--apply` で移し、人が `git commit` する。
 
-エージェント（creator を含む）は --apply を実行しない。creator は `vault/plans/`・`vault/log/` に書き込めず、done のタスク票・verdict の編集も禁止されている。スクリプト経由の移動はフックが見えない経路でその禁止を回避することになるため、実行は人が行う。
+エージェント（creator を含む）は --apply を実行しない。creator の `vault/plans/`・`vault/log/` の変更は差分ゲート（`scripts/diff_gate.py`）が差し戻し、done のタスク票・verdict の Write・Edit はフック（`agent_write_guard.py`）が拒否する。スクリプト経由の移動はそれらを通らない経路になるので、実行は人が行う。
 
 安全装置：done、全行 done、`main` で done、log に日時行がある、現在のブランチの計画でない、新しい `--keep` 件に入らない、未コミットの変更が無い、移動先が無い。このどれか1件でも外れたら何も移さない。候補が `--keep` 件以下の時も何も移さない。
 
@@ -100,8 +100,7 @@ python3 scripts/model_stats.py vault/archive/*/log/*.md
 1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く
 2. 渡したい相手（全員／作成エージェント／verifier／planner）でディレクトリを決める
 3. 反映させたい受け入れ基準の行にルールファイルを名指しして参照する
-4. エージェントは `vault/rules/` に書けない（フックが常に拒否する）。ファイルは人が自分で置く・直す
-5. ルールの変更自体をタスクにする時は、成果物を `vault/tasks/<計画ID>/<id>-proposal.md` に下書きさせ、verifier の PASS 後に人が実体へ反映する（`docs/vault-spec.md` の「提案ファイル方式」）
+4. ルールの追加・変更はタスクにせず、人が編集する（自分で、またはタスクの外でエージェントに指示して）。フックは `vault/rules/` を止めないが、creator のタスクの成果物にはできない（差分ゲート `scripts/diff_gate.py` が `vault/rules/` 配下の変更を宣言があっても違反にする）。変更は PR の差分で見える
 
 ## 7. ハーネス自体の更新を取り込む
 このハーネスを他のプロジェクトに組み込んでいる場合、フックやスキルを直しても組み込み先には届かない。取り込みたい時に次を打つ。
@@ -138,6 +137,12 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 5. 注意：`usage_stats.py` の model 列は完全なモデル ID（`resolvedModel` をそのまま出す）で、log や `model_stats.py` の alias（`haiku`・`sonnet`）とは表記が違う。行を突き合わせる時は読み替える。
 6. 元に戻すには、環境変数を外して起動し直す（`HARNESS_CREATOR_MODEL` を付けなければ、これまでどおり sonnet）。
 
+## 9. 権限モードの選び方
+- ハーネス自身（`.claude/` の下：`hooks/`・`skills/`・`agents/`・`settings.json`・`ai-harness.md`）を変える計画は、acceptEdits（編集を自動で許可するモード。例：`claude --permission-mode acceptEdits`）で立ち上げる
+- それ以外の計画は auto モードでよい
+- auto モードで、`.claude/` の変更が Self-Modification として拒否されてタスクが blocked になった時は、acceptEdits で立ち上げ直し、`/plan unblock <計画ID> <id>` → `/run` で再開する
+- 理由：auto モードの分類器の判定は設定では変えられない（D-015「今回やらないこと」）
+
 ## 困ったとき
 | 症状 | 見るところ |
 |---|---|
@@ -145,4 +150,9 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 | フックが動かない | `bash scripts/smoke.sh`。`python3` のパス。フォルダを信頼済みか |
 | verifier が書けない | `vault/verdicts/` 以外へ書こうとしていないか（`agent_write_guard.py` が拒否する） |
 | エージェント定義（`.claude/agents/*.md`）やスキルを変えたのに反映されない | 定義はセッション開始時に読み込まれる。編集後はセッションを再起動する（`claude -p` は起動ごとに読み直すので影響なし） |
-| 状態が壊れた | `vault/log/<計画ID>.md` を見て計画票のタスク表を手で直す。doing は1件だけにする |
+| 状態が壊れた | `vault/log/<計画ID>.md` を見て計画票のタスク表を手で直す。doing/review は着手可能集合の範囲で複数になりうる（`docs/vault-spec.md` 2節） |
+| merge の途中で止まった（`git status` に `You have unmerged paths` や `All conflicts fixed but you are still merging`） | `git merge --abort` で取り込む前に戻す。計画ブランチへのタスクの取り込みは `transition.py` がやり直す（衝突なら blocked にする） |
+| rebase の途中で止まった（`git status` に `rebase in progress`） | `git rebase --abort` で始める前に戻す |
+| HEAD と作業ツリーが食い違っている（コミットしていない変更が残って次の操作が止まる、など） | 作業ブランチ（`work/<計画ID>` か creator の worktree のブランチ）の上でだけ、`git reset --hard HEAD`（または戻したいコミット）で作業ツリーを HEAD に戻す。`main` では使わない。 |
+
+上の git の3行は、エージェントが自分で直してよい。`permissions.deny` に残っているのは `git push --force` 系・`rm -rf` 系・`sudo`・`gh pr merge`・`glab mr merge` だけで、作業ブランチの上の `git reset --hard`・`git clean`・`git branch -D` は止めない（D-015。壊れてもブランチを捨てて作り直せる）。半端な状態を見つける診断スクリプトは無い。

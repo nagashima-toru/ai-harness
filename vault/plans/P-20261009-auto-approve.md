@@ -38,7 +38,7 @@ status: approved
 | T-03 | done | 1 | - | plan スキルの A を自動承認と /run の続行にし、B（/plan approve）を削る | |
 | T-04 | done | 1 | - | ai-harness.md のスキルの節から /plan approve を外し、自動承認の説明にする | |
 | T-05 | done | 1 | - | runbook の1節・2節を承認待ちの無い流れに直す | |
-| T-06 | todo | 0 | T-01,T-02,T-03 | vault-spec の10節と関連する記述から承認の裏付けの検査を外し、自動承認に合わせる | |
+| T-06 | doing | 1 | T-01,T-02,T-03 | vault-spec の10節と関連する記述から承認の裏付けの検査を外し、自動承認に合わせる | |
 | T-07 | doing | 1 | - | README.md の使い方の表と仕組みの図から /plan approve を外し、自動承認の流れにする | |
 | T-08 | review | 1 | - | planner.md の「承認は人が行う」の記述を /plan による自動承認に合わせる | |
 

@@ -33,7 +33,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vcs_finish.sh の GitHub の PR 作成を REST（gh api）にし smoke にケースを足す | |
-| T-02 | todo | 0 | T-01 | agent_write_guard の main 上の git commit の拒否を各部分の先頭だけにし smoke にケースを足す | |
+| T-02 | doing | 1 | T-01 | agent_write_guard の main 上の git commit の拒否を各部分の先頭だけにし smoke にケースを足す | |
 | T-03 | todo | 0 | T-02 | diff_gate の FORBIDDEN_PREFIXES から vault/rules/ を外し smoke のケースを直す | |
 | T-04 | todo | 0 | T-03 | run・design スキルを REST の起票・計画票のコミット・提案ファイルの運用・vault/rules の注意に合わせる | |
 | T-05 | todo | 0 | T-04 | creator・verifier の起点コミットの手順を削り、エージェント定義の vault/rules の記述を差分ゲートに合わせる | |

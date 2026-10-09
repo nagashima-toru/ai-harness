@@ -2,7 +2,8 @@
 """PreToolUse フック：書き込みの3つの判定と、worktree への委譲（D-015 フェーズ3）。
 
 判定は次の3つだけ。どれにも当たらなければ何も出力せず終了コード0で終わる。
-- (b) main 上の git commit の拒否：Bash のコマンドに git commit があり、現在のブランチが main の時。
+- (b) main 上の git commit の拒否：Bash のコマンドを &&・||・;・|・改行（引用符の外）で区切った各部分の
+  先頭が git commit（git のオプションを挟む形も）で、現在のブランチが main の時。引用符の中は見ない。
   agent_type は問わない。ブランチが取れない時（非 git・detached HEAD）は素通り。
 - (a) done のタスク票・verdict への書き込みの拒否：Write / Edit / MultiEdit / NotebookEdit の対象が
   vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、計画票（vault/plans/<計画ID>.md）の
@@ -18,6 +19,7 @@ Write 系は対象パスが worktree の中の時だけ、Bash とそれ以外�
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -30,8 +32,6 @@ except Exception as e:  # SyntaxError なども含めて捕まえる
     sys.exit(2)
 
 WRITE_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
-GIT_COMMIT_PATTERN = r"\bgit\s+commit\b"
-GIT_PREOPT_COMMIT_PATTERN = r"\bgit\s+-[^;&|\n]*\bcommit\b"
 TASK_FILE_RE = re.compile(r"^vault/tasks/([^/]+)/([^/]+)\.md$")
 VERDICT_FILE_RE = re.compile(r"^vault/verdicts/([^/]+)/([^/]+)\.json$")
 
@@ -123,9 +123,61 @@ def writes_inside_worktree(tool, tool_input, payload):
     return rp == real_root or rp.startswith(real_root + "/")
 
 
+def _split_command(cmd):
+    """引用符の外にある &&・||・;・|・改行でコマンドを部分に分ける（引用符の中は区切らない）。"""
+    parts = []
+    buf = []
+    quote = None
+    i = 0
+    n = len(cmd)
+    while i < n:
+        c = cmd[i]
+        if quote:
+            buf.append(c)
+            if quote == '"' and c == "\\" and i + 1 < n:
+                buf.append(cmd[i + 1])
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in ("'", '"'):
+            quote = c
+            buf.append(c)
+        elif c in (";", "\n", "|", "&"):
+            if c in ("|", "&") and i + 1 < n and cmd[i + 1] == c:
+                i += 1  # && と ||
+            elif c == "&":
+                buf.append(c)  # 単独の & は区切らない
+                i += 1
+                continue
+            parts.append("".join(buf))
+            buf = []
+        else:
+            buf.append(c)
+        i += 1
+    parts.append("".join(buf))
+    return parts
+
+
 def is_git_commit_command(cmd):
-    """Bash コマンドに git commit（git -C . commit のようなオプション付きも）があるか。"""
-    return bool(re.search(GIT_COMMIT_PATTERN, cmd) or re.search(GIT_PREOPT_COMMIT_PATTERN, cmd))
+    """区切った各部分の先頭が git commit（git -C . commit のようなオプション付きも）か。
+    引用符の中の文字列は見ない。env・VAR=値の前置き、bash -c の中、サブシェルは見ない。
+    """
+    for part in _split_command(cmd):
+        try:
+            words = shlex.split(part)
+        except ValueError:
+            words = part.split()
+        if not words or os.path.basename(words[0]) != "git":
+            continue
+        i = 1
+        while i < len(words) and words[i].startswith("-"):
+            if words[i] in ("-C", "-c", "--git-dir", "--work-tree", "--namespace"):
+                i += 1
+            i += 1
+        if i < len(words) and words[i] == "commit":
+            return True
+    return False
 
 
 def plan_task_status(root, plan_id, task_id):

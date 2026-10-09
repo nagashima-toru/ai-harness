@@ -15,3 +15,5 @@
 - 2026-10-09 19:44 T-04 doing→blocked attempt=1 creator=sonnet
 - 2026-10-09 20:09 T-02 blocked→todo 人の指示: /plan unblock P-20261009-stale-docs-refcheck T-02
 - 2026-10-09 20:09 T-04 blocked→todo 人の指示: /plan unblock P-20261009-stale-docs-refcheck T-04
+- 2026-10-09 20:09 T-02 todo→doing attempt=1
+- 2026-10-09 20:09 T-04 todo→doing attempt=1

@@ -26,7 +26,7 @@ worktree 委譲の範囲を絞る（D-013 フェーズ6）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | agent_write_guard.py の worktree 委譲を書き込み対象がすべて worktree の中にある時だけにする | |
-| T-02 | doing | 1 | T-01 | docs/vault-spec.md 12節に worktree への委譲の範囲を書く | |
+| T-02 | review | 1 | T-01 | docs/vault-spec.md 12節に worktree への委譲の範囲を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

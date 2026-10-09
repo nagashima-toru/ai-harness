@@ -38,7 +38,7 @@ status: approved
 | T-01 | done | 1 | - | design/SKILL.md の vault/todo.md と第14節を、vault/plans/ と vault-spec.md 13節に直す | |
 | T-02 | review | 1 | - | ai-harness.md の開始時に読む順・役割・/run の説明を今の run に合わせる | |
 | T-03 | done | 1 | - | README.md の /run と無人実行の説明・仕組みの図・構成の節を今の構成に合わせる | |
-| T-04 | doing | 1 | - | run/SKILL.md の frontmatter の description を今の手順に合わせる | |
+| T-04 | review | 1 | - | run/SKILL.md の frontmatter の description を今の手順に合わせる | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | smoke.sh に主な文書の参照切れの検査を足す | |
 
 ## 計画の受け入れ基準

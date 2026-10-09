@@ -1,0 +1,15 @@
+{
+  "task": "P-20261009-stale-docs-refcheck/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 19:43",
+  "criteria": [
+    {"text": "主な文書に `vault/todo.md` が残っていない：`grep -rn \"vault/todo.md\" .claude/skills .claude/agents .claude/ai-harness.md README.md docs/vault-spec.md docs/runbook.md docs/install.md` の出力が空", "ok": true, "note": "実行コマンド: 指定の grep -rn / 出力: 空"},
+    {"text": "「第14節」が無い：`grep -c '第14節' .claude/skills/design/SKILL.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c '第14節' .claude/skills/design/SKILL.md` / 出力: 0"},
+    {"text": "仕様の参照先が13節になっている：`grep -c '仕様は `docs/vault-spec.md` の13節「設計文書（`vault/designs/`）」。' .claude/skills/design/SKILL.md` の出力が `1`。かつ参照先が実在する：`grep -c '^## 13\\. 設計文書（`vault/designs/`）$' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c 2本 / 出力: 1 と 1"},
+    {"text": "調査の手順が計画票の置き場を指している：`grep -c '`vault/plans/`（既存の計画と重複しないか）' .claude/skills/design/SKILL.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c / 出力: 1"},
+    {"text": "注意の節の書き込まない先が今の置き場になっている：`grep -c '^- `vault/plans/`・`vault/tasks/` には何も書かない。状態を変えない$' .claude/skills/design/SKILL.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c / 出力: 1"},
+    {"text": "見出しの数が変わっていない：`grep -c '^## ' .claude/skills/design/SKILL.md` の出力が `3`", "ok": true, "note": "実行コマンド: `grep -c '^## ' .claude/skills/design/SKILL.md` / 出力: 3。変更ファイル検査: `git diff --name-only 5a88ff0..HEAD` は .claude/skills/design/SKILL.md とタスク票(除外対象)のみで成果物外の変更なし。ルール参照なし(rules.sh verifier 出力は空)"}
+  ],
+  "reasons": []
+}

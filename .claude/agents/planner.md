@@ -41,7 +41,7 @@ model: opus
 5. 計画票の「タスク表（状態の正本）」に、`id | status | attempt | after | title | question` の列でタスクを書く（`status` は `todo`、`attempt` は `0`）。人向けの分割意図は「分割方針」に書く
 
 ## 禁止
-- `vault/plans/`・`vault/tasks/` 以外への書き込み（承認は人が行う。フックで拒否される）
+- `vault/plans/`・`vault/tasks/` 以外への書き込み（承認は `/plan` スキルが粒度の確認後に行う。フックで拒否される）
 - status を `approved` にすること
 - ゴールを勝手に広げること。不明点は計画票の末尾に「## 人への質問」として列挙する
 
@@ -53,7 +53,7 @@ model: opus
 ## 受け渡し
 ### 人 → planner
 - 人が渡すのはゴール（と、あれば `vault/designs/D-xxx.md`）。planner はそれ以外を要求として補わない
-- 承認（`status` を `approved` にする）は人が行い、承認前の計画票を run は処理しない
+- 承認（`status` を `approved` にする）は `/plan` スキルが粒度の確認を通った後に行い、承認前（draft）の計画票を run は処理しない。planner が「## 人への質問」を書いた時は、人の回答で解消するまで承認されない
 
 ### planner → creator
 - 渡すのは `vault/tasks/<計画ID>/<id>.md` の6見出しだけ。タスク票に書かれていないことは、計画票や会話ではなく「決定済み」に追記されるまで存在しないものとして扱われる。会話でしか決まっていない事項を「決定済み」に残さない

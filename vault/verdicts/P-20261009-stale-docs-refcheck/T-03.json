@@ -1,0 +1,15 @@
+{
+  "task": "P-20261009-stale-docs-refcheck/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 19:43",
+  "criteria": [
+    {"text": "使い方の表の `/run` の行が今の動きになっている：`grep -c '^| `/run` | 自分のブランチの承認済み計画の取れるタスクを、全部 done になるまで処理し、PR を作る' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同 grep（worktree の README.md） / 出力: 1"},
+    {"text": "無人実行が `run_unattended.py` になっている：`grep -c '`claude -p \"/run\"` |' README.md` の出力が `0`、かつ `grep -c '^| `python3 scripts/run_unattended.py` | ' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同2本の grep / 出力: 0 と 1"},
+    {"text": "古い言い方が残っていない：`grep -cE '1タスク処理する|作成エージェント（メイン）' README.md` の出力が `0`、かつ仕組みの図の列見出しが `grep -c 'オーケストレーター（メイン）' README.md` で `1`", "ok": true, "note": "実行コマンド: 同2本の grep / 出力: 0 と 1"},
+    {"text": "構成の節に `.claude/agents/` の3つが書かれている：`grep -c '^\\.claude/ .*agents/（creator, verifier, planner）' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同 grep / 出力: 1"},
+    {"text": "構成の節に `scripts/` の主なスクリプトが書かれている：`grep -cE '^scripts/ .*smoke\\.sh.*install\\.sh.*uninstall\\.sh.*rules\\.sh.*current_plan\\.sh.*transition\\.py.*diff_gate\\.py.*vcs_finish\\.sh.*discard_worktree\\.sh.*run_unattended\\.py.*archive_plans\\.sh' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同 grep -cE / 出力: 1"},
+    {"text": "見出しの数が変わっていない：`grep -c '^## ' README.md` の出力が `7`", "ok": true, "note": "実行コマンド: `grep -c '^## ' README.md` / 出力: 7。なお、タスク票の「進捗」に起点コミットの記録が無いため、変更ファイル一覧の検査は行っていない。ルール参照の行は無く、rules.sh verifier の出力も空だった"}
+  ],
+  "reasons": []
+}

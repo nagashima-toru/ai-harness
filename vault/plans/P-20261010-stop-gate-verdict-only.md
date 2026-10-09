@@ -1,6 +1,6 @@
 ---
 id: P-20261010-stop-gate-verdict-only
-status: approved
+status: done
 ---
 # ゴール
 stop_gate を verdict の検査だけにする（D-015 フェーズ4）

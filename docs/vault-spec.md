@@ -237,14 +237,13 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 
 ## 9. Stop フックの判定
 
-`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。判定は次の順に行う：1. worktree への委譲、2. `stop_hook_active`、3. approved な計画票の件数、4. 未コミットの変更（approved が1件の時だけ）、5. done の行、6. doing/review の行。5 では、status が done の行それぞれについて、attempt が一致する正しい PASS の verdict があるかを検査する（doing/review の行の検査より前。条件と理由の順は10節の done の行の verdict の検査と同じ）。続いて 6 では、doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。ブランチ名は見ない：承認済みの計画票はその計画のブランチにしか無く、`main` では PR を作った時点で done になっているため、approved が0件であることが計画ブランチ以外（`main` など）を表す。無人実行（`scripts/run_unattended.py`）は `HARNESS_STRICT_STOP` が未設定なら `1` を入れて子プロセスに渡す（`stop_hook_active` が真でも判定を続ける）。`HARNESS_STRICT_STOP=0` を明示すれば従来の動きになる。
+`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。判定は次の順に行う：1. worktree への委譲、2. `stop_hook_active`、3. approved な計画票の件数、4. done の行、5. doing/review の行。4 では、status が done の行それぞれについて、attempt が一致する正しい PASS の verdict があるかを検査する（doing/review の行の検査より前。条件と理由の順は10節の done の行の verdict の検査と同じ）。続いて 5 では、doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。ブランチ名は見ない：承認済みの計画票はその計画のブランチにしか無く、`main` では PR を作った時点で done になっているため、approved が0件であることが計画ブランチ以外（`main` など）を表す。無人実行（`scripts/run_unattended.py`）は `HARNESS_STRICT_STOP` が未設定なら `1` を入れて子プロセスに渡す（`stop_hook_active` が真でも判定を続ける）。`HARNESS_STRICT_STOP=0` を明示すれば従来の動きになる。
 
 | 状況 | 判定 |
 |---|---|
 | `stop_hook_active` が真 | 許可（`HARNESS_STRICT_STOP=1` なら無視して判定を続ける） |
-| approved な計画票が0件 | 許可（未コミットの変更の検査もしない。ブランチ名は見ない） |
+| approved な計画票が0件 | 許可（ブランチ名は見ない） |
 | approved な計画票が2件以上 | ブロック：1つだけ approved にする |
-| 未コミットの変更がある（approved な計画票が1件の時だけ検査する。git の作業ツリーかどうかは `git rev-parse --is-inside-work-tree` で判定し、`.git` がファイルの worktree も対象にする） | ブロック：作業ステップごとにコミットしてから終了する |
 | done の行に attempt が一致する正しい PASS の verdict が無い（verdict が無い・JSON として読めない・task / attempt が不一致・result が PASS でない・形式が不正） | ブロック：表の上から最初のその行について、status を review に戻し verifier を実行するよう指示する |
 | doing / review のタスクが無い | 許可 |
 | verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く |

@@ -1,6 +1,6 @@
 ---
 id: P-20261010-plan-purge-on-finish
-status: approved
+status: done
 ---
 # ゴール
 D-016 フェーズ1（`vault/designs/D-016.md` の「フェーズ1」の受け入れ基準の候補・決定済みを前提にする）：run の完了手順（`.claude/skills/run/SKILL.md` の手順7）で、PR を作る直前に、計画の記録を PR 本文に写し、残すべき情報を docs への追記か Issue 化で取り出し、`scripts/purge_plan.sh` で計画一式4種（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）を `git rm` してコミットするようにする。計画の記録は新しいスクリプト `scripts/plan_record.py` が出す。仕様（`docs/vault-spec.md`）・`docs/runbook.md`・`.claude/ai-harness.md`・smoke を合わせて直す。

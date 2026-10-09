@@ -15,7 +15,7 @@ D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | purge_plan.sh に --merged（--list・--report・--apply）を足し smoke で確かめる | |
+| T-01 | doing | 1 | - | purge_plan.sh に --merged（--list・--report・--apply）を足し smoke で確かめる | |
 | T-02 | todo | 0 | T-01 | archive_plans.sh と smoke の archive_plans 節を消す | |
 | T-03 | todo | 0 | T-02 | install.sh・uninstall.sh から vault/archive を除く | |
 | T-04 | todo | 0 | T-01 | runbook 5節を一括削除の手順に書き換える | |

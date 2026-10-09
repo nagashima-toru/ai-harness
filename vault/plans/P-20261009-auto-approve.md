@@ -35,7 +35,7 @@ status: approved
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | plan_guard.py から承認と unblock の会話記録による裏付けの検査を削り、smoke のケースを置き換える | |
 | T-02 | doing | 1 | T-01 | agent_write_guard.py から承認の判定を削り、_hooklib.py の is_approve_command と smoke のケースを合わせる | |
-| T-03 | review | 1 | - | plan スキルの A を自動承認と /run の続行にし、B（/plan approve）を削る | |
+| T-03 | done | 1 | - | plan スキルの A を自動承認と /run の続行にし、B（/plan approve）を削る | |
 | T-04 | done | 1 | - | ai-harness.md のスキルの節から /plan approve を外し、自動承認の説明にする | |
 | T-05 | review | 1 | - | runbook の1節・2節を承認待ちの無い流れに直す | |
 | T-06 | todo | 0 | T-01,T-02,T-03 | vault-spec の10節と関連する記述から承認の裏付けの検査を外し、自動承認に合わせる | |

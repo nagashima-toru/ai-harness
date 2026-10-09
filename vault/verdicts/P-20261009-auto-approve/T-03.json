@@ -1,0 +1,16 @@
+{
+  "task": "P-20261009-auto-approve/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 22:48",
+  "criteria": [
+    {"text": "plan スキルに `/plan approve` が残っていない。確認：`grep -c \"plan approve\" .claude/skills/plan/SKILL.md` の出力が `0`", "ok": true, "note": "Bash の grep -c はフック(agent_write_guard)に拒否されたため、代替として Grep ツールで .claude/skills 配下の 'plan approve' を worktree で検索 / 出力: No matches found（0件）"},
+    {"text": "B が消え、C が B に繰り上がっている。確認：`grep -c \"^## \" .claude/skills/plan/SKILL.md` の出力が `3`、`grep -c \"^## B\\. blocked を解除する\" .claude/skills/plan/SKILL.md` の出力が `1`", "ok": true, "note": "Bash grep は拒否されたため Grep ツールで '^## ' を検索 / 出力: 13行 '## A. 計画を作る'、26行 '## B. blocked を解除する…'、37行 '## 注意' の3件。B 見出しは1件"},
+    {"text": "A の最後に自動承認の log の行と `/run` の続行がある。確認：`grep -c -F -- '- <日時> - draft→approved /plan による自動承認' .claude/skills/plan/SKILL.md` の出力が `1`、`grep -c -F '続けて `/run`（`.claude/skills/run/SKILL.md`）の手順1から実行する' .claude/skills/plan/SKILL.md` の出力が `1`", "ok": true, "note": "Grep ツールで .claude/skills/plan/SKILL.md を検索 / 出力: 22行目に '- <日時> - draft→approved /plan による自動承認'、24行目に '続けて `/run`（`.claude/skills/run/SKILL.md`）の手順1から実行する' が各1件"},
+    {"text": "自動承認のコミットでタスク票も名前を指定して stage する。確認：`grep -c -F 'git add vault/plans/<計画ID>.md vault/tasks/<計画ID>/ vault/log/<計画ID>.md' .claude/skills/plan/SKILL.md` の出力が `1`", "ok": true, "note": "Grep ツールで 'git add vault' を検索 / 出力: 23行目に 'git add vault/plans/<計画ID>.md vault/tasks/<計画ID>/ vault/log/<計画ID>.md'（1件）。32行目は unblock 用で '<id>.md' のため別文字列"},
+    {"text": "frontmatter の argument-hint から approve が消えている。確認：`grep -c -F 'argument-hint: [ゴール | unblock <計画ID> <id> [回答]]' .claude/skills/plan/SKILL.md` の出力が `1`", "ok": true, "note": "Grep ツールで argument-hint を検索 / 出力: 4行目 'argument-hint: [ゴール | unblock <計画ID> <id> [回答]]'（完全一致）"},
+    {"text": "run スキルが `/plan approve` を案内しない。確認：`grep -c \"plan approve\" .claude/skills/run/SKILL.md` の出力が `0`、`grep -c -F '`/plan <ゴール>` で計画を作ってください' .claude/skills/run/SKILL.md` の出力が `1`", "ok": true, "note": "Grep ツールで検索 / 出力: 'plan approve' は .claude/skills 配下で0件。run/SKILL.md 42行目に '`/plan <ゴール>` で計画を作ってください' が1件"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（参照切れの検査を含む）", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=716 fail=0"}
+  ],
+  "reasons": []
+}

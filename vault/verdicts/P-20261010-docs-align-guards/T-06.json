@@ -1,0 +1,34 @@
+{
+  "task": "P-20261010-docs-align-guards/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 04:46",
+  "criteria": [
+    {
+      "text": "リポジトリ全体（当時の記録と smoke のテストを除く）に古い語が残っていない。確認：`git grep -n \"plan approve\\|excludedCommands\\|提案ファイル\\|会話記録で確認\" -- . ':!vault/designs' ':!vault/log' ':!vault/archive' ':!vault/plans' ':!vault/tasks' ':!vault/verdicts' ':!scripts/smoke.sh'` が何も出力しない",
+      "ok": true,
+      "note": "worktree で同じ git grep を実行 / 出力: なし"
+    },
+    {
+      "text": "リポジトリ全体（同じ除外と `vault/rules/README.md`）に、守りを絞る前の言い回しが残っていない。確認：2つ目の git grep が何も出力しない",
+      "ok": true,
+      "note": "worktree で2つ目の git grep（vault/rules/README.md 除外）を実行 / 出力: なし"
+    },
+    {
+      "text": "`creator.md` の書き込まない物の節が差分ゲートで説明され、frontmatter は変わっていない。",
+      "ok": true,
+      "note": "実行コマンド: grep -c '^## 書き込まないもの（差分ゲートが差し戻す）$' creator.md / 出力: 1。sed -n 1,6p の出力は決定済みの6行と一致"
+    },
+    {
+      "text": "`ai-harness.md` の unblock の説明と `README.md` のルールの説明が今の状態になっている。",
+      "ok": true,
+      "note": "grep -c 'フックでは確かめない' ai-harness.md / 出力: 1。README の拡張ポイント節で grep -c 'scripts/diff_gate.py' / 出力: 1"
+    },
+    {
+      "text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` を含む（主な文書の参照切れの検査を含む）",
+      "ok": true,
+      "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1 / 出力: smoke: pass=472 fail=0 起点コミットがタスク票の「進捗」に記録されていないため、変更ファイル一覧の検査は行っていない（参考：HEAD~3..HEAD の差分に成果物外の vault/plans・log・verdicts 以外のファイルは無い）。"
+    }
+  ],
+  "reasons": []
+}

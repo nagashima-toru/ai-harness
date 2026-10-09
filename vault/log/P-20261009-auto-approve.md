@@ -1,1 +1,4 @@
 - 2026-10-09 22:37 - draft→approved 人の指示: /plan approve P-20261009-auto-approve
+- 2026-10-09 22:37 T-01 todo→doing attempt=1
+- 2026-10-09 22:37 T-03 todo→doing attempt=1
+- 2026-10-09 22:37 T-04 todo→doing attempt=1

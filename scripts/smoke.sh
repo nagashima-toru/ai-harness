@@ -2378,6 +2378,19 @@ expect_eq "(transition-wt) 25 同じコミットが T-02 の行に出る" "| T-0
 expect_eq "(transition-wt) 25 従来の件名のコミットが T-03 の行に出る" "| T-03 | C | $TW_HB | - |" "$(echo "$TW_PB" | grep '^| T-03 |')"
 expect_eq "(transition-wt) 25 done のコミットが無いタスクの行は -" "| T-04 | D | - | - |" "$(echo "$TW_PB" | grep '^| T-04 |')"
 
+# --- スキルの記述の検査 ---
+RUN_SKILL="$ROOT/.claude/skills/run/SKILL.md"
+DESIGN_SKILL="$ROOT/.claude/skills/design/SKILL.md"
+rs_step7="$(awk '/^## 7\./{f=1;next} /^## 8\./{f=0} f' "$RUN_SKILL")"
+rs_add="$(printf '%s\n' "$rs_step7" | grep -nF -m1 'git add vault/plans/<計画ID>.md' | cut -d: -f1)"
+rs_fin="$(printf '%s\n' "$rs_step7" | grep -nF -m1 'bash scripts/vcs_finish.sh' | cut -d: -f1)"
+if [ -n "$rs_add" ] && [ -n "$rs_fin" ] && [ "$rs_add" -lt "$rs_fin" ]; then rs1=ok; else rs1=NG; fi
+expect_eq "(run-skill-1) run 手順7で計画票のコミットが vcs_finish.sh より前にある" ok "$rs1"
+if ! grep -qF 'gh issue create' "$RUN_SKILL" && grep -qF 'gh api repos/{owner}/{repo}/issues' "$RUN_SKILL"; then rs2=ok; else rs2=NG; fi
+expect_eq "(run-skill-2) run の issue 起票が REST（gh issue create が無い）" ok "$rs2"
+if grep -qF '`gh api` の PR 作成に渡すはずだった' "$RUN_SKILL" && grep -qF '`gh api` の PR 作成に渡すはずだった' "$DESIGN_SKILL"; then rs3=ok; else rs3=NG; fi
+expect_eq "(run-skill-3) run・design の MCP 代替が gh api の PR 作成を引き継ぐ" ok "$rs3"
+
 # --- 主な文書の参照切れの検査 ---
 refcheck() { # $1=ルート。存在しないパスを <文書>:<行>: <パス> で出す
   python3 - "$1" <<'PY'

@@ -1,10 +1,10 @@
 ---
 name: run
-description: 自分のブランチの計画を進める。「タスクを進めて」「次のタスクをやって」「続きから」「続きをやって」「run」と言われたら必ずこのスキルを使う。承認済みの計画票（vault/plans/ の status: approved）のタスク表を読み、先頭タスクを doing にして実装し、verifier で検証し、verdict に従って done / doing / blocked に更新する。全タスクが done になったら PR を作る。
+description: 自分のブランチの計画を進める。「タスクを進めて」「次のタスクをやって」「続きから」「続きをやって」「run」と言われたら必ずこのスキルを使う。承認済みの計画票（vault/plans/ の status: approved）のタスク表から着手可能なタスクを取り（最大 HARNESS_MAX_PARALLEL 件）、creator サブエージェントに worktree で作らせ、verifier で検証し、verdict に従って scripts/transition.py で done / doing / blocked に更新する。取れるタスクが無くなるまで繰り返し、全タスクが done になったら PR を作る。
 argument-hint: [task-id（省略時は先頭）]
 ---
 
-自分のブランチの計画を1タスク処理する。状態の正本は承認済みの計画票（`vault/plans/<計画ID>.md` のタスク表）、仕様は `docs/vault-spec.md`。
+自分のブランチの承認済み計画を、取れるタスクが無くなるまで処理する。状態の正本は承認済みの計画票（`vault/plans/<計画ID>.md` のタスク表）、仕様は `docs/vault-spec.md`。
 
 ## 0. 現在時刻
 log の日時は transition.py が実時刻で書くので、run は書かない。`TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` は verifier が verdict の `checked_at` に使う。

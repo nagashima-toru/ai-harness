@@ -12,7 +12,7 @@
 囲まれた文字列。末尾が `/` なら前方一致、それ以外は完全一致。
 
 判定（1つのパスに理由は1つ。最初に当たったものを使う）:
-  1. vault/plans/・vault/log/・vault/verdicts/・vault/rules/ 配下 -> 違反（宣言があっても）
+  1. vault/plans/・vault/log/・vault/verdicts/ 配下 -> 違反（宣言があっても）
   2. 自分のタスク票 -> 「## 進捗」以外の節が base と同じなら許す。違えば違反
   3. 宣言に一致 -> 許す
   4. それ以外 -> 違反
@@ -34,7 +34,7 @@ import argparse
 import re
 import subprocess
 
-FORBIDDEN_PREFIXES = ("vault/plans/", "vault/log/", "vault/verdicts/", "vault/rules/")
+FORBIDDEN_PREFIXES = ("vault/plans/", "vault/log/", "vault/verdicts/")
 REASON_FORBIDDEN = "%s 配下は宣言があっても変更できない"
 REASON_TASK = "タスク票の「進捗」以外の節が変わっている"
 REASON_UNDECLARED = "「成果物」に宣言されていない"

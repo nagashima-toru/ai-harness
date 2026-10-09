@@ -2038,7 +2038,7 @@ expect_eq "(diff_gate) 08 ほかのタスク票を宣言なしで変えると終
 expect_eq "(diff_gate) 08 ほかのタスク票が宣言外として出る" "1" \
   "$(dg_has 'vault/tasks/P-TEST/T-02.md: 「成果物」に宣言されていない')"
 
-# 09 10 11 12 常に違反の4ディレクトリ
+# 09 10 11 常に違反の3ディレクトリ、12 vault/rules/ は宣言があれば許される
 dg_setup
 echo "変更" >> "$DG/vault/plans/P-TEST.md"; dg_commit
 dg_run
@@ -2063,9 +2063,15 @@ expect_eq "(diff_gate) 11 理由が vault/verdicts/ 配下は宣言があって�
 dg_setup
 echo rule2 > "$DG/vault/rules/common/x.md"; dg_commit
 dg_run
-expect_eq "(diff_gate) 12 宣言のある vault/rules/ 配下の変更は終了コード 1" "1" "$DG_RC"
-expect_eq "(diff_gate) 12 理由が vault/rules/ 配下は宣言があっても変更できない" "1" \
-  "$(dg_has 'vault/rules/common/x.md: vault/rules/ 配下は宣言があっても変更できない')"
+expect_eq "(diff_gate) 12 宣言のある vault/rules/ 配下の変更は終了コード 0" "0" "$DG_RC"
+expect_eq "(diff_gate) 12 宣言のある vault/rules/ 配下の変更は違反の出力が空" "0" "$(wc -c < "$DG_OUT" | tr -d ' ')"
+
+dg_setup
+echo rule > "$DG/vault/rules/common/y.md"; dg_commit
+dg_run
+expect_eq "(diff_gate) 12b 宣言の無い vault/rules/ 配下の変更は終了コード 1" "1" "$DG_RC"
+expect_eq "(diff_gate) 12b 理由が「成果物」に宣言されていない" "1" \
+  "$(dg_has 'vault/rules/common/y.md: 「成果物」に宣言されていない')"
 
 # 13 branch 側で宣言を書き足しても base の版で判定する
 dg_setup

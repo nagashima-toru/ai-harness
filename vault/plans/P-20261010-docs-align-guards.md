@@ -34,7 +34,7 @@ status: approved
 | T-01 | done | 1 | - | runbook.md の人の仕事・困ったときの git 復旧・権限モードの選び方・unblock とルールの記述を今の状態に揃える | |
 | T-02 | done | 1 | - | vault-spec.md の unblock の記述・vault/rules と差分ゲート・やめた判定の書き方を揃える | |
 | T-03 | done | 1 | - | install.md のサンドボックスの節の古い理由と人の仕事を揃える | |
-| T-04 | doing | 1 | - | decisions.md に守りを絞った判断を1行足し、vision.md から承認を外す | |
+| T-04 | review | 1 | - | decisions.md に守りを絞った判断を1行足し、vision.md から承認を外す | |
 | T-05 | doing | 1 | - | planner.md にゴールの範囲の指針を足し、下書きファイル方式・ガード・サンドボックスの古い記述を消す | |
 | T-06 | todo | 0 | T-01,T-02,T-03,T-04,T-05 | creator.md・ai-harness.md・README.md を揃え、リポジトリ全体に古い語が残っていないことを確かめる | |
 

@@ -29,13 +29,13 @@ bash scripts/smoke.sh        # フックの動作検証
 |---|---|
 | `/design <ゴール>` | 大きなゴールを調査し、人に質問し、決定事項を固めた設計文書 `vault/designs/D-xxx.md` を作る |
 | `/plan <ゴール>` | 計画 ID を決めてブランチ（`work/<計画ID>`）を切り、planner がタスクに分割して draft を作る。`/plan approve <計画ID>` で承認 |
-| `/run` | 自分のブランチの承認済み計画を1タスク処理する（作成 → verifier → done / 再試行 / blocked） |
-| `claude -p "/run"` | 同じことを無人（非対話）で行う |
+| `/run` | 自分のブランチの承認済み計画の取れるタスクを、全部 done になるまで処理し、PR を作る（creator → verifier → done / 再試行 / blocked） |
+| `python3 scripts/run_unattended.py` | 同じことを無人（非対話）で行う（タイムアウト付きのラッパー。中で `claude -p "/run"` を実行する） |
 
 `/design` と `/plan` の使い分け：受け入れ基準が7行に収まらない・成果物が複数ファイルにまたがる・人に聞くことがある、のいずれかに当てはまる大きなゴールは `/design` から始める。設計文書のフェーズを1つずつ `/plan` に渡す。小さい要求は `/plan` に直行する。
 
 - 人が日々やることは `docs/runbook.md`、Vault の仕様は `docs/vault-spec.md` を参照
-- 無人で回す場合は `claude -p "/run"` を cron や CI から定期実行する
+- 無人で回す場合は `python3 scripts/run_unattended.py` を cron や CI から定期実行する（手順は `docs/runbook.md`）
 - 1セッション=1計画=1ブランチ。複数の計画を並行して進めたい時は、計画ごとに別のセッション（別のブランチ／worktree）を使う
 
 ## 拡張ポイント（ルール）
@@ -55,14 +55,14 @@ bash scripts/smoke.sh        # フックの動作検証
 
 ## 仕組み
 ```
- 人                      作成エージェント（メイン）              verifier（別コンテキスト）
+ 人                      オーケストレーター（メイン）           verifier（別コンテキスト）
  │ /plan <ゴール>          │                                       │
  ├──────────────────────▶ ブランチ work/<計画ID> を作成             │
  │                        │ planner が計画票 <計画ID>.md / タスク票を draft │
  │ /plan approve <計画ID>  │                                       │
  ├──────────────────────▶ 計画票の status を approved に            │
  │ /run                    │                                       │
- ├──────────────────────▶ todo→doing → 成果物を作る → review ──▶ 受け入れ基準を照合
+ ├──────────────────────▶ todo→doing → creator が worktree で作る → review ──▶ 受け入れ基準を照合
  │                        │                                       │ verdicts/<計画ID>/<id>.json
  │                        │ ◀─────────────────────────────────────┘
  │                        │ PASS → done / FAIL → doing(attempt+1) / 上限 → blocked
@@ -77,10 +77,10 @@ PR ができたら、人が内容を確認して `gh pr merge` でマージす�
 
 ## 構成
 ```
-.claude/   settings.json（hooks・許可）、agents/（verifier, planner）、hooks/、skills/（design, plan, run）
+.claude/   settings.json（hooks・許可・サンドボックス）、agents/（creator, verifier, planner）、hooks/、skills/（design, plan, run）
 vault/     plans/（計画票=状態の正本）、tasks/、designs/（設計文書）、verdicts/、log/、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
-docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、decisions.md
-scripts/   smoke.sh（フック検証）、install.sh（他プロジェクトへ複製）、rules.sh（ルール解決）
+docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、vision.md、decisions.md
+scripts/   smoke.sh（フック検証）、install.sh・uninstall.sh（他プロジェクトへの複製と取り外し）、rules.sh（ルール解決）、current_plan.sh（承認済みの計画の特定）、transition.py（状態遷移）、diff_gate.py（差分ゲート）、vcs_finish.sh（PR 作成）、discard_worktree.sh（worktree の破棄）、run_unattended.py（無人実行のラッパー）、archive_plans.sh（古い計画の移動）
 ```
 
 ## ライセンス

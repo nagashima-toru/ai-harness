@@ -229,86 +229,32 @@ expect_guard "verifier が vault/verdicts/ に Write → 許可" allow \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/T-0001.json"}}')"
 expect_guard "verifier が README.md に Edit → 拒否" deny \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
-expect_guard "verifier が Bash で git commit → 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git commit -m x"}}')"
 expect_guard "verifier が Bash でテスト実行 → 許可" allow \
   "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"python3 -m pytest -q"}}')"
 expect_guard "planner が vault/tasks/ に Write → 許可" allow \
   "$(run_guard '{"agent_type":"planner","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/tasks/T-0002.md"}}')"
-expect_guard "planner が vault/todo.md に Edit → 拒否" deny \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/vault/todo.md"}}')"
 expect_guard "メインエージェントが README.md に Edit → 許可" allow \
   "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
-expect_guard "gh api で vault/rules/ へ PUT → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api -X PUT repos/o/r/contents/vault/rules/common/roles.md -f message=m -f content=Zm9v -f sha=abc"}}')"
-expect_guard "gh api で -X 指定なしでも vault/rules/ を対象に -f content → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api repos/o/r/contents/vault/rules/common/roles.md -f content=Zm9v -f message=m"}}')"
-expect_guard "curl で api.github.com の vault/rules/ へ PUT → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"curl -X PUT -H \"Authorization: token x\" https://api.github.com/repos/o/r/contents/vault/rules/common/roles.md"}}')"
-expect_guard "vault/rules/ を含まない gh api issues 一覧 → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api repos/o/r/issues"}}')"
-expect_guard "vault/rules/ を含まない curl コマンド → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"curl https://api.github.com/repos/o/r/contents/README.md"}}')"
-expect_guard "verifier が Bash で root 外（tmp）だけに mkdir/cp → 許可" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"mkdir -p /tmp/xxx && cp scripts/install.sh /tmp/xxx/install.sh"}}')"
-expect_guard "verifier が Bash で root 内の許可外パス（vault/rules/）へ cp → 拒否（既存挙動を維持）" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"}}')"
-expect_guard "verifier が Bash で root 外（tmp）と root 内の許可外パスが混在 → 拒否（root 外許可がバイパスの抜け穴にならない）" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"mkdir -p /tmp/xxx && cp vault/rules/common/a.md /tmp/xxx/"}}')"
-
-make_plan_task T-0001 doing 1
-expect_guard "(a) doing 中にメインエージェントが vault/rules/ へ Write → 拒否" deny \
-  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
-make_plan_task T-0001 todo 0
-expect_guard "(b) todo のみ（doing/review 無し）でもメインエージェントが vault/rules/ へ Write → 拒否" deny \
-  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
-make_plan_task T-0001 doing 1
-expect_guard "(c) doing 中に verifier が vault/verdicts/ へ Write → 許可（従来どおり）" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/T-0001.json"}}')"
-rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
-expect_guard "(g) approved な計画票が0件でも vault/rules/ へ Write → 拒否" deny \
-  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
-make_plan "P-A" "approved" "| T-0001 | todo | 0 | - | A | |"
-make_plan "P-B" "approved" "| T-0001 | doing | 1 | - | B | |"
-expect_guard "(h) approved な計画票が2件以上でも vault/rules/ へ Write → 拒否" deny \
-  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
-rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
 GTMP="$(smoke_tmpdir)" || abort_tmp
 git -C "$GTMP" init -q -b main
 git -C "$GTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+expect_guard "(guard3-b) main で git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard3-b) main で && 連結の git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git add a && git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard3-b) main で ; 連結の git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo x; git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard3-b) main で改行区切りの git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo a\ngit commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard3-b) main で git -C . commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -C . commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 expect_guard "(i) main で git commit → 拒否" deny \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) grep の検索語に git commit → 許可" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"grep -n \"git commit\" README.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) git log --grep の引数に git commit → 許可" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git log --oneline --grep \"git commit\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) echo の引用符内に git commit → 許可" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo \"run git commit later\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) ヒアドキュメント本文に git commit → 許可" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cat <<\"EOF\"\ngit commit -m x\nEOF"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) パイプの grep に git commit → 許可" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cat README.md | grep \"git commit\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) && の後ろの git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git add a && git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) ; の後ろの git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo x; git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) 改行区切りの後ろの git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo a\ngit commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) 先頭の代入付きの git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"GIT_AUTHOR_NAME=x git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) 絶対パスのコマンド語の git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"/usr/bin/git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) コマンド置換を含む git commit は従来判定で → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<\"EOF\"\nmsg\nEOF\n)\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) bash -c 内の git commit は従来判定で → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"bash -c \"git commit -m x\""}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) git -C . で前置オプション付きの git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -C . commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(bash-parse-main) git -c で前置オプション付きの git commit → 拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -c user.name=x commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 git -C "$GTMP" checkout -q -b work/p-test
 expect_guard "(j) work ブランチで git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard3-b) work/p-test で git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 git -C "$GTMP" checkout -q main
 git -C "$GTMP" checkout -q -b design/d-999
@@ -316,12 +262,11 @@ expect_guard "(k) design/d-999 ブランチで git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 expect_guard "(l) design/d-999 ブランチで vault/designs/D-999.md へ Write → 許可" allow \
   "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$GTMP"'/vault/designs/D-999.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+git -C "$GTMP" checkout -q --detach
+expect_guard "(guard3-b) detached HEAD で git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 rm -rf "$GTMP"
 
-expect_guard "creator が vault/plans/ に Write → 拒否" deny \
-  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/plans/P-X.md"}}')"
-expect_guard "creator が vault/log/ に Write → 拒否" deny \
-  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/log/P-X.md"}}')"
 expect_guard "creator が README.md に Write → 許可" allow \
   "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
 
@@ -346,10 +291,8 @@ expect_guard "(worktree nested) verifier が worktree 内の未作成ネスト�
 git -C "$WMAIN2" worktree remove -q --force "$WLEAF2" >/dev/null 2>&1
 rm -rf "$WMAIN2" "$WLEAF2"
 
-# 委譲判定を確認するテストでは、Bash + 相対パスの vault/rules/ ターゲット（cp x.txt vault/rules/...）を
-# ローカル判定の目印として使う（既存の「root 内の許可外パスへ cp」テストと同じ相対パス方式）。
-# 絶対 file_path の Write は (wds-1) で使う。フックが realpath で比べるので、mktemp が返す tmp パスと
-# git rev-parse --show-toplevel の解決済みパス（macOS の /var → /private/var）の食い違いは吸収される。
+# 委譲判定を確認するテストでは、verifier の worktree 内 README.md への Write をローカル判定の目印にする
+# （委譲されなければ (c) の規則で拒否される）。
 DWTMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWTMAIN" init -q -b main
 git -C "$DWTMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
@@ -362,11 +305,11 @@ import json, sys
 json.load(sys.stdin)
 print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
 PYEOF
-expect_guard "(delegate) worktree 側が常に allow を返す差し替え → 通常なら拒否される vault/rules/ への書き込みも委譲先の判定（allow）が採用される" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" python3 "$GUARD_HOOK")"
+expect_guard "(delegate) worktree 側が常に allow を返す差し替え → 通常なら拒否される verifier の README.md への Write も委譲先の判定（allow）が採用される" allow \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$DWTLEAF"'/README.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" python3 "$GUARD_HOOK")"
 
-expect_guard "(delegate) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（vault/rules/ 拒否が効く）" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" _HOOK_DELEGATED=1 python3 "$GUARD_HOOK")"
+expect_guard "(delegate) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（verifier の書き込み先制限が効く）" deny \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$DWTLEAF"'/README.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" _HOOK_DELEGATED=1 python3 "$GUARD_HOOK")"
 
 git -C "$DWTMAIN" worktree remove -q --force "$DWTLEAF" >/dev/null 2>&1
 rm -rf "$DWTMAIN" "$DWTLEAF"
@@ -382,53 +325,10 @@ cat > "$DWTLEAF2/.claude/hooks/agent_write_guard.py" <<'PYEOF'
 import sys
 sys.exit(1)
 PYEOF
-expect_guard "(delegate) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（vault/rules/ 拒否が引き続き効く）" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"cp x.txt vault/rules/common/a.md"},"cwd":"'"$DWTLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN2" python3 "$GUARD_HOOK")"
+expect_guard "(delegate) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（verifier の書き込み先制限が引き続き効く）" deny \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$DWTLEAF2"'/README.md"},"cwd":"'"$DWTLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN2" python3 "$GUARD_HOOK")"
 git -C "$DWTMAIN2" worktree remove -q --force "$DWTLEAF2" >/dev/null 2>&1
 rm -rf "$DWTMAIN2" "$DWTLEAF2"
-
-expect_guard "verifier が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
-expect_guard "planner が Bash で 2>&1 を含む非書き込みコマンド → 許可" allow \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"echo x 2>&1"}}')"
-expect_guard "(issue #54 placeholder) verifier が山括弧プレースホルダーを含むだけの読み取り専用 grep → 許可" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"grep -n -A 5 \"doing\\u2192review attempt=<n>\" .claude/skills/run/SKILL.md"}}')"
-expect_guard "(issue #54 placeholder) planner が <計画ID> プレースホルダーを含むだけの読み取り専用 grep → 許可" allow \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"grep -n \"vault/tasks/<計画ID>/<id>.md\" docs/vault-spec.md"}}')"
-expect_guard "(issue #54 placeholder) verifier がプレースホルダーと実リダイレクト（許可外パス）が混在するコマンド → 実リダイレクトは拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo \"doing\\u2192review attempt=<n>\" > README.md"}}')"
-expect_guard "(issue #54 placeholder) verifier がプレースホルダーと実リダイレクト（許可ディレクトリ内）が混在するコマンド → 許可" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo \"doing\\u2192review attempt=<n>\" > '"$TMP"'/vault/verdicts/T-1.json"}}')"
-expect_guard "(issue #54 placeholder) verifier が <n> を含む rm コマンド → 破壊的操作として拒否（プレースホルダー有無に関係なく維持）" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"rm attempt=<n>.txt"}}')"
-expect_guard "(issue #54 placeholder) verifier が <n> を含む git commit → 破壊的操作として拒否（プレースホルダー有無に関係なく維持）" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git commit -m \"attempt=<n>\""}}')"
-expect_guard "(bash-parse-allowed) verifier が grep の引数の git add → 許可" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"grep -n \"git add\" .claude/skills/run/SKILL.md"}}')"
-expect_guard "(bash-parse-allowed) verifier が許可ディレクトリへの mkdir -p → 許可" allow \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"mkdir -p vault/verdicts/P-X"}}')"
-expect_guard "(bash-parse-allowed) planner が grep の引数の rm -rf → 許可" allow \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"grep -n \"rm -rf\" docs/vault-spec.md"}}')"
-expect_guard "(bash-parse-allowed) planner が grep の引数の doing->review → 許可" allow \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"grep -n \"doing->review\" docs/vault-spec.md"}}')"
-expect_guard "(bash-parse-allowed) verifier が git add → 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-X/T-01.json"}}')"
-expect_guard "(bash-parse-allowed) verifier が許可ディレクトリ内の rm → 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"rm vault/verdicts/P-X/T-01.json"}}')"
-expect_guard "(bash-parse-allowed) verifier が許可外へのリダイレクト → 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x > README.md"}}')"
-expect_guard "(bash-parse-allowed) verifier が root 内をコピー先にする cp → 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"cp /tmp/a vault/verdicts/P-X/T-01.json"}}')"
-expect_guard "(bash-parse-allowed) verifier が tee → 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"tee vault/verdicts/P-X/T-01.json"}}')"
-expect_guard "(bash-parse-allowed) verifier が bash -c のインタプリタ（従来判定）→ 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"bash -c \"echo x > README.md\""}}')"
-expect_guard "(bash-parse-allowed) verifier がコマンド置換内の git commit（従来判定）→ 拒否" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo \"$(git commit -m x)\""}}')"
-expect_guard "(bash-parse-allowed) planner が awk の print 書き込み（従来判定）→ 拒否" deny \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"awk '"'"'{print > \"README.md\"}'"'"' README.md"}}')"
-expect_guard "(bash-parse-allowed) planner が許可内リダイレクトと許可外 rm の連結 → 拒否" deny \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"echo x > vault/tasks/T.md; rm README.md"}}')"
 
 # done タスクへの書き込み拒否（issue #76 / D-010 フェーズ2）。expect_guard を拡張し、4番目の
 # 引数で reason に含むべき部分文字列も確認できるようにする。
@@ -452,155 +352,46 @@ expect_guard "(done-write) review の verdict への Write（agent_type=verifier
   "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"vault/verdicts/P-FIX/T-03.json"}}')"
 expect_guard "(done-write) 計画票が存在しない計画 ID 配下のタスク票への Write → 許可（fail-open）" allow \
   "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"vault/tasks/P-NOPLAN/T-01.md"}}')"
-expect_guard "(done-write) Bash のリダイレクトで done のタスク票へ追記 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/tasks/P-FIX/T-01.md"}}')" "done"
-expect_guard "(done-write) Bash の sed -i で done のタスク票を書き換え → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"sed -i s/a/b/ vault/tasks/P-FIX/T-01.md"}}')" "done"
-# Bash の書き込み動詞が git add / git commit だけなら done 判定の対象外（issue #84）。混在は従来どおり拒否。
-expect_guard "(done-write) メインの git add で done の verdict と計画票をステージ（issue #84 再現）→ 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json vault/plans/P-FIX.md"}}')"
-expect_guard "(done-write) メインの git commit -m \"P-FIX/T-01: done\" → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"P-FIX/T-01: done\""}}')"
-expect_guard "(done-write) agent_type=creator の git add で done の verdict をステージ → 許可（agent_type に依存しない）" allow \
-  "$(run_guard '{"agent_type":"creator","tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json"}}')"
-expect_guard "(done-write) git add && git commit の連結 → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json && git commit -m x"}}')"
-expect_guard "(done-write) commit メッセージ中の done verdict パス文字列は書き込み対象ではない → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"add vault/verdicts/P-FIX/T-01.json\""}}')"
-expect_guard "(done-write) git add に done の verdict へのリダイレクトが混在 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && echo x > vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(done-write) git add に sed -i が混在 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && sed -i s/a/b/ vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(done-write) git add に cp が混在 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x; cp /tmp/y vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(done-write) git rm で done の verdict を削除 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(done-write) commit メッセージ内のコマンド置換で done のタスク票へ書き込み → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(echo x > vault/tasks/P-FIX/T-01.md)\""}}')" "done"
-# Bash 判定を analyze_bash_writes に載せ替え（issue #87・#91）。git add/commit は除き、実際の書き込み対象で判定する
-expect_guard "(bash-parse-done) #87 log 追記と done verdict の git add の && 連結 → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf '%s' \"- 2026-10-02 10:00 T-01 review→done attempt=1 verifier=sonnet\" >> vault/log/P-FIX.md && git add vault/plans/P-FIX.md vault/log/P-FIX.md vault/verdicts/P-FIX/T-01.json"}}')"
-expect_guard "(bash-parse-done) git add と git commit の改行区切り → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add vault/verdicts/P-FIX/T-01.json\ngit commit -m \"P-FIX/T-01: done\""}}')"
-expect_guard "(bash-parse-done) grep の引数に done のタスク票パスがあるだけ → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"grep -n \"vault/tasks/P-FIX/T-01.md\" README.md > /tmp/x.txt"}}')"
-expect_guard "(bash-parse-done) cat で done の verdict を読んで別ファイルへ出力 → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cat vault/verdicts/P-FIX/T-01.json > /tmp/v.json"}}')"
-expect_guard "(bash-parse-done) log 追記に done の verdict へのリダイレクトが && 連結 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/log/P-FIX.md && echo y > vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(bash-parse-done) git add の後に git rm で done の verdict を削除 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git add x && git rm vault/verdicts/P-FIX/T-01.json"}}')" "done"
-expect_guard "(guard-text heredoc) H3 commit メッセージのヒアドキュメント本文に done の verdict パス → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<'"'"'EOF'"'"'\nP-FIX/T-01 vault/verdicts/P-FIX/T-01.json\nEOF\n)\""}}')"
-expect_guard "(bash-parse-done) git restore で done のタスク票を戻す → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"git restore vault/tasks/P-FIX/T-01.md"}}')" "done"
-expect_guard "(bash-parse-done) cp で done のタスク票を上書きして git add → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cp /tmp/y vault/tasks/P-FIX/T-01.md\ngit add vault/tasks/P-FIX/T-01.md"}}')" "done"
-expect_guard "(bash-parse-done) tee で done の verdict へ書き込み → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"tee vault/verdicts/P-FIX/T-01.json < /tmp/y"}}')" "done"
+# (guard3-a) done のタスク票・verdict への Write 系の拒否（Bash は見ない）
+expect_guard "(guard3-a) メインの done のタスク票への Edit → 拒否（reason に done）" deny \
+  "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"vault/tasks/P-FIX/T-01.md"}}')" "done"
+expect_guard "(guard3-a) verifier の done の verdict への Write → 拒否（reason に done）" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"vault/verdicts/P-FIX/T-01.json"}}')" "done"
+expect_guard "(guard3-a) メインの doing のタスク票への Edit → 許可" allow \
+  "$(run_guard '{"tool_name":"Edit","tool_input":{"file_path":"vault/tasks/P-FIX/T-02.md"}}')"
+expect_guard "(guard3-a) メインの Bash で done のタスク票へ追記 → 許可（Bash は見ない）" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"printf x >> vault/tasks/P-FIX/T-01.md"}}')"
 
-# 会話記録（~/.claude/projects/）への書き込み拒否（D-010 フェーズ4）。実ホームを触らないよう HOME を差し替える
-TG_HOME="$TMP/transcript-guard-home"
-mkdir -p "$TG_HOME/.claude/projects/x"
-run_guard_home() { printf '%s' "$1" | HOME="$TG_HOME" CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
-expect_tg() { # $1=name $2=deny|allow $3=payload json
-  local out; out="$(run_guard_home "$3")"
-  expect_guard "(transcript-guard) $1" "$2" "$out"
-  if [ "$2" = deny ] && ! echo "$out" | grep -q '~/.claude/projects/'; then
-    echo "  NG   (transcript-guard) $1 reason に ~/.claude/projects/ が無い"; FAIL_N=$((FAIL_N+1))
-  fi
-}
-for at in "" creator verifier planner; do
-  ap=""; [ -n "$at" ] && ap='"agent_type":"'"$at"'",'
-  for tl in Write Edit MultiEdit; do
-    expect_tg "agent_type='$at' の $tl → 拒否" deny \
-      '{'"$ap"'"tool_name":"'"$tl"'","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
-  done
-done
-expect_tg "Bash リダイレクト > （~ 表記）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash リダイレクト >> （絶対パス）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x >> '"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash tee → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x | tee ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash sed -i → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"sed -i s/a/b/ ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash rm → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"rm '"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash mv → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"mv /tmp/a ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash cp → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"cp /tmp/a ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "verifier の Bash リダイレクト（~ 表記）→ 拒否" deny '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash cat（読み取り）→ 許可" allow '{"tool_name":"Bash","tool_input":{"command":"cat ~/.claude/projects/x/s.jsonl"}}'
-expect_tg "Bash grep（読み取り）→ 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep foo '"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
-expect_tg "Read → 許可" allow '{"tool_name":"Read","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects/x/s.jsonl"}}'
-expect_tg "~/.claude/settings.json への Write → 許可" allow '{"tool_name":"Write","tool_input":{"file_path":"'"$TG_HOME"'/.claude/settings.json"}}'
-expect_tg "~/.claude/projects-x/ への Write → 許可（前方一致の誤検出なし）" allow '{"tool_name":"Write","tool_input":{"file_path":"'"$TG_HOME"'/.claude/projects-x/a"}}'
-expect_tg "Bash で ~/.claude/settings.json へリダイレクト → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"echo x > ~/.claude/settings.json"}}'
+# (guard3-c) verifier の書き込み先は vault/verdicts/ に限る（Write 系のみ。Bash は制限しない）
+expect_guard "(guard3-c) verifier の vault/verdicts/ への Write → 許可" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/verdicts/P-X/T-01.json"}}')"
+expect_guard "(guard3-c) verifier の README.md への Write → 拒否（reason に verifier）" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/README.md"}}')" "verifier"
+expect_guard "(guard3-c) verifier の README.md への Edit → 拒否" deny \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Edit","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+expect_guard "(guard3-c) verifier の Bash echo x > README.md → 許可（verifier の Bash は制限しない）" allow \
+  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"echo x > README.md"}}')"
 
-# Bash の vault/rules/・会話記録判定の精密化（issue #91）。analyze_bash_writes で解析できる形は実際の
-# 書き込み対象だけで判定し、解析できない形は従来の判定に落とす（fail-closed）。
-bp() { # $1=name $2=deny|allow $3=payload json $4=reason に含むべき部分文字列(optional)
-  expect_guard "(bash-parse) $1" "$2" "$(run_guard_home "$3")" "${4:-}"
-}
-bp "grep の検索語・対象に git commit を含む会話記録の読み取り → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep -n \"git commit\" ~/.claude/projects/x/s.jsonl"}}'
-bp "grep -c mkdir で会話記録の読み取り → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep -c mkdir ~/.claude/projects/x/s.jsonl"}}'
-bp "grep の検索語に doing->review を含む会話記録の読み取り → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"grep -n \"doing->review\" ~/.claude/projects/x/s.jsonl"}}'
-bp "printf の引用符内に vault/rules/ へのリダイレクト文字列 → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"printf '"'"'%s'"'"' \"echo x > vault/rules/a.md\""}}'
-bp "ヒアドキュメント本文に vault/rules/ と git commit の文字列 → 許可" allow '{"tool_name":"Bash","tool_input":{"command":"cat > /tmp/P-20261002-write-guard-false-positive-note.md <<'"'"'EOF'"'"'\nsee vault/rules/common/git.md and git commit\nEOF"}}'
-bp "vault/rules/ へのリダイレクト → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo \"x\" > vault/rules/a.md"}}' "vault/rules/"
-bp "vault/rules/ へのリダイレクト（ヒアドキュメント付き）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"cat > vault/rules/a.md <<'"'"'EOF'"'"'\nbody\nEOF"}}' "vault/rules/"
-bp "区切りの後ろの会話記録へのリダイレクト → 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo x; echo y > ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
-bp "改行区切りの後ろの rm（会話記録）→ 拒否" deny '{"tool_name":"Bash","tool_input":{"command":"echo a\nrm ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
-bp "コマンド置換の中の vault/rules/ へのリダイレクト → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"echo \"$(echo x > vault/rules/a.md)\""}}' "vault/rules/"
-bp "cd 後の相対リダイレクト（vault/rules/common 配下）→ 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"cd vault/rules/common && echo x > a.md"}}' "vault/rules/"
-bp "変数を含む vault/rules/ の対象 → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"echo x > vault/rules/$NAME"}}' "vault/rules/"
-bp "bash -c の中の vault/rules/ へのリダイレクト → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"bash -c \"echo x > vault/rules/a.md\""}}' "vault/rules/"
-bp "展開されるヒアドキュメント本文のコマンド置換 → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"cat <<EOF > /tmp/x\n$(echo x > vault/rules/a.md)\nEOF"}}' "vault/rules/"
-bp "awk の print リダイレクトで vault/rules/ へ書き込み → 拒否（従来判定）" deny '{"tool_name":"Bash","tool_input":{"command":"awk '"'"'{print > \"vault/rules/a.md\"}'"'"' README.md"}}' "vault/rules/"
-bp "絶対パスのコマンド語 /bin/rm で会話記録を削除 → 拒否（basename 照合）" deny '{"tool_name":"Bash","tool_input":{"command":"/bin/rm ~/.claude/projects/x/s.jsonl"}}' "~/.claude/projects/"
-
-# issue #109: 本文・引数に vault/rules/ のパス文字列があるだけの誤検知の回帰ケース（P-20261003-guard-rules-path-text）
-expect_guard "(guard-text heredoc) H1 main の gh issue create 本文に vault/rules/ と > → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh issue create --title t --body \"$(cat <<'"'"'EOF'"'"'\n## 該当箇所\n- vault/rules/planner/planner.md の確認コマンド（... > /tmp/x.md）\nEOF\n)\""}}')"
-expect_guard "(guard-text heredoc) H2 planner の gh issue create 本文に vault/rules/ と > → 許可" allow \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"gh issue create --title t --body \"$(cat <<'"'"'EOF'"'"'\n## 該当箇所\n- vault/rules/planner/planner.md の確認コマンド（... > /tmp/x.md）\nEOF\n)\""}}')"
-expect_guard "(guard-text heredoc) H4 区切り語を引用符で囲まない本文に vault/rules/ と > → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh issue create --title t --body \"$(cat <<EOF\nsee vault/rules/common/git.md > x\nEOF\n)\""}}')"
-expect_guard "(guard-text heredoc) H5 本文の後ろの vault/rules/ へのリダイレクト → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo \"$(cat <<'"'"'EOF'"'"'\nx\nEOF\n)\" > vault/rules/a.md"}}')" "vault/rules/"
-expect_guard "(guard-text heredoc) H6 展開される本文のコマンド置換で vault/rules/ へ書く → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo \"$(cat <<EOF\n$(echo x > vault/rules/a.md)\nEOF\n)\""}}')" "vault/rules/"
-expect_guard "(guard-text heredoc) H7 区切り語の後ろの別コマンドで vault/rules/ へ書く → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo \"$(cat <<'"'"'EOF'"'"'\nx\nEOF\ncp y vault/rules/a.md\n)\""}}')" "vault/rules/"
-expect_guard "(guard-text cd) C1 planner の cd と読み取りだけ（issue の再現例）→ 許可" allow \
-  "$(run_guard '{"agent_type":"planner","tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; ls scripts/ scripts/*/ 2>/dev/null | head -30; grep -c x vault/rules/planner/planner.md; wc -l vault/rules/planner/planner.md"}}')"
-expect_guard "(guard-text cd) C2 ルートへの cd の後に vault/rules/ を読んで別ファイルへ出力 → 許可" allow \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"' && grep -n x vault/rules/common/git.md > /tmp/out.txt"}}')"
-expect_guard "(guard-text cd) C3 ルートへの cd の後に vault/rules/ へリダイレクト → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"' && echo x > vault/rules/a.md"}}')" "vault/rules/"
-expect_guard "(guard-text cd) C4 ルートへの cd の後に cp で vault/rules/ へ書く → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; cp x.txt vault/rules/common/a.md"}}')" "vault/rules/"
-expect_guard "(guard-text cd) C5 ルートへの cd の後に tee で vault/rules/ へ書く → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"' && printf x | tee vault/rules/a.md"}}')" "vault/rules/"
-expect_guard "(guard-text cd) C6 ルート以外への cd の後に vault/rules/ へリダイレクト → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd /tmp && echo x > vault/rules/a.md"}}')" "vault/rules/"
-expect_guard "(guard-text cd) C7 2つ目の cd で vault/rules/common に入って書く → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; cd vault/rules/common && echo x > a.md"}}')" "vault/rules/"
-expect_guard "(guard-text cd) C8 ルートへの cd の後に gh api で vault/rules/ を更新 → 拒否" deny \
-  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"cd '"$TMP"'; gh api -X PUT repos/o/r/contents/vault/rules/common/roles.md -f content=Zm9v"}}')" "vault/rules/"
-
-# creator の vault/plans/・vault/log/ 拒否の Bash 判定も analyze_bash_writes に載せ替え（issue #91 / T-02）
-bpc() { # $1=name $2=deny|allow $3=command(JSON 文字列の中身)
-  local sub=""; [ "$2" = deny ] && sub="creator は vault/plans/"
-  expect_guard "(bash-parse-creator) $1" "$2" "$(run_guard '{"agent_type":"creator","tool_name":"Bash","tool_input":{"command":"'"$3"'"}}')" "$sub"
-}
-bpc "grep の検索語に git add を含む計画票の読み取り → 許可" allow 'grep -n \"git add\" vault/plans/P-X.md'
-bpc "git log -p の出力を別の場所へリダイレクト → 許可" allow 'git log -p -- vault/log/P-X.md > /tmp/out.txt'
-bpc "ヒアドキュメント本文に vault/plans/ と git commit の文字列 → 許可" allow "cat > /tmp/note.md <<'EOF'\nvault/plans/P-X.md ni git commit\nEOF"
-bpc "grep の検索語に doing->review を含むログの読み取り → 許可" allow 'grep -n \"doing->review\" vault/log/P-X.md'
-bpc "grep -c の計画票読み取りの結果を別の場所へリダイレクト → 許可" allow 'grep -c x vault/plans/P-X.md > /tmp/c.txt'
-bpc "ログへの >> リダイレクト → 拒否" deny 'echo x >> vault/log/P-X.md'
-bpc "計画票への tee -a → 拒否" deny 'printf x | tee -a vault/plans/P-X.md'
-bpc "計画票への sed -i → 拒否" deny 'sed -i s/a/b/ vault/plans/P-X.md'
-bpc "ログへの cp → 拒否" deny 'cp /tmp/a vault/log/P-X.md'
-bpc "計画票の git add → 拒否" deny 'git add vault/plans/P-X.md'
-bpc "コマンド置換の中のログへのリダイレクト → 拒否（従来判定）" deny 'echo \"$(echo x >> vault/log/P-X.md)\"'
-bpc "改行区切りの後ろのログの rm → 拒否" deny 'echo a\nrm vault/log/P-X.md'
+# (guard3-free) 削った判定が効かないこと（すべて許可）
+expect_guard "(guard3-free) creator の vault/rules/ への Write → 許可" allow \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
+expect_guard "(guard3-free) メインの vault/rules/ への Write → 許可" allow \
+  "$(run_guard '{"tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/rules/common/a.md"}}')"
+expect_guard "(guard3-free) creator の Bash python3 -c で vault/rules/ へ書く → 許可" allow \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Bash","tool_input":{"command":"python3 -c \"open('"'"'vault/rules/a.md'"'"','"'"'w'"'"')\""}}')"
+expect_guard "(guard3-free) メインの Bash echo x > vault/rules/a.md → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"echo x > vault/rules/a.md"}}')"
+expect_guard "(guard3-free) creator の vault/plans/ への Write → 許可" allow \
+  "$(run_guard '{"agent_type":"creator","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/vault/plans/P-X.md"}}')"
+expect_guard "(guard3-free) planner の README.md への Write → 許可" allow \
+  "$(run_guard '{"agent_type":"planner","tool_name":"Write","tool_input":{"file_path":"'"$TMP"'/README.md"}}')"
+expect_guard "(guard3-free) メインの gh api で vault/rules/ へ PUT → 許可" allow \
+  "$(run_guard '{"tool_name":"Bash","tool_input":{"command":"gh api -X PUT repos/o/r/contents/vault/rules/common/roles.md -f content=Zm9v"}}')"
+FREE_HOME="$TMP/free-home"
+mkdir -p "$FREE_HOME/.claude/projects/x"
+run_guard_home() { printf '%s' "$1" | HOME="$FREE_HOME" CLAUDE_PROJECT_DIR="$TMP" python3 "$GUARD_HOOK"; }
+expect_guard "(guard3-free) HOME 配下 .claude/projects/ への Write → 許可" allow \
+  "$(run_guard_home '{"tool_name":"Write","tool_input":{"file_path":"'"$FREE_HOME"'/.claude/projects/x/s.jsonl"}}')"
 
 # 計画票の承認（draft→approved）は判定しない（D-015 フェーズ2。/plan が自動で承認する）
 # make_transcript は後ろの節でも流用する。パスは $TMP 配下（実行ごとに一意。引数の各行を JSONL として書く）
@@ -616,80 +407,8 @@ expect_guard "(approve-free-2) /plan approve 無し・メインの MultiEdit で
 expect_guard "(approve-free-3) /plan approve 無し・メインの Write で approved の計画票 → 許可" allow "$(run_guard '{'"$TP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nid: P-TEST\nstatus: approved\n---\n# ゴール\n"}}')"
 rm -f "$AP_TRANSCRIPT"
 
-# blocked の解除（blocked→他）の会話記録による裏付け（D-010 フェーズ5 / T-01）
-UB_TRANSCRIPT="$TMP/unblock-transcript.jsonl"
-UB_NONEXIST="$TMP/unblock-nonexistent.jsonl"
-make_ub_transcript() { printf '%s\n' "$@" > "$UB_TRANSCRIPT"; }
-U_CMD='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>unblock P-TEST T-02 方針は A で\n2行目の回答</command-args>"}}'
-U_CMD_SP='{"type":"user","message":{"role":"user","content":"<command-name>/plan</command-name>\n<command-args>  unblock P-TEST T-02  </command-args>"}}'
-U_SENT='{"type":"user","message":{"role":"user","content":"/plan unblock P-TEST T-02 方針は A で\n2行目"}}'
-U_OTHER_PLAN='{"type":"user","message":{"role":"user","content":"/plan unblock P-OTHER T-02"}}'
-U_OTHER_TASK='{"type":"user","message":{"role":"user","content":"/plan unblock P-TEST T-03"}}'
-U_PREFIX='{"type":"user","message":{"role":"user","content":"/plan unblock P-TEST T-020"}}'
-U_TOOLRES='{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"/plan unblock P-TEST T-02"}]}}'
-U_META='{"type":"user","isMeta":true,"message":{"role":"user","content":"/plan unblock P-TEST T-02"}}'
-expect_ub() { # $1=name $2=deny|allow $3=payload json（deny の時は reason に /plan unblock を含むことも確認）
-  local out; out="$(run_guard "$3")"
-  if [ "$2" = deny ]; then expect_guard "(unblock-pre) $1" deny "$out" "/plan unblock"
-  else expect_guard "(unblock-pre) $1" allow "$out"; fi
-}
-UTP='"transcript_path":"'"$UB_TRANSCRIPT"'"'
-ub_edit() { echo '"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| '"$1"' | '"$2"' |","new_string":"| '"$1"' | '"$3"' |"}'; }
-ub_multi() { echo '"tool_name":"MultiEdit","tool_input":{"file_path":"vault/plans/P-TEST.md","edits":[{"old_string":"# ゴール","new_string":"# ゴール2"},{"old_string":"| '"$1"' | '"$2"' |","new_string":"| '"$1"' | '"$3"' |"}]}'; }
-ub_write() { # $1=T-01 の status $2=T-02 の status
-  echo '"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-TEST.md","content":"---\nid: P-TEST\nstatus: approved\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|----|----|----|----|----|----|\n| T-01 | '"$1"' | 1 | - | A | q1 |\n| T-02 | '"$2"' | 1 | - | B | q2 |\n"}'
-}
-make_plan "P-TEST" "approved" "| T-01 | blocked | 1 | - | A | q1 |" "| T-02 | blocked | 1 | - | B | q2 |"
-for form in "$U_CMD" "$U_CMD_SP" "$U_SENT"; do
-  make_ub_transcript "$T_CHAT" "$form"
-  expect_ub "T-02 blocked→todo・Edit・メイン → 許可" allow "{$UTP,$(ub_edit T-02 blocked todo)}"
-  expect_ub "T-02 blocked→todo・MultiEdit・メイン → 許可" allow "{$UTP,$(ub_multi T-02 blocked todo)}"
-  expect_ub "T-02 blocked→todo・Write・メイン → 許可" allow "{$UTP,$(ub_write blocked todo)}"
-  expect_ub "T-01 blocked→todo・Edit（コマンドは T-02 のみ）→ 拒否" deny "{$UTP,$(ub_edit T-01 blocked todo)}"
-  expect_ub "T-01 blocked→todo・Write → 拒否" deny "{$UTP,$(ub_write todo blocked)}"
-  expect_ub "T-01・T-02 を同時に解除（T-01 に裏付け無し）→ 拒否" deny "{$UTP,$(ub_write todo todo)}"
-done
-make_ub_transcript "$T_CHAT" "$U_CMD"
-expect_ub "T-02 blocked→doing・Edit → 許可（遷移先は問わない）" allow "{$UTP,$(ub_edit T-02 blocked doing)}"
-expect_ub "コマンドあり・agent_type=creator → 拒否" deny "{$UTP,\"agent_type\":\"creator\",$(ub_edit T-02 blocked todo)}"
-expect_ub "コマンドあり・agent_type=planner → 拒否" deny "{$UTP,\"agent_type\":\"planner\",$(ub_write blocked todo)}"
-make_ub_transcript "$T_CHAT"
-expect_ub "コマンド無し（無関係な発言のみ）blocked→todo → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
-expect_ub "コマンド無し blocked→doing → 拒否" deny "{$UTP,$(ub_edit T-02 blocked doing)}"
-make_ub_transcript "$T_CHAT" "$U_OTHER_PLAN"
-expect_ub "別の計画 ID だけ → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
-make_ub_transcript "$T_CHAT" "$U_OTHER_TASK"
-expect_ub "別のタスク ID だけ → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
-make_ub_transcript "$T_CHAT" "$U_PREFIX"
-expect_ub "前方一致（T-020）だけ → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
-make_ub_transcript "$T_CHAT" "$U_TOOLRES"
-expect_ub "tool_result にしかコマンドが無い → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
-make_ub_transcript "$T_CHAT" "$U_META"
-expect_ub "isMeta の行にしかコマンドが無い → 拒否" deny "{$UTP,$(ub_edit T-02 blocked todo)}"
-# 会話記録が読めない時は許可（agent_type が空の時のみ）
-make_ub_transcript "$U_TOOLRES" "$U_META"
-expect_ub "人の発言が1件も無い → 許可（読めない扱い）" allow "{$UTP,$(ub_edit T-02 blocked todo)}"
-make_ub_transcript "not json" "{broken"
-expect_ub "どの行も JSON でない → 許可（読めない扱い）" allow "{$UTP,$(ub_edit T-02 blocked todo)}"
-expect_ub "transcript_path が無い → 許可" allow "{$(ub_edit T-02 blocked todo)}"
-expect_ub "読めない時でも agent_type=planner は拒否" deny "{\"agent_type\":\"planner\",$(ub_edit T-02 blocked todo)}"
-# 解除に当たらない書き込みは会話記録と無関係に許可
-make_ub_transcript "$T_CHAT"
-expect_ub "blocked→blocked（question の書き換え）→ 許可" allow '{'"$UTP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| q2 |","new_string":"| q2 改 |"}}'
-expect_ub "blocked 行を含まない新規 Write → 許可" allow '{'"$UTP"',"tool_name":"Write","tool_input":{"file_path":"vault/plans/P-NEW.md","content":"---\nstatus: draft\n---\n## タスク表\n| id | status | attempt | after | title | question |\n|--|--|--|--|--|--|\n| T-01 | todo | 0 | - | A | |\n"}}'
-expect_ub "T-01 の行が消えるだけ（今回は検査しない）→ 許可" allow '{'"$UTP"',"tool_name":"Edit","tool_input":{"file_path":"vault/plans/P-TEST.md","old_string":"| T-01 | blocked | 1 | - | A | q1 |\n","new_string":""}}'
-make_plan "P-TEST" "approved" "| T-01 | todo | 0 | - | A | |" "| T-02 | doing | 1 | - | B | |" "| T-03 | review | 1 | - | C | |"
-expect_ub "todo→doing・コマンド無し → 許可" allow "{$UTP,$(ub_edit T-01 todo doing)}"
-expect_ub "doing→review → 許可" allow "{$UTP,$(ub_edit T-02 doing review)}"
-expect_ub "review→done → 許可" allow "{$UTP,$(ub_edit T-03 review done)}"
-expect_ub "review→doing → 許可" allow "{$UTP,$(ub_edit T-03 review doing)}"
-expect_ub "review→blocked → 許可" allow "{$UTP,$(ub_edit T-03 review blocked)}"
-expect_ub "doing→blocked → 許可" allow "{$UTP,$(ub_edit T-02 doing blocked)}"
-rm -f "$UB_TRANSCRIPT"
-
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 
-# worktree 委譲の範囲（D-013 フェーズ6）：書き込み対象が worktree の外なら委譲せず、メインリポジトリ側で判定する。
 WDSMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$WDSMAIN" init -q -b main
 git -C "$WDSMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
@@ -702,18 +421,14 @@ import json, sys
 json.load(sys.stdin)
 print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": "(wds-stub)"}}))
 PYEOF
-expect_guard "(wds-1) worktree 外（メインの vault/rules/）への Write → 委譲せず拒否" deny \
-  "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$WDSMAIN"'/vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "vault/rules/"
-expect_guard "(wds-2) Bash でメインの vault/rules/ の絶対パスへ touch → 委譲せず拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"touch '"$WDSMAIN"'/vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "vault/rules/"
-expect_guard "(wds-3) Bash で ~/.claude/projects/ へ touch → 委譲せず拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"touch ~/.claude/projects/x.jsonl"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "会話記録"
-expect_guard "(wds-4) 解析できない Bash で候補がメインの vault/rules/ → 委譲せず拒否" deny \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo $(date) > '"$WDSMAIN"'/vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "vault/rules/"
-expect_guard "(wds-5) 解析できない Bash で候補が worktree の中だけ → 委譲される" allow \
-  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo $(date) > vault/rules/a.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
-expect_guard "(wds-6) 読み取りだけの Bash（ls）→ 委譲される" allow \
+expect_guard "(wds-1) verifier のメインリポジトリの README.md（worktree の外）への Write → 委譲せず拒否" deny \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WDSMAIN"'/README.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "verifier"
+expect_guard "(wds-2) verifier の worktree 内の README.md への Write → 委譲される" allow \
+  "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WDSLEAF"'/README.md"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
+expect_guard "(wds-3) Bash ls → 委譲される" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"ls"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
+expect_guard "(wds-4) Bash touch <メインリポジトリ>/x.txt → 常に委譲される" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"touch '"$WDSMAIN"'/x.txt"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
 git -C "$WDSMAIN" worktree remove -q --force "$WDSLEAF" >/dev/null 2>&1
 rm -rf "$WDSMAIN" "$WDSLEAF"
 
@@ -1998,39 +1713,6 @@ rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts"
 make_plan "P-TEST" "approved" "  | T-0001 | doing | 1 | - | A | |"
 expect "(hooklib-rules) stop_gate: 行頭を半角空白でインデントしたタスク表の doing 行を検査する" block "$(run_stop)" "verdict が無い"
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"; mkdir -p "$TMP/vault/plans" "$TMP/vault/verdicts" "$TMP/vault/tasks"
-
-echo "== bash-write-unify =="
-# 1回のフック呼び出し（main()）で analyze_bash_writes が何回実行されたかと、判定（deny/allow）を返す。
-count_analyze_calls() { # $1=command 文字列
-  BWU_CMD="$1" CLAUDE_PROJECT_DIR="$TMP" _HOOK_DELEGATED=1 python3 -B - "$ROOT/.claude/hooks" <<'PY'
-import contextlib, io, json, os, sys
-sys.dont_write_bytecode = True
-sys.path.insert(0, sys.argv[1])
-import agent_write_guard as G
-calls = [0]
-orig = G.analyze_bash_writes
-def counting(*a, **k):
-    calls[0] += 1
-    return orig(*a, **k)
-G.analyze_bash_writes = counting
-payload = {"tool_name": "Bash", "tool_input": {"command": os.environ["BWU_CMD"]}}
-sys.stdin = io.StringIO(json.dumps(payload))
-buf = io.StringIO()
-with contextlib.redirect_stdout(buf):
-    try:
-        G.main()
-    except SystemExit:
-        pass
-denied = '"permissionDecision": "deny"' in buf.getvalue() or '"permissionDecision":"deny"' in buf.getvalue()
-print(calls[0], "deny" if denied else "allow")
-PY
-}
-out="$(count_analyze_calls 'echo x > vault/rules/a.md')"
-expect_eq "(bash-write-unify) 解析できる形（リダイレクト）で analyze_bash_writes は1回" "1 deny" "$out"
-out="$(count_analyze_calls 'bash -c "echo y > vault/rules/b.md"')"
-expect_eq "(bash-write-unify) 解析できない形（bash -c）でも analyze_bash_writes は1回" "1 deny" "$out"
-expect_guard "(bash-write-unify) 一本化で許可→拒否: verifier が引用符内の vault/tasks/<計画ID>/<id>.md を含む root 外リダイレクト" deny \
-  "$(run_guard '{"agent_type":"verifier","tool_name":"Bash","tool_input":{"command":"python3 -c \"open('"'"'vault/tasks/P-X/T-01.md'"'"')\" > /tmp/x.txt"}}')"
 
 echo "== transition.py（D-012 フェーズ2） =="
 TR="$TMP/tr"

@@ -38,7 +38,7 @@ status: approved
 | T-04 | done | 1 | T-03 | run・design スキルを REST の起票・計画票のコミット・提案ファイルの運用・vault/rules の注意に合わせる | |
 | T-05 | done | 1 | T-04 | creator・verifier の起点コミットの手順を削り、エージェント定義の vault/rules の記述を差分ゲートに合わせる | |
 | T-06 | done | 1 | T-05 | vault-spec・runbook・README・rules/README を今回の変更に揃え、古い記述が残っていないことを確かめる | |
-| T-07 | todo | 0 | T-06 | 対応済みの提案ファイル（vault/harness-improvements/ の4ファイル）を削除する | |
+| T-07 | doing | 1 | T-06 | 対応済みの提案ファイル（vault/harness-improvements/ の4ファイル）を削除する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

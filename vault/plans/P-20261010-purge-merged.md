@@ -18,7 +18,7 @@ D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け�
 | T-01 | done | 1 | - | purge_plan.sh に --merged（--list・--report・--apply）を足し smoke で確かめる | |
 | T-02 | blocked | 1 | T-01 | archive_plans.sh と smoke の archive_plans 節を消す | 受け入れ基準5（smoke 全体が `smoke: pass=<数> fail=0`）が、このタスクの範囲では満たせません。archive_plans.sh を消した結果、smoke が `pass=475 fail=2` になりました。落ちた2件：「新規インストール先で参照される scripts がすべて揃っている」（got='archive_plans.sh'）と (ref-1)「主な文書のバッククォート内のパスがすべて存在する」（`docs/vault-spec.md:98` と `docs/runbook.md:61` の `scripts/archive_plans.sh` が原因）。docs の archive_plans の記述は T-04〜T-06 で直す決定なので、基準5を T-04〜T-06 の完了後に満たす形に直すか、docs の該当2行をこのタスクの成果物に加えるか、どちらにしますか。基準1〜4は通っています。 |
 | T-03 | todo | 0 | T-02 | install.sh・uninstall.sh から vault/archive を除く | |
-| T-04 | review | 1 | T-01 | runbook 5節を一括削除の手順に書き換える | |
+| T-04 | done | 1 | T-01 | runbook 5節を一括削除の手順に書き換える | |
 | T-05 | review | 1 | T-01 | vault-spec から archive の記述を除き --merged を書く | |
 | T-06 | todo | 0 | T-02,T-03,T-04,T-05 | README・install.md・decisions.md を直し archive の残りを確かめる | |
 

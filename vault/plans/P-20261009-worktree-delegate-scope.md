@@ -25,7 +25,7 @@ worktree 委譲の範囲を絞る（D-013 フェーズ6）
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | agent_write_guard.py の worktree 委譲を書き込み対象がすべて worktree の中にある時だけにする | |
+| T-01 | done | 1 | - | agent_write_guard.py の worktree 委譲を書き込み対象がすべて worktree の中にある時だけにする | |
 | T-02 | todo | 0 | T-01 | docs/vault-spec.md 12節に worktree への委譲の範囲を書く | |
 
 ## 計画の受け入れ基準

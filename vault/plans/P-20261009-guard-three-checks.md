@@ -1,6 +1,6 @@
 ---
 id: P-20261009-guard-three-checks
-status: approved
+status: done
 ---
 # ゴール
 agent_write_guard を3つの判定に絞る（D-015 フェーズ3）

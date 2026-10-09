@@ -1,6 +1,6 @@
 ---
 id: P-20261009-auto-approve
-status: approved
+status: done
 ---
 # ゴール
 承認待ちをなくし、会話記録の検査を外す（D-015 フェーズ2）

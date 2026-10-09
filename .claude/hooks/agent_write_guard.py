@@ -690,7 +690,7 @@ def is_under_transcript_dir(path, root):
 def targets_transcript_dir(tool, tool_input, root):
     """この呼び出しが ~/.claude/projects/ 配下（会話記録）への書き込みを試みているか判定する（D-010 フェーズ4）。
 
-    承認の裏付けにする会話記録をエージェントが書き換えて人の発言を偽造するのを防ぐ。
+    blocked の解除の裏付けにする会話記録をエージェントが書き換えて人の発言を偽造するのを防ぐ。
     Bash は bash_write_targets の書き込み対象（解析できない時は従来の判定の候補の和集合）を
     パスで絞り込んで判定する。
     """
@@ -856,29 +856,6 @@ def content_after_write(tool, tool_input, current):
     return None
 
 
-def find_plan_approval(tool, tool_input, root):
-    """この呼び出しが計画票の承認（status が approved でない状態から approved にする）なら計画 ID を返す。"""
-    if tool not in ("Write", "Edit", "MultiEdit"):
-        return None
-    path = tool_input.get("file_path") or ""
-    m = PLAN_FILE_RE.match(normalize(path, root))
-    if not m:
-        return None
-    abs_path = path if os.path.isabs(path) else os.path.join(root, path)
-    try:
-        with open(abs_path, encoding="utf-8") as f:
-            current = f.read()
-    except Exception:
-        current = None
-    after = content_after_write(tool, tool_input, current)
-    if after is None:
-        return None
-    before_status = H.frontmatter_status(current) if current is not None else None
-    if before_status != "approved" and H.frontmatter_status(after) == "approved":
-        return m.group(1)
-    return None
-
-
 def find_plan_unblocks(tool, tool_input, root):
     """この呼び出しが計画票のタスク表で blocked の行を blocked 以外にするなら (計画 ID, [id...]) を返す。
 
@@ -963,25 +940,11 @@ def main():
         )
 
     # 会話記録の改ざん防止：agent_type を問わず、~/.claude/projects/ 配下への書き込みは常に拒否する
-    # （解除口は無い。承認判定 T-03 が会話記録を裏付けにするための前提）
+    # （解除口は無い。blocked の解除の判定が会話記録を裏付けにするための前提）
     if targets_transcript_dir(tool, tool_input, root):
         deny("[agent_write_guard] ~/.claude/projects/ 配下（会話記録）へは書き込めません。")
 
     agent = payload.get("agent_type") or ""
-
-    # 計画票の承認（draft→approved）は、人が /plan approve <計画ID> で指示した時だけ許可する（D-010 フェーズ4）。
-    # agent_type が空（メインセッション）で、会話記録に一致する人の発言がある、または会話記録が読めない時は許可。
-    approved_plan = find_plan_approval(tool, tool_input, root)
-    if approved_plan:
-        deny_reason = (
-            f"[agent_write_guard] {approved_plan} の承認（status を approved にすること）は、"
-            f"人が /plan approve {approved_plan} で指示した時だけ許可されます。"
-        )
-        if agent:
-            deny(deny_reason)
-        humans = H.human_messages(payload.get("transcript_path"))
-        if humans and not any(H.is_approve_command(t, approved_plan) for t in humans):
-            deny(deny_reason)
 
     # blocked の解除（blocked→他）は、人が /plan unblock <計画ID> <id> で指示した時だけ許可する（D-010 フェーズ5）。
     # agent_type が空で、会話記録に一致する人の発言がある、または会話記録が読めない時は許可。

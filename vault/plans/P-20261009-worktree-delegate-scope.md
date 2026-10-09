@@ -1,6 +1,6 @@
 ---
 id: P-20261009-worktree-delegate-scope
-status: approved
+status: done
 ---
 # ゴール
 worktree 委譲の範囲を絞る（D-013 フェーズ6）

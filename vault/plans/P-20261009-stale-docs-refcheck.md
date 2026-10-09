@@ -38,7 +38,7 @@ status: approved
 | T-01 | done | 1 | - | design/SKILL.md の vault/todo.md と第14節を、vault/plans/ と vault-spec.md 13節に直す | |
 | T-02 | blocked | 1 | - | ai-harness.md の開始時に読む順・役割・/run の説明を今の run に合わせる | .claude/ai-harness.md の編集が3箇所拒否されました。拒否したのは自動モードの分類器で、理由は Self-Modification です。タスク票の決定済みどおり、別の手段では書き換えていません。この3箇所の Edit を許可して続行してよいですか。それとも人が手で反映しますか。 済み：「役割」の節の2行の置換。拒否された3件：「開始時に読む順」1〜3行の置換／「状態遷移」の log 2行を1行にする置換／「スキル」の /run の括弧書きの置換。 |
 | T-03 | done | 1 | - | README.md の /run と無人実行の説明・仕組みの図・構成の節を今の構成に合わせる | |
-| T-04 | doing | 1 | - | run/SKILL.md の frontmatter の description を今の手順に合わせる | |
+| T-04 | blocked | 1 | - | run/SKILL.md の frontmatter の description を今の手順に合わせる | .claude/skills/run/SKILL.md への Edit（3行目の description と7行目の2か所）が、権限判定（auto mode classifier、理由 Self-Modification）に拒否された。タスク票の決定済みどおり、別の手段では書き換えていない。成果物は未変更。この変更を許可して再実行するか、人が手で反映するか。 |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | smoke.sh に主な文書の参照切れの検査を足す | |
 
 ## 計画の受け入れ基準

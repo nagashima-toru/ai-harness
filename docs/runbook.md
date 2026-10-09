@@ -33,11 +33,12 @@
   - タイムアウトで止めた後は、次回の `/run` が `.claude/skills/run/SKILL.md` 手順2.2（再開手順）で中断した地点から続きを再開する。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で blocked になって止まる
   - 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）
   - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
-  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にし `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh` コマンドで、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
+  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にしてコミットしてから `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh api`（REST）で、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
   - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
   - PR のマージ方式：スカッシュマージを推奨する。main の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。
     - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= main の `git log`）にも残る（設定は人が行う）
     - 通常のマージ（merge commit）も可。main にタスクごとのコミットが残る。ホスティング無しの `git merge --no-ff` の案内は今のまま
+  - run の振り返り（手順8）で issue の起票に失敗すると、`vault/harness-improvements/<計画ID>.md` に提案が残る。提案に対応する計画を立てる時は、その計画の中でそのファイルを削除する（対応が済んだ提案ファイルを残さない）
 
 ## 4. blocked に答えて戻す
 ```
@@ -100,7 +101,7 @@ python3 scripts/model_stats.py vault/archive/*/log/*.md
 1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く
 2. 渡したい相手（全員／作成エージェント／verifier／planner）でディレクトリを決める
 3. 反映させたい受け入れ基準の行にルールファイルを名指しして参照する
-4. ルールの追加・変更はタスクにせず、人が編集する（自分で、またはタスクの外でエージェントに指示して）。フックは `vault/rules/` を止めないが、creator のタスクの成果物にはできない（差分ゲート `scripts/diff_gate.py` が `vault/rules/` 配下の変更を宣言があっても違反にする）。変更は PR の差分で見える
+4. ルールの追加・変更は、人が編集するか、タスクの「成果物」に宣言して変える。フックは `vault/rules/` を止めず、宣言の無い変更は差分ゲート `scripts/diff_gate.py` が差し戻す。変更は PR の差分で見える
 
 ## 7. ハーネス自体の更新を取り込む
 このハーネスを他のプロジェクトに組み込んでいる場合、フックやスキルを直しても組み込み先には届かない。取り込みたい時に次を打つ。

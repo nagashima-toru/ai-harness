@@ -11,6 +11,7 @@
 | `vault/verdicts/<計画ID>/T-01.json` | 検証結果。最新のみ、上書き |
 | `vault/log/<計画ID>.md` | その計画の追記専用ログ |
 | `vault/designs/D-001.md` | 設計文書（テンプレート：`vault/templates/design.md`）。`/plan` に渡す前の下ごしらえ |
+| `vault/harness-improvements/<計画ID>.md` | run の振り返り（`.claude/skills/run/SKILL.md` 手順8）で issue の起票に失敗した時の改善提案。提案に対応した計画が、その計画の中で削除する。5状態遷移の対象ではない |
 | `vault/rules/` | 作成エージェント・verifier・planner に渡すルール（「ルール（`vault/rules/`）」の節を見る） |
 | `vault/archive/<年-月>/{plans,tasks,verdicts,log}/` | done かつ PR がマージ済みの計画一式の移動先（`vault/` と同じ種別ごとのサブディレクトリ。詳細は表の後の段落）。参照用で、消しても運用に影響しない |
 
@@ -25,7 +26,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 引数なしの `scripts/vcs_finish.sh` は、現在のブランチ（`work/<計画IDの英小文字>`）の計画が見つかれば、PR/MR のタイトルを `<計画ID>: <ゴールの1行目>`、本文を `scripts/pr_body.py` が出す「タスク履歴」表（タスク ID・title・`<計画ID>/<id>: done`（従来の run）か `<計画ID>/<id>: review→done`（transition.py。複数 id の `<計画ID>/T-01,T-02: review→done` も含む）のコミットの短縮ハッシュ・verdict）にする。PR がスカッシュマージされて main にタスクごとのコミットが残らなくても、この表から辿れる。マージ方式の運用は `docs/runbook.md` 3節を参照。
 
-環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh pr create --title <タイトル> --body-file <パス>`（パスをそのまま渡す）、GitLab は `glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID・`scripts/pr_body.py` のタスク一覧・「verifier の指摘」節）を渡す（6節）。
+環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh api -X POST repos/<owner>/<repo>/pulls -f title=<タイトル> -f head=<ブランチ> -f base=main -F body=@<パス> --jq .html_url`（REST）を呼ぶ。owner/repo は origin の URL の最後の2つの区切りから取り、取れなければ push の前に終了コード2で終わる。作った PR の URL は標準出力に出す。base は `main` 固定。引数なしで計画が見つからない時は、最新コミットの件名と本文でタイトルと本文を作る。引数がある時は `gh pr create` にそのまま渡す。GitLab は `glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID・`scripts/pr_body.py` のタスク一覧・「verifier の指摘」節）を渡す（6節）。
 
 ## 2. 状態（5つで固定、英小文字）
 
@@ -65,7 +66,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 - 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
 - 承認（draft→approved。`/plan` の自動承認）と blocked の解除（`/plan unblock`）は扱わず、`/plan` の Edit のまま
 - 推奨の経路であって強制ではない。Edit による計画票の直接の書き換えはフックで拒否しない。done の行の verdict の検査（9節・10節）で「PASS の無い done」が残らないことを守る
-- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、承認・blocked の解除は `/plan` の Edit のまま
+- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、その後 `git add vault/plans/<計画ID>.md` と名前を指定した `git commit` でコミットしてから `scripts/vcs_finish.sh` を呼び（`vcs_finish.sh` は計画票の変更をコミットしないため）、承認・blocked の解除は `/plan` の Edit のまま
 
 ## 3. ID・ファイル名・ブランチ名
 
@@ -131,11 +132,12 @@ frontmatter は `id` と `status` の2つ。
 - タスク票は `git show <base>:vault/tasks/<計画ID>/<id>.md`（base の版）で読む。branch 側で書き足した宣言は効かない（creator が自分で宣言を広げられないようにするため）
 - 宣言の読み方：「## 成果物」節のバッククォートで囲まれた文字列をすべて候補にし、末尾が `/` なら前方一致、それ以外は完全一致。パスでない文字列が混じってもよい
 - 判定の順（1つのパスに理由は1つ、最初に当たったものを使う）：
-  - `vault/plans/`・`vault/log/`・`vault/verdicts/`・`vault/rules/` 配下は宣言があっても違反（理由：`<ディレクトリ> 配下は宣言があっても変更できない`）
+  - `vault/plans/`・`vault/log/`・`vault/verdicts/` 配下は宣言があっても違反（理由：`<ディレクトリ> 配下は宣言があっても変更できない`）
   - 自分のタスク票は「## 進捗」以外の節（最初の見出しより前を含む）が変わっていれば違反（理由：`タスク票の「進捗」以外の節が変わっている`）
   - 宣言に一致すれば許す
   - それ以外は違反（理由：`「成果物」に宣言されていない`）
 - `.claude/hooks/`・`.claude/settings.json`・`.claude/agents/` は宣言があれば許し、無ければ違反とする（特別扱いしない）
+- `vault/rules/` 配下も特別扱いせず、宣言があれば許し、無ければ違反とする（D-015 で保護をやめたため）
 - 出力：違反1件につき `<パス>: <理由>` を1行、標準出力に出す
 - 終了コード：0 違反なし／1 違反あり／2 引数の誤り・base にタスク票が無い・git コマンドが失敗した
 - `check(root, plan_id, task_id, base, branch)` を import して使える。違反の `(パス, 理由)` のリストを返す
@@ -164,10 +166,9 @@ frontmatter は `id` と `status` の2つ。
   - 書式の例：`実行コマンド: \`<command>\` / 出力: <判定に使った部分の要点>`
   - 確認コマンドが実行できなかった場合（権限拒否・ツール不足など）は、その旨と代替の確認方法、その結果をセットで書く。例：`\`awk ...\` は権限拒否で実行不可。代替として README.md を Read で確認し、使い方節に cron の行が1行あった`
   - 受け入れ基準がルールを根拠にした場合（`vault/rules/` 配下のファイル名や「コーディングルールに従う」等を参照する行）は、参照したルールファイルのパスを `note` に書く
-- `reasons` は FAIL の理由だけでなく、次の3つの記録にも使う（`.claude/agents/verifier.md` を根拠とする）。いずれも `result` を FAIL にはしない。
+- `reasons` は FAIL の理由だけでなく、次の2つの記録にも使う（`.claude/agents/verifier.md` を根拠とする）。いずれも `result` を FAIL にはしない。
   - 基準が曖昧で判定不能だった場合
   - 基準が緩いと判断した場合（確認コマンドは通るが、タスク票の「目的」の達成を保証しない）
-  - 宣言外ファイルの変更を検出した場合（タスク票の「成果物」に書かれていないファイルが変わっていた）
 
 `reasons` の使われ方：`reasons` は言い換えず、分類しない。`scripts/verdict_notes.py <計画ID> [--dir <ディレクトリ>]` が、計画の verdict のうち `reasons` が空でないものを要素ごとに `<id>: <reason>` の1行で標準出力に出す（`<id>` はファイル名から `.json` を除いたもの、ファイル名順、要素内の改行は空白1つにする）。出す行が無ければ `指摘なし` の1行だけを出す。読み込み先は既定で `vault/verdicts/<計画ID>/` の `*.json` で、`--dir` を渡すとそのディレクトリ（`<id>.json` を直接持つ。archive など）を読み、計画 ID は使わない。JSON として読めない・`reasons` が無い／配列でない verdict は読み飛ばし、標準エラーに出す。ファイルには書き込まない。終了コードは 0（出力した。「指摘なし」を含む）・1（読み込み先のディレクトリが無い）・2（引数の誤り）。run の手順7（全タスクが done になった後）で、この出力を PR 本文の「verifier の指摘」節と完了報告に入れる（本文は `HARNESS_PR_BODY_FILE` で `scripts/vcs_finish.sh` に渡す。1節）。また `model_stats.py` の指摘あり率（7節）の元になる。
 
@@ -268,7 +269,7 @@ done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1�
 
 ## 11. ルール（`vault/rules/`）
 
-ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。エージェントも `vault/rules/` に書き込める（フックは止めない）。ルールの変更は PR の差分で人が見る（D-015）。ただし creator のタスクの成果物にはできない（差分ゲート `scripts/diff_gate.py` が `vault/rules/` 配下の変更を宣言があっても違反にする。5節）。ルールの追加・変更はタスクにせず、人が編集する（自分で、またはタスクの外でエージェントに指示して）。
+ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。エージェントも `vault/rules/` に書き込める（フックは止めない）。ルールの変更は PR の差分で人が見る（D-015）。creator のタスクでも「成果物」に宣言すれば変えられる（宣言の無い変更は差分ゲート `scripts/diff_gate.py` が差し戻す。5節）。
 
 旧版の install で配った役割定義のルール6本は、`bash scripts/install.sh --update` がマニフェストのハッシュで未編集と判定したものだけ削除し（`remove <path>` と表示）、編集済みのものは残して `note` の行で案内する（役割定義は `.claude/agents/` にある）。
 
@@ -296,7 +297,7 @@ vault/rules/
 | 判定 | 対象 | 結果 |
 |---|---|---|
 | (a) done のタスクの保護 | Write・Edit・MultiEdit・NotebookEdit の書き込み先が `vault/tasks/<計画ID>/<id>.md` か `vault/verdicts/<計画ID>/<id>.json` で、計画票（`vault/plans/<計画ID>.md`）のタスク表でその id が `done` | 拒否。計画票が無い・読めない・該当 id の行が無い時は許可。Bash による書き換えは見ない（PR の差分と、plan_guard・stop_gate の verdict の検査で見える） |
-| (b) main への直接コミット | Bash のコマンドを `&&`・`;`・改行で区切った各部分に `git commit`（`git -C . commit` のような前置オプション付きも含む）があり、現在のブランチが `main` | 拒否。正規表現の簡単な判定で、引用符の中などの誤検知は許容する。ブランチが取れない時（detached HEAD など）は素通り |
+| (b) main への直接コミット | Bash のコマンドを `&&`・`||`・`;`・`|`・改行で区切った各部分の先頭が `git commit`（`git -C <パス> commit` のように `git` のオプションを挟む形を含む）で、現在のブランチが `main` | 拒否。引用符の中の区切り文字では区切らず、引用符の中の文字列（`grep -n "git commit" …` など）は拒否しない。`env`・変数代入の前置き、`bash -c` やサブシェルの中は見ない。ブランチが取れない時（detached HEAD など）は素通り |
 | (c) verifier の書き込み先 | `agent_type` が verifier の Write・Edit・MultiEdit・NotebookEdit で、書き込み先が `vault/verdicts/` の外 | 拒否。verifier の Bash は制限しない |
 
 上記のどれにも当たらない呼び出しは許可する。

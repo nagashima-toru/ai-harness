@@ -1,0 +1,13 @@
+{
+  "task": "P-20261010-harness-improvements-followup/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 06:13",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内）/ 出力: smoke: pass=481 fail=0"},
+    {"text": "足した7ケース（読み取り・引用符の中は許可、`||`・`|`・`git` のオプションを挟む形は拒否）がすべて通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guard-b2-[1-7])'` の出力が `7`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guard-b2-[1-7])'` / 出力: 7。smoke.sh 内の (guard-b2- 出現も 7 行のみ"},
+    {"text": "今ある (b) のケース（`git commit`・`&&`・`;`・改行・`git -C . commit` の拒否と、work ブランチの許可）が今のまま通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guard3-b)'` の出力が `7`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guard3-b)'` / 出力: 7"},
+    {"text": "文字列の正規表現による判定が無くなっている。確認：`grep -c 'GIT_COMMIT_PATTERN\\|GIT_PREOPT_COMMIT_PATTERN' .claude/hooks/agent_write_guard.py` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c 'GIT_COMMIT_PATTERN\\|GIT_PREOPT_COMMIT_PATTERN' .claude/hooks/agent_write_guard.py` / 出力: 0。変更ファイル検査: `git diff --name-only 0bed191~1..HEAD` は成果物の2ファイルと除外対象（plans/tasks/log）のみで成果物外の変更なし"}
+  ],
+  "reasons": []
+}

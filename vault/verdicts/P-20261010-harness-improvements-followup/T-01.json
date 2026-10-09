@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-harness-improvements-followup/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 05:16",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=474 fail=0"},
+    {"text": "REST の6ケースがすべて通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (vf-rest-[1-6])'` の出力が `6`", "ok": true, "note": "実行コマンド: `grep -c '^  ok   (vf-rest-[1-6])'` / 出力: 6（vf-rest-1〜6 が ok 行として確認できた）"},
+    {"text": "GitLab の経路のケースが今のまま通る。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   .*gitlab'` の出力が `4`", "ok": true, "note": "実行コマンド: `grep -c '^  ok   .*gitlab'` / 出力: 4"},
+    {"text": "GitHub の引数なしの経路から `gh pr create` の呼び出しが無くなり、smoke にも残っていない。確認：`grep -c 'gh pr create --' scripts/vcs_finish.sh scripts/smoke.sh` の出力が `scripts/vcs_finish.sh:0` と `scripts/smoke.sh:0` の2行", "ok": true, "note": "実行コマンド: `grep -c 'gh pr create --' scripts/vcs_finish.sh scripts/smoke.sh` / 出力: scripts/vcs_finish.sh:0 と scripts/smoke.sh:0。補足: vcs_finish.sh に残る 'gh pr create' は10行目のコメント（引数がある時の説明）と152行目の `gh pr create \"$@\"`（引数あり経路の1か所）のみ"},
+    {"text": "`bash -n scripts/vcs_finish.sh` が終了コード0で何も出力しない", "ok": true, "note": "実行コマンド: `bash -n scripts/vcs_finish.sh; echo rc=$?` / 出力: rc=0（他に出力なし）。変更ファイル検査: タスク票の進捗に起点コミットの記録が無いため未実施"}
+  ],
+  "reasons": []
+}

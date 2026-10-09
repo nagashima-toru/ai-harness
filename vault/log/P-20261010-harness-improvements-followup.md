@@ -1,0 +1,29 @@
+- 2026-10-10 05:12 - draft→approved /plan による自動承認
+- 2026-10-10 05:12 T-01 todo→doing attempt=1
+- 2026-10-10 05:15 T-01 worktree path=/home/user/ai-harness/.claude/worktrees/agent-aa0c0d16969da5840 branch=worktree-agent-aa0c0d16969da5840 plan_head=00edb33fc25aad316a54f967944adb10d134d779
+- 2026-10-10 05:15 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-10 05:16 T-01 review→done attempt=1 verifier=sonnet
+- 2026-10-10 05:16 T-02 todo→doing attempt=1
+- 2026-10-10 06:12 T-02 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a391ac041bdcfffee branch=worktree-agent-a391ac041bdcfffee plan_head=0bed1912696cd2e4b77f23d7764bc2a6ec71a7a2
+- 2026-10-10 06:12 T-02 doing→review attempt=1 creator=sonnet
+- 2026-10-10 06:13 T-02 review→done attempt=1 verifier=sonnet
+- 2026-10-10 06:13 T-03 todo→doing attempt=1
+- 2026-10-10 06:17 T-03 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a37f12f2468cc5337 branch=worktree-agent-a37f12f2468cc5337 plan_head=ad6eeeeab0b805818b2770a6425267917e1a5a1a
+- 2026-10-10 06:17 T-03 doing→review attempt=1 creator=sonnet
+- 2026-10-10 06:18 T-03 review→done attempt=1 verifier=sonnet
+- 2026-10-10 06:18 T-04 todo→doing attempt=1
+- 2026-10-10 07:45 T-04 worktree path=/home/user/ai-harness/.claude/worktrees/agent-afbcc79ba56896817 branch=worktree-agent-afbcc79ba56896817 plan_head=7985982816005afc2a30530d722e0976342f05c1
+- 2026-10-10 07:45 T-04 doing→review attempt=1 creator=sonnet
+- 2026-10-10 07:48 T-04 review→done attempt=1 verifier=sonnet
+- 2026-10-10 07:48 T-05 todo→doing attempt=1
+- 2026-10-10 07:50 T-05 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a097ae60db2e5f2c8 branch=worktree-agent-a097ae60db2e5f2c8 plan_head=00abb20ce9cffbb82b4dcc7887e7ea6da38788f5
+- 2026-10-10 07:50 T-05 doing→review attempt=1 creator=sonnet
+- 2026-10-10 07:52 T-05 review→done attempt=1 verifier=sonnet
+- 2026-10-10 07:52 T-06 todo→doing attempt=1
+- 2026-10-10 07:54 T-06 worktree path=/home/user/ai-harness/.claude/worktrees/agent-ac88e9ea2fda036ae branch=worktree-agent-ac88e9ea2fda036ae plan_head=581678fd9d30f8df0011479779cda3583e258a65
+- 2026-10-10 07:54 T-06 doing→review attempt=1 creator=sonnet
+- 2026-10-10 07:55 T-06 review→done attempt=1 verifier=sonnet
+- 2026-10-10 07:55 T-07 todo→doing attempt=1
+- 2026-10-10 07:57 T-07 worktree path=/home/user/ai-harness/.claude/worktrees/agent-ae7871ab399e89181 branch=worktree-agent-ae7871ab399e89181 plan_head=50384ccdf6f33ec0d878ab9df236d7da885e4390
+- 2026-10-10 07:57 T-07 doing→review attempt=1 creator=sonnet
+- 2026-10-10 07:58 T-07 review→done attempt=1 verifier=sonnet

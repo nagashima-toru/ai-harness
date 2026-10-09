@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-harness-improvements-followup/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 06:18",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree内）/ 出力: smoke: pass=483 fail=0"},
+    {"text": "`FORBIDDEN_PREFIXES` が3つになっている。確認：`grep -cxF 'FORBIDDEN_PREFIXES = (\"vault/plans/\", \"vault/log/\", \"vault/verdicts/\")' scripts/diff_gate.py` の出力が `1`", "ok": true, "note": "実行コマンド: 上記grep -cxF / 出力: 1"},
+    {"text": "`scripts/diff_gate.py` に `vault/rules/` の記述が残っていない。確認：`grep -c 'vault/rules/' scripts/diff_gate.py` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c 'vault/rules/' scripts/diff_gate.py` / 出力: 0"},
+    {"text": "宣言のある `vault/rules/` の変更が許され、宣言の無い変更は違反になることを smoke で確かめている。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (diff_gate) 12'` の出力が `4`", "ok": true, "note": "実行コマンド: smoke出力を `grep -c '^  ok   (diff_gate) 12'` / 出力: 4（12が2行、12bが2行で、終了コード0・出力空・終了コード1・未宣言理由の4件）。smoke.sh内の '(diff_gate) 12' も4件"},
+    {"text": "`vault/plans/`・`vault/log/`・`vault/verdicts/` は今までどおり宣言があっても違反になる。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (diff_gate) .*配下は宣言があっても変更できない'` の出力が `3`", "ok": true, "note": "実行コマンド: smoke出力を上記パターンでgrep -c / 出力: 3"}
+  ],
+  "reasons": []
+}

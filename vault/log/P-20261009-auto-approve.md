@@ -1,0 +1,1 @@
+- 2026-10-09 22:37 - draft→approved 人の指示: /plan approve P-20261009-auto-approve

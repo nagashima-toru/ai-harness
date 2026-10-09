@@ -22,7 +22,7 @@ D-016 フェーズ1（`vault/designs/D-016.md` の「フェーズ1」の受け�
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | scripts/purge_plan.sh を作り smoke にケースを足す | |
 | T-02 | done | 1 | T-01 | scripts/plan_record.py を作り smoke にケースを足す | |
-| T-03 | todo | 0 | T-02 | run スキル手順7に計画の記録・取り出し・計画一式の除去を入れ smoke にケースを足す | |
+| T-03 | doing | 1 | T-02 | run スキル手順7に計画の記録・取り出し・計画一式の除去を入れ smoke にケースを足す | |
 | T-04 | todo | 0 | T-03 | vault-spec・runbook・ai-harness.md を計画一式の除去に揃え、古い記述が残っていないことを確かめる | |
 
 ## 計画の受け入れ基準

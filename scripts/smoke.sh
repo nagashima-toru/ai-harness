@@ -125,14 +125,26 @@ sg_plan "$SGTMP" P-SG
 git -C "$SGTMP" add -A
 git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q -m init
 echo dirty > "$SGTMP/x.txt"
-expect "(f) 未コミットの変更がある → ブロック" block \
-  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "コミット"
+expect "(f) 未コミットの変更がある・doing/review の行が無い → 許可" allow \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
 rm -f "$SGTMP/x.txt"
 expect "(g) 未コミットの変更が無い → 許可（既存判定へ進む）" allow \
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
 rm -rf "$SGTMP"
 
-# approved な計画票が0件・2件の git リポジトリ（未コミットの検査より先に件数で判定する）
+# 未コミットの変更があっても doing の行の verdict の判定へ進む
+SGTMP="$(smoke_tmpdir)" || abort_tmp
+mkdir -p "$SGTMP/vault/plans"
+git -C "$SGTMP" init -q -b main
+printf -- '---\nid: P-SG\nstatus: approved\n---\n# ゴール\n\n## タスク表（状態の正本）\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-0001 | doing | 1 | - | A | |\n' > "$SGTMP/vault/plans/P-SG.md"
+git -C "$SGTMP" add -A
+git -C "$SGTMP" -c user.email=t@example.com -c user.name=t commit -q -m init
+echo dirty > "$SGTMP/x.txt"
+expect "(f2) 未コミットの変更がある・doing の行の verdict が無い → ブロック（verdict の判定）" block \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$SGTMP" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "verdict が無い"
+rm -rf "$SGTMP"
+
+# approved な計画票が0件・2件の git リポジトリ（未コミットの変更があっても件数だけで判定する）
 SGTMP="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$SGTMP/vault/plans"
 git -C "$SGTMP" init -q -b main
@@ -157,9 +169,9 @@ rm -rf "$SGTMP"
 # worktree 委譲（issue #56 / D-008 フェーズ2）。agent_write_guard.py の (delegate) テスト・
 # plan_guard.py の (delegate plan_guard) テストと同じ型：一時 worktree に判定結果が変わる
 # 差し替えスクリプトを置き、cwd をその worktree に向けたペイロードをメインリポジトリ側の
-# stop_gate.py に渡す。stop_gate.py は has_uncommitted_changes() を持つため、ローカル判定に
+# stop_gate.py に渡す。stop_gate.py はローカル判定に
 # フォールバックさせるテスト（二重委譲防止・委譲失敗）では、CLAUDE_PROJECT_DIR 側のリポジトリを
-# 事前に commit してクリーンな状態にしておく（さもないと未コミット変更ブロックが先に発火する）。
+# 事前に commit してクリーンな状態にしておく。
 DWSMAIN="$(smoke_tmpdir)" || abort_tmp
 git -C "$DWSMAIN" init -q -b main
 git -C "$DWSMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
@@ -1659,8 +1671,8 @@ git -C "$WTMAIN" -c user.email=t@example.com -c user.name=t commit -q -m init
 git -C "$WTMAIN" worktree add -q "$LEAF" -b wt-leaf
 expect_eq "(stop_gate worktree) 前提: worktree の .git がファイルである" "yes" "$([ -f "$LEAF/.git" ] && echo yes || echo no)"
 echo dirty > "$LEAF/x.txt"
-expect "(stop_gate worktree) 未コミットのファイルがある → ブロック" block \
-  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$LEAF" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")" "未コミットの変更があります"
+expect "(stop_gate worktree) 未コミットのファイルがある → 許可" allow \
+  "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$LEAF" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
 rm -f "$LEAF/x.txt"
 expect "(stop_gate worktree) ファイルを消す → 許可" allow \
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$LEAF" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"

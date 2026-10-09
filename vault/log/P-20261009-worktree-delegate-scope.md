@@ -3,3 +3,4 @@
 - 2026-10-09 07:34 T-01 worktree path=/Users/nagashimat/IdeaProjects/ai-harness/.claude/worktrees/agent-ae2c00fc6beca1610 branch=worktree-agent-ae2c00fc6beca1610 plan_head=cba18896f28453df6b799b15bd0d18587ba4f325
 - 2026-10-09 07:34 T-01 doing→review attempt=1 creator=sonnet
 - 2026-10-09 07:39 T-01 review→blocked attempt=1 verifier=sonnet マージ失敗
+- 2026-10-09 11:36 T-01 blocked→todo 人の指示: /plan unblock P-20261009-worktree-delegate-scope T-01

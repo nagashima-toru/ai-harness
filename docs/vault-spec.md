@@ -344,6 +344,18 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 
 **フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
 
+### worktree への委譲の範囲
+
+目的：creator が worktree のフックを書き換えても、書き換えたフックが worktree の外（メインリポジトリ・`~/.claude/projects/` など）への書き込みを判定しないようにする。worktree の中の作業は開発中のフックで判定する（D-008 の目的）は保つ。
+
+- 判定は `agent_write_guard.py` の `writes_inside_worktree` が、`H.delegate_to_worktree` を呼ぶ前に行う。書き込み対象がすべて委譲先の worktree の中にある時だけ委譲する。
+- 書き込み対象の求め方：Write 系は `file_path`、Bash は `bash_write_targets` の全ての target（解析できない時は和集合の候補）。`~` は展開し、相対パスは payload の `cwd` を基準にし、`os.path.realpath` で比べる。
+- 書き込み対象が無い呼び出し（読み取りだけ）は今どおり委譲する。
+- 委譲しない場合：worktree の外のパスが1つでもある（`/dev/null`・`/tmp` を含む）、`legacy-unknown`（対象を特定できない）、`gh api`／`curl` による `vault/rules/` のリモート直叩き。この時はメインリポジトリの版のフックが判定する。
+- `vault/rules/` 拒否では、cwd が worktree の時も root は worktree のルートになる。そのため絶対パスの書き込み対象はメインリポジトリのルート基準でも見る（ルートは `CLAUDE_PROJECT_DIR`、無ければフックのファイルから求めた git のルート）。
+- `plan_guard.py`・`stop_gate.py` の委譲は今どおり（書き込み対象を見ない）。
+- 既知の残り：creator の `vault/plans/`・`vault/log/` 拒否は、worktree から絶対パスでメインリポジトリを指す場合を見ていない（この計画の範囲外）。
+
 ### サンドボックス（OS による書き込みと通信の制限）
 
 このリポジトリの `.claude/settings.json` で Claude Code のサンドボックスを有効にしている（`sandbox.enabled: true`）。値は `.claude/settings.json` を正とし、ここには各キーの意味を書く。

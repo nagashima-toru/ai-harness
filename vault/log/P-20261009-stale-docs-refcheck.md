@@ -17,3 +17,5 @@
 - 2026-10-09 20:09 T-04 blocked→todo 人の指示: /plan unblock P-20261009-stale-docs-refcheck T-04
 - 2026-10-09 20:09 T-02 todo→doing attempt=1
 - 2026-10-09 20:09 T-04 todo→doing attempt=1
+- 2026-10-09 20:10 T-02 worktree path=/home/user/ai-harness/.claude/worktrees/agent-ac66352a5a7dc0eef branch=worktree-agent-ac66352a5a7dc0eef plan_head=836392aac049286bfd2dae092176c0898c8bf9e0
+- 2026-10-09 20:10 T-02 doing→blocked attempt=1 creator=sonnet

@@ -50,7 +50,7 @@ bash scripts/smoke.sh        # フックの動作検証
 
 - 読み込みは `bash scripts/rules.sh <creator|verifier|planner>` で一本化（`common/` → 役割ディレクトリの順、ファイル名順）
 - 受け入れ基準からルールファイルを名指しして参照する（例：「`vault/rules/common/naming.md` の命名規則に従っている」）と、verifier がそのファイルを根拠に判定する
-- フックは `vault/rules/` への書き込みを止めないが、creator のタスクの成果物にはできない（差分ゲート `scripts/diff_gate.py` が `vault/rules/` 配下の変更を宣言があっても違反にする）。ルールの追加・変更はタスクにせず、人が編集する（自分で、またはタスクの外でエージェントに指示して）。変更は PR の差分で見える
+- フックは `vault/rules/` への書き込みを止めない。タスクの「成果物」に宣言すれば変えられ、宣言の無い変更は差分ゲート `scripts/diff_gate.py` が差し戻す。変更は PR の差分で見える
 - 導入先で積む拡張の例（導入先で書くルールの例）：開発案件なら、型・API・テスト雛形などの「契約」タスクを先に切り、実装タスクを `after` でそれに依存させる、というルールを `vault/rules/planner/` に置く
 
 ## 仕組み

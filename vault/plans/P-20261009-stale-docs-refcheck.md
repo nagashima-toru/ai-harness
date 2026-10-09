@@ -35,9 +35,9 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | design/SKILL.md の vault/todo.md と第14節を、vault/plans/ と vault-spec.md 13節に直す | |
-| T-02 | todo | 0 | - | ai-harness.md の開始時に読む順・役割・/run の説明を今の run に合わせる | |
-| T-03 | todo | 0 | - | README.md の /run と無人実行の説明・仕組みの図・構成の節を今の構成に合わせる | |
+| T-01 | doing | 1 | - | design/SKILL.md の vault/todo.md と第14節を、vault/plans/ と vault-spec.md 13節に直す | |
+| T-02 | doing | 1 | - | ai-harness.md の開始時に読む順・役割・/run の説明を今の run に合わせる | |
+| T-03 | doing | 1 | - | README.md の /run と無人実行の説明・仕組みの図・構成の節を今の構成に合わせる | |
 | T-04 | todo | 0 | - | run/SKILL.md の frontmatter の description を今の手順に合わせる | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | smoke.sh に主な文書の参照切れの検査を足す | |
 

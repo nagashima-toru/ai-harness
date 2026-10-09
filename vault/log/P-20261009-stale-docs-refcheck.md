@@ -1,1 +1,4 @@
 - 2026-10-09 19:41 - draft→approved 人の指示: /plan approve P-20261009-stale-docs-refcheck
+- 2026-10-09 19:42 T-01 todo→doing attempt=1
+- 2026-10-09 19:42 T-02 todo→doing attempt=1
+- 2026-10-09 19:42 T-03 todo→doing attempt=1

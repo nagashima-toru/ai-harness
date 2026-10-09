@@ -1503,6 +1503,92 @@ pp_run pp8 P-1; pp8_c=$PP_RC
 ( cd "$TMP/pp8_nogit" && bash "$PP_SH" "$PP_ID" ) >/dev/null 2>&1; pp8_d=$?
 expect_eq "(pp-8) 引数なし・未知のオプション・形式違いの ID・git の外はどれも終了コード2" "2:2:2:2" "$pp8_a:$pp8_b:$pp8_c:$pp8_d"
 
+echo "== purge_plan.sh --merged =="
+PM_OK="P-20990101-ok"
+pm_plan() { # $1=リポジトリのパス $2=計画ID $3=frontmatter の status $4...=タスク表の status
+  local d="$1" id="$2" st="$3" i=0 s
+  shift 3
+  mkdir -p "$d/vault/plans" "$d/vault/tasks/$id" "$d/vault/verdicts/$id" "$d/vault/log"
+  {
+    printf -- '---\nid: %s\nstatus: %s\n---\n# ゴール\nx\n\n## タスク表\n| id | status | title |\n|----|--------|-------|\n' "$id" "$st"
+    for s in "$@"; do i=$((i+1)); printf '| T-0%d | %s | t |\n' "$i" "$s"; done
+  } > "$d/vault/plans/$id.md"
+  printf '# T-01\n' > "$d/vault/tasks/$id/T-01.md"
+  printf '{"result":"PASS","reasons":[]}\n' > "$d/vault/verdicts/$id/T-01.json"
+  printf -- '- 2099-01-01 00:00 T-01 doing→review attempt=1\n' > "$d/vault/log/$id.md"
+}
+pm_make() { # $1=リポジトリ名。main に6計画と vault/archive/ をコミットし、作業ブランチ work/p-20990105-cur に切り替える
+  local d="$TMP/$1"
+  rm -rf "$d"
+  mkdir -p "$d"
+  pm_plan "$d" "$PM_OK" done done done
+  pm_plan "$d" P-20990102-appr approved done done
+  pm_plan "$d" P-20990103-rev done done review
+  pm_plan "$d" P-20990104-brdone approved done done
+  pm_plan "$d" P-20990105-cur done done done
+  pm_plan "$d" P-019 done done done
+  mkdir -p "$d/vault/archive"
+  printf 'old\n' > "$d/vault/archive/todo.md"
+  {
+    printf -- '- 2099-01-01 00:00 T-01 doing→blocked attempt=1 creator=sonnet 質問その1\n'
+    printf -- '- 2099-01-01 00:01 T-02 doing→blocked attempt=2\n'
+    printf -- '- 2099-01-01 00:02 T-02 blocked→todo 人の指示\n'
+  } >> "$d/vault/log/$PM_OK.md"
+  printf '{"result":"PASS","reasons":["a","b\\n  c"]}\n' > "$d/vault/verdicts/$PM_OK/T-01.json"
+  printf '{"result":"PASS","reasons":[]}\n' > "$d/vault/verdicts/$PM_OK/T-02.json"
+  ( cd "$d" && git init -q -b main . && git add -A && pp_git commit -q -m c && git checkout -q -b work/p-20990105-cur ) >/dev/null 2>&1
+  sed -i 's/^status: approved/status: done/' "$d/vault/plans/P-20990104-brdone.md"
+  ( cd "$d" && git add -A && pp_git commit -q -m c2 ) >/dev/null 2>&1
+}
+
+pm_make pm1
+pp_run pm1 --merged --list
+expect_eq "(pm-1) --list は対象1件だけを出し、何も変えない" "0|$PM_OK|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pm1)"
+
+pp_run pm1 --merged --report
+pm_want="$PM_OK/T-01: blocked 質問その1"$'\n'"$PM_OK/T-02: blocked (補足なし)"$'\n'"$PM_OK/T-01: reasons a"$'\n'"$PM_OK/T-01: reasons b c"
+expect_eq "(pm-2) --report は blocked の行と reasons を期待どおりの順で出し、何も変えない" "0|$pm_want|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pm1)"
+
+pm_make pm3
+pm3_head="$(cd "$TMP/pm3" && git rev-parse HEAD)"
+pp_run pm3 --merged --apply
+pm3_bad="$(pp_status pm3 | grep -vc '^D ')"
+pm3_left=1
+for p in vault/plans/$PM_OK.md vault/tasks/$PM_OK vault/verdicts/$PM_OK vault/log/$PM_OK.md vault/archive; do
+  [ -e "$TMP/pm3/$p" ] && pm3_left=0
+done
+pm3_keep=0
+[ -e "$TMP/pm3/vault/plans/P-20990102-appr.md" ] && [ -e "$TMP/pm3/vault/plans/P-20990103-rev.md" ] && [ -e "$TMP/pm3/vault/plans/P-20990104-brdone.md" ] && [ -e "$TMP/pm3/vault/plans/P-20990105-cur.md" ] && [ -e "$TMP/pm3/vault/plans/P-019.md" ] && pm3_keep=1
+pm3_want=$'vault/plans/P-20990101-ok.md\nvault/tasks/P-20990101-ok/\nvault/verdicts/P-20990101-ok/\nvault/log/P-20990101-ok.md\nvault/archive/'
+expect_eq "(pm-3) --apply は対象の4種と vault/archive/ を git rm し、対象外を残し、コミットしない" "0|0|1|1|$pm3_want|$pm3_head" "$PP_RC|$pm3_bad|$pm3_left|$pm3_keep|$(cat "$PP_OUT")|$(cd "$TMP/pm3" && git rev-parse HEAD)"
+
+pm_make pm4a
+printf 'changed\n' >> "$TMP/pm4a/vault/tasks/$PM_OK/T-01.md"
+pp_run pm4a --merged --apply; pm4a_rc=$PP_RC
+pm4a_ok=0
+[ -e "$TMP/pm4a/vault/plans/$PM_OK.md" ] && [ -e "$TMP/pm4a/vault/archive/todo.md" ] && [ "$(pp_status pm4a)" = " M vault/tasks/$PM_OK/T-01.md" ] && pm4a_ok=1
+pm_make pm4b
+printf 'new\n' > "$TMP/pm4b/vault/archive/new.md"
+pp_run pm4b --merged --apply; pm4b_rc=$PP_RC
+pm4b_ok=0
+[ -e "$TMP/pm4b/vault/plans/$PM_OK.md" ] && [ -e "$TMP/pm4b/vault/archive/todo.md" ] && [ "$(pp_status pm4b)" = "?? vault/archive/new.md" ] && pm4b_ok=1
+expect_eq "(pm-4) 未コミットの変更も vault/archive/ の未追跡ファイルも終了コード1で何も消さない" "1:1:1:1" "$pm4a_rc:$pm4a_ok:$pm4b_rc:$pm4b_ok"
+
+pm_make pm5
+pm5_rcs=""
+for pm5_args in "--merged" "--merged --list --report" "--merged --list --apply" "--merged --list P-20990101-ok" "--list" "--report" "--apply" "--merged --list --dry-run" "--merged --bogus"; do
+  # shellcheck disable=SC2086
+  pp_run pm5 $pm5_args
+  pm5_rcs="$pm5_rcs$PP_RC"
+done
+( cd "$TMP/pp8_nogit" && bash "$PP_SH" --merged --list ) >/dev/null 2>&1; pm5_rcs="$pm5_rcs$?"
+expect_eq "(pm-5) 引数の誤りはどれも終了コード2" "2222222222" "$pm5_rcs"
+
+pm_make pm6
+( cd "$TMP/pm6" && git rm -r -q -- vault/plans/$PM_OK.md vault/tasks/$PM_OK vault/verdicts/$PM_OK vault/log/$PM_OK.md vault/archive && pp_git commit -q -m c3 ) >/dev/null 2>&1
+pp_run pm6 --merged --apply
+expect_eq "(pm-6) 対象0件で vault/archive/ も無ければ --apply は終了コード0・標準出力が空" "0||" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pm6)"
+
 echo "== plan_record.py =="
 PR_PY="$ROOT/scripts/plan_record.py"
 PR_DIR="$(smoke_tmpdir)" || abort_tmp

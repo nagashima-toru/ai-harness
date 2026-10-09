@@ -261,6 +261,20 @@ expect_guard "(guard3-b) main で改行区切りの git commit → 拒否" deny 
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo a\ngit commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 expect_guard "(guard3-b) main で git -C . commit → 拒否" deny \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -C . commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-1) main で grep の引数の git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"grep -n \"git commit\" scripts/smoke.sh"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-2) main で引用符の中の区切りと git commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"echo '"'"'a; git commit -m x'"'"'"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-3) main で git log --grep commit → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git log --grep commit"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-4) main で || 連結の git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"true || git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-5) main で | 連結の git commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"true | git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-6) main で git -C /tmp/x commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -C /tmp/x commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(guard-b2-7) main で git -c user.name=a commit → 拒否" deny \
+  "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -c user.name=a commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 expect_guard "(i) main で git commit → 拒否" deny \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 git -C "$GTMP" checkout -q -b work/p-test

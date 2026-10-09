@@ -2500,6 +2500,19 @@ if ! grep -qF 'gh issue create' "$RUN_SKILL" && grep -qF 'gh api repos/{owner}/{
 expect_eq "(run-skill-2) run の issue 起票が REST（gh issue create が無い）" ok "$rs2"
 if grep -qF '`gh api` の PR 作成に渡すはずだった' "$RUN_SKILL" && grep -qF '`gh api` の PR 作成に渡すはずだった' "$DESIGN_SKILL"; then rs3=ok; else rs3=NG; fi
 expect_eq "(run-skill-3) run・design の MCP 代替が gh api の PR 作成を引き継ぐ" ok "$rs3"
+rs_ord() { # 手順7の中で、引数の固定文字列の最初の出現行が全部あり、この順に増える時だけ ok
+  local prev=0 n s
+  for s in "$@"; do
+    n="$(printf '%s\n' "$rs_step7" | grep -nF -m1 -e "$s" | cut -d: -f1)"
+    if [ -z "$n" ] || [ "$n" -le "$prev" ]; then echo NG; return; fi
+    prev="$n"
+  done
+  echo ok
+}
+rs4="$(rs_ord 'git add vault/plans/<計画ID>.md' 'python3 scripts/plan_record.py <計画ID>' 'bash scripts/purge_plan.sh <計画ID>' 'git commit -m "<計画ID>: 計画一式を除去"' 'bash scripts/vcs_finish.sh')"
+expect_eq "(run-skill-4) run 手順7で計画票のコミット・記録・除去・除去のコミット・PR 作成の順に書かれている" ok "$rs4"
+rs5="$(rs_ord '## verifier の指摘' '## 計画の記録' '## 取り出した情報')"
+expect_eq "(run-skill-5) run 手順7の本文ファイルの節が D-016 の順に書かれている" ok "$rs5"
 
 if ! grep -qF '起点コミット' "$ROOT/.claude/agents/creator.md" "$ROOT/.claude/agents/verifier.md" "$ROOT/.claude/agents/planner.md"; then ag1=ok; else ag1=NG; fi
 expect_eq "(agents-1) creator・verifier・planner の定義に「起点コミット」の語が無い" ok "$ag1"

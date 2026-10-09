@@ -1,6 +1,6 @@
 ---
 id: P-20261009-stale-docs-refcheck
-status: draft
+status: approved
 ---
 # ゴール
 古い記述の修正と参照切れの検査（D-013 フェーズ7）

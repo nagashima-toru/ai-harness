@@ -1,0 +1,1 @@
+- 2026-10-09 19:41 - draft→approved 人の指示: /plan approve P-20261009-stale-docs-refcheck

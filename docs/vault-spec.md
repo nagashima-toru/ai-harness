@@ -41,7 +41,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 
 同時に `doing`/`review` になれるのは、着手可能集合（`todo` かつ `after` の依存が全て `done` なタスクの集合）のうち、互いに `after` で依存し合わないものに限る。計画票・`vault/log/<計画ID>.md` への書き込みは、並行して作業していても常にオーケストレーター（`run` のメインセッション）1プロセスに集約し、複数プロセスが同じファイルへ同時に書き込むことは無い。
 
-遷移：`todo→doing→review→(done | doing[attempt+1] | blocked)`。`blocked→todo` は、人が `/plan unblock <計画ID> <id> [回答]` で指示した時だけ行える（フックが会話記録で裏付ける）。
+遷移：`todo→doing→review→(done | doing[attempt+1] | blocked)`。`blocked→todo` は、人が `/plan unblock <計画ID> <id> [回答]` で指示した時だけ行う。フックでは確かめない（D-015 フェーズ2 で廃止）ので、エージェントは人の指示なしに解除しない。
 
 `attempt` は「現在の試行回数」。`todo→doing` で 1 になり、`review→doing`（FAIL 後の再試行）で +1 する。上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）。上限に達して FAIL なら `blocked` にする。
 
@@ -268,7 +268,7 @@ done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1�
 
 ## 11. ルール（`vault/rules/`）
 
-ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。エージェントも `vault/rules/` に書き込める（フックは止めない）。ルールの変更は PR の差分で人が見る（D-015）。
+ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。エージェントも `vault/rules/` に書き込める（フックは止めない）。ルールの変更は PR の差分で人が見る（D-015）。ただし creator のタスクの成果物にはできない（差分ゲート `scripts/diff_gate.py` が `vault/rules/` 配下の変更を宣言があっても違反にする。5節）。ルールの追加・変更はタスクにせず、人が編集する（自分で、またはタスクの外でエージェントに指示して）。
 
 旧版の install で配った役割定義のルール6本は、`bash scripts/install.sh --update` がマニフェストのハッシュで未編集と判定したものだけ削除し（`remove <path>` と表示）、編集済みのものは残して `note` の行で案内する（役割定義は `.claude/agents/` にある）。
 
@@ -307,7 +307,7 @@ vault/rules/
 - GitHub の API を直接呼ぶリモート書き込みの検知：拒否リスト方式では未知の経路を列挙しきれず、PR の差分で見える
 - Bash の書き込み解析：コマンドの字句解析と解析できない形の候補の和集合は複雑さに見合わず、誤検知と取りこぼしを生んでいた
 - creator・planner の書き込み先の制限：役割ごとの書き込み先は PR の差分と各エージェント定義で足りる
-- blocked の解除の裏付け（`/plan unblock` を会話記録で確認する判定）：会話記録の形式への依存と誤拒否の費用が、エージェントの独断を防ぐ効果より大きい
+- blocked の解除の裏付け（人の発言に `/plan unblock` があるかをフックで見る判定）：会話記録の形式への依存と誤拒否の費用が、エージェントの独断を防ぐ効果より大きい
 
 **フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。
 

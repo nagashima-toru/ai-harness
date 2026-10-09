@@ -1503,6 +1503,31 @@ pp_run pp8 P-1; pp8_c=$PP_RC
 ( cd "$TMP/pp8_nogit" && bash "$PP_SH" "$PP_ID" ) >/dev/null 2>&1; pp8_d=$?
 expect_eq "(pp-8) 引数なし・未知のオプション・形式違いの ID・git の外はどれも終了コード2" "2:2:2:2" "$pp8_a:$pp8_b:$pp8_c:$pp8_d"
 
+echo "== plan_record.py =="
+PR_PY="$ROOT/scripts/plan_record.py"
+PR_DIR="$(smoke_tmpdir)" || abort_tmp
+PR_ID="P-20990101-pr"
+mkdir -p "$PR_DIR/vault/plans" "$PR_DIR/vault/log" "$PR_DIR/nolog/vault/plans"
+printf '%s\n' '---' "id: $PR_ID" 'status: approved' '---' '# ゴール' 'ゴール1行目' 'ゴール2行目' '' '## 分割方針' 'ブンカツホウシンの本文' '' '## タスク表' '| id | status | title |' '|----|--------|-------|' '| T-01 | todo | a |' '| T-02 | todo | b |' '' '## メモ' 'x' > "$PR_DIR/vault/plans/$PR_ID.md"
+printf '%s\n' '- 2099-01-01 00:00 T-01 todo→doing attempt=1' '- 2099-01-01 00:01 T-01 worktree path=/tmp/wt' '- 2099-01-01 00:02 T-01 doing→review attempt=1' > "$PR_DIR/vault/log/$PR_ID.md"
+cp "$PR_DIR/vault/plans/$PR_ID.md" "$PR_DIR/nolog/vault/plans/$PR_ID.md"
+pr_snap() { ( cd "$PR_DIR" && find . -type f | sort | while read -r f; do printf '%s ' "$f"; cksum < "$f"; done ); }
+pr_before="$(pr_snap)"
+pr_want="$(printf '%s\n' '## 計画の記録' '' '### ゴール' 'ゴール1行目' 'ゴール2行目' '' '### タスク表' '| id | status | title |' '|----|--------|-------|' '| T-01 | todo | a |' '| T-02 | todo | b |' '' '### log' '<details>' '<summary>log の全行</summary>' '' '- 2099-01-01 00:00 T-01 todo→doing attempt=1' '- 2099-01-01 00:01 T-01 worktree path=/tmp/wt' '- 2099-01-01 00:02 T-01 doing→review attempt=1' '' '</details>')"
+pr_full="$(cd "$PR_DIR" && python3 "$PR_PY" "$PR_ID" 2>/dev/null)"
+expect_eq "(prec-1) 出力全体が期待どおりで、ファイルは増えも変わりもしない" "$pr_want
+$([ "$pr_before" = "$(pr_snap)" ] && echo same)" "$pr_full
+$([ "$pr_before" = "$(pr_snap)" ] && echo same)"
+expect_eq "(prec-2) ゴール節に 分割方針 以降の本文が混ざらない" "0" "$(printf '%s\n' "$pr_full" | grep -c 'ブンカツホウシン')"
+expect_eq "(prec-3) log の遷移行以外（worktree path=...）もそのまま出る" "1" "$(printf '%s\n' "$pr_full" | grep -c '^- 2099-01-01 00:01 T-01 worktree path=/tmp/wt$')"
+pr_out="$(cd "$PR_DIR" && python3 "$PR_PY" P-20990101-none 2>"$TMP/pr_err.txt")"; pr_rc=$?
+expect_eq "(prec-4) 計画票が無ければ終了コード1・標準出力が空・標準エラーに見つかりません" "1::yes" "$pr_rc:$pr_out:$(grep -q 'plan_record.py: 見つかりません: ' "$TMP/pr_err.txt" && echo yes)"
+pr_out="$(cd "$PR_DIR/nolog" && python3 "$PR_PY" "$PR_ID" 2>/dev/null)"; pr_rc=$?
+expect_eq "(prec-5) log が無ければ終了コード1・標準出力が空" "1:" "$pr_rc:$pr_out"
+( cd "$PR_DIR" && python3 "$PR_PY" >/dev/null 2>&1 ); pr_rc=$?
+expect_eq "(prec-6) 引数なしは終了コード2" "2" "$pr_rc"
+rm -rf "$PR_DIR"
+
 echo "== vcs_finish.sh =="
 VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
 mkdir -p "$VF_BIN" "$VF_REPO"

@@ -269,7 +269,7 @@ done の行の verdict の検査も plan_guard が行う（D-012 フェーズ1�
 
 ## 11. ルール（`vault/rules/`）
 
-ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。
+ハーネスは標準ルールを同梱しない。planner / creator / verifier の役割定義は `.claude/agents/creator.md`・`.claude/agents/verifier.md`・`.claude/agents/planner.md` にある（git 運用も `.claude/agents/creator.md` の `## git` 節）。「ルール」は作成エージェント・verifier・planner に渡す拡張ポイントで、コーディングルール・開発標準・方式設計・テスト標準・テスト観点などは置き場と読み込み口だけを用意し、導入先で `vault/rules/` に書く。エージェントも `vault/rules/` に書き込める（フックは止めない）。ルールの変更は PR の差分で人が見る（D-015）。
 
 旧版の install で配った役割定義のルール6本は、`bash scripts/install.sh --update` がマニフェストのハッシュで未編集と判定したものだけ削除し（`remove <path>` と表示）、編集済みのものは残して `note` の行で案内する（役割定義は `.claude/agents/` にある）。
 
@@ -290,67 +290,36 @@ vault/rules/
 ### ルールと受け入れ基準の関係
 ルールは受け入れ基準を増やすものではなく、**基準の判定方法を与えるもの**。受け入れ基準が `vault/rules/` のルールを参照する時（例：「コーディングルールに従っている」）だけ、verifier はルールを根拠に真偽を判定する。受け入れ基準がルールに触れていなければ、ルールを理由に FAIL にしない。作成側だけに渡した `creator/` のルールは verifier から見えないため、それを根拠に落とすこともない。
 
-### 改ざん防止
-`vault/rules/` への書き込みは、タスクの状態や承認済み計画の有無を問わず、フックが常に拒否する（実装は `.claude/hooks/agent_write_guard.py`）。作成エージェントがタスク中にルールを書き換え、verifier の判定基準を自分で緩めることを防ぐ。ルール変更を成果物とするタスクは提案ファイル方式で進める。詳細は「12. agent_write_guard フックの改ざん防止判定」。
+## 12. agent_write_guard フックの判定
 
-## 12. agent_write_guard フックの改ざん防止判定
+`.claude/hooks/agent_write_guard.py` の判定は次の3つだけ（D-015）。`agent_type` を見るのは (c) だけで、(a)(b) は `agent_type` を問わず（メインセッション含む）適用する。
 
-`.claude/hooks/agent_write_guard.py` は verifier / planner 向けの書き込み先制限（本節冒頭）とは別に、`agent_type` を問わず（メインエージェント含む）適用する判定を持つ。以下のとおり判定する。
+| 判定 | 対象 | 結果 |
+|---|---|---|
+| (a) done のタスクの保護 | Write・Edit・MultiEdit・NotebookEdit の書き込み先が `vault/tasks/<計画ID>/<id>.md` か `vault/verdicts/<計画ID>/<id>.json` で、計画票（`vault/plans/<計画ID>.md`）のタスク表でその id が `done` | 拒否。計画票が無い・読めない・該当 id の行が無い時は許可。Bash による書き換えは見ない（PR の差分と、plan_guard・stop_gate の verdict の検査で見える） |
+| (b) main への直接コミット | Bash のコマンドを `&&`・`;`・改行で区切った各部分に `git commit`（`git -C . commit` のような前置オプション付きも含む）があり、現在のブランチが `main` | 拒否。正規表現の簡単な判定で、引用符の中などの誤検知は許容する。ブランチが取れない時（detached HEAD など）は素通り |
+| (c) verifier の書き込み先 | `agent_type` が verifier の Write・Edit・MultiEdit・NotebookEdit で、書き込み先が `vault/verdicts/` の外 | 拒否。verifier の Bash は制限しない |
 
-| 状況 | 判定 |
-|---|---|
-| 対象が `vault/rules/` 配下への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash のリダイレクト・`tee`・`sed -i`・`rm`/`mv`/`cp` 等） | ブロック：`vault/rules/ へは書き込めません` を reason に含める。タスクの状態（`todo`/`doing`/`review`）・承認済み計画の有無は問わない。解除口は無い |
-| 対象が `vault/tasks/<計画ID>/<id>.md` または `vault/verdicts/<計画ID>/<id>.json` で、該当 id の計画票（`vault/plans/<計画ID>.md`）のタスク表上の status が `done`（計画票が無い・読めない・該当 id の行が無い場合はこの判定の対象外。Bash の書き込み動詞が `git add` / `git commit` だけのコマンドも対象外：ステージ・コミットはファイル内容を変えないため。リダイレクト・`cp`/`mv`/`rm`・`sed -i`・`tee`・`git rm` など内容を変える書き込みが混在する場合は対象） | ブロック：`done` のタスク票・verdict は編集できません。agent_type を問わず（メインセッション含む）拒否する。`git add` / `git commit` のみのコマンドが対象外なのは判定範囲の定義であって解除口ではなく、内容を変える書き込みが混在すれば従来どおり拒否する。解除口は無い |
-| 対象が `~/.claude/projects/` 配下（会話記録。`~` は `os.path.expanduser` で展開して判定する）への書き込み（Write/Edit/MultiEdit/NotebookEdit の `file_path`、または Bash の書き込み対象パス） | ブロック：`~/.claude/projects/ 配下（会話記録）へは書き込めません` を reason に含める。`agent_type`・タスクの状態を問わず、解除口は無い。blocked の解除の裏付けが会話記録に依るため、エージェントによる改ざんを防ぐ |
-| 対象が `vault/plans/<計画ID>.md` で、Write/Edit/MultiEdit により、書き込み前に status が `blocked` の行が、書き込み後に同じ id の行の status が `blocked` 以外になる（解除：blocked→他。行が消えるだけの場合・書き込み後の内容を組み立てられない場合は対象外） | メインセッション（`agent_type` が空）かつ会話記録の人の発言に `/plan unblock <計画ID> <id>` がある時だけ許可。`agent_type` が空でない、または会話記録が読めたのに該当する発言が無い時はブロック：`/plan unblock <計画ID> <id>` で指示した時だけ許可される旨を reason に含める。会話記録が読めない時（定義は下記）はブロックしない（許可）。1回の書き込みで複数行を解除する場合は、行ごとに一致する発言を要求する |
-| 上記に該当しない（`vault/rules/` 以外への書き込み、または `done` でないタスクへの書き込み） | 許可（この判定は素通り。既存の verifier/planner 向け判定へ進む） |
+上記のどれにも当たらない呼び出しは許可する。
 
-この判定は既存の verifier/planner 向け `ALLOWED` 判定より前に実行される。verifier・planner が `vault/rules/` に書こうとした場合も、この判定で先に拒否される。
+やめた判定（D-015 の決定事項。人が PR の差分で見る前提に寄せた）：
+- `vault/rules/` の保護：エージェントも書けるようにし、変更は PR の差分で人が見る。別ファイルに下書きして人が反映する手順は要らない
+- 会話記録への書き込みの拒否：守る対象だった blocked の解除の裏付けをやめたため、守る理由が無い
+- GitHub の API を直接呼ぶリモート書き込みの検知：拒否リスト方式では未知の経路を列挙しきれず、PR の差分で見える
+- Bash の書き込み解析：コマンドの字句解析と解析できない形の候補の和集合は複雑さに見合わず、誤検知と取りこぼしを生んでいた
+- creator・planner の書き込み先の制限：役割ごとの書き込み先は PR の差分と各エージェント定義で足りる
+- blocked の解除の裏付け（`/plan unblock` を会話記録で確認する判定）：会話記録の形式への依存と誤拒否の費用が、エージェントの独断を防ぐ効果より大きい
 
-**blocked の解除の裏付けの判定に使う会話記録**（agent_write_guard.py が、フックに渡される `transcript_path` の会話記録（JSONL）を読む。解析は共通モジュール `.claude/hooks/_hooklib.py` の関数を使う）：
-- 人の発言：`type` が `user`、`message.content` が文字列、`isMeta` が真でない行だけ。`content` が配列の行（`tool_result` など）と `isMeta` の行は対象外。探す範囲はそのセッションの会話記録全体
-- 「読めない」：`transcript_path` が無い・ファイルが無い・どの行も JSON として読めない・人の発言が1件も無い、のいずれか。この時はブロックせず許可する。読めたうえでコマンドが無い時はブロックする
-- `unblock` のコマンドの一致：人の発言が `<command-name>/plan</command-name>` を含みその `<command-args>` の、または先頭が `/plan` の文の、引数の先頭3トークンが `unblock <計画ID> <id>` であること。計画 ID・タスク ID は空白区切りのトークンで完全一致を比べ、後ろに回答が続いてよい。1回のコマンドで解除するのは1行だけで、複数行を解除するにはコマンドをその行数だけ打つ。`/run` の遷移（todo→doing→review→done/doing）には blocked から出るものが無いので、この判定に当たるのは `/plan unblock` だけ
-- 対象外（今回やらないこと）：自然文での解除、AskUserQuestion への回答での解除、計画票からの行の削除の検査
-- 会話記録の形式は Claude Code の公開仕様ではなく、変わりうる。形式の変化は `scripts/smoke.sh` のサンプルで検知する
-
-### 検知範囲：`gh api` / `curl` によるリモート直叩き（issue #6）
-
-Bash 経由の検知は、ローカルの作業ツリーへのリダイレクトやコマンド（`rm`/`mv`/`cp`/`tee`/`sed -i`/`git ...`）だけでなく、`gh api`（`-X` の指定有無を問わない）と、GitHub Contents API を直接叩く `curl`（`api.github.com` / `raw.githubusercontent.com` / `githubusercontent.com` 宛）も対象にする。これらはローカルの作業ツリーに触れずに GitHub 上のファイルを直接書き換えられる経路であり、コマンド文字列に対象パス（`vault/rules/` 配下）が含まれる場合にブロックする。
-
-D-002 の設計思想は「人の操作を前提にしない（エージェントが到達できない経路だけが安全）」ことを理想とするが、この判定は拒否リスト方式（危険な経路をパターンで列挙してブロックする方式）であり、その理想への完全な到達ではない。既知の抜け穴（`gh api`・GitHub API への直接 `curl`）を塞ぐ拡張にとどまり、未知のコマンド経路（例：他の CLI や言語ランタイムから GitHub API を叩く、別のホスト名を使うプロキシ経由など）を完全に列挙することはできないという残存リスクがある。
-
-### Bash の書き込み対象の解析（issue #91・#87）
-
-Bash コマンドの判定は2段になっている。`analyze_bash_writes` が shlex でコマンドをトークン化し、セグメント（`;`・`&&`・`||`・`|`・`&`・引用符外の改行で区切る）ごとに実際の書き込み対象（verb と target の組）を求める。解析できた時はその対象で判定する。書き込み対象は `bash_write_targets` が1回のフック呼び出しで1度だけ計算する（同じコマンドはメモ化）。解析できた時は `analyze_bash_writes` の結果を返す。解析できない時（`analyze_bash_writes` が `None`）は fail-closed とし、書き込み動詞の正規表現に一致した時だけ、4通りの従来判定の候補の和集合（リダイレクト先・`extract_bash_write_targets` の対象・保護対象パスを含む path-like トークン）を返す。保護対象パスは `vault/rules/`・`vault/plans/`・`vault/log/`・`vault/tasks/`・`vault/verdicts/`・`.claude/projects` で、候補の末尾の `)`・`"`・`'`・バッククォート・`;` は落とす。各判定はこの結果をパスで絞り込む。
-
-- 解析の規則：引用符内の文字列・ヒアドキュメント本文・読み取りコマンド（`grep`・`cat`・`git show` 等）の引数は書き込み対象にしない。コマンド語は basename で照合する（`/bin/rm` は `rm`）。先頭の `VAR=値` は読み飛ばす。`2>` のような fd 番号付きのリダイレクト、`>&2` のような fd 複製（宛先がファイルでないもの）は対象にしない
-- verb ごとの書き込み対象：リダイレクト（`>`・`>>`・`>|`・`&>`・`&>>`、`>&` の宛先がファイルの時）・`tee`（非フラグ引数）・`sed -i`／`--in-place`（非フラグ引数）・`cp`／`mv`（全ての非フラグ引数と `-t`／`--target-directory` の dir）・`rm`／`mkdir`／`touch`／`chmod`／`chown`（非フラグ引数）・`git add`（パス引数）・`git commit`（対象パスなし）・git の書き込み系サブコマンド（`rm`・`mv`・`checkout`・`switch`・`reset`・`restore`・`clean`・`stash`・`merge`・`rebase`・`push`。パス引数）。書き込みが無ければ空の対象で、書き込み無しとして扱う
-- 解析できない形：コマンド置換（`$(`・バッククォート・`<(`・`>(`）、サブシェル（`(`・`)`）、`cd` などの作業ディレクトリ変更（`pushd`・`popd` を含む）、変数・グロブを含む書き込み対象（`$`・`*`・`?`・`[`・`{`）、インタプリタやラッパー（`bash -c`・`sh`・`python3`・`awk`・`perl`・`xargs`・`find`・`env`・`sudo`・`eval`・`source` 等）、シェルの制御構文（`if`・`for`・`while` 等）、`git -C` のような git の前置オプション、本文に `$(` かバッククォートがある展開されるヒアドキュメント（区切り語を引用符で囲んだ `<<'EOF'` は展開されないので解析できる）、閉じていない引用符・区切り語の行が無いヒアドキュメント
-- 6つの判定での使い方（`agent_write_guard.py` の `main` の順）：
-  - `vault/rules/` 拒否・会話記録（`~/.claude/projects/`）拒否・creator の `vault/plans/`・`vault/log/` 拒否：verb を問わず、`bash_write_targets` の全ての target を、解析の成否にかかわらずそれぞれのパスで絞り込んで判定する。`vault/rules/` 拒否は、解析の成否にかかわらず先に `gh api`／`curl` 経由のリモート直叩きの検査も行う（前小節）
-  - done 判定：`git add`・`git commit` の対象を除いた target で判定する（`git add`・`git commit` はファイル内容を変えないため）。解析できない時も、`git add` / `git commit` だけのコマンドを除く判定（issue #84）は残り、それ以外は和集合の全候補で判定する。コマンド置換を含むと解析できず、コミットメッセージ中の done の verdict パスが書き込み対象とみなされて拒否されるため、run はタスクの done の遷移を transition.py で行う。手作業でコミットする時（手順7の計画票の frontmatter の approved→done など）は、ログ追記・ステージ・コミットを別々の Bash 呼び出しに分け、コミットメッセージにコマンド置換を使わない（issue #87）
-  - verifier／planner の `ALLOWED` 判定：解析できた時は次の順に判定する。(1) 書き込みが無ければ許可。(2) `git-add`・`git-commit`・`git-write` が1つでもあれば拒否。(3) 全ての target が repo の外なら許可。(4) repo 内の target が `cp`／`mv` だけで、コピー・移動先（従来の抽出で求めた宛先）が全て repo の外なら許可。(5) repo 内の target が全て `redirect`・`mkdir`・`touch` で、`ALLOWED` のパス配下なら許可。いずれにも当たらなければ拒否。解析できない時は和集合の候補で判定する。書き込み動詞が無ければ許可。`extract_bash_write_targets` の対象が1つ以上あり、和集合の全候補が repo の外なら許可。リダイレクト先が1つ以上あり、和集合の全候補が `ALLOWED` 配下で、破壊的な動詞を含まなければ許可。それ以外は拒否
-- main 直接コミット拒否：main ブランチ上では、解析できた時は verb `git-commit`（`&&`・`;`・改行で連結した後ろも含む）がある時だけ拒否し、`grep "git commit"` のような読み取り・引用符内・ヒアドキュメント本文は許可する。解析できない時は（和集合の対象外で）今どおり従来の `git commit` の正規表現に加え、`git -C . commit` のような `git -<オプション> … commit` の形も拒否する。非 git リポジトリ・ブランチを取得できない時（detached HEAD 等）はこの判定を素通りする
-- 採らなかったこと：`$(cat <<'EOF' …)` の標準形のコミットメッセージを許可する案は採らない。コマンド置換の中身は任意のコマンドを実行でき、許可の形を作るとすり抜けを作りやすいため。コミットの起点を記録する欄も採らない
-- 一本化で変わった点（D-011 フェーズ3）：
-  - verifier・planner の解析できない形のコマンドで、repo の外だけに書き込むのに引数・引用符の中に保護対象パスがあるもの（例：`python3 -c "open('vault/tasks/P/T-01.md')" > /tmp/x.txt`）：変更前は許可→変更後は拒否（和集合に repo 内の path-like 候補が入るため）
-  - 変わったのは拒否する側だけで、許可が増えた形は無い
-- 残る弱点：サンドボックスは使っていない（「サンドボックス（使っていない）」の小節）ので、Bash の書き込みへの守りはこの解析だけになる。以下は Bash の解析としての弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。解析できない時の候補には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
-
-**フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
+**フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。
 
 ### worktree への委譲の範囲
 
-目的：creator が worktree のフックを書き換えても、書き換えたフックが worktree の外（メインリポジトリ・`~/.claude/projects/` など）への書き込みを判定しないようにする。worktree の中の作業は開発中のフックで判定する（D-008 の目的）は保つ。
+目的：creator が worktree のフックを書き換えても、書き換えたフックが worktree の外への書き込みを判定しないようにする。worktree の中の作業は開発中のフックで判定する（D-008 の目的）は保つ。
 
-- 判定は `agent_write_guard.py` の `writes_inside_worktree` が、`H.delegate_to_worktree` を呼ぶ前に行う。書き込み対象がすべて委譲先の worktree の中にある時だけ委譲する。
-- 書き込み対象の求め方：Write 系は `file_path`、Bash は `bash_write_targets` の全ての target（解析できない時は和集合の候補）。`~` は展開し、相対パスは payload の `cwd` を基準にし、`os.path.realpath` で比べる。
-- 書き込み対象が無い呼び出し（読み取りだけ）は今どおり委譲する。
-- 委譲しない場合：worktree の外のパスが1つでもある（`/dev/null`・`/tmp` を含む）、`legacy-unknown`（対象を特定できない）、`gh api`／`curl` による `vault/rules/` のリモート直叩き。この時はメインリポジトリの版のフックが判定する。
-- `vault/rules/` 拒否では、cwd が worktree の時も root は worktree のルートになる。そのため絶対パスの書き込み対象はメインリポジトリのルート基準でも見る（ルートは `CLAUDE_PROJECT_DIR`、無ければフックのファイルから求めた git のルート）。
+- 判定は `agent_write_guard.py` の `writes_inside_worktree` が、`H.delegate_to_worktree` を呼ぶ前に行う。
+- Write 系は書き込み先（`file_path`）が worktree の中の時だけ委譲する。外なら委譲せず、メインリポジトリの版が判定する。
+- Bash とそのほかのツールは常に委譲する。Bash で残る判定は (b) だけで、payload の `cwd` のブランチを見るため。
 - `plan_guard.py`・`stop_gate.py` の委譲は今どおり（書き込み対象を見ない）。
-- 既知の残り：creator の `vault/plans/`・`vault/log/` 拒否は、worktree から絶対パスでメインリポジトリを指す場合を見ていない（この計画の範囲外）。
 
 ### サンドボックス（使っていない）
 
@@ -358,17 +327,6 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - 理由：サンドボックスが守っていたのは `vault/rules/` と会話記録（`~/.claude/projects/`）への Bash の書き込みで、D-015 でどちらも守る対象から外した。一方で `.claude/` の保護パス・`.git`・`gh` の TLS・`mktemp` での詰まりと、サンドボックスの外で動かすコマンドの例外の積み増しを生んでいた
 - 一時ファイル：スクリプトは今までどおり `mktemp [-d] "${TMPDIR:-/tmp}/<名前>.XXXXXX"` の形で作り、作れない時は中断する（D-013 の書き方を戻さない）
 - 導入先：`merge_settings_json.py` は導入先の settings.json に `sandbox` を足さない。導入先で有効にする手順は `docs/install.md` の「サンドボックスを有効にする（任意）」
-
-### 提案ファイル方式（ルール自体を変更するタスク用）
-
-エージェントは `vault/rules/` に一切書き込めない（人だけが実体を編集できる）。ルールファイルそのものを成果物とするタスクは、次の手順で進める。
-
-- タスク票の「成果物」は実パス（`vault/rules/...`）ではなく `vault/tasks/<計画ID>/<id>-proposal.md` にする。中身は追記・変更したい内容の下書き（差分でも全文でもよい）
-- verifier は実体ではなく、この提案ファイルの内容を受け入れ基準に照らして検証する
-- 提案ファイルから実体（`vault/rules/` 配下）への反映は、人が手作業で行う。反映を自動化するスクリプト・スキルは無い
-- 複数のルールファイルにまたがる変更は、成果物を1つに保つ原則（`vault/templates/task.md`）に従ってタスクを分割する
-
-この方式は `todo`/`doing`/`review` のどの状態でも同じで、ローカル・リモートいずれのセッションでも人の起動時操作（環境変数など）を必要としない。
 
 ## 13. 設計文書（`vault/designs/`）
 

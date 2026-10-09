@@ -20,8 +20,10 @@ status: draft
   - T-03：`.claude/skills/plan/SKILL.md` の A の最後を自動承認と `/run` の続行にし、B を削って C を B に繰り上げる。frontmatter の description・argument-hint も直す。付随して `.claude/skills/run/SKILL.md` 手順1の2の案内を直す
   - T-04：`.claude/ai-harness.md` のスキルの節の `/plan` の説明を直す
   - T-05：`docs/runbook.md` の1節・2節を直す
+  - T-07：`README.md` の「## 使い方」の `/plan` の行と「## 仕組み」の図を直す（人への質問2の回答で追加）
+  - T-08：`.claude/agents/planner.md` の「## 禁止」と「## 受け渡し」の承認の記述を直す（人への質問2の回答で追加）
   - T-06：`docs/vault-spec.md` の10節（裏付けの検査の2段落）と、それに連なる記述（2節の transition.py の注記・4節の status の表・7節の承認の log の形式・12節の承認の行と会話記録の説明）を直す
-- 依存：T-01・T-03・T-04・T-05 は互いに独立。T-02 は T-01 の後（smoke.sh を共有）。T-06 は T-01・T-02・T-03 の後（フックの実際の判定と skill の log の形式を書くため）
+- 依存：T-01・T-03・T-04・T-05・T-07・T-08 は互いに独立。T-02 は T-01 の後（smoke.sh を共有）。T-06 は T-01・T-02・T-03 の後（フックの実際の判定と skill の log の形式を書くため）
 - 範囲外にしたもの（D-015 の後のフェーズで直す）
   - `agent_write_guard.py` の unblock の判定・会話記録への書き込みの拒否・`_hooklib.py` の `human_messages`・`is_unblock_command`（フェーズ3。unblock の判定が使うので今回は残す）
   - `docs/runbook.md` の冒頭の「人の仕事」の「計画を承認する」（フェーズ5 の受け入れ基準の候補が直す）
@@ -37,6 +39,8 @@ status: draft
 | T-04 | todo | 0 | - | ai-harness.md のスキルの節から /plan approve を外し、自動承認の説明にする | |
 | T-05 | todo | 0 | - | runbook の1節・2節を承認待ちの無い流れに直す | |
 | T-06 | todo | 0 | T-01,T-02,T-03 | vault-spec の10節と関連する記述から承認の裏付けの検査を外し、自動承認に合わせる | |
+| T-07 | todo | 0 | - | README.md の使い方の表と仕組みの図から /plan approve を外し、自動承認の流れにする | |
+| T-08 | todo | 0 | - | planner.md の「承認は人が行う」の記述を /plan による自動承認に合わせる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある
@@ -48,9 +52,8 @@ status: draft
 
 ## 次のフェーズの候補（票は起こさない）
 - D-015 フェーズ3（agent_write_guard を3つの判定に絞る。unblock の判定と `human_messages`・`is_unblock_command` もここで消える）
-- `README.md` の `/plan approve` の記述（31行目の表・62行目の図）と、`.claude/agents/planner.md` の「承認（`status` を `approved` にする）は人が行い」の記述（人への質問2）
 
-## 人への質問
-1. （確認）`.claude/hooks/agent_write_guard.py` の承認の判定（会話記録に `/plan approve` が無ければ計画票を approved にする Edit を拒否する）は、残すと `/plan` の自動承認が必ず拒否されるので、この計画で判定ごと削る（T-02）。agent_type が planner・creator の時の拒否も一緒に消える（planner は定義で approved にすることを禁じられており、D-015 フェーズ3 で planner の書き込み先の制限も消す）。unblock の判定はフェーズ3 に回して残す。この既定案でよいか
-2. （確認）`README.md`（`/plan approve` の表の行と図）と `.claude/agents/planner.md`（「承認は人が行い」）も古くなるが、ゴールに挙がっていないのでこの計画には含めず、次の計画の候補に書くだけにする（既定案）。この計画に含めるか
-3. （確認）T-03 の既定案：planner が「人への質問」を返した時は、`/plan` は質問を提示して draft のまま止まる。人が会話で答えたら、回答を計画票・タスク票に反映し、粒度の確認からやり直して自動承認と `/run` に進む（承認のコマンドは要らない）。質問が無ければ止まらない。この流れでよいか
+## 人への質問（回答済み）
+1. `agent_write_guard.py` の承認の判定を T-02 で丸ごと削る既定案 → はい（T-02 の決定済みに反映）
+2. `README.md`・`.claude/agents/planner.md` をこの計画に含めるか → 含める（T-07・T-08 を追加）
+3. T-03 の流れ → はい。質問があれば止まり、解消するまで進まない。無ければ進む（T-03 の決定済みに反映）

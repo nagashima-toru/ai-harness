@@ -1408,13 +1408,14 @@ echo "== vcs_finish.sh =="
 VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
 mkdir -p "$VF_BIN" "$VF_REPO"
 for vf_cmd in gh glab; do
-  printf '#!/usr/bin/env bash\nfor a in "$@"; do printf "%%s\\n" "$a"; done > "%s"\nexit 0\n' "$VF_REC" > "$VF_BIN/$vf_cmd"
+  printf '#!/usr/bin/env bash\nfor a in "$@"; do printf "%%s\\n" "$a"; done > "%s"\n[ "${1:-}" = api ] && echo https://github.com/o/r/pull/1\nexit 0\n' "$VF_REC" > "$VF_BIN/$vf_cmd"
   chmod +x "$VF_BIN/$vf_cmd"
 done
 (
   cd "$VF_REPO" && git init -q -b vfmain . \
     && git -c user.name=smoke -c user.email=smoke@example.com commit -q --allow-empty -m init \
-    && git config branch.vfmain.remote . && git config branch.vfmain.merge refs/heads/vfmain
+    && git config branch.vfmain.remote . && git config branch.vfmain.merge refs/heads/vfmain \
+    && git remote add origin https://github.com/o/r.git
 ) >/dev/null 2>&1
 expect_vf() { # $1=name $2=host $3=期待する記録（改行区切り） $4...=vcs_finish.sh への引数
   local name="$1" host="$2" want="$3"
@@ -1428,7 +1429,6 @@ expect_vf() { # $1=name $2=host $3=期待する記録（改行区切り） $4...
     echo "  NG   $name (want='$(echo "$want" | tr '\n' ' ')' got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
   fi
 }
-expect_vf "(vcs_finish) github・引数なし → gh pr create --fill" github $'pr\ncreate\n--fill'
 expect_vf "(vcs_finish) github・引数あり → そのまま（--fill なし）" github $'pr\ncreate\n--title\nT\n--body\nB' --title T --body B
 expect_vf "(vcs_finish) gitlab・引数なし → glab mr create --fill --yes" gitlab $'mr\ncreate\n--fill\n--yes'
 expect_vf "(vcs_finish) gitlab・引数あり → そのまま（--fill なし）" gitlab $'mr\ncreate\n--title\nT\n--body\nB' --title T --body B
@@ -1441,7 +1441,8 @@ mkdir -p "$VF_REPO2/vault/plans" "$VF_REPO2/vault/verdicts/P-20990101-vf"
     && printf -- '---\nid: P-20990101-vf\nstatus: approved\n---\n# ゴール\nvf goal line\n\n## タスク表\n| id | status | attempt | after | title | question |\n|---|---|---|---|---|---|\n| T-01 | done | 1 | - | first | |\n| T-02 | todo | 0 | T-01 | second | |\n' > vault/plans/P-20990101-vf.md \
     && printf '{"task": "P-20990101-vf/T-01", "attempt": 1, "result": "PASS"}\n' > vault/verdicts/P-20990101-vf/T-01.json \
     && git add -A && git -c user.name=smoke -c user.email=smoke@example.com commit -q -m "P-20990101-vf/T-01: done" \
-    && git config branch.work/p-20990101-vf.remote . && git config branch.work/p-20990101-vf.merge refs/heads/work/p-20990101-vf
+    && git config branch.work/p-20990101-vf.remote . && git config branch.work/p-20990101-vf.merge refs/heads/work/p-20990101-vf \
+    && git remote add origin https://github.com/o/r.git
 ) >/dev/null 2>&1
 vf_body_check() { # $1=name $2=host
   local name="$1" host="$2" ok=1 want5
@@ -1449,11 +1450,7 @@ vf_body_check() { # $1=name $2=host
   rm -f "$VF_REC"
   ( cd "$VF_REPO2" && PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST="$host" bash "$ROOT/scripts/vcs_finish.sh" "$@" ) >/dev/null 2>&1
   local got; got="$(cat "$VF_REC" 2>/dev/null || true)"
-  if [ "$host" = github ]; then
-    want5=$'pr\ncreate\n--title\nP-20990101-vf: vf goal line\n--body'
-  else
-    want5=$'mr\ncreate\n--title\nP-20990101-vf: vf goal line\n--description'
-  fi
+  want5=$'mr\ncreate\n--title\nP-20990101-vf: vf goal line\n--description'
   [ "$(printf '%s\n' "$got" | head -5)" = "$want5" ] || ok=0
   printf '%s\n' "$got" | grep -q '^| T-01 | .*PASS (attempt=1) |$' || ok=0
   printf '%s\n' "$got" | grep -q '^| T-02 | .*| - | - |$' || ok=0
@@ -1466,7 +1463,6 @@ vf_body_check() { # $1=name $2=host
     echo "  NG   $name (got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
   fi
 }
-vf_body_check "(vcs_finish-body) github・計画あり・引数なし → --title と --body にタスク履歴" github
 vf_body_check "(vcs_finish-body) gitlab・計画あり・引数なし → --title と --description にタスク履歴と --yes" gitlab
 rm -f "$VF_REC"
 ( cd "$VF_REPO2" && PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github bash "$ROOT/scripts/vcs_finish.sh" --title T --body B ) >/dev/null 2>&1
@@ -1491,12 +1487,8 @@ vf_notes_ok() { # $1=name $2=want
     echo "  NG   $1 (want='$(echo "$2" | tr '\n' ' ')' got='$(echo "$got" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
   fi
 }
-vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
-vf_notes_ok "(vf-notes-1) github・本文ファイルとタイトル → --title と --body-file" $'pr\ncreate\n--title\nNT\n--body-file\n'"$VF_NOTES"
 vf_notes_run "$VF_REPO" gitlab HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
 vf_notes_ok "(vf-notes-2) gitlab・本文ファイルとタイトル → --description に中身と --yes" $'mr\ncreate\n--title\nNT\n--description\nnotes line 1\nnotes line 2\n--yes'
-vf_notes_run "$VF_REPO2" github HARNESS_PR_BODY_FILE="$VF_NOTES"
-vf_notes_ok "(vf-notes-3) タイトル無し → 計画ID" $'pr\ncreate\n--title\nP-20990101-vf\n--body-file\n'"$VF_NOTES"
 rm -f "$VF_REC"
 ( cd "$VF_REPO2" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE=X bash "$ROOT/scripts/vcs_finish.sh" --title T --body B ) >/dev/null 2>&1
 vf_notes_ok "(vf-notes-4) 引数あり → 環境変数を無視してそのまま" $'pr\ncreate\n--title\nT\n--body\nB'
@@ -1506,6 +1498,62 @@ if [ "$vf_rc" = 2 ] && [ ! -e "$VF_REC" ]; then
 else
   echo "  NG   (vf-notes-5) rc=$vf_rc rec=$([ -e "$VF_REC" ] && echo yes || echo no)"; FAIL_N=$((FAIL_N+1))
 fi
+
+# GitHub の REST（gh api）の経路
+vf_rest_check() { # $1=name $2=ok(0/1) $3=got
+  if [ "$2" = 1 ]; then
+    echo "  ok   $1"; PASS_N=$((PASS_N+1))
+  else
+    echo "  NG   $1 (got='$(echo "$3" | tr '\n' ' ')')"; FAIL_N=$((FAIL_N+1))
+  fi
+}
+vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT"
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+vf_want=$'api\n-X\nPOST\nrepos/o/r/pulls\n-f\ntitle=NT\n-f\nhead=vfmain\n-f\nbase=main\n-F\nbody=@'"$VF_NOTES"$'\n--jq\n.html_url'
+[ "$vf_got" = "$vf_want" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(vf-rest-1) github・本文ファイルとタイトル → gh api の REST" "$vf_ok" "$vf_got"
+
+vf_notes_run "$VF_REPO2" github
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+vf_ok=1
+[ "$(printf '%s\n' "$vf_got" | head -11)" = $'api\n-X\nPOST\nrepos/o/r/pulls\n-f\ntitle=P-20990101-vf: vf goal line\n-f\nhead=work/p-20990101-vf\n-f\nbase=main\n-f' ] || vf_ok=0
+printf '%s\n' "$vf_got" | sed -n '12p' | grep -q '^body=' || vf_ok=0
+printf '%s\n' "$vf_got" | grep -q '^| T-01 | ' || vf_ok=0
+printf '%s\n' "$vf_got" | grep -q '^| T-02 | ' || vf_ok=0
+[ "$(printf '%s\n' "$vf_got" | tail -2)" = $'--jq\n.html_url' ] || vf_ok=0
+vf_rest_check "(vf-rest-2) github・計画あり・引数なし → gh api の REST でタスク履歴" "$vf_ok" "$vf_got"
+
+vf_notes_run "$VF_REPO" github
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+vf_want=$'api\n-X\nPOST\nrepos/o/r/pulls\n-f\ntitle=init\n-f\nhead=vfmain\n-f\nbase=main\n-f\nbody=\n--jq\n.html_url'
+[ "$vf_got" = "$vf_want" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(vf-rest-3) github・計画無し・引数なし → 直近コミットの件名と本文" "$vf_ok" "$vf_got"
+
+vf_ok=1; vf_got=""
+for vf_url in git@github.com:o2/r2.git https://github.com/o2/r2 ssh://git@github.com/o2/r2.git/; do
+  ( cd "$VF_REPO" && git remote set-url origin "$vf_url" ) >/dev/null 2>&1
+  vf_notes_run "$VF_REPO" github
+  vf_one="$(cat "$VF_REC" 2>/dev/null || true)"
+  vf_got="$vf_got $vf_one"
+  printf '%s\n' "$vf_one" | grep -qx 'repos/o2/r2/pulls' || vf_ok=0
+done
+( cd "$VF_REPO" && git remote set-url origin https://github.com/o/r.git ) >/dev/null 2>&1
+vf_rest_check "(vf-rest-4) origin の URL の形が違っても owner/repo を取れる" "$vf_ok" "$vf_got"
+
+VF_REPO3="$TMP/vf_repo3"; mkdir -p "$VF_REPO3"
+(
+  cd "$VF_REPO3" && git init -q -b vfmain . \
+    && git -c user.name=smoke -c user.email=smoke@example.com commit -q --allow-empty -m init \
+    && git config branch.vfmain.remote . && git config branch.vfmain.merge refs/heads/vfmain
+) >/dev/null 2>&1
+vf_notes_run "$VF_REPO3" github; vf_rc=$?
+[ "$vf_rc" = 2 ] && [ ! -e "$VF_REC" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(vf-rest-5) origin が無い → 終了コード2で gh を呼ばない" "$vf_ok" "rc=$vf_rc"
+
+rm -f "$VF_REC"
+vf_out="$( cd "$VF_REPO" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE=NT bash "$ROOT/scripts/vcs_finish.sh" 2>/dev/null )"
+[ "$vf_out" = "https://github.com/o/r/pull/1" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(vf-rest-6) 標準出力は PR の URL の1行だけ" "$vf_ok" "$vf_out"
 
 echo "== archive_plans.sh =="
 AR_OUT="$TMP/ar_out.txt"; AR_ERR="$TMP/ar_err.txt"

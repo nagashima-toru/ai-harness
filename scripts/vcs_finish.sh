@@ -3,12 +3,16 @@
 # `run`/`design` スキルの最終手順から呼ばれ、GitHub・GitLab・ホスティング無しの
 # 3経路に対応する。マージ（人が行う）は本スクリプトの責務外であり、実行しない。
 #
-# 使い方: bash scripts/vcs_finish.sh [引数...]（引数なしなら gh は --fill、glab は --fill --yes を既定で付ける）
-#   引数がある時は gh pr create / glab mr create にそのまま渡す（既定値は足さない）
-#   引数なしで、現在のブランチ（work/<計画IDの英小文字>）の計画票が見つかった時は、--fill の代わりに
+# 使い方: bash scripts/vcs_finish.sh [引数...]（引数なしなら GitHub は REST の gh api、glab は --fill --yes を既定で付ける）
+#   GitHub は GraphQL が使えない環境（Claude Code の Web セッション等）でも通るよう、PR を REST
+#   （gh api -X POST repos/<owner>/<repo>/pulls、base は main 固定、head は現在のブランチ）で作り、
+#   PR の URL を標準出力に出す。owner/repo は origin の URL から取り、取れなければ push の前に終了コード2で終わる
+#   引数がある時は gh pr create / glab mr create にそのまま渡す（既定値は足さない。REST には変換しない）
+#   引数なしで、現在のブランチ（work/<計画IDの英小文字>）の計画票が見つかった時は、
 #   タイトル「<計画ID>: <ゴールの1行目>」と scripts/pr_body.py の出力（タスク履歴表）を本文として渡す
+#   計画が見つからない時の GitHub は、直近コミットの件名と本文をタイトルと本文にする
 #   引数なしで HARNESS_PR_BODY_FILE（本文のファイル）が空でない値で設定されている時だけ、その内容を本文として渡す
-#   （gh は --body-file にパスをそのまま、glab は --description にファイルの中身を渡す）。引数がある時は見ない。
+#   （gh api は -F body=@パス でファイルを読ませ、glab は --description にファイルの中身を渡す）。引数がある時は見ない。
 #   読めないファイルなら git push の前に標準エラーへ出して終了コード2で終わる（none の経路では検査しない）
 #   HARNESS_PR_TITLE は上の経路でだけ使うタイトル。未設定か空なら計画ID、計画が見つからなければ現在のブランチ名
 #
@@ -109,6 +113,23 @@ case "$host" in
       exit 127
     fi
     check_notes
+    if [ "$#" -eq 0 ]; then
+      origin_url="$(git remote get-url origin 2>/dev/null || true)"
+      trimmed="${origin_url%/}"
+      trimmed="${trimmed%.git}"
+      gh_repo=""; gh_owner=""
+      case "$trimmed" in
+        *[/:]*)
+          gh_repo="${trimmed##*[/:]}"
+          gh_rest="${trimmed%[/:]*}"
+          gh_owner="${gh_rest##*[/:]}"
+          ;;
+      esac
+      if [ -z "$gh_owner" ] || [ -z "$gh_repo" ]; then
+        echo "vcs_finish.sh: origin の URL から owner/repo を取れません: $origin_url" >&2
+        exit 2
+      fi
+    fi
     if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
       current_branch="$(git rev-parse --abbrev-ref HEAD)"
       git push -u origin "$current_branch"
@@ -117,13 +138,15 @@ case "$host" in
         exit "$push_status"
       fi
     fi
-    if [ "$use_notes" = 1 ]; then
-      gh pr create --title "$(notes_title)" --body-file "$HARNESS_PR_BODY_FILE"
-    elif [ "$#" -eq 0 ]; then
-      if find_plan_body; then
-        gh pr create --title "$pr_title" --body "$pr_body"
+    if [ "$#" -eq 0 ]; then
+      gh_head="$(git rev-parse --abbrev-ref HEAD)"
+      gh_api=(gh api -X POST "repos/$gh_owner/$gh_repo/pulls")
+      if [ "$use_notes" = 1 ]; then
+        "${gh_api[@]}" -f "title=$(notes_title)" -f "head=$gh_head" -f base=main -F "body=@$HARNESS_PR_BODY_FILE" --jq .html_url
+      elif find_plan_body; then
+        "${gh_api[@]}" -f "title=$pr_title" -f "head=$gh_head" -f base=main -f "body=$pr_body" --jq .html_url
       else
-        gh pr create --fill
+        "${gh_api[@]}" -f "title=$(git log -1 --format=%s)" -f "head=$gh_head" -f base=main -f "body=$(git log -1 --format=%b)" --jq .html_url
       fi
     else
       gh pr create "$@"

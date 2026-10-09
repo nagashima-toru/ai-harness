@@ -57,45 +57,36 @@
 
 代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で log に上の形式の行を追記してコミットする。
 
-## 5. 月次で done を archive に移す
-計画単位でまとめて移す。月次で人が `scripts/archive_plans.sh` を実行する。
+## 5. 一括削除の手順
+`main` にマージ済みの計画一式（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）と `vault/archive/` を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。新しい計画は run の手順7で PR の前に除去されるので、この手順は `main` に残った分を片づける時に使う。
 
-対象は、計画票が `status: done`・タスク表が全行 `done`・PR がマージ済み（`main` に `status: done` の計画票がある）の計画のうち、新しい順に `--keep`（既定5件）を残した、それより古い全部。「新しい」は log の最初の日時行の日時で決め、同じなら計画 ID の文字列順とする。現在のブランチの計画は常に残し、5件に数えない。
+対象の条件（すべて満たす計画）：
 
-移す前に `bash scripts/archive_plans.sh --list` で、移す計画 ID の一覧を確かめられる。
+1. 計画 ID が `P-YYYYMMDD-<slug>` の形
+2. 現在のブランチの計画でない
+3. 計画票が `status: done`
+4. タスク表が全行 `done`
+5. `main` の版の計画票も `status: done`
 
-配置は次の4種別（`<年-月>` は計画 ID の日付部分から決まり、移した日ではない）。
-
-- `vault/archive/<年-月>/plans/<計画ID>.md`
-- `vault/archive/<年-月>/tasks/<計画ID>/`
-- `vault/archive/<年-月>/verdicts/<計画ID>/`
-- `vault/archive/<年-月>/log/<計画ID>.md`
-
-計画 ID を渡さなければ移す対象の全部を、渡せばその ID だけを移す。
-
-手順は PR ブランチ（または人が切った作業ブランチ）の上で行い、`main` へは PR でマージする。
+`--keep` は無く、マージ済みは全部消す。
 
 ```bash
-bash scripts/archive_plans.sh --dry-run <計画ID> ...      # または --from-file <path>
-bash scripts/archive_plans.sh --apply <計画ID> ...
-git commit
+git switch -c purge/merged-<YYYYMMDD>
+bash scripts/purge_plan.sh --merged --list
+bash scripts/purge_plan.sh --merged --report
+bash scripts/purge_plan.sh --merged --apply
+git commit -m "一括削除: main にマージ済みの計画一式と vault/archive/ を削除"
 ```
 
-`--dry-run`（または `--from-file <path>`）で移動内容を確かめ、`--apply` で移し、人が `git commit` する。
+PR を作り、人がマージする。
 
-エージェント（creator を含む）は --apply を実行しない。creator の `vault/plans/`・`vault/log/` の変更は差分ゲート（`scripts/diff_gate.py`）が差し戻し、done のタスク票・verdict の Write・Edit はフック（`agent_write_guard.py`）が拒否する。スクリプト経由の移動はそれらを通らない経路になるので、実行は人が行う。
+`--report` は `<計画ID>/<id>: blocked <補足>`（log の `→blocked` の行の補足＝そのとき聞いた質問）と `<計画ID>/<id>: reasons <理由>`（verdict の `reasons`）を出す。`--report` の出力を見て、未解決のもの・改善提案になるものを人が Issue 化してから `--apply` する。
 
-安全装置：done、全行 done、`main` で done、log に日時行がある、現在のブランチの計画でない、新しい `--keep` 件に入らない、未コミットの変更が無い、移動先が無い。このどれか1件でも外れたら何も移さない。候補が `--keep` 件以下の時も何も移さない。
+`--apply` は対象の4種に加えて `vault/archive/` も丸ごと消える。コミットはしない。対象パスに未コミット・未追跡の変更があれば何も消さずに終了コード1になる。
 
-集計：`model_stats.py` の既定は `vault/log/*.md` だけである。archive 済みの log を含めるには、次のように明示して渡す。
+実行者の制限：--merged --apply は人だけが実行する。エージェントは --list・--report だけを使う。他の計画の done のタスク票・verdict を消すのは、フック（`agent_write_guard.py`）と差分ゲート（`scripts/diff_gate.py`）を通らない経路になるため。
 
-```bash
-python3 scripts/model_stats.py vault/archive/*/log/*.md
-```
-
-移した後のファイルは `agent_write_guard.py` の done 判定の対象外になる（フックは `vault/tasks/`・`vault/verdicts/` だけを見る）。`vault/archive/2026-09/` にある旧形式（`todo.md`・`tasks/T-0024.md` など）はそのままにする。
-
-計画 ID は日付＋スラッグなので再利用の心配が無く、採番の調整は不要。
+対象外：計画 ID が `P-YYYYMMDD-<slug>` の形でない旧形式の計画（`P-019` など）と、旧形式のタスク票（`vault/tasks/T-0036.md` など）は対象にならない。消す時は人が `git rm` する。`vault/harness-improvements/` も対象外。
 
 ## 6. ルールを足す
 1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く
@@ -134,7 +125,6 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 
    - `model_stats.py` の出力で `haiku` と `sonnet` の行を見比べる（1回目 PASS 率・平均 attempt・blocked 率・指摘あり率）。
    - `usage_stats.py` は2つの計画の creator の行を見比べる（calls＝呼び出し回数、tokens_total／tokens_avg＝トークン数、duration_avg_s＝所要時間）。
-   - archive 済みの計画は 5 節と同じく、log や会話記録を引数で明示する（例：`python3 scripts/model_stats.py vault/archive/*/log/*.md`）。
 5. 注意：`usage_stats.py` の model 列は完全なモデル ID（`resolvedModel` をそのまま出す）で、log や `model_stats.py` の alias（`haiku`・`sonnet`）とは表記が違う。行を突き合わせる時は読み替える。
 6. 元に戻すには、環境変数を外して起動し直す（`HARNESS_CREATOR_MODEL` を付けなければ、これまでどおり sonnet）。
 

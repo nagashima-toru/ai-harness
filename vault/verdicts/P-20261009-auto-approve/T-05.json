@@ -1,0 +1,15 @@
+{
+  "task": "P-20261009-auto-approve/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 22:48",
+  "criteria": [
+    {"text": "`/plan approve` が残っていない。確認：`grep -c \"plan approve\" docs/runbook.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c \"plan approve\" docs/runbook.md`(worktree内) / 出力: 0"},
+    {"text": "2節の見出しが変わり、見出しの数は変わらない。確認：`grep -c \"^## 2\\. 計画は自動で承認される$\" docs/runbook.md` の出力が `1`、`grep -c \"^## \" docs/runbook.md` の出力が `10`", "ok": true, "note": "実行コマンド: 見出し完全一致の grep -c / 出力: 1、`grep -c \"^## \"` / 出力: 10"},
+    {"text": "1節に自動承認と `/run` の続行が書かれている。確認：`grep -c -F '粒度の確認を通ると計画票の `status` を `approved` にしてコミットし、続けて `/run` を実行する' docs/runbook.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c -F / 出力: 1"},
+    {"text": "2節に計画の中身を PR で確認することが書かれている。確認：`grep -c -F '計画の中身は、最後にできる PR で人が確認する' docs/runbook.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c -F / 出力: 1"},
+    {"text": "`/run` の前にセッションを sonnet に戻す指示が無い。確認：`grep -c \"sonnet のセッションに戻す\" docs/runbook.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c \"sonnet のセッションに戻す\" docs/runbook.md` / 出力: 0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（参照切れの検査を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`(worktree内) / 出力: smoke: pass=664 fail=0"}
+  ],
+  "reasons": []
+}

@@ -1,0 +1,15 @@
+{
+  "task": "P-20261009-worktree-delegate-scope/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 11:45",
+  "criteria": [
+    {"text": "12節に小節 `### worktree への委譲の範囲` があり、12節の見出しと13節の見出しの間にある：`grep -nE '^## 1[23]\\. |^### worktree への委譲の範囲' docs/vault-spec.md` の出力が3行で、上から `## 12.`・`### worktree への委譲の範囲`・`## 13.` の順", "ok": true, "note": "実行コマンド: `grep -nE '^## 1[23]\\. |^### worktree への委譲の範囲' docs/vault-spec.md` / 出力: 298:## 12. ... / 347:### worktree への委譲の範囲 / 385:## 13. ...（3行、順序一致）"},
+    {"text": "委譲の条件が書かれている：`grep -cF '書き込み対象がすべて委譲先の worktree の中にある時だけ委譲する' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -cF / 出力: 1"},
+    {"text": "読み取りだけの呼び出しは委譲することが書かれている：`grep -cF '書き込み対象が無い呼び出し（読み取りだけ）は今どおり委譲する' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -cF / 出力: 1"},
+    {"text": "メインリポジトリのルート基準の `vault/rules/` 拒否が書かれている：`grep -cF '絶対パスの書き込み対象はメインリポジトリのルート基準でも見る' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -cF / 出力: 1"},
+    {"text": "`plan_guard.py`・`stop_gate.py` の委譲を変えていないことが書かれている：`grep -cF '`plan_guard.py`・`stop_gate.py` の委譲は今どおり（書き込み対象を見ない）' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 grep -cF / 出力: 1"},
+    {"text": "既存の smoke が全件通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree で実行）/ 出力: smoke: pass=706 fail=0。変更ファイル検査: `git diff --name-only 8bf4579..HEAD` は docs/vault-spec.md とタスク票 T-02.md（進捗の更新）のみで、成果物外の追加ファイルなし"}
+  ],
+  "reasons": []
+}

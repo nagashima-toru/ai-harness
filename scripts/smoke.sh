@@ -1425,10 +1425,17 @@ expect_eq "(al-5) 型不正の note 行が1行" "1" "$(echo "$out" | grep -c '^n
 
 rm -rf "$STMP"
 
-for ent in 'Bash(gh pr merge*)' 'Bash(glab mr merge*)' 'Bash(claude *)'; do
+for ent in 'Bash(gh pr merge*)' 'Bash(glab mr merge*)'; do
   expect_eq "(approve-settings) deny に $ent がある" "true" \
     "$(jq --arg e "$ent" '.permissions.deny | index($e) != null' "$ROOT/.claude/settings.json")"
 done
+
+for ent in 'Bash(git reset --hard*)' 'Bash(git clean *)' 'Bash(git branch -D *)' 'Bash(curl *)' 'Bash(wget *)' 'Bash(claude *)'; do
+  expect_eq "(deny-1) deny に $ent が無い" "false" \
+    "$(jq --arg e "$ent" '.permissions.deny | index($e) != null' "$ROOT/.claude/settings.json")"
+done
+expect_eq "(deny-2) ハーネス本体の settings.json に sandbox が無い" "false" \
+  "$(jq 'has("sandbox")' "$ROOT/.claude/settings.json")"
 
 echo "== install.sh の settings.json 扱い =="
 WTMP="$(smoke_tmpdir)" || abort_tmp

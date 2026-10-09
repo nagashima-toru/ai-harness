@@ -19,7 +19,7 @@
 - タスク票の「決定済み」にある回答を優先する。勝手に決めない、勝手に広げない
 
 ## 役割
-- オーケストレーター（メインセッション）：`/run` でタスクを取り、`creator` を worktree で呼び、`verifier` で検証し、状態の変更と log の追記を `scripts/transition.py` で行う。全タスクが done になったら PR を作る。成果物は自分で作らない
+- オーケストレーター（メインセッション）：`/run` でタスクを取り、`creator` を worktree で呼び、`verifier` で検証し、状態の変更と log の追記を `scripts/transition.py` で行う。全タスクが done になったら PR を作る。成果物は自分で作らない（例外：全タスクが done になった後の取り出し（docs への追記・Issue 化）と、`scripts/purge_plan.sh` による計画一式の除去は行う）
 - `creator`：着手時に `bash scripts/rules.sh creator` の列挙を読み、worktree で成果物を作り、タスク票の「進捗」に追記する。計画票のタスク表と `vault/log/` には書かない
 - `verifier` は `vault/verdicts/`、`planner` は `vault/plans/`・`vault/tasks/` にだけ書く（詳細は `.claude/agents/` の各定義）
 

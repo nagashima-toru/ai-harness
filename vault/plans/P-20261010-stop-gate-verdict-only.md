@@ -20,7 +20,7 @@ stop_gate を verdict の検査だけにする（D-015 フェーズ4）
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | stop_gate.py から未コミットの変更でのブロックを削り smoke のケースを直す | |
+| T-01 | done | 1 | - | stop_gate.py から未コミットの変更でのブロックを削り smoke のケースを直す | |
 | T-02 | todo | 0 | T-01 | docs/vault-spec.md 9節の判定順と判定表から未コミットの変更を外す | |
 
 ## 計画の受け入れ基準

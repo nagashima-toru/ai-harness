@@ -34,7 +34,7 @@ model: sonnet
 - ブランチ：`/plan` が計画ブランチ（`work/<計画IDの英小文字>`）を切り、run が `isolation: "worktree"` で creator 用の worktree を用意する。1ブランチ=1計画。ブランチを切らない・切り替えない
 - `main` に直接コミットしない（`agent_write_guard.py` がフックで強制する）
 - コミット：creator がコミットするのは、受け入れ基準にコミットが書かれている時だけ。それ以外の未コミット分は worktree に残す。creator の完了直後に、`transition.py` が収集のコミットと差分チェックを行い、計画ブランチへ取り込む。差分チェックで「成果物」に宣言されていないファイルの変更があると差し戻される（`scripts/diff_gate.py`）
-- 破棄：作業ツリーの変更の破棄は `git restore` だけを使う。`git clean`・`git reset --hard` は使わない（`.claude/settings.json` の `permissions.deny` で拒否済み）
+- 破棄：作業ツリーの変更の破棄は `git restore` だけを使う。`git clean`・`git reset --hard` は使わない（worktree の中の自分の作業まで消すため）
 - PR：`gh pr create` も `gh pr merge` も実行しない。PR の作成（`scripts/vcs_finish.sh`）、計画ブランチへのマージ、マージのコンフリクトでの `blocked`、不採用の worktree の破棄（`scripts/discard_worktree.sh`）は creator は行わない（オーケストレーターと `transition.py` が行う）。マージは人が行う
 - 例外時：受け入れ基準にあるコミットが失敗した場合や、コンフリクトなど判断が要る時は、自分で解決せず、完了報告を `blocked: <質問文>`（状況としてコマンドとエラーの要点を含める）の形にして返す
 

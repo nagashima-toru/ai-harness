@@ -33,9 +33,9 @@
   - タイムアウトで止めた後は、次回の `/run` が `.claude/skills/run/SKILL.md` 手順2.2（再開手順）で中断した地点から続きを再開する。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で blocked になって止まる
   - 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）
   - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
-  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にしてコミットしてから `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh api`（REST）で、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
+  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にしてコミットし、計画の記録を PR 本文に写し、残すべき情報を docs への追記か Issue 化で取り出し、`scripts/purge_plan.sh` で計画一式を除去してコミットしてから `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh api`（REST）で、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
   - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
-  - PR のマージ方式：スカッシュマージを推奨する。main の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。
+  - PR のマージ方式：スカッシュマージを推奨する。main の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。PR 本文には「タスク履歴」表に加えて計画の記録（ゴール・タスク表・log の全行）と verifier の指摘・取り出した情報が載り、計画一式は `main` に入らないので、マージ後に計画を調べる時は PR を見る。
     - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= main の `git log`）にも残る（設定は人が行う）
     - 通常のマージ（merge commit）も可。main にタスクごとのコミットが残る。ホスティング無しの `git merge --no-ff` の案内は今のまま
   - run の振り返り（手順8）で issue の起票に失敗すると、`vault/harness-improvements/<計画ID>.md` に提案が残る。提案に対応する計画を立てる時は、その計画の中でそのファイルを削除する（対応が済んだ提案ファイルを残さない）

@@ -1418,6 +1418,116 @@ expect_eq "(vn-5) 読み込み先のディレクトリが無ければ終了コ�
 expect_eq "(vn-6) 引数なしは終了コード2" "2" "$vn_rc"
 rm -rf "$VN_DIR"
 
+echo "== purge_plan.sh =="
+PP_SH="$ROOT/scripts/purge_plan.sh"
+PP_ID="P-20990101-pp"
+PP_OUT="$TMP/pp_out.txt"; PP_ERR="$TMP/pp_err.txt"
+pp_git() { git -c user.name=smoke -c user.email=smoke@example.com "$@"; }
+pp_make() { # $1=リポジトリ名 $2=frontmatter の status $3...=タスク表の status（複数）。ブランチは work/p-20990101-pp
+  local d="$TMP/$1" st="$2" i=0 s
+  shift 2
+  rm -rf "$d"
+  mkdir -p "$d/vault/plans" "$d/vault/tasks/$PP_ID" "$d/vault/verdicts/$PP_ID" "$d/vault/log"
+  {
+    printf -- '---\nid: %s\nstatus: %s\n---\n# ゴール\nx\n\n## タスク表\n| id | status | title |\n|----|--------|-------|\n' "$PP_ID" "$st"
+    for s in "$@"; do i=$((i+1)); printf '| T-0%d | %s | t |\n' "$i" "$s"; done
+  } > "$d/vault/plans/$PP_ID.md"
+  printf '# T-01\n' > "$d/vault/tasks/$PP_ID/T-01.md"
+  printf '{"result":"PASS"}\n' > "$d/vault/verdicts/$PP_ID/T-01.json"
+  printf -- '- 2099-01-01 00:00 T-01 doing→review\n' > "$d/vault/log/$PP_ID.md"
+  ( cd "$d" && git init -q -b main . && git checkout -q -b work/p-20990101-pp && git add -A && pp_git commit -q -m c ) >/dev/null 2>&1
+}
+pp_run() { # $1=リポジトリ名 $2...=引数。PP_RC に終了コード
+  local r="$1"
+  shift
+  ( cd "$TMP/$r" && bash "$PP_SH" "$@" ) > "$PP_OUT" 2> "$PP_ERR"
+  PP_RC=$?
+}
+pp_status() { ( cd "$TMP/$1" && git status --porcelain ); }
+pp_four=$'vault/plans/P-20990101-pp.md\nvault/tasks/P-20990101-pp/\nvault/verdicts/P-20990101-pp/\nvault/log/P-20990101-pp.md'
+
+pp_make pp1 done done done
+pp_run pp1 --dry-run "$PP_ID"
+expect_eq "(pp-1) --dry-run は4行を出し、何も変えない" "0|$pp_four|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pp1)"
+
+pp_make pp2 done done done
+pp2_head="$(cd "$TMP/pp2" && git rev-parse HEAD)"
+pp_run pp2 "$PP_ID"
+pp2_ok=1
+for p in vault/plans/$PP_ID.md vault/tasks/$PP_ID vault/verdicts/$PP_ID vault/log/$PP_ID.md; do
+  [ -e "$TMP/pp2/$p" ] && pp2_ok=0
+done
+pp2_bad="$(pp_status pp2 | grep -vc '^D ')"
+expect_eq "(pp-2) 実行は4つを git rm し、コミットしない" "0|1|0|$pp_four|$pp2_head" "$PP_RC|$pp2_ok|$pp2_bad|$(cat "$PP_OUT")|$(cd "$TMP/pp2" && git rev-parse HEAD)"
+
+pp_make pp3 done done done
+( cd "$TMP/pp3" && git checkout -q -b other ) >/dev/null 2>&1
+pp_run pp3 "$PP_ID"
+expect_eq "(pp-3) ブランチが違えば終了コード1で何も変えない" "1||" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pp3)"
+
+pp_make pp4 approved done done
+pp_run pp4 "$PP_ID"
+expect_eq "(pp-4) status が approved なら終了コード1で何も変えない" "1||" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pp4)"
+
+pp_make pp5a done done doing
+pp_run pp5a "$PP_ID"; pp5a_rc=$PP_RC
+pp5a_st="$(pp_status pp5a)"
+pp_make pp5b done
+sed -i '/^| T-/d' "$TMP/pp5b/vault/plans/$PP_ID.md"
+( cd "$TMP/pp5b" && git add -A && pp_git commit -q -m c ) >/dev/null 2>&1
+pp_run pp5b "$PP_ID"
+expect_eq "(pp-5) done でない行がある時もデータ行0行の時も終了コード1で何も変えない" "1||1||" "$pp5a_rc|$pp5a_st|$PP_RC|$(cat "$PP_OUT")|$(pp_status pp5b)"
+
+pp_make pp6a done done done
+printf -- '- 2099-01-02 00:00 追記\n' >> "$TMP/pp6a/vault/log/$PP_ID.md"
+pp_run pp6a "$PP_ID"; pp6a_rc=$PP_RC
+pp6a_ok=0
+[ -e "$TMP/pp6a/vault/plans/$PP_ID.md" ] && [ -e "$TMP/pp6a/vault/tasks/$PP_ID/T-01.md" ] && [ -e "$TMP/pp6a/vault/verdicts/$PP_ID/T-01.json" ] && [ -e "$TMP/pp6a/vault/log/$PP_ID.md" ] && pp6a_ok=1
+pp_make pp6b done done done
+printf 'new\n' > "$TMP/pp6b/vault/tasks/$PP_ID/T-02.md"
+pp_run pp6b "$PP_ID"
+pp6b_ok=0
+[ -e "$TMP/pp6b/vault/plans/$PP_ID.md" ] && [ -e "$TMP/pp6b/vault/tasks/$PP_ID/T-01.md" ] && [ -e "$TMP/pp6b/vault/tasks/$PP_ID/T-02.md" ] && [ -e "$TMP/pp6b/vault/verdicts/$PP_ID/T-01.json" ] && [ -e "$TMP/pp6b/vault/log/$PP_ID.md" ] && pp6b_ok=1
+expect_eq "(pp-6) 未コミットの変更も未追跡ファイルも終了コード1で何も消さない" "1:1:1:1" "$pp6a_rc:$pp6a_ok:$PP_RC:$pp6b_ok"
+
+pp_make pp7 done done done
+( cd "$TMP/pp7" && git rm -r -q -- "vault/verdicts/$PP_ID" && pp_git commit -q -m c ) >/dev/null 2>&1
+pp_run pp7 --dry-run "$PP_ID"
+expect_eq "(pp-7) verdicts が無ければ除いた3行を出す" $'0|vault/plans/P-20990101-pp.md\nvault/tasks/P-20990101-pp/\nvault/log/P-20990101-pp.md' "$PP_RC|$(cat "$PP_OUT")"
+
+pp_make pp8 done done done
+mkdir -p "$TMP/pp8_nogit"
+pp_run pp8; pp8_a=$PP_RC
+pp_run pp8 --bogus "$PP_ID"; pp8_b=$PP_RC
+pp_run pp8 P-1; pp8_c=$PP_RC
+( cd "$TMP/pp8_nogit" && bash "$PP_SH" "$PP_ID" ) >/dev/null 2>&1; pp8_d=$?
+expect_eq "(pp-8) 引数なし・未知のオプション・形式違いの ID・git の外はどれも終了コード2" "2:2:2:2" "$pp8_a:$pp8_b:$pp8_c:$pp8_d"
+
+echo "== plan_record.py =="
+PR_PY="$ROOT/scripts/plan_record.py"
+PR_DIR="$(smoke_tmpdir)" || abort_tmp
+PR_ID="P-20990101-pr"
+mkdir -p "$PR_DIR/vault/plans" "$PR_DIR/vault/log" "$PR_DIR/nolog/vault/plans"
+printf '%s\n' '---' "id: $PR_ID" 'status: approved' '---' '# ゴール' 'ゴール1行目' 'ゴール2行目' '' '## 分割方針' 'ブンカツホウシンの本文' '' '## タスク表' '| id | status | title |' '|----|--------|-------|' '| T-01 | todo | a |' '| T-02 | todo | b |' '' '## メモ' 'x' > "$PR_DIR/vault/plans/$PR_ID.md"
+printf '%s\n' '- 2099-01-01 00:00 T-01 todo→doing attempt=1' '- 2099-01-01 00:01 T-01 worktree path=/tmp/wt' '- 2099-01-01 00:02 T-01 doing→review attempt=1' > "$PR_DIR/vault/log/$PR_ID.md"
+cp "$PR_DIR/vault/plans/$PR_ID.md" "$PR_DIR/nolog/vault/plans/$PR_ID.md"
+pr_snap() { ( cd "$PR_DIR" && find . -type f | sort | while read -r f; do printf '%s ' "$f"; cksum < "$f"; done ); }
+pr_before="$(pr_snap)"
+pr_want="$(printf '%s\n' '## 計画の記録' '' '### ゴール' 'ゴール1行目' 'ゴール2行目' '' '### タスク表' '| id | status | title |' '|----|--------|-------|' '| T-01 | todo | a |' '| T-02 | todo | b |' '' '### log' '<details>' '<summary>log の全行</summary>' '' '- 2099-01-01 00:00 T-01 todo→doing attempt=1' '- 2099-01-01 00:01 T-01 worktree path=/tmp/wt' '- 2099-01-01 00:02 T-01 doing→review attempt=1' '' '</details>')"
+pr_full="$(cd "$PR_DIR" && python3 "$PR_PY" "$PR_ID" 2>/dev/null)"
+expect_eq "(prec-1) 出力全体が期待どおりで、ファイルは増えも変わりもしない" "$pr_want
+$([ "$pr_before" = "$(pr_snap)" ] && echo same)" "$pr_full
+$([ "$pr_before" = "$(pr_snap)" ] && echo same)"
+expect_eq "(prec-2) ゴール節に 分割方針 以降の本文が混ざらない" "0" "$(printf '%s\n' "$pr_full" | grep -c 'ブンカツホウシン')"
+expect_eq "(prec-3) log の遷移行以外（worktree path=...）もそのまま出る" "1" "$(printf '%s\n' "$pr_full" | grep -c '^- 2099-01-01 00:01 T-01 worktree path=/tmp/wt$')"
+pr_out="$(cd "$PR_DIR" && python3 "$PR_PY" P-20990101-none 2>"$TMP/pr_err.txt")"; pr_rc=$?
+expect_eq "(prec-4) 計画票が無ければ終了コード1・標準出力が空・標準エラーに見つかりません" "1::yes" "$pr_rc:$pr_out:$(grep -q 'plan_record.py: 見つかりません: ' "$TMP/pr_err.txt" && echo yes)"
+pr_out="$(cd "$PR_DIR/nolog" && python3 "$PR_PY" "$PR_ID" 2>/dev/null)"; pr_rc=$?
+expect_eq "(prec-5) log が無ければ終了コード1・標準出力が空" "1:" "$pr_rc:$pr_out"
+( cd "$PR_DIR" && python3 "$PR_PY" >/dev/null 2>&1 ); pr_rc=$?
+expect_eq "(prec-6) 引数なしは終了コード2" "2" "$pr_rc"
+rm -rf "$PR_DIR"
+
 echo "== vcs_finish.sh =="
 VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
 mkdir -p "$VF_BIN" "$VF_REPO"
@@ -2390,6 +2500,19 @@ if ! grep -qF 'gh issue create' "$RUN_SKILL" && grep -qF 'gh api repos/{owner}/{
 expect_eq "(run-skill-2) run の issue 起票が REST（gh issue create が無い）" ok "$rs2"
 if grep -qF '`gh api` の PR 作成に渡すはずだった' "$RUN_SKILL" && grep -qF '`gh api` の PR 作成に渡すはずだった' "$DESIGN_SKILL"; then rs3=ok; else rs3=NG; fi
 expect_eq "(run-skill-3) run・design の MCP 代替が gh api の PR 作成を引き継ぐ" ok "$rs3"
+rs_ord() { # 手順7の中で、引数の固定文字列の最初の出現行が全部あり、この順に増える時だけ ok
+  local prev=0 n s
+  for s in "$@"; do
+    n="$(printf '%s\n' "$rs_step7" | grep -nF -m1 -e "$s" | cut -d: -f1)"
+    if [ -z "$n" ] || [ "$n" -le "$prev" ]; then echo NG; return; fi
+    prev="$n"
+  done
+  echo ok
+}
+rs4="$(rs_ord 'git add vault/plans/<計画ID>.md' 'python3 scripts/plan_record.py <計画ID>' 'bash scripts/purge_plan.sh <計画ID>' 'git commit -m "<計画ID>: 計画一式を除去"' 'bash scripts/vcs_finish.sh')"
+expect_eq "(run-skill-4) run 手順7で計画票のコミット・記録・除去・除去のコミット・PR 作成の順に書かれている" ok "$rs4"
+rs5="$(rs_ord '## verifier の指摘' '## 計画の記録' '## 取り出した情報')"
+expect_eq "(run-skill-5) run 手順7の本文ファイルの節が D-016 の順に書かれている" ok "$rs5"
 
 if ! grep -qF '起点コミット' "$ROOT/.claude/agents/creator.md" "$ROOT/.claude/agents/verifier.md" "$ROOT/.claude/agents/planner.md"; then ag1=ok; else ag1=NG; fi
 expect_eq "(agents-1) creator・verifier・planner の定義に「起点コミット」の語が無い" ok "$ag1"

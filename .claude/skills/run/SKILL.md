@@ -134,16 +134,25 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 - 全タスクが `done` になったら、次の順で PR を作る
   1. 計画票 frontmatter の `status` を `done` にする
   2. `git add vault/plans/<計画ID>.md` を実行し、続けて `git commit -m "<計画ID>: approved→done" -- vault/plans/<計画ID>.md` を実行する（それぞれ1回の Bash で。ほかの変更を混ぜない）。`scripts/vcs_finish.sh` は計画票の変更をコミットしないので、ここでコミットしないと未コミットのまま push される
-  3. `python3 scripts/pr_body.py <計画ID>` と `python3 scripts/verdict_notes.py <計画ID>` を実行し、出力を読む
-  4. 本文ファイルを Write ツールで一時ファイル（例：`/tmp/<計画ID>-pr-body.md`。手順3の質問ファイルと同じ書き方）に書く。中身は次の3つで、出力は言い換えずにそのまま写す：計画 ID の1行、タスク一覧（`python3 scripts/pr_body.py <計画ID>` の出力。計画 ID・id・title・commit・verdict の表）、`## verifier の指摘` の見出しと `verdict_notes.py` の出力。`verdict_notes.py` が終了コード0以外で終わった時も PR は作り、この節に標準エラーの内容を書く（指摘の一覧が無いことで PR 作成を止めない）
-  5. `env HARNESS_PR_BODY_FILE=<本文ファイル> HARNESS_PR_TITLE="<計画ID>: <ゴールの1行目>" bash scripts/vcs_finish.sh` を実行する（`env` で始めるのは許可リストの `Bash(env *)` で通すため）。GitHub は `gh api`（REST）で PR を作り、作った PR の URL が標準出力に出る。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名とマージの案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
-  6. 完了報告に `verdict_notes.py` の出力をそのまま含める（「指摘なし」の時も1行で含める）
+  3. `python3 scripts/pr_body.py <計画ID>`・`python3 scripts/verdict_notes.py <計画ID>`・`python3 scripts/plan_record.py <計画ID>` を実行し、出力を読む。`plan_record.py` が終了コード0以外なら除去に進まず、標準エラーの内容を添えて人に報告して止まる
+  4. 取り出し：タスク票の「決定済み」の判断・`/plan unblock` の回答・blocked の question のうち、恒久的な仕様や判断でまだ docs に無いものは、`docs/vault-spec.md` などの該当文書か `docs/decisions.md` に追記する（Edit。手順6の除去のコミットに含める）。対応しなかった verifier の指摘・残課題は、手順8と同じ `gh api repos/{owner}/{repo}/issues -X POST -f title=<タイトル> -F body=@<本文ファイル> --jq .html_url` で Issue にする。起票に失敗したものは本文の取り出した情報の節に「Issue にできなかったもの」として内容を書く。仕様の変更そのものは各タスクで docs に反映済みなので二重に書かない。取り出すものが無ければ何もしない
+  5. 本文ファイルを Write ツールで一時ファイル（例：`/tmp/<計画ID>-pr-body.md`。手順3の質問ファイルと同じ書き方）に書く。中身は次の順。出力は言い換えずにそのまま写す
+     - 計画 ID の1行、続けて `pr_body.py` の出力
+     - `## verifier の指摘` の見出しと `verdict_notes.py` の出力。`verdict_notes.py` が終了コード0以外で終わった時も PR は作り、この節に標準エラーの内容を書く（指摘の一覧が無いことで PR 作成を止めない）
+     - `plan_record.py` の出力（`## 計画の記録` から始まる）
+     - `## 取り出した情報` の見出しと、docs に追記した箇所（ファイルと節）と作った Issue の URL の一覧（無ければ「なし」）
+  6. 計画一式を除去してコミットする
+     - `bash scripts/purge_plan.sh <計画ID>` を実行する。終了コード0以外なら PR を作らず、標準エラーの内容を添えて人に報告して止まる
+     - 取り出しで docs を編集した時は、そのファイルを名前で `git add` する（1回の Bash。`git add -A`・`git add .` は使わない）
+     - `git commit -m "<計画ID>: 計画一式を除去"` を実行する（パスを指定しない。`purge_plan.sh` が stage した削除と、名前で add した docs だけをコミットする）
+  7. `env HARNESS_PR_BODY_FILE=<本文ファイル> HARNESS_PR_TITLE="<計画ID>: <ゴールの1行目>" bash scripts/vcs_finish.sh` を実行する（`env` で始めるのは許可リストの `Bash(env *)` で通すため）。ゴールの1行目は `plan_record.py` の出力の `### ゴール` の最初の行から取る（除去の後は計画票が無いため）。GitHub は `gh api`（REST）で PR を作り、作った PR の URL が標準出力に出る。終了コード0で完了すれば（GitHub/GitLab で PR/MR が作られた場合も、ホスティング無し（`none`）で案内メッセージのみが出力された場合も）この手順は完了として扱う。`none` の場合、標準出力に出る現在のブランチ名とマージの案内をそのまま人への完了報告に含める（`gh pr merge`/`glab mr merge` は実行しない。マージは人が行う）。draft PR にするかは規定しない
+  8. 完了報告に `verdict_notes.py` の出力をそのまま含める（「指摘なし」の時も1行で含める）。取り出した情報（docs の追記箇所・Issue の URL・Issue にできなかったもの）も含める
   - 引数なしの `bash scripts/vcs_finish.sh`（`HARNESS_PR_BODY_FILE` 無し）は `/design` などが使う経路として残る。現在のブランチが `work/<計画IDの英小文字>` で `vault/plans/` に計画票があれば、`scripts/pr_body.py` のタスク履歴表を本文にして `<計画ID>: <ゴールの1行目>` のタイトルで PR/MR を作る。計画が見つからない時（`design/d-xxx` など）は、GitHub は最新コミットの件名と本文で REST の PR を作り、GitLab は `glab mr create --fill --yes` を使う。引数がある時は既定を付けず、GitHub は `gh pr create`、GitLab は `glab mr create` にそのまま渡す
   - `bash scripts/vcs_finish.sh` が `gh`/`glab` コマンド自体が無いことによる失敗（`command not found` 相当の終了コード127、または本スクリプトが出す「`gh`/`glab` コマンドが見つかりません」という明示エラー）で終了した場合：GitHub であれば GitHub MCP ツール（例：実行環境で使える `mcp__github__create_pull_request` 等）で同内容の PR を作成してよい。`gh api` の PR 作成に渡すはずだったタイトル（`HARNESS_PR_TITLE` の値）・本文（本文ファイルの中身）・head（現在のブランチ）・base（`main`）は、そのまま MCP ツールの引数に引き継ぐ。GitLab（`glab`）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段が使える環境ではそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる。いずれの代替経路を使った場合も `gh pr merge`/`glab mr merge` は実行しない（マージは人が行うという既存方針は変わらない）。`gh` はあるが REST の呼び出しが失敗した時（認証エラー・ネットワークエラー・owner/repo が取れない終了コード2など）はこの代替の対象外とし、標準エラーの内容を添えて人に報告して止まる
 - どちらでもなければ、処理した ID と結果を1行ずつ報告して終わる
 
 ## 8. ハーネス振り返り
-全タスクが `done` になり `scripts/vcs_finish.sh` を実行した直後、**オーケストレーター（run のメインセッション）自身**が1回だけ行う（`creator`・`verifier` を呼ばない。`.claude/agents/creator.md`・`.claude/agents/verifier.md` は変更しない）。
+全タスクが `done` になり `scripts/vcs_finish.sh` を実行した直後（手順7の計画一式の除去の後に行う）、**オーケストレーター（run のメインセッション）自身**が1回だけ行う（`creator`・`verifier` を呼ばない。`.claude/agents/creator.md`・`.claude/agents/verifier.md` は変更しない）。
 
 1. 今回処理した計画のタスク群を振り返り、`.claude/`（スキル・エージェント定義・フック）や `vault/rules/` に対する**構造的な**改善点（スキル手順の分かりにくさ、フックの誤検知・見落とし、ルール文書の過不足など、繰り返し発生しうる問題）に気づいたかどうかを判断する。軽微な言い回し修正・タイポは対象外。頻度は「あれば書く」であり、毎回 must ではない
 2. 気づきが無ければ、ここで何もしない（issue も作らず、ログにも残さない）。以下の3・4は行わない
@@ -166,5 +175,5 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 - Stop フックが verdict と status を照合する。手順を飛ばして終わろうとするとブロックされ、理由が表示される
 - `done` のタスク票は編集しない。計画票のタスク表の列順・見出しは変えない
 - creator のコミットはタスク票の受け入れ基準に含まれている場合だけ行う（手順4の review の呼び出しで transition.py が worktree の未コミット分を収集コミットするのはこの対象外）
-- タスク表と log は transition.py で変え、Edit やシェルの書き込みで直接書き換えない（frontmatter の approved→done だけは Edit）
+- タスク表と log は transition.py で変え、Edit やシェルの書き込みで直接書き換えない（frontmatter の approved→done だけは Edit。手順7の `scripts/purge_plan.sh` による計画一式の除去（`git rm`）も例外）
 - オーケストレーターはタスク中に `vault/rules/` を編集しない（verifier の判定基準を自分で変えないため。フックは止めない）。creator のタスクでは「成果物」に宣言した時だけ変えられ、宣言の無い変更は差分ゲート（`scripts/diff_gate.py`）が差し戻す

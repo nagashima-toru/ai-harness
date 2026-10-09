@@ -22,11 +22,15 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 「自分のブランチの計画票」は `vault/plans/*.md` を走査し、frontmatter の `status` が `approved` のものを取る。2つ以上 `approved` があるのは異常（1ブランチ1計画の不変条件）。
 実際にこの走査を行うスクリプトが `scripts/current_plan.sh`（`vault/plans/*.md` の frontmatter のみを見て、approved な計画票の計画 ID を1行1件で出力する）。
 
-証跡は3層で残る。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとの状態のコミット（transition.py の `<計画ID>/<id,...>: <旧>→<新>`）・worktree 側の収集コミット（`<計画ID>/<id>: creator 成果物をオーケストレーターが収集`）・計画ブランチへの `--no-ff` のマージコミット（`<計画ID>/<id>: マージ`））と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
+証跡は3層で残る（計画ブランチの中の証跡。マージ後は PR の本文とコミット履歴から辿る）。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとの状態のコミット（transition.py の `<計画ID>/<id,...>: <旧>→<新>`）・worktree 側の収集コミット（`<計画ID>/<id>: creator 成果物をオーケストレーターが収集`）・計画ブランチへの `--no-ff` のマージコミット（`<計画ID>/<id>: マージ`））と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
+
+計画一式4種（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）は、run の手順7で PR を作る直前に除去し、`main` には入れない。除去は `bash scripts/purge_plan.sh [--dry-run] <計画ID>` で行う。条件は、ブランチが `work/<計画IDの英小文字>`・計画票が `status: done`・タスク表が1行以上で全行 `done`・対象パスに未コミットの変更が無いこと。存在しないパスは飛ばす。`--dry-run` は消す予定のパスを1行1件で出し、何も変えない。終了コードは 0（消した／dry-run で出した）・1（条件を満たさない、または `git rm` の失敗）・2（引数の誤り、git リポジトリの外）。スクリプトはコミットしない（オーケストレーターが `<計画ID>: 計画一式を除去` でコミットする）。`vault/harness-improvements/<ファイル名>` は除去の対象外。
+
+証跡は PR に残る。PR 本文に計画のゴール・タスク表・log の全行・verifier の指摘が写り、タスク票と verdict の中身は PR のコミット履歴から辿る。残すべき情報は、除去の前に docs への追記か Issue 化で取り出す（取り出した結果は PR 本文の `## 取り出した情報` に載る）。
 
 引数なしの `scripts/vcs_finish.sh` は、現在のブランチ（`work/<計画IDの英小文字>`）の計画が見つかれば、PR/MR のタイトルを `<計画ID>: <ゴールの1行目>`、本文を `scripts/pr_body.py` が出す「タスク履歴」表（タスク ID・title・`<計画ID>/<id>: done`（従来の run）か `<計画ID>/<id>: review→done`（transition.py。複数 id の `<計画ID>/T-01,T-02: review→done` も含む）のコミットの短縮ハッシュ・verdict）にする。PR がスカッシュマージされて main にタスクごとのコミットが残らなくても、この表から辿れる。マージ方式の運用は `docs/runbook.md` 3節を参照。
 
-環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh api -X POST repos/<owner>/<repo>/pulls -f title=<タイトル> -f head=<ブランチ> -f base=main -F body=@<パス> --jq .html_url`（REST）を呼ぶ。owner/repo は origin の URL の最後の2つの区切りから取り、取れなければ push の前に終了コード2で終わる。作った PR の URL は標準出力に出す。base は `main` 固定。引数なしで計画が見つからない時は、最新コミットの件名と本文でタイトルと本文を作る。引数がある時は `gh pr create` にそのまま渡す。GitLab は `glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID・`scripts/pr_body.py` のタスク一覧・「verifier の指摘」節）を渡す（6節）。
+環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh api -X POST repos/<owner>/<repo>/pulls -f title=<タイトル> -f head=<ブランチ> -f base=main -F body=@<パス> --jq .html_url`（REST）を呼ぶ。owner/repo は origin の URL の最後の2つの区切りから取り、取れなければ push の前に終了コード2で終わる。作った PR の URL は標準出力に出す。base は `main` 固定。引数なしで計画が見つからない時は、最新コミットの件名と本文でタイトルと本文を作る。引数がある時は `gh pr create` にそのまま渡す。GitLab は `glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID の1行・`scripts/pr_body.py` の出力・`## verifier の指摘`・`scripts/plan_record.py` の出力・`## 取り出した情報` の順）を渡す（6節・7節）。
 
 ## 2. 状態（5つで固定、英小文字）
 
@@ -66,7 +70,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 - 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
 - 承認（draft→approved。`/plan` の自動承認）と blocked の解除（`/plan unblock`）は扱わず、`/plan` の Edit のまま
 - 推奨の経路であって強制ではない。Edit による計画票の直接の書き換えはフックで拒否しない。done の行の verdict の検査（9節・10節）で「PASS の無い done」が残らないことを守る
-- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、その後 `git add vault/plans/<計画ID>.md` と名前を指定した `git commit` でコミットしてから `scripts/vcs_finish.sh` を呼び（`vcs_finish.sh` は計画票の変更をコミットしないため）、承認・blocked の解除は `/plan` の Edit のまま
+- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、その後 `git add vault/plans/<計画ID>.md` と名前を指定した `git commit` でコミットしてから `scripts/vcs_finish.sh` を呼び（`vcs_finish.sh` は計画票の変更をコミットしないため）、計画一式の除去（`scripts/purge_plan.sh` の `git rm` と除去のコミット）も transition.py を通さない例外で、承認・blocked の解除は `/plan` の Edit のまま
 
 ## 3. ID・ファイル名・ブランチ名
 
@@ -97,7 +101,9 @@ frontmatter は `id` と `status` の2つ。
 |---|---|
 | `draft` | planner が書いている間。粒度の検査（8節・10節）の対象で、まだ着手しない |
 | `approved` | `/plan` が粒度の確認を通した後に自動で承認した。このブランチで進行中の計画 |
-| `done` | 全タスクが `done` になり `scripts/vcs_finish.sh` を実行済み |
+| `done` | 全タスクが `done` になり、計画一式を除去して `scripts/vcs_finish.sh` を実行済み |
+
+done にした計画票は除去のコミットで消えるため計画ブランチの履歴にだけ残る（`main` にある done の計画票はこの方式より前のもの）。
 
 `done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。
 
@@ -194,6 +200,8 @@ run の再開情報（creator が作業した worktree のパス・ブランチ�
 
 - 例（creator）：`- 2026-10-01 10:30 T-01 doing→review attempt=1 creator=sonnet`
 - 例（verifier）：`- 2026-10-01 10:40 T-01 review→done attempt=1 verifier=sonnet`
+
+log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は `python3 scripts/plan_record.py <計画ID>`。出力は `## 計画の記録` の下に `### ゴール`・`### タスク表`・`### log` を順に並べ、log は `<details>` で畳む。ファイルには書き込まない。終了コードは 0（出力した）・1（計画票か log が無い）・2（引数の誤り）。log は除去されて `main` に残らないので、`scripts/model_stats.py` の既定（`vault/log/*.md`）で計画をまたいで集計できるのは計画ブランチの中と除去より前の分だけで、除去後の集計は PR 本文の log から人が行う。
 
 モデルの集計は `scripts/model_stats.py` が行う。引数に渡した log ファイル群（既定は `vault/log/*.md`）を読み、遷移行（`<状態>→<状態>` を含む行）以外は無視する（`worktree path=...` の記録行やハングの補足行も含む）。`vault/archive/` 配下の log は既定の対象に含めず、引数で明示的に渡した時だけ集計する（例：`python3 scripts/model_stats.py vault/archive/*/log/*.md`。log のファイル名が `<計画ID>.md` のまま残るので計画 ID が取れる）。定義は次のとおり：
 

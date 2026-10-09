@@ -1,0 +1,16 @@
+{
+  "task": "P-20261009-auto-approve/T-06",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 22:56",
+  "criteria": [
+    {"text": "`/plan approve` が残っていない。確認：`grep -c \"plan approve\" docs/vault-spec.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c \"plan approve\" docs/vault-spec.md`（worktree内） / 出力: 0"},
+    {"text": "10節に会話記録の検査の記述が無い。確認：`sed -n '/^## 10\\./,/^## 11\\./p' docs/vault-spec.md | grep -c \"会話記録\"` の出力が `0`", "ok": true, "note": "実行コマンド: `sed -n '/^## 10\\./,/^## 11\\./p' docs/vault-spec.md | grep -c 会話記録` / 出力: 0"},
+    {"text": "7節に自動承認の log の形式がある。確認：`grep -c -F -- '- <日時> - draft→approved /plan による自動承認' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同grep -c -F / 出力: 1"},
+    {"text": "4節の status の表が自動承認になっている。確認：`grep -c -F '| `approved` | `/plan` が粒度の確認を通した後に自動で承認した。このブランチで進行中の計画 |' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同grep -c -F / 出力: 1"},
+    {"text": "12節の表から承認の行が消え、blocked の解除の行は残る。確認：`grep -c \"（承認：draft→approved）\" docs/vault-spec.md` の出力が `0`、`grep -c \"（解除：blocked→他。\" docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 2本のgrep -c / 出力: 0 と 1"},
+    {"text": "見出しの数は変わらない。確認：`grep -c \"^## \\|^### \" docs/vault-spec.md` の出力が `25`", "ok": true, "note": "実行コマンド: `grep -c \"^## \\|^### \" docs/vault-spec.md` / 出力: 25"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（参照切れの検査を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=636 fail=0。変更ファイル検査: `git diff --name-only 97b5c86..HEAD` は docs/vault-spec.md と除外対象のタスク票のみで、成果物外の変更なし"}
+  ],
+  "reasons": []
+}

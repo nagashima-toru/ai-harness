@@ -4,9 +4,9 @@
 自分のブランチの計画票（vault/plans/*.md のうち status: approved の1件）のタスク表と
 vault/verdicts/<計画ID>/<タスクID>.json を読んで判定する。
 
-判定順（D-013）：委譲 → stop_hook_active → approved な計画票の件数 → 未コミットの変更 →
-done の行 → doing/review の行。承認済みの計画票が0件なら未コミットの検査もせずに許可する
-（main など計画ブランチ以外では止めない）。2件以上は件数でブロックし、1件の時だけ未コミットを検査する。
+判定順：委譲 → stop_hook_active → approved な計画票の件数 → done の行 → doing/review の行。
+working tree の状態は見ない。承認済みの計画票が0件なら許可する（main など計画ブランチ以外では止めない）。
+2件以上は件数でブロックし、1件の時だけ done の行・doing/review の行の verdict を検査する。
 
 入力  : stdin に Claude Code の Stop フック JSON
 出力  : ブロック時は stdout に {"decision": "block", "reason": "..."}、許可時は何も出さず exit 0
@@ -22,7 +22,6 @@ done の行は verdict を検査する（`_hooklib.py` の `validate_verdict`・
 """
 import json
 import os
-import subprocess
 import sys
 
 sys.dont_write_bytecode = True
@@ -49,30 +48,6 @@ def project_dir(payload):
             return cand
     here = os.path.dirname(os.path.abspath(__file__))
     return os.path.abspath(os.path.join(here, "..", ".."))
-
-
-def has_uncommitted_changes(root):
-    """作業ツリーに未コミットの変更があるか。非 git リポジトリ・取得不能なら False（fail-open）。
-    worktree（`.git` がファイル）でも判定する。"""
-    try:
-        inside = subprocess.run(
-            ["git", "-C", root, "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception:
-        return False
-    if inside.returncode != 0 or inside.stdout.strip() != "true":
-        return False
-    try:
-        out = subprocess.run(
-            ["git", "-C", root, "status", "--porcelain"],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception:
-        return False
-    if out.returncode != 0:
-        return False
-    return bool(out.stdout.strip())
 
 
 def block(reason):
@@ -110,12 +85,6 @@ def main():
         block(
             f"[stop_gate] approved な計画票が{len(plans)}件あります（{ids}）。"
             f"1つだけ approved にしてください。"
-        )
-
-    if has_uncommitted_changes(root):
-        block(
-            "[stop_gate] 未コミットの変更があります。"
-            "作業ステップごとにコミットしてから終了してください（git status --porcelain の出力を確認）。"
         )
 
     plan_id, plan_path = plans[0]

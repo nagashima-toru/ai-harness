@@ -33,7 +33,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | plan_guard.py から承認と unblock の会話記録による裏付けの検査を削り、smoke のケースを置き換える | |
+| T-01 | done | 1 | - | plan_guard.py から承認と unblock の会話記録による裏付けの検査を削り、smoke のケースを置き換える | |
 | T-02 | todo | 0 | T-01 | agent_write_guard.py から承認の判定を削り、_hooklib.py の is_approve_command と smoke のケースを合わせる | |
 | T-03 | doing | 1 | - | plan スキルの A を自動承認と /run の続行にし、B（/plan approve）を削る | |
 | T-04 | done | 1 | - | ai-harness.md のスキルの節から /plan approve を外し、自動承認の説明にする | |

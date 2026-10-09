@@ -59,7 +59,7 @@ archive への移動は人が `scripts/archive_plans.sh --apply` で行う（手
 - worktree 運用（フェーズ4）：creator が作業した worktree を渡すと、review・done・doing・blocked の前後の git 操作まで1コマンドで行う。呼び出しの形：`python3 scripts/transition.py <計画ID> <id> <review|done|doing|blocked> --worktree <パス> --branch <ブランチ> [--plan-head <sha>]`。`--plan-head` は review・done・blocked で必須、doing では使わない。id は1つだけ。`--worktree` と `--branch` はそろって使う。`--worktree` を渡さない呼び出しは今の（フェーズ2の）動きのまま
 - worktree とブランチの検証は `scripts/discard_worktree.sh` と同じ条件：ブランチ名が `worktree-agent-` で始まる、`git worktree list --porcelain` にそのパスが登録済み、登録されたブランチが一致（パスは realpath で比べる）。`--plan-head` は40桁の sha に解決できること。満たさなければ何も変えず終了コード 1
 - review（doing→review）：(1) worktree に未コミット分があれば `git add -A` して `<計画ID>/<id>: creator 成果物をオーケストレーターが収集` でコミットする。(2) 新規コミットの判定：`git rev-list <plan-head>..<branch>` が0件なら doing→blocked にして worktree を残す。(3) 差分ゲート（5節。`diff_gate.check`、base は plan-head）。(4) 違反なしなら、log に再開情報の記録行（7節）と doing→review の行を書いてコミットする。違反ありなら差し戻し：attempt+1 が上限（`HARNESS_MAX_ATTEMPTS`）以内なら、タスク票の「進捗」に `- 差し戻し（attempt=<n>）: 宣言外の変更 <パス>, ...` を足し、doing のまま attempt+1 にして worktree とブランチを破棄する。上限を超えるなら doing→blocked にして worktree を残す
-- done（review→done）：PASS の verdict を確認し（条件は10節の done の行の検査と同じ）、worktree の未コミット・未追跡分は収集しない（マージに入れない）。新規コミットの判定（0件なら review→blocked）→ 差分ゲート（違反なら review→blocked。タスク票の「進捗」には書かない）→ メインの作業ツリーで `git merge --no-ff <branch> -m "<計画ID>/<id>: マージ"` → フェーズ2と同じ review→done（計画票・log・verdict をコミット）→ `git worktree remove --force` と `git branch -d` で後始末（失敗は警告だけで終了コード 0）。サンドボックスの中で後始末に失敗した時は、run が `bash scripts/discard_worktree.sh` で消す（`.claude/skills/run/SKILL.md` の「worktree の後始末（サンドボックス）」、12節の「サンドボックス」）。マージが衝突したら `git diff --name-only --diff-filter=U` で衝突ファイルを取り、`git merge --abort` で中止して review→blocked にする（question に衝突ファイル。worktree とブランチは残す）
+- done（review→done）：PASS の verdict を確認し（条件は10節の done の行の検査と同じ）、worktree の未コミット・未追跡分は収集しない（マージに入れない）。新規コミットの判定（0件なら review→blocked）→ 差分ゲート（違反なら review→blocked。タスク票の「進捗」には書かない）→ メインの作業ツリーで `git merge --no-ff <branch> -m "<計画ID>/<id>: マージ"` → フェーズ2と同じ review→done（計画票・log・verdict をコミット）→ `git worktree remove --force` と `git branch -d` で後始末（失敗は警告だけで終了コード 0）。マージが衝突したら `git diff --name-only --diff-filter=U` で衝突ファイルを取り、`git merge --abort` で中止して review→blocked にする（question に衝突ファイル。worktree とブランチは残す）
 - doing（review→doing。verifier の FAIL の再試行。review からだけ）：verdict が JSON として読め、task・attempt が一致し、result が FAIL の時だけ行う。attempt+1 が上限以内なら review→doing にして worktree とブランチを破棄する。log の補足は reasons の先頭1件を80文字で切ったもの。上限を超えるなら、reasons を `／` でつないで200文字で切ったものを question にして review→blocked にし、worktree を残す
 - blocked（doing→blocked。creator の blocked の報告。doing からだけ）：`--question` か `--question-file` が必須。再開情報の記録行（7節）と doing→blocked の行を書いてコミットし、worktree は残す。worktree の中身には触れない（収集・差分ゲートはしない）
 - 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
@@ -98,7 +98,7 @@ frontmatter は `id` と `status` の2つ。
 | `approved` | 人が承認した。このブランチで進行中の計画 |
 | `done` | 全タスクが `done` になり `scripts/vcs_finish.sh` を実行済み |
 
-`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。あわせて `Bash(claude *)` も deny する。エージェントが入れ子で `claude -p "/plan approve ..."` を起動し、子セッションの会話記録に人の発言を偽造して承認の裏付け（10・12節）をすり抜けるのを防ぐため。
+`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。
 
 本文は `ゴール / 分割方針 / タスク一覧 / 計画の受け入れ基準`。このうち「タスク一覧」の表が状態の正本で、次の形にする。
 
@@ -340,7 +340,7 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - 一本化で変わった点（D-011 フェーズ3）：
   - verifier・planner の解析できない形のコマンドで、repo の外だけに書き込むのに引数・引用符の中に保護対象パスがあるもの（例：`python3 -c "open('vault/tasks/P/T-01.md')" > /tmp/x.txt`）：変更前は許可→変更後は拒否（和集合に repo 内の path-like 候補が入るため）
   - 変わったのは拒否する側だけで、許可が増えた形は無い
-- 残る弱点：Bash とその子プロセスの `vault/rules/`・`~/.claude/projects/` への書き込みはサンドボックスで OS が拒否するので、Bash の解析はその補助になる（サンドボックスが使えない環境では解析が唯一の守りになる。解析は当面削らず残す）。以下は Bash の解析としての弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。解析できない時の候補には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
+- 残る弱点：サンドボックスは使っていない（「サンドボックス（使っていない）」の小節）ので、Bash の書き込みへの守りはこの解析だけになる。以下は Bash の解析としての弱点：拒否リスト方式であることは変わらない。`ln`・`dd of=`・`rsync` などの書き込みは従来どおり検出しない。`cp`・`mv` は全ての非フラグ引数を対象にするため、読み取り元に `vault/rules/` を置く `cp vault/rules/x /tmp/` のようなコマンドは誤検知として拒否される（人の回答による判断）。解析できない時の候補には `cd vault/rules/ && ...`（末尾の `/`）や `F=vault/rules/...; ... $F` を取りこぼす既知の穴があり、今回は直していない
 
 **フックの共通モジュール**（`.claude/hooks/_hooklib.py`）：3フックで共通に使う関数（worktree 委譲・計画票の frontmatter（`frontmatter_value`）とタスク表（`parse_tasks`）とタスク票の受け入れ基準の行数（`count_criteria`）の読み取り・会話記録の人の発言とコマンドの一致判定）を置く。各フックは、自分のファイルと同じディレクトリ（`__file__` 起点）を `sys.path` の先頭に入れて import し、worktree への委譲先ではその worktree の版を読む。import する前に `sys.dont_write_bytecode = True` にして `__pycache__` を作らない。読み込みに失敗したら、標準エラーに理由を書いて終了コード2で終わる（PreToolUse ではブロック扱い。委譲先なら委譲元の判定にフォールバックする）。Stop フックだけは、`stop_hook_active` が真で `HARNESS_STRICT_STOP` が `1` でなければ0で終わる。Bash の書き込み解析（`analyze_bash_writes` など）は `agent_write_guard.py` だけが使うので、共通モジュールに置かない。
 
@@ -356,20 +356,12 @@ Bash コマンドの判定は2段になっている。`analyze_bash_writes` が 
 - `plan_guard.py`・`stop_gate.py` の委譲は今どおり（書き込み対象を見ない）。
 - 既知の残り：creator の `vault/plans/`・`vault/log/` 拒否は、worktree から絶対パスでメインリポジトリを指す場合を見ていない（この計画の範囲外）。
 
-### サンドボックス（OS による書き込みと通信の制限）
+### サンドボックス（使っていない）
 
-このリポジトリの `.claude/settings.json` で Claude Code のサンドボックスを有効にしている（`sandbox.enabled: true`）。値は `.claude/settings.json` を正とし、ここには各キーの意味を書く。
-
-- 対象：Bash とその子プロセス（`python3`・`bash -c` を含む）。Write・Edit などのツールの書き込みはサンドボックスの対象外で、今どおり `agent_write_guard.py` が判定する
-- `filesystem.denyWrite`：`vault/rules/` と `~/.claude/projects/`（会話記録）の2つ。ここへの Bash の書き込みは、Bash の解析の成否にかかわらず OS が拒否する。`python3 -c` による書き込みのような、解析できない形の抜け道を塞ぐ
-- `network.allowedDomains`：GitHub のドメインだけ（`github.com`・`*.github.com`・`*.githubusercontent.com`）。Anthropic の API のドメインを入れないので、入れ子の claude による会話記録の偽造もできない。前小節の `gh api` / `curl` によるリモート直叩きも、通信先がこの範囲に限られる
-- `allowUnsandboxedCommands`：`false`。サンドボックスの外で実行し直す逃げ道は無い。
-- `excludedCommands`：`bash scripts/vcs_finish.sh`・`bash scripts/vcs_finish.sh *`・`env HARNESS_PR_BODY_FILE=* bash scripts/vcs_finish.sh`・`bash scripts/discard_worktree.sh *` の4つ。PR の作成（`git push -u` の `.git/config` への書き込みと、`gh` の TLS の証明書の検証）と worktree の後始末（`.git/worktrees/` への書き込み）はサンドボックスの中では通らないので、この2つのスクリプトだけをサンドボックスの外で実行する。このほかに、人の回答で `python3 scripts/transition.py *` も入れている（`.claude/settings.json` の値を正とする）。`allowUnsandboxedCommands: false` のままでも、プロジェクトの設定の `excludedCommands` は効く。無視されるのは managed の設定か `--settings` で `allowUnsandboxedCommands: false` を設定した時など（Claude Code 2.1.294 の設定スキーマの説明で確認。公式ドキュメントでは未確認）。除外したコマンドも permissions の判定とフック（`agent_write_guard.py`）は受ける。既知の弱点：excludedCommands はコマンドの文字列で照合するので、worktree の中の同じ名前のスクリプトもサンドボックスの外で動く。creator が worktree の `scripts/vcs_finish.sh` を書き換えて実行すると、その中身はサンドボックスの外で動く。サンドボックスを入れる前と同じ水準で、塞ぐかは別の計画で決める
-- 一時ファイル：サンドボックスの中の Bash が書けるのは、リポジトリのほかは `$TMPDIR`（Claude Code が設定する）と `/tmp/claude/` の下だけ。macOS の `mktemp` はテンプレートを渡さないと `$TMPDIR` を使わずに失敗するので、スクリプトは `mktemp [-d] "${TMPDIR:-/tmp}/<名前>.XXXXXX"` の形（ディレクトリの時は `-d` を付ける）で作る。`scripts/smoke.sh`・`scripts/install.sh`・`scripts/uninstall.sh`・`scripts/archive_plans.sh` はこの形で一時ディレクトリ・一時ファイルを作り、作れない時は `<スクリプト名>: 一時ディレクトリ（smoke.sh）／一時ファイル（ほかの3つ）を作れません（TMPDIR=<値>）。中断します` を出して終了コード2で中断する（空の変数のまま git やファイルを操作しないため。uninstall.sh はファイルを消す前に中断する）。そのため smoke はサンドボックスの中でも通り、人がサンドボックスの外で流す必要は無い。ただし全件が通ることは未確認で、計画（P-20261009-sandbox-friendly）の run の後に人が1回確かめる（計画作成時に、4つのスクリプトの `mktemp` を差し替えたリポジトリの複製でサンドボックスの中の smoke が `fail=0` になったことは確かめてあるが、計画ブランチの実ファイルでは確かめていないため）。エージェントが作った一時ファイルは消さず、人にも消させない（`rm -rf` は permissions で拒否される。OS の掃除に任せる）。フィクスチャの置き場は `/tmp/claude/<計画ID>-<タスクID>/` の固定パスにする
-- `failIfUnavailable`：設定しない。サンドボックスが使えない環境でも Claude Code を起動でき、その時は Bash の解析だけが守りになる
-- 導入先には既定で入れない：`merge_settings_json.py` は既存の settings.json に `sandbox` を足さない。手順は `docs/install.md` の「サンドボックスを有効にする（任意）」
-- 設定はセッションの開始時に読まれる。効き目の確かめ方は `docs/runbook.md` の「9. サンドボックスを確かめる」
-- `agent_write_guard.py` の Bash の解析は削らず、当面残す（人の回答）。サンドボックスを補助でなく主とし、解析はその補助とする
+このリポジトリでは Claude Code のサンドボックスを使っていない（`.claude/settings.json` に `sandbox` キーは無い）。
+- 理由：サンドボックスが守っていたのは `vault/rules/` と会話記録（`~/.claude/projects/`）への Bash の書き込みで、D-015 でどちらも守る対象から外した。一方で `.claude/` の保護パス・`.git`・`gh` の TLS・`mktemp` での詰まりと、サンドボックスの外で動かすコマンドの例外の積み増しを生んでいた
+- 一時ファイル：スクリプトは今までどおり `mktemp [-d] "${TMPDIR:-/tmp}/<名前>.XXXXXX"` の形で作り、作れない時は中断する（D-013 の書き方を戻さない）
+- 導入先：`merge_settings_json.py` は導入先の settings.json に `sandbox` を足さない。導入先で有効にする手順は `docs/install.md` の「サンドボックスを有効にする（任意）」
 
 ### 提案ファイル方式（ルール自体を変更するタスク用）
 

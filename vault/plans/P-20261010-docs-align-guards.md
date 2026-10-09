@@ -36,7 +36,7 @@ status: approved
 | T-03 | done | 1 | - | install.md のサンドボックスの節の古い理由と人の仕事を揃える | |
 | T-04 | done | 1 | - | decisions.md に守りを絞った判断を1行足し、vision.md から承認を外す | |
 | T-05 | done | 1 | - | planner.md にゴールの範囲の指針を足し、下書きファイル方式・ガード・サンドボックスの古い記述を消す | |
-| T-06 | doing | 1 | T-01,T-02,T-03,T-04,T-05 | creator.md・ai-harness.md・README.md を揃え、リポジトリ全体に古い語が残っていないことを確かめる | |
+| T-06 | review | 1 | T-01,T-02,T-03,T-04,T-05 | creator.md・ai-harness.md・README.md を揃え、リポジトリ全体に古い語が残っていないことを確かめる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

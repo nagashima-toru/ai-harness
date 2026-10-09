@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # 対象を検証してから worktree とそのブランチを破棄する。
 # 使い方: bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>
-# `git branch -D` は .claude/settings.json の permissions.deny で直接の Bash 呼び出しを
-# 拒否されているため（issue #34）、run スキルの FAIL 再試行時（手順6.3.2）はこのスクリプト
-# 経由で worktree とブランチを破棄する。このスクリプトはブランチ名が `worktree-agent-` で
+# run スキルは、中断からの再開（手順2）とハング時の復旧で、不採用の worktree とブランチを
+# このスクリプト経由で破棄する（消す前に対象を検証するため）。このスクリプトはブランチ名が `worktree-agent-` で
 # 始まること、かつ指定パスが `git worktree list --porcelain` に登録済みでそのブランチが
 # 指定ブランチ名と一致することを確認してから削除する。どちらか一方でも満たさなければ何も
 # 削除せず、理由を標準エラーに出して非0で終わる。実行はカレント作業ディレクトリの git

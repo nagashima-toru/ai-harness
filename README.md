@@ -77,7 +77,7 @@ PR ができたら、人が内容を確認して `gh pr merge` でマージす�
 
 ## 構成
 ```
-.claude/   settings.json（hooks・許可・サンドボックス）、agents/（creator, verifier, planner）、hooks/、skills/（design, plan, run）
+.claude/   settings.json（hooks・許可）、agents/（creator, verifier, planner）、hooks/、skills/（design, plan, run）
 vault/     plans/（計画票=状態の正本）、tasks/、designs/（設計文書）、verdicts/、log/、templates/、archive/、rules/（拡張ポイント。vault/rules/ 配下）
 docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、vision.md、decisions.md
 scripts/   smoke.sh（フック検証）、install.sh・uninstall.sh（他プロジェクトへの複製と取り外し）、rules.sh（ルール解決）、current_plan.sh（承認済みの計画の特定）、transition.py（状態遷移）、diff_gate.py（差分ゲート）、vcs_finish.sh（PR 作成）、discard_worktree.sh（worktree の破棄）、run_unattended.py（無人実行のラッパー）、archive_plans.sh（古い計画の移動）

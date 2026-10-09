@@ -1,0 +1,13 @@
+{
+  "task": "P-20261009-sandbox-remove/T-07",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 21:41",
+  "criteria": [
+    {"text": "`README.md` にサンドボックスへの言及が無い。確認：`grep -c \"サンドボックス\" README.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c \"サンドボックス\" README.md`（worktree内） / 出力: 0"},
+    {"text": "構成の節の `.claude/` の行が決定済みの1行になっている。確認：`grep -c -F '.claude/   settings.json（hooks・許可）、agents/（creator, verifier, planner）、hooks/、skills/（design, plan, run）' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同grep -c -F / 出力: 1。`git diff 5a90f5a..HEAD -- README.md` も「・サンドボックス」削除の1行のみ"},
+    {"text": "見出しの数は変わらない。確認：`grep -c \"^## \" README.md` の出力が `7`", "ok": true, "note": "実行コマンド: `grep -c \"^## \" README.md` / 出力: 7"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（参照切れの検査 `(ref-1)` を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=716 fail=0。ref-1 を含む出力行も確認（grep -c ref-1 = 1）。起点コミット 5a90f5a からの変更ファイルは README.md とタスク票（進捗）のみで成果物外のファイル無し"}
+  ],
+  "reasons": []
+}

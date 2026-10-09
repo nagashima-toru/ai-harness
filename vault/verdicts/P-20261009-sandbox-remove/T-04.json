@@ -1,0 +1,16 @@
+{
+  "task": "P-20261009-sandbox-remove/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 21:37",
+  "criteria": [
+    {"text": "12節のサンドボックスの小節の見出しが「### サンドボックス（使っていない）」で、本文の1行目が決定済みの文になっている。確認：`grep -c \"^### サンドボックス（使っていない）$\" docs/vault-spec.md` の出力が `1`、`grep -c -F 'このリポジトリでは Claude Code のサンドボックスを使っていない（`.claude/settings.json` に `sandbox` キーは無い）。' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: worktree の docs/vault-spec.md に対する上記2つの grep -c / 出力: 1 と 1"},
+    {"text": "小節が短くなっている。確認：`sed -n '/^### サンドボックス/,/^### 提案ファイル方式/p' docs/vault-spec.md | wc -l` の出力が `8` 以下", "ok": true, "note": "実行コマンド: 上記 sed | wc -l / 出力: 8"},
+    {"text": "`excludedCommands`・run の「後始末（サンドボックス）」の節・runbook の「サンドボックスを確かめる」への言及が無い。確認：`grep -c \"excludedCommands\\|後始末（サンドボックス）\\|サンドボックスを確かめる\" docs/vault-spec.md` の出力が `0`", "ok": true, "note": "実行コマンド: 上記 grep -c / 出力: 0"},
+    {"text": "`Bash(claude *)` の deny の説明が消え、`gh pr merge` の deny の説明は残る。確認：`grep -c \"Bash(claude\" docs/vault-spec.md` の出力が `0`、`grep -c 'Bash(gh pr merge*)' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 上記2つの grep -c / 出力: 0 と 1"},
+    {"text": "「残る弱点」がサンドボックスで OS が拒否する前提でなくなっている。確認：`grep -c \"サンドボックスで OS が拒否\" docs/vault-spec.md` の出力が `0`", "ok": true, "note": "実行コマンド: 上記 grep -c / 出力: 0。git diff で残る弱点の1文が決定済みの文に置換されていることも確認"},
+    {"text": "見出しの数は変わらない。確認：`grep -c \"^## \\|^### \" docs/vault-spec.md` の出力が `25`", "ok": true, "note": "実行コマンド: 上記 grep -c / 出力: 25"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree） / 出力: smoke: pass=716 fail=0。起点コミット 7816a48 からの `git diff --name-only 7816a48..HEAD` は docs/vault-spec.md と vault/tasks/P-20261009-sandbox-remove/T-04.md（進捗追記分）で、成果物外のファイルは無い"}
+  ],
+  "reasons": []
+}

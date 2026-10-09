@@ -1,0 +1,14 @@
+{
+  "task": "P-20261009-sandbox-remove/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 21:35",
+  "criteria": [
+    {"text": "「サンドボックスを有効にする（任意）」の節の中に、決定済みの文言がある。確認：`sed -n '/^## サンドボックスを有効にする（任意）$/,/^## アンインストール$/p' docs/install.md | grep -c -F 'ハーネス自身（`.claude/`）を変える作業には向かない'` の出力が `1`", "ok": true, "note": "実行コマンド: 上記 sed|grep -c（worktree の docs/install.md） / 出力: 1。節内36行目付近に項目あり、続けて理由が書かれている"},
+    {"text": "ハーネス本体で有効にしてあるという記述と、runbook の「9. サンドボックスを確かめる」への参照が無い。確認：`grep -c \"では有効にしてある\\|サンドボックスを確かめる\" docs/install.md` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c \"では有効にしてある\\|サンドボックスを確かめる\" docs/install.md` / 出力: 0。節の冒頭は「使っていない（理由は docs/vault-spec.md 12節…）」に、末尾は `/sandbox` で確かめる文に変わっている"},
+    {"text": "節の見出しと設定例は残る。確認：`grep -c '^## サンドボックスを有効にする（任意）$' docs/install.md` の出力が `1`、`grep -c '\"allowUnsandboxedCommands\": false' docs/install.md` の出力が `1`", "ok": true, "note": "実行コマンド: 両 grep -c / 出力: 1 と 1"},
+    {"text": "見出しの数は変わらない。確認：`grep -c \"^## \" docs/install.md` の出力が `7`", "ok": true, "note": "実行コマンド: `grep -c \"^## \" docs/install.md` / 出力: 7"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree） / 出力: smoke: pass=716 fail=0。変更ファイル検査: `git diff --name-only 7816a48..HEAD` は docs/install.md とタスク票（除外対象）のみで、成果物外のファイルは無い"}
+  ],
+  "reasons": []
+}

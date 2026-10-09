@@ -1,0 +1,16 @@
+{
+  "task": "P-20261009-sandbox-remove/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-09 21:31",
+  "criteria": [
+    {"text": ".claude/settings.json に `sandbox` キーが無く、ほかのトップレベルのキー・`permissions.allow` の件数・`hooks` のイベントは変わらない。確認：`python3 -c \"import json;d=json.load(open('.claude/settings.json'));print(sorted(d), len(d['permissions']['allow']), sorted(d['hooks']))\"` の出力が `['hooks', 'permissions', 'worktree'] 46 ['PostToolUse', 'PreToolUse', 'Stop']`", "ok": true, "note": "実行コマンド: worktree で上記 python3 -c / 出力: ['hooks', 'permissions', 'worktree'] 46 ['PostToolUse', 'PreToolUse', 'Stop']"},
+    {"text": "`permissions.deny` が残す12項目だけで、元の並び順のまま。確認：`python3 -c \"import json;print(json.load(open('.claude/settings.json'))['permissions']['deny'])\"` の出力が 12項目の一覧", "ok": true, "note": "実行コマンド: 上記 python3 -c / 出力: rm -rf* から glab mr merge* までの12項目で、期待の並びと一致。git diff でも消えたのは6項目だけ"},
+    {"text": "smoke の `(approve-settings)` のケースが `Bash(gh pr merge*)`・`Bash(glab mr merge*)` の2つだけになり、どちらも ok になる。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (approve-settings)'` の出力が `2`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (approve-settings)'` 相当 / 出力: 2（gh pr merge*・glab mr merge* の2件）"},
+    {"text": "smoke に `(deny-1)`（外した6項目がそれぞれ deny に無い）と `(deny-2)`（本体の settings.json に `sandbox` が無い）のケースがあり、7件とも ok になる。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (deny-'` の出力が `7`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (deny-'` 相当 / 出力: 7（deny-1 が6件、deny-2 が1件）"},
+    {"text": "`scripts/discard_worktree.sh` のコメントに `permissions.deny` の前提が無い。確認：`grep -c \"permissions.deny\" scripts/discard_worktree.sh` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c \"permissions.deny\" scripts/discard_worktree.sh` / 出力: 0"},
+    {"text": "`scripts/discard_worktree.sh` の変更はコメント行だけで、処理は変わらない。確認：worktree で `git diff -U0 work/p-20261009-sandbox-remove -- scripts/discard_worktree.sh | grep -c '^[+-][^+#-]'` の出力が `0`", "ok": true, "note": "実行コマンド: 上記 git diff | grep -c / 出力: 0。diff 本体も # で始まるコメント行3行を2行に置き換えただけ"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む（`discard_worktree.sh` の既存のケース `(a)`〜`(e)` を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=716 fail=0"}
+  ],
+  "reasons": []
+}

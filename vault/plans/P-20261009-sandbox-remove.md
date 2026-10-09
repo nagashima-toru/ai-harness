@@ -35,7 +35,7 @@ status: approved
 |---|---|---|---|---|---|
 | T-01 | doing | 1 | - | settings.json から sandbox と6つの deny を外し、smoke の deny のケースと discard_worktree.sh のコメントを合わせる | |
 | T-02 | doing | 1 | - | run スキルから「worktree の後始末（サンドボックス）」の節とその参照を削る | |
-| T-03 | doing | 1 | - | runbook の 9節「サンドボックスを確かめる」を削る | |
+| T-03 | review | 1 | - | runbook の 9節「サンドボックスを確かめる」を削る | |
 | T-04 | todo | 0 | T-01,T-02,T-03 | vault-spec のサンドボックスの小節を「使っていない。理由」にし、関連する記述を直す | |
 | T-05 | todo | 0 | T-01,T-03 | install.md のサンドボックスの節に、ハーネス自身を変える作業には向かない旨を足す | |
 | T-06 | todo | 0 | T-01 | creator.md の破棄の指示から、permissions.deny で拒否済みという括弧書きを外す | |

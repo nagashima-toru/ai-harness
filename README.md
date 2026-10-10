@@ -89,12 +89,35 @@ AI の作業を「作成 → 検証」の二段構成にし、検証が PASS し
 PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェント（オーケストレーター）は `bash scripts/vcs_finish.sh` で PR を作るまでしか行わない）。
 
 ## 構成
-```
-.claude/   settings.json（hooks・許可）、agents/（creator, verifier, planner）、hooks/、skills/（design, plan, run）
-vault/     plans/（計画票=状態の正本）、tasks/、designs/（設計文書）、verdicts/、log/、templates/、rules/（拡張ポイント。vault/rules/ 配下）
-docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、vision.md、decisions.md
-scripts/   smoke.sh（フック検証）、install.sh・uninstall.sh（他プロジェクトへの複製と取り外し）、rules.sh（ルール解決）、current_plan.sh（承認済みの計画の特定）、transition.py（状態遷移）、diff_gate.py（差分ゲート）、vcs_finish.sh（PR 作成）、discard_worktree.sh（worktree の破棄）、run_unattended.py（無人実行のラッパー）、purge_plan.sh（計画一式の除去とマージ済みの一括削除）
-```
+| パス | 内容 |
+|---|---|
+| `.claude/settings.json` | hooks・許可 |
+| `.claude/agents/` | エージェント定義（creator, verifier, planner） |
+| `.claude/hooks/` | フック |
+| `.claude/skills/` | スキル（design, plan, run） |
+| `vault/plans/` | 計画票（状態の正本） |
+| `vault/tasks/` | タスク票 |
+| `vault/designs/` | 設計文書 |
+| `vault/verdicts/` | 検証結果 |
+| `vault/log/` | ログ |
+| `vault/templates/` | テンプレート |
+| `vault/rules/` | 拡張ポイント。vault/rules/ 配下 |
+| `docs/vault-spec.md` | 仕様の正本 |
+| `docs/install.md` | インストール手順 |
+| `docs/runbook.md` | 運用手順 |
+| `docs/vision.md` | ビジョン |
+| `docs/decisions.md` | 決定の記録 |
+| `scripts/smoke.sh` | フックの動作検証 |
+| `scripts/install.sh` | 他プロジェクトへの複製 |
+| `scripts/uninstall.sh` | 他プロジェクトからの取り外し |
+| `scripts/rules.sh` | ルール解決 |
+| `scripts/current_plan.sh` | 承認済みの計画の特定 |
+| `scripts/transition.py` | 状態遷移 |
+| `scripts/diff_gate.py` | 差分ゲート |
+| `scripts/vcs_finish.sh` | PR 作成 |
+| `scripts/discard_worktree.sh` | worktree の破棄 |
+| `scripts/run_unattended.py` | 無人実行のラッパー |
+| `scripts/purge_plan.sh` | 計画一式の除去とマージ済みの一括削除 |
 
 ## ライセンス
 このリポジトリは `MIT License` の下で公開しています。詳細は [LICENSE](LICENSE) を参照してください。

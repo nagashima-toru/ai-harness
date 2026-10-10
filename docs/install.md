@@ -31,7 +31,7 @@ git init
 ```bash
 bash /path/to/ai-harness/scripts/install.sh .
 ```
-複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと `vault/{plans,tasks,verdicts,log,designs,archive,templates,rules}` の空ディレクトリ、`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）、`docs/vault-spec.md`、`CLAUDE.md`）。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
+複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと `vault/{plans,tasks,verdicts,log,designs,templates,rules}` の空ディレクトリ、`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）、`docs/vault-spec.md`、`CLAUDE.md`）。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
 
 あわせて `.claude/harness-manifest.json` が作られる。配ったハーネス本体ファイルの sha256 を記録したもので、次の「ハーネスを更新する」で使う。`.claude/settings.json` は複製ではなく `scripts/merge_settings_json.py` によるマージで用意される。
 
@@ -115,7 +115,7 @@ bash /path/to/ai-harness/scripts/install.sh --no-claude-md /path/to/your-project
 ```bash
 git add vault/ .claude/ CLAUDE.md scripts/ docs/vault-spec.md && git commit -m "ai-harness を導入"
 ```
-`vault/` は追跡するのを勧める。ai-harness 自身が `vault/` 全体（`plans/` / `tasks/` / `verdicts/` / `log/` / `designs/` / `archive/` / `rules/`）を git 管理しており、作業の履歴がそのまま残る。`.gitignore` に `.claude/settings.local.json` を追加しておく。
+`vault/` は追跡するのを勧める。ai-harness 自身が `vault/` 全体（`plans/` / `tasks/` / `verdicts/` / `log/` / `designs/` / `rules/`）を git 管理しており、作業の履歴がそのまま残る。`.gitignore` に `.claude/settings.local.json` を追加しておく。
 
 ### 4. フォルダを信頼する
 ```bash
@@ -210,7 +210,7 @@ bash scripts/uninstall.sh /path/to/your-project
 
 `.claude/settings.json` は `.claude/harness-manifest.json` の `settings_src` キーの内容をもとに `scripts/unmerge_settings_json.py` が処理する。`merge_settings_json.py` が足した hooks の command と `permissions.deny` の項目だけを取り除き、利用者が追加した `permissions.allow` やその他の項目には触れない。**この一致判定は command / deny 文字列の完全一致でしか行わない**ため、利用者がハーネスと偶然同じ文字列を独自に `.claude/settings.json` に追加していた場合、区別できずに一緒に消える可能性がある。これは仕様上の限界として許容している。また、`settings_src` キーが無い古いマニフェスト（`--update` を使う前に入れたインストール）では `settings.json` の自動処理そのものをスキップし、案内だけを出す。その場合は `.claude/settings.json` を開き、`hooks` と `permissions.deny` からハーネス由来のエントリ（`ai-harness.md` の `## スキル`・フック節や `docs/vault-spec.md` を見比べる）を手で見つけて削除する。`merge_settings_json.py` が足した `worktree.baseRef` は `scripts/unmerge_settings_json.py` の対象外で、uninstall しても取り除かれず導入先に残る。不要なら `.claude/settings.json` を開いて手で削除する。
 
-`vault/` の利用者資産（`plans`/`tasks`/`verdicts`/`log`/`designs`/`archive` と、`vault/rules/` のルール）には一切触れない。これらは計画・タスク・検証結果・作業ログという利用者自身の作業成果であり、ハーネスを外しても消さずに残す。
+`vault/` の利用者資産（`plans`/`tasks`/`verdicts`/`log`/`designs` と、`vault/rules/` のルール）には一切触れない。これらは計画・タスク・検証結果・作業ログという利用者自身の作業成果であり、ハーネスを外しても消さずに残す。
 
 ## インストール後の次の一歩
 どちらのパターンでも、最初に打つのは `/plan <ゴール>` になる。

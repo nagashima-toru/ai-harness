@@ -254,7 +254,7 @@ log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は 
 | approved な計画票が2件以上 | ブロック：1つだけ approved にする |
 | done の行に attempt が一致する正しい PASS の verdict が無い（verdict が無い・JSON として読めない・task / attempt が不一致・result が PASS でない・形式が不正） | ブロック：表の上から最初のその行について、status を review に戻し verifier を実行するよう指示する |
 | doing / review のタスクが無い | 許可 |
-| verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く |
+| verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く。status が doing で、log（7節）にその id の記録行（`- <日時> <id> worktree path=...`）が無い時は、creator の完了通知を待っているならそのままターンを終えて待つよう案内する文面になる（判定は同じ） |
 | verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数（5節の数え方）と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
 | FAIL かつ attempt < 上限 | ブロック：doing に戻し attempt を +1 して修正 |
 | FAIL かつ attempt ≥ 上限 | ブロック：blocked にし question を書く（既に blocked なら許可） |

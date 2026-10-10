@@ -1,0 +1,15 @@
+{
+  "task": "P-20261010-design-id-cleanup/T-02",
+  "attempt": 3,
+  "result": "PASS",
+  "checked_at": "2026-10-10 11:00",
+  "criteria": [
+    {"text": "手順1が `design/d-<YYYYMMDD>-<スラッグ>` のブランチを切ると書いている（`grep -nF 'git checkout -b design/d-<YYYYMMDD>-<スラッグ>' .claude/skills/design/SKILL.md` が1行以上出す）", "ok": true, "note": "実行コマンド: `grep -nF 'git checkout -b design/d-<YYYYMMDD>-<スラッグ>' .claude/skills/design/SKILL.md`（worktree内） / 出力: 20行目に手順1として1行ヒット"},
+    {"text": "SKILL.md に最終フェーズの受け入れ基準の候補へ入れる文がある（`grep -nF '決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する' .claude/skills/design/SKILL.md` が1行以上出し、その行に `最終フェーズ` の語がある）", "ok": true, "note": "実行コマンド: 同grep / 出力: 29行目の1行のみヒットし、行頭が「最終フェーズの「受け入れ基準の候補」には必ず…」で `最終フェーズ` を含む"},
+    {"text": "テンプレートの frontmatter の `id` が新しい形式の例になっている（`grep -n '^id: D-<YYYYMMDD>-<スラッグ>$' vault/templates/design.md` が1行出す）", "ok": true, "note": "実行コマンド: `grep -n '^id: D-<YYYYMMDD>-<スラッグ>$' vault/templates/design.md` / 出力: 2:id: D-<YYYYMMDD>-<スラッグ>"},
+    {"text": "テンプレートにも最終フェーズの候補の行がある（`grep -nF '決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する' vault/templates/design.md` が1行出す）", "ok": true, "note": "実行コマンド: 同grep / 出力: 40行目「- （最終フェーズには必ず入れる）決定事項のうち docs に無いものを …削除する」の1行"},
+    {"text": "旧形式の記述が残っていない（`grep -nE 'D-xxx|d-xxx|vault/designs/D-[0-9]{3}|design/d-[0-9]{3}|最大値 ?\\+1|\\+ 3桁|^id: D-[0-9]{3}$' .claude/skills/design/SKILL.md vault/templates/design.md` が何も出さない）", "ok": true, "note": "実行コマンド: 同grep（2ファイル） / 出力: 空、終了コード1（ヒット無し）"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<N> fail=0` を出す（(run-skill-3) と参照切れ検査 (ref-1) を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree内） / 出力: smoke: pass=478 fail=0"}
+  ],
+  "reasons": []
+}

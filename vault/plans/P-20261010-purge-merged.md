@@ -17,7 +17,7 @@ D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | purge_plan.sh に --merged（--list・--report・--apply）を足し smoke で確かめる | |
-| T-02 | doing | 1 | T-01,T-07 | archive_plans.sh と smoke の archive_plans 節を消す | |
+| T-02 | review | 1 | T-01,T-07 | archive_plans.sh と smoke の archive_plans 節を消す | |
 | T-03 | todo | 0 | T-02 | install.sh・uninstall.sh から vault/archive を除く | |
 | T-04 | done | 1 | T-01 | runbook 5節を一括削除の手順に書き換える | |
 | T-05 | done | 1 | T-01 | vault-spec から archive の記述を除き --merged を書く | |

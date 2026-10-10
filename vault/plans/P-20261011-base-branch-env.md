@@ -22,7 +22,7 @@ status: approved
 | T-03 | done | 1 | - | purge_plan.sh --merged のマージ済み判定をベースブランチの版で行う | |
 | T-04 | done | 2 | - | plan・design・run のスキルと creator.md の main をベースブランチにする | |
 | T-05 | done | 2 | - | vault-spec・runbook・install に HARNESS_BASE_BRANCH を書く | |
-| T-06 | review | 1 | T-01,T-02,T-03,T-04,T-05 | smoke.sh に既定 main と develop のケースを足す | |
+| T-06 | done | 1 | T-01,T-02,T-03,T-04,T-05 | smoke.sh に既定 main と develop のケースを足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

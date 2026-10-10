@@ -54,24 +54,38 @@ AI の作業を「作成 → 検証」の二段構成にし、検証が PASS し
 - 導入先で積む拡張の例（導入先で書くルールの例）：開発案件なら、型・API・テスト雛形などの「契約」タスクを先に切り、実装タスクを `after` でそれに依存させる、というルールを `vault/rules/planner/` に置く
 
 ## 仕組み
+```text
+ human        orchestrator (main)                 verifier (separate context)
+   |                  |                                      |
+   | /plan <goal>     |                                      |
+   +----------------> | create branch work/<id>              |
+   |                  | planner: draft plan + tasks          |
+   |                  | granularity OK -> approved (auto)    |
+   |                  | /run: todo -> doing                  |
+   |                  | creator (worktree) builds -> review  |
+   |                  +------------------------------------> | check criteria
+   |                  |                                      | write verdicts/<id>.json
+   |                  | <------------------------------------+
+   |                  | PASS: done / FAIL: doing / cap: blocked
+   |                  | all done -> plan done, vcs_finish.sh -> PR
+   |                  v
+   |        Stop hook (stop_gate.py)
+   |        compares task table and verdicts, blocks mismatch
+   | answer blocked, merge PR
+   +----------------> vault/plans/<id>.md (truth) , vault/log/<id>.md (log)
 ```
- 人                      オーケストレーター（メイン）           verifier（別コンテキスト）
- │ /plan <ゴール>          │                                       │
- ├──────────────────────▶ ブランチ work/<計画ID> を作成             │
- │                        │ planner が計画票 <計画ID>.md / タスク票を draft │
- │                        │ 粒度の確認後、status を approved に（自動）  │
- │                        │ 続けて /run の手順を実行                   │
- │                        │ todo→doing → creator が worktree で作る → review ──▶ 受け入れ基準を照合
- │                        │                                       │ verdicts/<計画ID>/<id>.json
- │                        │ ◀─────────────────────────────────────┘
- │                        │ PASS → done / FAIL → doing(attempt+1) / 上限 → blocked
- │                        │ 全タスク done → status を done にし vcs_finish.sh で PR
- │                        ▼
- │               Stop フック（stop_gate.py）
- │               計画票のタスク表と verdict を照合し、整合しない終了をブロック
- │ blocked に答えて戻す・PR をマージ
- └──────────────────────▶ vault/plans/<計画ID>.md（状態の正本）  vault/log/<計画ID>.md（追記ログ）
-```
+
+1. 人が `/plan <ゴール>` を打つと、計画のブランチ `work/<計画ID>` が作られる。
+2. `planner` が計画票とタスク票を draft で作る。
+3. タスクの粒度の確認が通ると、計画票の status が `approved` になる（自動）。続けて `/run` の手順に入る。
+4. タスクを `todo` から `doing` にし、`creator` が `worktree` で成果物を作って `review` にする。
+5. `verifier`（別コンテキスト）が受け入れ基準を照合し、`vault/verdicts/<計画ID>/<id>.json` を書く。
+6. `PASS` なら `done`、`FAIL` なら `doing`（attempt+1）に戻す。試行の上限に達したら `blocked` にする。
+7. 全タスクが `done` になったら計画票を `done` にし、`scripts/vcs_finish.sh` で PR を作る。
+8. Stop フック `.claude/hooks/stop_gate.py` が、計画票のタスク表と verdict を照合し、整合しない終了をブロックする。
+9. 人は `blocked` に答えてタスクを戻し、PR をマージする。
+10. 状態の正本は `vault/plans/<計画ID>.md`、追記ログは `vault/log/<計画ID>.md`。
+
 PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェント（オーケストレーター）は `bash scripts/vcs_finish.sh` で PR を作るまでしか行わない）。
 
 ## 構成

@@ -12,6 +12,9 @@
   (e) 「## タスク表」のデータ行の列数が6でない
   (g) status が done の行に、attempt が一致する正しい PASS の verdict が無い
 
+draft 計画のタスク票への Write/Edit では、`vault/templates/task.md` の6見出し（目的・入力・成果物・
+受け入れ基準・決定済み・進捗）が欠けていれば止める（`heading_violation`）。
+
 加えて、1ブランチ1計画の不変条件を検査する：
   (f) approved な計画票が2件以上ある
 
@@ -70,6 +73,47 @@ def dependency_violations(tasks):
 
 TASK_PATH_RE = re.compile(r"^vault/tasks/([^/]+)/(T-\d{2})\.md$")
 CRITERIA_MIN, CRITERIA_MAX = 3, 7
+
+
+HEADINGS = ("## 目的", "## 入力", "## 成果物", "## 受け入れ基準", "## 決定済み", "## 進捗")
+
+
+def heading_violation(payload, root):
+    """draft 計画のタスク票への Write/Edit で6見出しのどれかが欠けていれば理由文を返す。対象外・問題なしは None。
+
+    fail-open：計画票が無い・読めない・status が取れない・タスク票が読めない場合は None。
+    """
+    if payload.get("tool_name") not in ("Write", "Edit"):
+        return None
+    tool_input = payload.get("tool_input")
+    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+    if not isinstance(file_path, str) or not file_path:
+        return None
+    if os.path.isabs(file_path):
+        rel = os.path.relpath(file_path, os.path.abspath(root))
+    else:
+        rel = os.path.normpath(file_path)
+    m = TASK_PATH_RE.match(rel.replace(os.sep, "/"))
+    if not m:
+        return None
+    plan_id, task_id = m.group(1), m.group(2)
+    _, status = H.plan_id_and_status(os.path.join(root, "vault", "plans", plan_id + ".md"))
+    if status != "draft":
+        return None
+    try:
+        with open(os.path.join(root, rel), encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return None
+    lines = {line.rstrip() for line in text.split("\n")}
+    missing = [h for h in HEADINGS if h not in lines]
+    if not missing:
+        return None
+    return (
+        f"[plan_guard] {plan_id}/{task_id} のタスク票に見出しが足りません（{'、'.join(missing)}）。"
+        f"vault/templates/task.md の6見出し（{'・'.join(HEADINGS)}）をそろえてください。"
+        f"「## 進捗」は見出しだけを書き、本文は空にします。"
+    )
 
 
 def granularity_violation(payload, root):
@@ -168,6 +212,10 @@ def main():
         sys.exit(0)
 
     root = project_dir(payload)
+
+    violation = heading_violation(payload, root)
+    if violation:
+        block(violation)
 
     violation = granularity_violation(payload, root)
     if violation:

@@ -283,11 +283,11 @@ expect_guard "(j) work ブランチで git commit → 許可" allow \
 expect_guard "(guard3-b) work/p-test で git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 git -C "$GTMP" checkout -q main
-git -C "$GTMP" checkout -q -b design/d-999
-expect_guard "(k) design/d-999 ブランチで git commit → 許可" allow \
+git -C "$GTMP" checkout -q -b design/d-20991231-smoke
+expect_guard "(k) design/d-20991231-smoke ブランチで git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
-expect_guard "(l) design/d-999 ブランチで vault/designs/D-999.md へ Write → 許可" allow \
-  "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$GTMP"'/vault/designs/D-999.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
+expect_guard "(l) design/d-20991231-smoke ブランチで vault/designs/D-20991231-smoke.md へ Write → 許可" allow \
+  "$(printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"'"$GTMP"'/vault/designs/D-20991231-smoke.md"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
 git -C "$GTMP" checkout -q --detach
 expect_guard "(guard3-b) detached HEAD で git commit → 許可" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | CLAUDE_PROJECT_DIR="$GTMP" python3 "$GUARD_HOOK")"
@@ -2452,6 +2452,10 @@ if ! grep -qF 'gh issue create' "$RUN_SKILL" && grep -qF 'gh api repos/{owner}/{
 expect_eq "(run-skill-2) run の issue 起票が REST（gh issue create が無い）" ok "$rs2"
 if grep -qF '`gh api` の PR 作成に渡すはずだった' "$RUN_SKILL" && grep -qF '`gh api` の PR 作成に渡すはずだった' "$DESIGN_SKILL"; then rs3=ok; else rs3=NG; fi
 expect_eq "(run-skill-3) run・design の MCP 代替が gh api の PR 作成を引き継ぐ" ok "$rs3"
+if grep -qF 'design/d-<YYYYMMDD>-<スラッグ>' "$DESIGN_SKILL" && grep -qF '決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する' "$DESIGN_SKILL" && ! grep -qF 'D-x''xx' "$DESIGN_SKILL"; then ds1=ok; else ds1=NG; fi
+expect_eq "(design-skill-1) design スキルが新しいブランチ名と最終フェーズの削除を書いている" ok "$ds1"
+if grep -qxF 'id: D-<YYYYMMDD>-<スラッグ>' "$ROOT/vault/templates/design.md"; then ds2=ok; else ds2=NG; fi
+expect_eq "(design-skill-2) design テンプレートの id が新しい形式" ok "$ds2"
 rs_ord() { # 手順7の中で、引数の固定文字列の最初の出現行が全部あり、この順に増える時だけ ok
   local prev=0 n s
   for s in "$@"; do
@@ -2480,7 +2484,7 @@ docs = [".claude/ai-harness.md"]
 docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/skills/*/SKILL.md")))
 docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/agents/*.md")))
 docs += ["README.md", "docs/vault-spec.md", "docs/runbook.md", "docs/install.md"]
-excl = {"vault/designs/D-xxx.md", ".claude/projects", ".claude/harness-manifest.json", ".claude/settings.local.json"}
+excl = {".claude/projects", ".claude/harness-manifest.json", ".claude/settings.local.json"}
 for d in docs:
     f = os.path.join(root, d)
     if not os.path.isfile(f):
@@ -2516,7 +2520,7 @@ docs/install.md:1: docs/no-such-e.md'
 expect_eq "(ref-2) 存在しないパスを対象の文書ごとに見つけ、対象外の文書は見ない" "$RC_WANT" "$(refcheck "$RC/a")"
 
 mkdir -p "$RC/b"
-printf '%s\n' '`vault/<id>.md`' '`scripts/*.sh`' '`docs/{a,b}.md`' '`vault/$X.md`' '`docs/a b.md`' '`vault/rules/x.md`' '`vault/designs/D-xxx.md`' '`.claude/projects`' '`.claude/harness-manifest.json`' '`.claude/settings.local.json`' > "$RC/b/README.md"
+printf '%s\n' '`vault/<id>.md`' '`scripts/*.sh`' '`docs/{a,b}.md`' '`vault/$X.md`' '`docs/a b.md`' '`vault/rules/x.md`' '`.claude/projects`' '`.claude/harness-manifest.json`' '`.claude/settings.local.json`' > "$RC/b/README.md"
 expect_eq "(ref-3) 雛形・vault/rules/ 配下・除外リストは数えない" "" "$(refcheck "$RC/b")"
 
 mkdir -p "$RC/c/.claude"

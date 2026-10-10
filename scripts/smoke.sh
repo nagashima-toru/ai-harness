@@ -748,6 +748,27 @@ expect_eq "(d) 旧ブロックの行は消える" "0" "$(grep -c '^# AI協働ハ
 expect_eq "(d) マーカー外の既存本文は無傷" "1" "$(grep -c '^- 既存のルール$' "$MTMP/CLAUDE.md")"
 expect_eq "(d) begin の出現は1回のまま" "1" "$(grep -c 'ai-harness:begin' "$MTMP/CLAUDE.md")"
 
+OTMP="$MTMP/out"
+mkdir -p "$OTMP"
+printf '# 前置き\n<!-- ai-harness:begin v1 -->\n# 見出し\n@.claude/ai-harness.md\n<!-- ai-harness:end -->\n@docs/vision.md\n' > "$OTMP/src.md"
+python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/new/CLAUDE.md" >/dev/null
+expect_eq "(mc-out) create でマーカーの外の行が配られない" \
+  "$(printf '<!-- ai-harness:begin v1 -->\n# 見出し\n@.claude/ai-harness.md\n<!-- ai-harness:end -->')" \
+  "$(cat "$OTMP/new/CLAUDE.md")"
+printf '# 既存\n\n- 既存のルール\n' > "$OTMP/merge.md"
+python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/merge.md" >/dev/null
+expect_eq "(mc-out) merge でマーカーの外の行が配られない" "0 0" \
+  "$(grep -c '^@docs/vision\.md$' "$OTMP/merge.md") $(grep -c '^# 前置き$' "$OTMP/merge.md")"
+printf '<!-- ai-harness:begin v1 -->\n# 古い見出し\n<!-- ai-harness:end -->\n' > "$OTMP/upd.md"
+out="$(python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/upd.md")"
+expect_eq "(mc-out) update でマーカーの外の行が配られない" "update 0" \
+  "${out%% *} $(grep -c '^@docs/vision\.md$' "$OTMP/upd.md")"
+out="$(python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/upd.md")"
+expect_eq "(mc-out) ブロックが同じなら skip" "skip" "${out%% *}"
+python3 "$MERGE_PY" "$ROOT/CLAUDE.md" "$OTMP/repo/CLAUDE.md" >/dev/null
+expect_eq "(mc-out) リポジトリの CLAUDE.md から create しても @docs/vision.md が入らない" "0" \
+  "$(grep -c '^@docs/vision\.md$' "$OTMP/repo/CLAUDE.md")"
+
 echo "== install.sh の CLAUDE.md 扱い =="
 ITMP="$(smoke_tmpdir)" || abort_tmp
 printf '# 既存プロジェクト\n\n- 既存のルール\n' > "$ITMP/CLAUDE.md"
@@ -770,6 +791,21 @@ arch_ok=ok
 for d in plans tasks verdicts log designs templates rules; do [ -d "$ITMP/vault/$d" ] || arch_ok=ng; done
 expect_eq "(inst-arch) install.sh は vault/archive/ を作らない" "ok" "$arch_ok"
 rm -rf "$ITMP"
+IOTMP="$(smoke_tmpdir)" || abort_tmp
+bash "$ROOT/scripts/install.sh" "$IOTMP" >/dev/null 2>&1
+expect_eq "(in-out) 既定の install で作った CLAUDE.md に @docs/vision.md の行が無い" "0" \
+  "$(grep -c '^@docs/vision\.md$' "$IOTMP/CLAUDE.md")"
+expect_eq "(in-out) docs/vision.md が配られない" "absent" \
+  "$({ [ -e "$IOTMP/docs/vision.md" ] || [ -L "$IOTMP/docs/vision.md" ]; } && echo present || echo absent)"
+expect_eq "(in-out) vault/rules/common/vision.md が配られない" "absent" \
+  "$({ [ -e "$IOTMP/vault/rules/common/vision.md" ] || [ -L "$IOTMP/vault/rules/common/vision.md" ]; } && echo present || echo absent)"
+IOTMP2="$(smoke_tmpdir)" || abort_tmp
+bash "$ROOT/scripts/install.sh" --no-claude-md "$IOTMP2" >/dev/null 2>&1
+want_block="$(python3 -c "import sys;sys.path.insert(0,'$ROOT/scripts');import merge_claude_md as m;sys.stdout.write(m.extract_block(open('$ROOT/CLAUDE.md').read()))")"
+expect_eq "(in-out) --no-claude-md で新規に作った CLAUDE.md がマーカーブロックだけになる" "$want_block" "$(cat "$IOTMP2/CLAUDE.md")"
+expect_eq "(in-out) --no-claude-md で新規に作った CLAUDE.md に @docs/vision.md の行が無い" "0" \
+  "$(grep -c '^@docs/vision\.md$' "$IOTMP2/CLAUDE.md")"
+rm -rf "$IOTMP" "$IOTMP2"
 
 echo "== install.sh のマニフェスト =="
 NTMP="$(smoke_tmpdir)" || abort_tmp

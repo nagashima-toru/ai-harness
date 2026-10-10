@@ -10,7 +10,7 @@
 | `vault/tasks/<計画ID>/T-01.md` | タスク票（テンプレート：`vault/templates/task.md`） |
 | `vault/verdicts/<計画ID>/T-01.json` | 検証結果。最新のみ、上書き |
 | `vault/log/<計画ID>.md` | その計画の追記専用ログ |
-| `vault/designs/D-001.md` | 設計文書（テンプレート：`vault/templates/design.md`）。`/plan` に渡す前の下ごしらえ |
+| `vault/designs/D-<YYYYMMDD>-<スラッグ>.md` | 設計文書（テンプレート：`vault/templates/design.md`）。`/plan` に渡す前の下ごしらえ。最終フェーズで削除する（13節） |
 | `vault/harness-improvements/<計画ID>.md` | run の振り返り（`.claude/skills/run/SKILL.md` 手順8）で issue の起票に失敗した時の改善提案。提案に対応した計画が、その計画の中で削除する。5状態遷移の対象ではない |
 | `vault/rules/` | 作成エージェント・verifier・planner に渡すルール（「ルール（`vault/rules/`）」の節を見る） |
 
@@ -78,13 +78,13 @@
 | 計画 ID | `P-YYYYMMDD-<slug>` | `P-20260919-git-ops` |
 | タスク ID | 計画スコープの `T-` + 2桁 | `T-01` |
 | ブランチ名 | 計画 ID を英小文字にして `work/` を付ける | `work/p-20260919-git-ops` |
-| 設計文書 ID | `D-` + 3桁 | `D-001` |
+| 設計文書 ID | `D-<YYYYMMDD>-<スラッグ>` | `D-20261010-plan-purge` |
 
 - 計画 ID は日付とスラッグから作るので**採番が要らない**。並行するセッションが同時に計画を作っても衝突しない
 - スラッグは英小文字・ハイフン区切り。人が計画を識別できればよく、生成アルゴリズムは規定しない
 - タスク ID は計画の中で `T-01` から振る。計画が違えば同じ `T-01` があってよい
 - 計画をまたいでタスクを一意に指す時は `<計画ID>/T-01` と書く（verdict の `task` もこの形式）
-- 設計文書 ID だけは `vault/designs/` 内の既存の最大値 +1 で採番する。欠番は許容、再利用は禁止
+- 設計文書 ID も日付とスラッグから作るので採番が要らない（13節）
 - ディレクトリ・その他ファイルは小文字ケバブケース
 - 日時は `YYYY-MM-DD HH:MM`（JST）。取得例：`TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'`
 
@@ -337,10 +337,12 @@ vault/rules/
 
 ## 13. 設計文書（`vault/designs/`）
 
-大きなゴールを `/plan` に渡す前に、調査と人への質問を済ませて決定事項を固めるための文書。`/design` スキルが `vault/designs/D-001.md` に書く。テンプレートは `vault/templates/design.md`。
+大きなゴールを `/plan` に渡す前に、調査と人への質問を済ませて決定事項を固めるための文書。`/design` スキルが `vault/designs/D-<YYYYMMDD>-<スラッグ>.md` に書く。テンプレートは `vault/templates/design.md`。
 
-### ID と採番
-- `D-` + 3桁（`D-001`）。採番は `vault/designs/` 内の既存ファイルの最大値 +1。タスク・計画とは独立した系列
+### ID
+- 形式は `D-<YYYYMMDD>-<スラッグ>`。日付は `/design` を実行した日（JST、`TZ=Asia/Tokyo date +%Y%m%d`）。スラッグは計画 ID と同じ規則 `[a-z0-9][a-z0-9-]*`。採番は要らない
+- 同じ ID の設計文書か同名のブランチが既にある時はスラッグを変える
+- 旧方式（`D-` と3桁の番号）の設計文書は D-016 フェーズ3 で削除した
 - frontmatter は `id` のみ。`status` は持たない。設計文書は一度提示して終わる読み物であり、5状態遷移の対象ではない
 
 ### 形式
@@ -356,9 +358,15 @@ vault/rules/
 「受け入れ基準の候補」は、そのフェーズだけが単体で `main` にマージされてもシステムが動作する状態を保証する内容にする。フェーズは `/plan` によって1本の PR として `main` に単体マージされる実行単位であり、他フェーズの実装を前提にしないと動作しない基準は書かない。
 
 ### ブランチと PR
-- `/design` は `main` から `git checkout -b design/d-xxx`（`xxx` は D-ID の3桁を小文字化したもの。例：D-002 → `design/d-002`）でブランチを切り、設計文書をそのブランチ上でコミットする（`main` 上では `agent_write_guard.py` が `git commit` を拒否するため）
+- `/design` は `main` から `git checkout -b design/d-<YYYYMMDD>-<スラッグ>`（設計文書 ID を英小文字にして `design/` を付けたもの）でブランチを切り、設計文書をそのブランチ上でコミットする（`main` 上では `agent_write_guard.py` が `git commit` を拒否するため）
 - 設計文書は全フェーズ分を一括で1回の PR で `main` にマージする（フェーズ単位で分割マージしない）。`scripts/vcs_finish.sh` を実行して PR/MR を作り（ホスティング無しの場合は案内を受け取り）、人がレビューして `main` へマージする（`/plan` の `run` が最後に作る PR と同じ運用。`gh pr merge`/`glab mr merge` はエージェントが実行しない。マージは人が行う）
 - マージのタイミングはフェーズ1の実装着手前。人が PR をレビュー・マージしてから、フェーズ1のゴール文を `/plan` に渡す
+
+### 最終フェーズでの削除
+- 設計文書は全フェーズを `/plan` に渡し終えるまで `main` に要るが、最後のフェーズが終われば読まれない。削除までは全フェーズの `/plan` のために `main` に残す
+- `/design` は最終フェーズの「受け入れ基準の候補」に「決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する」を必ず入れる
+- 削除は creator がタスクの成果物として行ってよい（成果物に `vault/designs/` を宣言する。`vault/designs/` は差分ゲートの禁止対象ではない）
+- 設計文書を読む他のタスクの後に `after` で依存させて置く
 
 ### `/plan` との関係
 - `/design` は planner サブエージェントを呼ばない。設計文書を書いて提示し、そこで止まる

@@ -1826,11 +1826,13 @@ expect "(hooklib-rules) stop_gate: status: \"approved\"（引用符付き）の�
 # c
 make_plan "P-TEST" '"approved"' "| T-0001 | blocked | 1 | - | A | |"
 expect "(hooklib-rules) plan_guard: status: \"approved\"（引用符付き）の計画票を approved として扱う" block "$(run_plan_guard)" "question 列が空です"
-# d（status の後ろに語が続く fixtures-comment も同じ出力に含める。両方満たす時だけ P-CUR-Q になる）
+# d（status の後ろに語が続く計画票を smoke が $TMP/hr_fc に作り、同じ出力に含める。両方満たす時だけ P-CUR-Q になる）
 rm -rf "$TMP/vault/plans"; mkdir -p "$TMP/vault/plans"
 printf -- "---\nid: 'P-CUR-Q'\nstatus: \"approved\"\n---\n" > "$TMP/vault/plans/P-CUR-Q.md"
 hr_q="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
-hr_fc="$(CLAUDE_PROJECT_DIR="$ROOT/vault/tasks/P-20261004-hooklib-rules/fixtures-comment" bash "$CURRENT_PLAN_SH")"
+mkdir -p "$TMP/hr_fc/vault/plans"
+printf -- '---\nid: P-FIXTURE-COMMENT # id の後ろにメモ\nstatus: approved # status の後ろにメモ\n---\n' > "$TMP/hr_fc/vault/plans/P-FIXTURE-COMMENT.md"
+hr_fc="$(CLAUDE_PROJECT_DIR="$TMP/hr_fc" bash "$CURRENT_PLAN_SH")"
 [ "$hr_fc" = "P-FIXTURE-COMMENT" ] || hr_q="$hr_q (fixtures-comment: $hr_fc)"
 expect_eq "(hooklib-rules) current_plan.sh: id・status が引用符付き → 引用符を外した計画 ID を出す" "P-CUR-Q" "$hr_q"
 # e（インデントした done でない行を持つ計画は候補から外れる。対象は q の1件だけ）

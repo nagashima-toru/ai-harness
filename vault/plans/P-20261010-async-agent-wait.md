@@ -17,7 +17,7 @@ D-20261010-async-agent-wait フェーズ1（最終フェーズ）：run・plan �
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | stop_gate.py の記録行の無い doing のブロック理由に完了通知待ちの案内を足し smoke で確かめる | |
 | T-02 | todo | 0 | T-01 | vault-spec.md 9節の表に記録行の無い doing の時のメッセージの違いを書く | |
-| T-03 | doing | 1 | - | run の SKILL.md に起動通知が返った時の待ち方と10分のハング基準を書く | |
+| T-03 | review | 1 | - | run の SKILL.md に起動通知が返った時の待ち方と10分のハング基準を書く | |
 | T-04 | done | 1 | - | plan の SKILL.md の手順4に planner の起動通知が返った時の待ち方を書く | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | 決定事項を docs/decisions.md に追記し設計文書を削除する | |
 

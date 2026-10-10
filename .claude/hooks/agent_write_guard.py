@@ -2,8 +2,8 @@
 """PreToolUse フック：書き込みの3つの判定と、worktree への委譲（D-015 フェーズ3）。
 
 判定は次の3つだけ。どれにも当たらなければ何も出力せず終了コード0で終わる。
-- (b) main 上の git commit の拒否：Bash のコマンドを &&・||・;・|・改行（引用符の外）で区切った各部分の
-  先頭が git commit（git のオプションを挟む形も）で、現在のブランチが main の時。引用符の中は見ない。
+- (b) ベースブランチ（HARNESS_BASE_BRANCH、既定 main）か main 上の git commit の拒否：Bash のコマンドを &&・||・;・|・改行（引用符の外）で区切った各部分の
+  先頭が git commit（git のオプションを挟む形も）で、現在のブランチがベースブランチか main の時。引用符の中は見ない。
   agent_type は問わない。ブランチが取れない時（非 git・detached HEAD）は素通り。
 - (a) done のタスク票・verdict への書き込みの拒否：Write / Edit / MultiEdit / NotebookEdit の対象が
   vault/tasks/<計画ID>/<id>.md または vault/verdicts/<計画ID>/<id>.json で、計画票（vault/plans/<計画ID>.md）の
@@ -84,6 +84,12 @@ def resolve_root(tool, tool_input, payload):
         if top:
             return top
     return fallback
+
+
+def protected_branches():
+    """直接コミットを拒否するブランチの一覧。[<ベース>, "main"]（ベースが main なら ["main"]）。"""
+    base = os.environ.get("HARNESS_BASE_BRANCH", "").strip() or "main"
+    return list(dict.fromkeys([base, "main"]))
 
 
 def current_branch(root):
@@ -229,12 +235,13 @@ def main():
 
     root = resolve_root(tool, tool_input, payload)
 
-    # (b) main 直接コミットの拒否
+    # (b) ベースブランチ（HARNESS_BASE_BRANCH、既定 main）か main への直接コミットの拒否
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
-        if is_git_commit_command(cmd) and current_branch(root) == "main":
+        branch = current_branch(root)
+        if is_git_commit_command(cmd) and branch in protected_branches():
             deny(
-                f"[agent_write_guard] main への直接コミットはできません。"
+                f"[agent_write_guard] {branch} への直接コミットはできません。"
                 f"ブランチを切ってください（work/<計画IDの英小文字>）: {cmd[:120]}"
             )
 

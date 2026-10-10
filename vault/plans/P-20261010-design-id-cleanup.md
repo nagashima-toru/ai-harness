@@ -20,7 +20,7 @@ D-016 フェーズ3：設計文書の ID を `D-<YYYYMMDD>-<スラッグ>`（ブ
 | T-02 | doing | 1 | - | /design スキルとテンプレートを新しい ID と最終フェーズの削除に合わせる | |
 | T-03 | done | 1 | - | README・runbook・planner 定義・run スキルの旧形式の設計文書 ID を直す | |
 | T-04 | todo | 0 | T-02,T-03 | smoke の設計文書 ID の例を新形式にし、/design の記述の検査を足す | |
-| T-05 | todo | 0 | - | D-016 の決定事項を docs/decisions.md に追記する | |
+| T-05 | doing | 1 | - | D-016 の決定事項を docs/decisions.md に追記する | |
 | T-06 | todo | 0 | T-01,T-02,T-03,T-04,T-05 | 既存の設計文書 D-001〜D-016 を削除する | |
 
 ## 計画の受け入れ基準

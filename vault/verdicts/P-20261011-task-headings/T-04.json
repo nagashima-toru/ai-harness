@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-task-headings/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 07:53",
+  "criteria": [
+    {"text": "`grep -c '見出しごと末尾に足してから追記する' .claude/agents/creator.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c '見出しごと末尾に足してから追記する' .claude/agents/creator.md`（worktree内） / 出力: 1"},
+    {"text": "`grep -c '既存の行を1文字も変えず、末尾に空行1つを挟んで' .claude/agents/creator.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c '既存の行を1文字も変えず、末尾に空行1つを挟んで' .claude/agents/creator.md` / 出力: 1"},
+    {"text": "上の2つの文言が「## 手順」節の中にある（`grep -n` の行番号が `## 手順` の行と次の `## ` 見出し行の間にある）", "ok": true, "note": "実行コマンド: `grep -n '<2文言>\\|^## ' .claude/agents/creator.md` / 出力: 17行目が `## 手順`、21行目に両文言（手順4）、25行目が `## 受け渡し`。21は17と25の間"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存し `grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: smoke.sh の出力の `tail -1` / 出力: smoke: pass=502 fail=0"}
+  ],
+  "reasons": []
+}

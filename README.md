@@ -13,15 +13,7 @@ AI の作業を「作成 → 検証」の二段構成にし、検証が PASS し
 ## セットアップ
 前提：`claude`（Claude Code）、`git`、`python3` が使える。
 
-```bash
-# このリポジトリで試す
-git clone git@github.com:nagashima-toru/ai-harness.git && cd ai-harness
-bash scripts/smoke.sh        # フックの動作検証
-```
-
-他のプロジェクトへ組み込む場合（まっさらな新規ディレクトリ／既存リポジトリのどちらでも）は `docs/install.md` を参照。組み込んだ後にハーネス側が更新されたら `bash scripts/install.sh --update <組み込み先>` で取り込む。未編集のファイルだけが最新化され、組み込み先で編集したファイルは `skip (edited)` として報告されるだけで上書きされない。
-
-ハーネスのルール本文は `.claude/ai-harness.md` にあり、導入先の `CLAUDE.md` に入るのは、それを `@` で読み込むマーカー付きの4行ブロックだけである。このリポジトリの `CLAUDE.md` はマーカーの外に `@docs/vision.md` を1行持つが、マーカーの外の行は導入先に配らない。既存リポジトリに入れる時は `install.sh` がこのブロックだけを既存の `CLAUDE.md` にマージする（既存本文は残り、書き換え時は `CLAUDE.md.bak-<日時>` ができる）。`--no-claude-md` で抑止できる。
+他のプロジェクトへの組み込み・更新・取り外しは [docs/install.md](docs/install.md) の「パターン2: 既存リポジトリに追加する」「ハーネスを更新する（2回目以降）」を参照（更新は `bash scripts/install.sh --update <組み込み先>`）。
 
 ## クイックスタート
 最初の PR をマージするまでの最小手順。

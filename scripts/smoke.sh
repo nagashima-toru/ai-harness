@@ -765,6 +765,10 @@ bash "$ROOT/scripts/install.sh" >/dev/null 2>&1; rc=$?
 expect_eq "(g) 引数なし → exit 2" "2" "$rc"
 bash "$ROOT/scripts/install.sh" --unknown "$ITMP" >/dev/null 2>&1; rc=$?
 expect_eq "(g) 不正なオプション → exit 2" "2" "$rc"
+arch_ok=ok
+[ -e "$ITMP/vault/archive" ] && arch_ok=ng
+for d in plans tasks verdicts log designs templates rules; do [ -d "$ITMP/vault/$d" ] || arch_ok=ng; done
+expect_eq "(inst-arch) install.sh は vault/archive/ を作らない" "ok" "$arch_ok"
 rm -rf "$ITMP"
 
 echo "== install.sh のマニフェスト =="
@@ -1503,6 +1507,92 @@ pp_run pp8 P-1; pp8_c=$PP_RC
 ( cd "$TMP/pp8_nogit" && bash "$PP_SH" "$PP_ID" ) >/dev/null 2>&1; pp8_d=$?
 expect_eq "(pp-8) 引数なし・未知のオプション・形式違いの ID・git の外はどれも終了コード2" "2:2:2:2" "$pp8_a:$pp8_b:$pp8_c:$pp8_d"
 
+echo "== purge_plan.sh --merged =="
+PM_OK="P-20990101-ok"
+pm_plan() { # $1=リポジトリのパス $2=計画ID $3=frontmatter の status $4...=タスク表の status
+  local d="$1" id="$2" st="$3" i=0 s
+  shift 3
+  mkdir -p "$d/vault/plans" "$d/vault/tasks/$id" "$d/vault/verdicts/$id" "$d/vault/log"
+  {
+    printf -- '---\nid: %s\nstatus: %s\n---\n# ゴール\nx\n\n## タスク表\n| id | status | title |\n|----|--------|-------|\n' "$id" "$st"
+    for s in "$@"; do i=$((i+1)); printf '| T-0%d | %s | t |\n' "$i" "$s"; done
+  } > "$d/vault/plans/$id.md"
+  printf '# T-01\n' > "$d/vault/tasks/$id/T-01.md"
+  printf '{"result":"PASS","reasons":[]}\n' > "$d/vault/verdicts/$id/T-01.json"
+  printf -- '- 2099-01-01 00:00 T-01 doing→review attempt=1\n' > "$d/vault/log/$id.md"
+}
+pm_make() { # $1=リポジトリ名。main に6計画と vault/archive/ をコミットし、作業ブランチ work/p-20990105-cur に切り替える
+  local d="$TMP/$1"
+  rm -rf "$d"
+  mkdir -p "$d"
+  pm_plan "$d" "$PM_OK" done done done
+  pm_plan "$d" P-20990102-appr approved done done
+  pm_plan "$d" P-20990103-rev done done review
+  pm_plan "$d" P-20990104-brdone approved done done
+  pm_plan "$d" P-20990105-cur done done done
+  pm_plan "$d" P-019 done done done
+  mkdir -p "$d/vault/archive"
+  printf 'old\n' > "$d/vault/archive/todo.md"
+  {
+    printf -- '- 2099-01-01 00:00 T-01 doing→blocked attempt=1 creator=sonnet 質問その1\n'
+    printf -- '- 2099-01-01 00:01 T-02 doing→blocked attempt=2\n'
+    printf -- '- 2099-01-01 00:02 T-02 blocked→todo 人の指示\n'
+  } >> "$d/vault/log/$PM_OK.md"
+  printf '{"result":"PASS","reasons":["a","b\\n  c"]}\n' > "$d/vault/verdicts/$PM_OK/T-01.json"
+  printf '{"result":"PASS","reasons":[]}\n' > "$d/vault/verdicts/$PM_OK/T-02.json"
+  ( cd "$d" && git init -q -b main . && git add -A && pp_git commit -q -m c && git checkout -q -b work/p-20990105-cur ) >/dev/null 2>&1
+  sed -i 's/^status: approved/status: done/' "$d/vault/plans/P-20990104-brdone.md"
+  ( cd "$d" && git add -A && pp_git commit -q -m c2 ) >/dev/null 2>&1
+}
+
+pm_make pm1
+pp_run pm1 --merged --list
+expect_eq "(pm-1) --list は対象1件だけを出し、何も変えない" "0|$PM_OK|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pm1)"
+
+pp_run pm1 --merged --report
+pm_want="$PM_OK/T-01: blocked 質問その1"$'\n'"$PM_OK/T-02: blocked (補足なし)"$'\n'"$PM_OK/T-01: reasons a"$'\n'"$PM_OK/T-01: reasons b c"
+expect_eq "(pm-2) --report は blocked の行と reasons を期待どおりの順で出し、何も変えない" "0|$pm_want|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pm1)"
+
+pm_make pm3
+pm3_head="$(cd "$TMP/pm3" && git rev-parse HEAD)"
+pp_run pm3 --merged --apply
+pm3_bad="$(pp_status pm3 | grep -vc '^D ')"
+pm3_left=1
+for p in vault/plans/$PM_OK.md vault/tasks/$PM_OK vault/verdicts/$PM_OK vault/log/$PM_OK.md vault/archive; do
+  [ -e "$TMP/pm3/$p" ] && pm3_left=0
+done
+pm3_keep=0
+[ -e "$TMP/pm3/vault/plans/P-20990102-appr.md" ] && [ -e "$TMP/pm3/vault/plans/P-20990103-rev.md" ] && [ -e "$TMP/pm3/vault/plans/P-20990104-brdone.md" ] && [ -e "$TMP/pm3/vault/plans/P-20990105-cur.md" ] && [ -e "$TMP/pm3/vault/plans/P-019.md" ] && pm3_keep=1
+pm3_want=$'vault/plans/P-20990101-ok.md\nvault/tasks/P-20990101-ok/\nvault/verdicts/P-20990101-ok/\nvault/log/P-20990101-ok.md\nvault/archive/'
+expect_eq "(pm-3) --apply は対象の4種と vault/archive/ を git rm し、対象外を残し、コミットしない" "0|0|1|1|$pm3_want|$pm3_head" "$PP_RC|$pm3_bad|$pm3_left|$pm3_keep|$(cat "$PP_OUT")|$(cd "$TMP/pm3" && git rev-parse HEAD)"
+
+pm_make pm4a
+printf 'changed\n' >> "$TMP/pm4a/vault/tasks/$PM_OK/T-01.md"
+pp_run pm4a --merged --apply; pm4a_rc=$PP_RC
+pm4a_ok=0
+[ -e "$TMP/pm4a/vault/plans/$PM_OK.md" ] && [ -e "$TMP/pm4a/vault/archive/todo.md" ] && [ "$(pp_status pm4a)" = " M vault/tasks/$PM_OK/T-01.md" ] && pm4a_ok=1
+pm_make pm4b
+printf 'new\n' > "$TMP/pm4b/vault/archive/new.md"
+pp_run pm4b --merged --apply; pm4b_rc=$PP_RC
+pm4b_ok=0
+[ -e "$TMP/pm4b/vault/plans/$PM_OK.md" ] && [ -e "$TMP/pm4b/vault/archive/todo.md" ] && [ "$(pp_status pm4b)" = "?? vault/archive/new.md" ] && pm4b_ok=1
+expect_eq "(pm-4) 未コミットの変更も vault/archive/ の未追跡ファイルも終了コード1で何も消さない" "1:1:1:1" "$pm4a_rc:$pm4a_ok:$pm4b_rc:$pm4b_ok"
+
+pm_make pm5
+pm5_rcs=""
+for pm5_args in "--merged" "--merged --list --report" "--merged --list --apply" "--merged --list P-20990101-ok" "--list" "--report" "--apply" "--merged --list --dry-run" "--merged --bogus"; do
+  # shellcheck disable=SC2086
+  pp_run pm5 $pm5_args
+  pm5_rcs="$pm5_rcs$PP_RC"
+done
+( cd "$TMP/pp8_nogit" && bash "$PP_SH" --merged --list ) >/dev/null 2>&1; pm5_rcs="$pm5_rcs$?"
+expect_eq "(pm-5) 引数の誤りはどれも終了コード2" "2222222222" "$pm5_rcs"
+
+pm_make pm6
+( cd "$TMP/pm6" && git rm -r -q -- vault/plans/$PM_OK.md vault/tasks/$PM_OK vault/verdicts/$PM_OK vault/log/$PM_OK.md vault/archive && pp_git commit -q -m c3 ) >/dev/null 2>&1
+pp_run pm6 --merged --apply
+expect_eq "(pm-6) 対象0件で vault/archive/ も無ければ --apply は終了コード0・標準出力が空" "0||" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pm6)"
+
 echo "== plan_record.py =="
 PR_PY="$ROOT/scripts/plan_record.py"
 PR_DIR="$(smoke_tmpdir)" || abort_tmp
@@ -1679,146 +1769,6 @@ vf_out="$( cd "$VF_REPO" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github HAR
 [ "$vf_out" = "https://github.com/o/r/pull/1" ] && vf_ok=1 || vf_ok=0
 vf_rest_check "(vf-rest-6) 標準出力は PR の URL の1行だけ" "$vf_ok" "$vf_out"
 
-echo "== archive_plans.sh =="
-AR_OUT="$TMP/ar_out.txt"; AR_ERR="$TMP/ar_err.txt"
-ar_init() { # $1=リポジトリ名（$TMP の下に作る）
-  mkdir -p "$TMP/$1/vault/plans" "$TMP/$1/vault/log"
-  ( cd "$TMP/$1" && git init -q -b main . ) >/dev/null 2>&1
-}
-ar_plan() { # $1=リポジトリ名 $2=計画ID $3=frontmatter の status $4=タスク表の status $5=log の最初の日時（YYYY-MM-DD HH:MM）
-  local d="$TMP/$1"
-  mkdir -p "$d/vault/tasks/$2" "$d/vault/verdicts/$2"
-  printf -- '---\nid: %s\nstatus: %s\n---\n# ゴール\nx\n\n## タスク表\n| id | status | title |\n|----|--------|-------|\n| T-01 | %s | t |\n' "$2" "$3" "$4" > "$d/vault/plans/$2.md"
-  printf '# T-01\n' > "$d/vault/tasks/$2/T-01.md"
-  printf '{"verdict":"PASS"}\n' > "$d/vault/verdicts/$2/T-01.json"
-  printf -- '- %s - draft→approved\n' "$5" > "$d/vault/log/$2.md"
-}
-ar_commit() { # $1=リポジトリ名
-  ( cd "$TMP/$1" && git add -A && git -c user.name=smoke -c user.email=smoke@example.com commit -q -m c ) >/dev/null 2>&1
-}
-ar_branch() { # $1=リポジトリ名 $2=作業ブランチ名
-  ( cd "$TMP/$1" && git checkout -q -b "$2" ) >/dev/null 2>&1
-}
-ar_run() { # $1=リポジトリ名 $2...=archive_plans.sh への引数。AR_RC に終了コード、AR_OUT/AR_ERR に出力
-  local r="$1"
-  shift
-  ( cd "$TMP/$r" && bash "$ROOT/scripts/archive_plans.sh" "$@" ) > "$AR_OUT" 2> "$AR_ERR"
-  AR_RC=$?
-}
-ar_clean() { # $1=リポジトリ名。作業ツリーに変更が無ければ clean
-  if [ -z "$(cd "$TMP/$1" && git status --porcelain)" ]; then echo clean; else echo dirty; fi
-}
-
-# 共通の用意：A=done・マージ済み、B=approved、C=表に review、E=移動先が既にある、CUR=現在のブランチの計画
-ar_init ar_repo
-ar_plan ar_repo P-20260101-a done done "2026-01-01 10:00"
-ar_plan ar_repo P-20260102-b approved todo "2026-01-02 10:00"
-ar_plan ar_repo P-20260103-c done review "2026-01-03 10:00"
-ar_plan ar_repo P-20260105-e done done "2026-01-05 10:00"
-ar_plan ar_repo P-20260109-cur done done "2026-01-09 10:00"
-mkdir -p "$TMP/ar_repo/vault/archive/2026-01/plans"
-printf 'x\n' > "$TMP/ar_repo/vault/archive/2026-01/plans/P-20260105-e.md"
-ar_commit ar_repo
-ar_branch ar_repo work/p-20260109-cur
-ar_plan ar_repo P-20260104-d done done "2026-01-04 10:00"
-ar_commit ar_repo
-
-ar_run ar_repo --keep 0 --dry-run P-20260101-a
-expect_eq "(ar-1) dry-run: 終了コード0" "0" "$AR_RC"
-expect_eq "(ar-1) dry-run: git mv 行が4行" "4" "$(grep -c '^git mv ' "$AR_OUT")"
-expect_eq "(ar-1) dry-run: ファイルは動いていない" "clean" "$(ar_clean ar_repo)"
-
-ar_init ar_repo2
-ar_plan ar_repo2 P-20260101-a done done "2026-01-01 10:00"
-ar_commit ar_repo2
-ar_branch ar_repo2 work/p-20260109-cur
-ar_run ar_repo2 --keep 0 --apply P-20260101-a
-expect_eq "(ar-2) apply: 終了コード0" "0" "$AR_RC"
-ar_dst_ok="yes"
-for ar_p in plans/P-20260101-a.md tasks/P-20260101-a/T-01.md verdicts/P-20260101-a/T-01.json log/P-20260101-a.md; do
-  [ -e "$TMP/ar_repo2/vault/archive/2026-01/$ar_p" ] || ar_dst_ok="no"
-done
-expect_eq "(ar-2) apply: archive/2026-01/{plans,tasks,verdicts,log}/ に移った" "yes" "$ar_dst_ok"
-ar_src_gone="yes"
-for ar_p in plans/P-20260101-a.md tasks/P-20260101-a verdicts/P-20260101-a log/P-20260101-a.md; do
-  [ ! -e "$TMP/ar_repo2/vault/$ar_p" ] || ar_src_gone="no"
-done
-expect_eq "(ar-2) apply: 元の場所から消えた" "yes" "$ar_src_gone"
-expect_eq "(ar-2) apply: git status に rename（R ）の行がある" "yes" "$(cd "$TMP/ar_repo2" && git status --porcelain | grep -q '^R ' && echo yes || echo no)"
-
-ar_run ar_repo --keep 0 --dry-run P-20260104-d
-expect_eq "(ar-3) main に無い done 計画: 終了コード1" "1" "$AR_RC"
-expect_eq "(ar-3) stderr に NG 行" "1" "$(grep -c '^archive_plans: NG P-20260104-d: ' "$AR_ERR")"
-expect_eq "(ar-3) 何も動かない" "clean" "$(ar_clean ar_repo)"
-
-ar_run ar_repo --keep 0 --apply P-20260102-b
-expect_eq "(ar-4) approved の計画: 終了コード1" "1" "$AR_RC"
-expect_eq "(ar-4) 何も動かない" "clean" "$(ar_clean ar_repo)"
-
-ar_run ar_repo --keep 0 --apply P-20260103-c
-expect_eq "(ar-5) 表に review がある計画: 終了コード1" "1" "$AR_RC"
-expect_eq "(ar-5) 何も動かない" "clean" "$(ar_clean ar_repo)"
-
-ar_run ar_repo --keep 0 --apply P-20260101-a P-20260102-b
-expect_eq "(ar-6) 移せる計画と NG を一緒に: 終了コード1" "1" "$AR_RC"
-expect_eq "(ar-6) 移せる方も動かない" "clean" "$(ar_clean ar_repo)"
-expect_eq "(ar-6) 移せる方の計画票が残っている" "yes" "$([ -f "$TMP/ar_repo/vault/plans/P-20260101-a.md" ] && echo yes || echo no)"
-
-ar_run ar_repo --keep 0 P-20260101-a
-expect_eq "(ar-7) モード無し: 終了コード2" "2" "$AR_RC"
-expect_eq "(ar-7) モード無し: stderr に usage: 行" "1" "$(grep -c '^usage: ' "$AR_ERR")"
-
-ar_run ar_repo --keep 0 --apply P-20260105-e
-expect_eq "(ar-8) 移動先が既にある: 終了コード1" "1" "$AR_RC"
-expect_eq "(ar-8) 移動先が既にある: 何も動かない" "clean" "$(ar_clean ar_repo)"
-ar_run ar_repo --keep 0 --apply P-20260109-cur
-expect_eq "(ar-8) 現在のブランチの計画: 終了コード1" "1" "$AR_RC"
-expect_eq "(ar-8) 現在のブランチの計画: 何も動かない" "clean" "$(ar_clean ar_repo)"
-ar_init ar_repo3
-ar_plan ar_repo3 P-20260109-cur done done "2026-01-09 10:00"
-ar_commit ar_repo3
-ar_branch ar_repo3 work/p-20260109-cur
-ar_run ar_repo3 --keep 0 --list
-expect_eq "(ar-8) 現在のブランチの計画は --keep 0 --list に出ない（終了コード0・出力なし）" "0:" "$AR_RC:$(cat "$AR_OUT")"
-
-ar_init ar_repo9
-ar_plan ar_repo9 P-20260201-x done done "2026-02-01 10:00"
-ar_plan ar_repo9 P-20260202-x done done "2026-02-02 10:00"
-ar_plan ar_repo9 P-20260203-x done done "2026-02-03 10:00"
-ar_commit ar_repo9
-ar_branch ar_repo9 work/p-20260109-cur
-ar_run ar_repo9 --keep 2 --apply
-expect_eq "(ar-9) 新しい件数は残る: 終了コード0" "0" "$AR_RC"
-expect_eq "(ar-9) 一番古い1件だけ移る" "moved" "$([ -f "$TMP/ar_repo9/vault/archive/2026-02/plans/P-20260201-x.md" ] && [ ! -e "$TMP/ar_repo9/vault/plans/P-20260201-x.md" ] && echo moved || echo no)"
-expect_eq "(ar-9) 新しい2件は vault/plans/ に残る" "P-20260202-x.md P-20260203-x.md" "$(cd "$TMP/ar_repo9/vault/plans" && echo *.md)"
-
-ar_init ar_repo10
-ar_plan ar_repo10 P-20260201-x done done "2026-02-01 10:00"
-ar_plan ar_repo10 P-20260202-x done done "2026-02-02 10:00"
-ar_commit ar_repo10
-ar_branch ar_repo10 work/p-20260109-cur
-ar_run ar_repo10 --keep 2 --apply
-expect_eq "(ar-10) 候補が --keep 件以下: 終了コード0・stdout 空" "0:" "$AR_RC:$(cat "$AR_OUT")"
-expect_eq "(ar-10) 何も動かない" "clean" "$(ar_clean ar_repo10)"
-ar_run ar_repo10 --apply
-expect_eq "(ar-10) 既定の --keep 5 でも終了コード0・stdout 空" "0:" "$AR_RC:$(cat "$AR_OUT")"
-
-ar_init ar_repo11
-ar_plan ar_repo11 P-20260105-a done done "2026-01-05 11:00"
-ar_plan ar_repo11 P-20260105-b done done "2026-01-05 10:00"
-ar_commit ar_repo11
-ar_branch ar_repo11 work/p-20260109-cur
-ar_run ar_repo11 --keep 1 --list
-expect_eq "(ar-11) 同日: log の日時が古い -b だけが出る（新しい -a が残る）" "P-20260105-b" "$(cat "$AR_OUT")"
-ar_init ar_repo12
-ar_plan ar_repo12 P-20260106-a done done "2026-01-06 10:00"
-ar_plan ar_repo12 P-20260106-b done done "2026-01-06 10:00"
-ar_commit ar_repo12
-ar_branch ar_repo12 work/p-20260109-cur
-ar_run ar_repo12 --keep 1 --list
-expect_eq "(ar-11) log の日時も同じ: ID の文字列順で前の -a だけが出る" "P-20260106-a" "$(cat "$AR_OUT")"
-
-echo
 echo "== _hooklib.py =="
 HLB="$(smoke_tmpdir)" || abort_tmp
 mkdir -p "$HLB/.claude/hooks"
@@ -1883,15 +1833,15 @@ hr_q="$(CLAUDE_PROJECT_DIR="$TMP" bash "$CURRENT_PLAN_SH")"
 hr_fc="$(CLAUDE_PROJECT_DIR="$ROOT/vault/tasks/P-20261004-hooklib-rules/fixtures-comment" bash "$CURRENT_PLAN_SH")"
 [ "$hr_fc" = "P-FIXTURE-COMMENT" ] || hr_q="$hr_q (fixtures-comment: $hr_fc)"
 expect_eq "(hooklib-rules) current_plan.sh: id・status が引用符付き → 引用符を外した計画 ID を出す" "P-CUR-Q" "$hr_q"
-# e（インデントした done でない行を持つ計画は候補から外れる。移る計画は q の1件だけ＝git mv 4行）
-ar_init ar_quoted
-ar_plan ar_quoted P-20260101-q '"done"' done "2026-01-01 10:00"
-ar_plan ar_quoted P-20260102-q2 done review "2026-01-02 10:00"
-sed 's/^| T-01/  | T-01/' "$TMP/ar_quoted/vault/plans/P-20260102-q2.md" > "$TMP/ar_quoted/q2.tmp" && mv "$TMP/ar_quoted/q2.tmp" "$TMP/ar_quoted/vault/plans/P-20260102-q2.md"
-ar_commit ar_quoted
-ar_branch ar_quoted work/p-20260109-cur
-ar_run ar_quoted --keep 0 --dry-run
-expect_eq "(hooklib-rules) archive_plans.sh: status: \"done\"（引用符付き）の計画を移す対象にする" "4" "$(grep -c '^git mv ' "$AR_OUT")"
+# e（インデントした done でない行を持つ計画は候補から外れる。対象は q の1件だけ）
+hr_d="$TMP/hr_quoted"
+rm -rf "$hr_d"; mkdir -p "$hr_d"
+pm_plan "$hr_d" P-20260101-q '"done"' done
+pm_plan "$hr_d" P-20260102-q2 done review
+sed -i 's/^| T-01/  | T-01/' "$hr_d/vault/plans/P-20260102-q2.md"
+( cd "$hr_d" && git init -q -b main . && git add -A && pp_git commit -q -m c && git checkout -q -b work/p-20260109-cur ) >/dev/null 2>&1
+hr_out="$( cd "$hr_d" && bash "$ROOT/scripts/purge_plan.sh" --merged --list 2>/dev/null )"
+expect_eq "(hooklib-rules) purge_plan.sh --merged --list: status: \"done\"（引用符付き）の計画を対象にする" "P-20260101-q" "$hr_out"
 # f
 rm -rf "$TMP/vault/plans" "$TMP/vault/verdicts"
 make_plan "P-TEST" "approved" "  | T-0001 | doing | 1 | - | A | |"

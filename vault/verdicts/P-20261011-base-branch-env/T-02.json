@@ -1,0 +1,15 @@
+{
+  "task": "P-20261011-base-branch-env/T-02",
+  "attempt": 2,
+  "result": "PASS",
+  "checked_at": "2026-10-11 03:57",
+  "criteria": [
+    {"text": "拒否するブランチの一覧が値に従う：HARNESS_BASE_BRANCH=' develop ' で protected_branches() の出力が ['develop', 'main']", "ok": true, "note": "worktree で実行コマンド: env HARNESS_BASE_BRANCH=' develop ' python3 -B -c ... / 出力: ['develop', 'main']"},
+    {"text": "未設定・空白だけ・main の時は main だけ：どれも ['main']", "ok": true, "note": "env -u / '  ' / main の3通りを実行 / 出力: いずれも ['main']"},
+    {"text": "(b) の判定が一覧を使い、固定の main 比較が残っていない：grep -cF 'in protected_branches()' が 1、grep -cF '== \"main\"' が 0", "ok": true, "note": "実行コマンド: grep -cF の2本 / 出力: 1 と 0。.claude/hooks/agent_write_guard.py"},
+    {"text": "ベースブランチ上の git commit を、ブランチ名入りの理由で拒否する（deny と 'work/p-20261011-base-branch-env への直接コミットはできません' を含む）", "ok": true, "note": "指定のパイプ実行 / 出力: permissionDecision deny、理由に '[agent_write_guard] work/p-20261011-base-branch-env への直接コミットはできません。' を含む"},
+    {"text": "同じコマンドを env -u HARNESS_BASE_BRANCH で実行した時は出力が空", "ok": true, "note": "指定のパイプ実行 / 出力: 空"},
+    {"text": "既定のままの既存動作が変わらない：bash scripts/smoke.sh 2>&1 | tail -1 が fail=0 で終わる", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh 2>&1 | tail -1 / 出力: smoke: pass=493 fail=0"}
+  ],
+  "reasons": []
+}

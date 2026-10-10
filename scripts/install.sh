@@ -10,7 +10,8 @@
 # src 側の実ファイルの sha256 であり、dst の現状ではない（dst を記録すると、利用者が編集済みの
 # ファイルが「未編集」と誤判定され、次の更新で編集が黙って上書きされるため）。
 # 例外は CLAUDE.md で、既定では merge_claude_md.py がマーカー付きブロックだけをマージする（既存本文は残し、書き換え時はバックアップを作る）。
-# --no-claude-md を付けると CLAUDE.md には触れず、既存があれば案内だけを出す。
+# src の CLAUDE.md のマーカーブロックだけを使い、マーカーの外の行（ハーネス本体だけが読む @docs/vision.md など）は配らない。
+# --no-claude-md を付けると既存の CLAUDE.md には触れず、案内だけを出す。CLAUDE.md が無い時もマーカーブロックだけを置く。
 # --update を付けると、マニフェストと照合してハーネス本体を更新する。dst のハッシュがマニフェストと
 # 一致（＝配った時のまま）なら上書きし、一致しなければ利用者が編集したとみなしてスキップし報告する。
 # 旧版が配っていた標準ルール6本（RETIRED_RULES）はもう配らない。--update では、導入先にあるもののうち
@@ -175,9 +176,9 @@ python3 "$SRC/scripts/merge_settings_json.py" "$SRC/.claude/settings.json" "$DST
 # CLAUDE.md（既定はマーカー付きブロックのマージ。--no-claude-md なら従来どおり案内だけ）
 if [ "$NO_CLAUDE_MD" -eq 1 ]; then
   if [ -e "$DST/CLAUDE.md" ]; then
-    echo "note  CLAUDE.md は既にあります。$SRC/CLAUDE.md の内容を追記してください"
+    echo "note  CLAUDE.md は既にあります。$SRC/CLAUDE.md のマーカーブロック（<!-- ai-harness:begin v1 --> 〜 <!-- ai-harness:end -->）を追記してください"
   else
-    copy_if_absent "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
+    python3 "$SRC/scripts/merge_claude_md.py" "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
   fi
 else
   python3 "$SRC/scripts/merge_claude_md.py" "$SRC/CLAUDE.md" "$DST/CLAUDE.md"

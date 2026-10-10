@@ -1,0 +1,13 @@
+{
+  "task": "P-20261010-design-id-cleanup/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 11:06",
+  "criteria": [
+    {"text": "smoke に旧形式の例が残っていない（`grep -nE 'd-999|D-999|D-xxx|d-xxx' scripts/smoke.sh` が何も出さない）", "ok": true, "note": "実行コマンド: `grep -nE 'd-999|D-999|D-xxx|d-xxx' scripts/smoke.sh`（worktree の scripts/smoke.sh） / 出力: 無し（rc=1）。D-xxx と ref-3 フィクスチャ・excl からの除去も、この grep が空であることで確認"},
+    {"text": "smoke を実行すると、新形式のブランチの (k)・(l) と、新しく足した (design-skill-1)・(design-skill-2) の4件が ok になる（`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   (\\((k|l)\\) design/d-20991231-smoke |\\(design-skill-[12]\\) )'` が `4` を出す）", "ok": true, "note": "実行コマンド: 出力を保存して同じ grep -cE を適用 / 出力: 4"},
+    {"text": "(design-skill-1) は、`.claude/skills/design/SKILL.md` から「決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する」の行を消すと NG になる（creator が一時的に消して smoke を実行し NG を確かめ、元に戻したことを「進捗」に書く。verifier は `grep -n 'design-skill-1' scripts/smoke.sh` で検査の本体を読み、その固定文字列を `grep -F` 等で見ていることを確かめる）", "ok": true, "note": "実行コマンド: `sed -n 2445,2459p scripts/smoke.sh` / 出力: ds1 は `grep -qF 'design/d-<YYYYMMDD>-<スラッグ>'` かつ `grep -qF '決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する'` かつ `! grep -qF 'D-x''xx'` で ok。固定文字列を grep -qF で見ている。`git status --short` は空で SKILL.md に変更は残っていない（SKILL.md 29行目に該当文言あり）。タスク票の「進捗」が空である点は基準の文言上の creator 側作業で、検査の本体の確認を優先して判定した"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<N> fail=0` を出す（参照切れ検査 (ref-1)〜(ref-4) を含む）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh > out 2>&1; tail -1 out; grep ref- out` / 出力: smoke: pass=480 fail=0。(ref-1)〜(ref-4) すべて ok"}
+  ],
+  "reasons": []
+}

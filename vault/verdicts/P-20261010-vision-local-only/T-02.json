@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-vision-local-only/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 13:06",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (in-out) '` が `5`", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存して `grep -c '^  ok   (in-out) '` / 出力: 5（5件とも名前が決定済みの1〜5と一致）"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  NG '` が `0`（既存の `(e)` の「--no-claude-md → CLAUDE.md は変更されない」を含め、全検査が通る）", "ok": true, "note": "実行コマンド: 同じ出力に `grep -c '^  NG '` / 出力: 0"},
+    {"text": "`grep -n 'copy_if_absent \"$SRC/CLAUDE.md\"' scripts/install.sh` の出力が空（src の `CLAUDE.md` 全体を複製する経路が残っていない）", "ok": true, "note": "実行コマンド: `grep -n 'copy_if_absent \"$SRC/CLAUDE.md\"' scripts/install.sh` / 出力: 空（終了コード1）。install.sh 181行目は merge_claude_md.py 呼び出しになっている"},
+    {"text": "`grep -c 'note  CLAUDE.md は既にあります。.*のマーカーブロック' scripts/install.sh` が `1`（既存の `CLAUDE.md` への案内が、src 全体ではなくマーカーブロックの追記を求める）", "ok": true, "note": "実行コマンド: 該当 grep -c / 出力: 1（179行目）"},
+    {"text": "`bash -n scripts/install.sh` が終了コード `0`", "ok": true, "note": "実行コマンド: `bash -n scripts/install.sh; echo $?` / 出力: 0"}
+  ],
+  "reasons": []
+}

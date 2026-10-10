@@ -1,6 +1,6 @@
 ---
 id: P-20261010-purge-prereq
-status: approved
+status: done
 ---
 # ゴール
 D-016 フェーズ2の一括削除（`bash scripts/purge_plan.sh --merged --apply`。`docs/runbook.md` 5節）を実行した後も `bash scripts/smoke.sh` が全部通るようにする。

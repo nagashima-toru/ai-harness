@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-env-reference/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 08:50",
+  "criteria": [
+    {"text": "README の箇条書きに `docs/configuration.md` へのリンクがある：`grep -cF -e '- 指定できる環境変数（`HARNESS_*`）の一覧は [docs/configuration.md](docs/configuration.md) を参照' README.md` が `1`", "ok": true, "note": "実行コマンド: 基準の grep -cF / 出力: 1。git diff main で無人運用の行の直後に1行追加されていることも確認"},
+    {"text": "README の構成の表に行がある：`grep -cxF '| `docs/configuration.md` | 環境変数リファレンス |' README.md` が `1`", "ok": true, "note": "実行コマンド: 基準の grep -cxF / 出力: 1。runbook.md の行の直後に追加（git diff main）"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: smoke.sh の出力を grep -c / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形", "ok": true, "note": "実行コマンド: smoke.sh | tail -1 / 出力: smoke: pass=517 fail=0"},
+    {"text": "`docs/configuration.md` を導入先に配らない（install.sh の配布対象を変えていない）：`grep -c 'configuration.md' scripts/install.sh` が `0`", "ok": true, "note": "実行コマンド: grep -c 'configuration.md' scripts/install.sh / 出力: 0。git diff main --stat は README.md のみ変更(2 insertions)"}
+  ],
+  "reasons": []
+}

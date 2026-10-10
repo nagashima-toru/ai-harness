@@ -21,7 +21,7 @@ docs/vision.md を、このリポジトリ（ai-harness 本体）で動くエー
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | merge_claude_md.py が src からマーカーブロックだけを抜き出して使う | |
-| T-02 | doing | 1 | T-01 | install.sh の --no-claude-md の新規作成でもマーカーブロックだけを置く | |
+| T-02 | review | 1 | T-01 | install.sh の --no-claude-md の新規作成でもマーカーブロックだけを置く | |
 | T-03 | todo | 0 | T-01,T-02 | CLAUDE.md のマーカーの外に @docs/vision.md を足す | |
 | T-04 | todo | 0 | T-02 | vault/rules/common/vision.md を docs/vision.md へのシンボリックリンクとして作る | |
 | T-05 | todo | 0 | T-01,T-02,T-03 | docs/install.md と README.md の CLAUDE.md の配布の説明を合わせる | |

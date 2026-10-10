@@ -15,7 +15,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vcs_finish.sh に HARNESS_PUSH_BRANCH の push と head を足し smoke のケースを足す | |
-| T-02 | review | 1 | - | plan・design・run の SKILL.md に開始条件と MCP 代替時の head を足す | |
+| T-02 | done | 1 | - | plan・design・run の SKILL.md に開始条件と MCP 代替時の head を足す | |
 | T-03 | review | 1 | - | vault-spec.md と runbook.md に HARNESS_PUSH_BRANCH の説明を足す | |
 | T-04 | todo | 0 | T-01,T-02,T-03 | 決定事項を decisions.md に取り出し設計文書を削除する | |
 

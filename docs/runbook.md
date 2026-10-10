@@ -134,6 +134,20 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 - auto モードで、`.claude/` の変更が Self-Modification として拒否されてタスクが blocked になった時は、acceptEdits で立ち上げ直し、`/plan unblock <計画ID> <id>` → `/run` で再開する
 - 理由：auto モードの分類器の判定は設定では変えられない（D-015「今回やらないこと」）
 
+## 10. push 先が決められている環境（クラウドセッション）
+
+クラウドセッションのように、実行環境の指示で push 先のブランチが決められている環境では、セッションはベースブランチと同じコミットのその指定ブランチ上で始まる。この時は `HARNESS_PUSH_BRANCH` に指定ブランチ名を渡す。
+
+- 環境変数に無い時は、オーケストレーターがその値を次のようにコマンドに渡す。`/plan`・`/design` の開始条件の確認と `vcs_finish.sh` の両方に付ける。`env` で始めると許可リストの `Bash(env *)` で通る。
+
+```
+env HARNESS_PUSH_BRANCH=<指定ブランチ> bash scripts/vcs_finish.sh
+```
+
+- 値が毎回同じ環境なら、恒久的に `.claude/settings.json` の `env` に書いてもよい。
+- ローカルでは `work/…` を切って作業し、push 先と PR の head だけがその値になる。
+- 指定ブランチのリモートが先に進んでいて push が失敗した時（non-fast-forward）は、スクリプトは force せずに止まる。人が判断する。
+
 ## 困ったとき
 | 症状 | 見るところ |
 |---|---|

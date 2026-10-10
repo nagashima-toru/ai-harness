@@ -24,7 +24,7 @@ docs/vision.md を、このリポジトリ（ai-harness 本体）で動くエー
 | T-02 | done | 1 | T-01 | install.sh の --no-claude-md の新規作成でもマーカーブロックだけを置く | |
 | T-03 | done | 1 | T-01,T-02 | CLAUDE.md のマーカーの外に @docs/vision.md を足す | |
 | T-04 | done | 1 | T-02 | vault/rules/common/vision.md を docs/vision.md へのシンボリックリンクとして作る | |
-| T-05 | doing | 1 | T-01,T-02,T-03 | docs/install.md と README.md の CLAUDE.md の配布の説明を合わせる | |
+| T-05 | review | 1 | T-01,T-02,T-03 | docs/install.md と README.md の CLAUDE.md の配布の説明を合わせる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

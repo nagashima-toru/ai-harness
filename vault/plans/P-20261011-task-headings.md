@@ -20,7 +20,7 @@ planner が作るタスク票に「## 進捗」の見出しが無いと、creato
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | plan_guard.py にタスク票の6見出しの検査を足し、smoke にケースを足す | |
-| T-02 | doing | 1 | T-01 | docs/vault-spec.md の5節・10節に6見出しの検査と「## 進捗」の扱いを書く | |
+| T-02 | review | 1 | T-01 | docs/vault-spec.md の5節・10節に6見出しの検査と「## 進捗」の扱いを書く | |
 | T-03 | done | 1 | - | planner.md の「『進捗』は空のまま」を見出しだけ書く意味の文に直す | |
 | T-04 | done | 1 | - | creator.md に「## 進捗」見出しが無い時の追記の手順を書く | |
 

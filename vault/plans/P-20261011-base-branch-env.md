@@ -1,6 +1,6 @@
 ---
 id: P-20261011-base-branch-env
-status: approved
+status: done
 ---
 # ゴール
 ハーネスが `main` を直書きしている箇所を、環境変数 `HARNESS_BASE_BRANCH`（前後の空白を除いて空なら `main`）の値に置き換える。対象は `scripts/vcs_finish.sh`（GitHub REST の `base`・ホスティング無しのマージ案内）、`.claude/skills/plan/SKILL.md` 手順A-2 と `.claude/skills/design/SKILL.md` 手順1 の開始条件、`.claude/hooks/agent_write_guard.py` (b) の直接コミット拒否（ベースブランチと `main` の両方を拒否）、`scripts/purge_plan.sh --merged` のマージ済み判定（`<ベース>:vault/plans/…`）、`.claude/skills/run/SKILL.md` 手順7 の MCP 代替時の base と、`docs/vault-spec.md`・`docs/runbook.md`・`docs/install.md` の説明。既定値のままなら今の動作を変えない。`scripts/smoke.sh` に既定（main）と別名ベース（develop）の両方のケースを足す。

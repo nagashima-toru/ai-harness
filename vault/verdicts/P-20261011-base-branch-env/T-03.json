@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-base-branch-env/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 03:52",
+  "criteria": [
+    {"text": "マージ済み判定がベースブランチの版を読む：`grep -cF 'git show \"$BASE_BRANCH:vault/plans/$pid.md\"' scripts/purge_plan.sh` が `1`", "ok": true, "note": "worktree で実行 / 出力: 1"},
+    {"text": "固定の `main` が残っていない：`grep -cE '\"main:vault|main にマージ済み|main の vault/plans|ブランチが main かどうか' scripts/purge_plan.sh` が `0`", "ok": true, "note": "worktree で実行 / 出力: 0"},
+    {"text": "値の読み方が前後の空白を除いて空なら `main`：`grep -cF '[ -n \"$BASE_BRANCH\" ] || BASE_BRANCH=main' scripts/purge_plan.sh` が `1`", "ok": true, "note": "worktree で実行 / 出力: 1"},
+    {"text": "別名のベースを指定しても既存の動作が壊れない：`env HARNESS_BASE_BRANCH=develop bash scripts/purge_plan.sh --merged --list` が終了コード0で終わる（このリポジトリに develop ブランチが無くてもエラーにしない）", "ok": true, "note": "実行コマンド: `env HARNESS_BASE_BRANCH=develop bash scripts/purge_plan.sh --merged --list; echo $?` / 出力: exit=0"},
+    {"text": "既定のままの既存動作が変わらない（pm-1〜pm-6 と hooklib-rules を含む）：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=493 fail=0"}
+  ],
+  "reasons": []
+}

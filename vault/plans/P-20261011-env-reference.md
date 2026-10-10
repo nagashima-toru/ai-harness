@@ -17,7 +17,7 @@ D-20261011-user-guide フェーズ1：利用者が指定できる環境変数（
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | 環境変数リファレンス docs/configuration.md を書く | |
+| T-01 | doing | 1 | - | 環境変数リファレンス docs/configuration.md を書く | |
 | T-02 | todo | 0 | T-01 | smoke に表とコードの HARNESS_* の一致検査を足し、configuration.md を ref-1 の対象にする | |
 | T-03 | todo | 0 | T-01 | README.md から docs/configuration.md へリンクする | |
 

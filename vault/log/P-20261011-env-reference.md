@@ -1,1 +1,2 @@
 - 2026-10-11 08:43 - draft→approved /plan による自動承認
+- 2026-10-11 08:43 T-01 todo→doing attempt=1

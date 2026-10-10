@@ -19,7 +19,7 @@ D-20261011-user-guide フェーズ1：利用者が指定できる環境変数（
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | 環境変数リファレンス docs/configuration.md を書く | |
 | T-02 | review | 1 | T-01 | smoke に表とコードの HARNESS_* の一致検査を足し、configuration.md を ref-1 の対象にする | |
-| T-03 | doing | 1 | T-01 | README.md から docs/configuration.md へリンクする | |
+| T-03 | review | 1 | T-01 | README.md から docs/configuration.md へリンクする | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -17,7 +17,7 @@ D-016 フェーズ3：設計文書の ID を `D-<YYYYMMDD>-<スラッグ>`（ブ
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vault-spec の設計文書 ID・ブランチ名・最終フェーズでの削除を新方式にする | |
-| T-02 | doing | 2 | - | /design スキルとテンプレートを新しい ID と最終フェーズの削除に合わせる | |
+| T-02 | doing | 3 | - | /design スキルとテンプレートを新しい ID と最終フェーズの削除に合わせる | |
 | T-03 | done | 1 | - | README・runbook・planner 定義・run スキルの旧形式の設計文書 ID を直す | |
 | T-04 | todo | 0 | T-02,T-03 | smoke の設計文書 ID の例を新形式にし、/design の記述の検査を足す | |
 | T-05 | done | 1 | - | D-016 の決定事項を docs/decisions.md に追記する | |

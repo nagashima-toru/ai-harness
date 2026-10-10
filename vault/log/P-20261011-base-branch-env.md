@@ -4,3 +4,4 @@
 - 2026-10-11 03:47 T-03 todo→doing attempt=1
 - 2026-10-11 03:50 T-01 worktree path=/home/user/ai-harness/.claude/worktrees/agent-aad76f9944a981cbf branch=worktree-agent-aad76f9944a981cbf plan_head=a44ec4b02fa2254263645014f47ac20e862d4e13
 - 2026-10-11 03:50 T-01 doing→review attempt=1 creator=sonnet
+- 2026-10-11 03:51 T-02 doing→doing attempt=2 宣言外の変更: vault/tasks/P-20261011-base-branch-env/T-02.md

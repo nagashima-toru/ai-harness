@@ -15,3 +15,4 @@
 - 2026-10-10 08:59 T-04 review→done attempt=1 verifier=sonnet
 - 2026-10-10 08:59 T-05 review→done attempt=1 verifier=sonnet
 - 2026-10-10 09:01 T-02 blocked→todo 人の指示: /plan unblock P-20261010-purge-merged T-02
+- 2026-10-10 09:01 T-02 todo→doing attempt=1

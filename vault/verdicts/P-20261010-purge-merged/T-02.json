@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-purge-merged/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 09:20",
+  "criteria": [
+    {"text": "`scripts/archive_plans.sh` が作業ツリーにも git の管理にも無い。確認：`git ls-files scripts/archive_plans.sh` の出力が空、`ls scripts/archive_plans.sh` が終了コード2（No such file）", "ok": true, "note": "実行コマンド: `git ls-files scripts/archive_plans.sh; ls scripts/archive_plans.sh; echo $?` / 出力: ls は No such file、git ls-files は空、終了コード 2"},
+    {"text": "scripts 配下と .claude 配下に `archive_plans` の語が無い。確認：`grep -rn 'archive_plans' scripts .claude` の出力が空", "ok": true, "note": "実行コマンド: `grep -rn 'archive_plans' scripts .claude` / 出力: 空（終了コード1）"},
+    {"text": "smoke の hooklib-rules 節に、引用符付きの `status: \"done\"` の計画を `purge_plan.sh --merged --list` が対象にし、インデントした done でない行を持つ計画を対象にしないことを確かめるテストがあり、ok になる。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (hooklib-rules) purge_plan.sh --merged --list: status: \"done\"（引用符付き）の計画を対象にする$'` が `1`", "ok": true, "note": "実行コマンド: smoke 出力に対する上記 grep -c / 出力: 1。scripts/smoke.sh 1831-1840 行で q(done) と q2(インデントした review 行)を用意し、期待値 P-20260101-q の1行を expect_eq している"},
+    {"text": "T-01 の `(pm-1)`〜`(pm-6)` が全部 ok のまま。確認：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(pm-[1-6]\\) '` が `6`", "ok": true, "note": "実行コマンド: smoke 出力に対する上記 grep -cE / 出力: 6"},
+    {"text": "smoke 全体が通る。確認：`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=477 fail=0"}
+  ],
+  "reasons": []
+}

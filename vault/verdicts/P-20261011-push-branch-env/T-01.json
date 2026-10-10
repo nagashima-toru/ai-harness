@@ -1,0 +1,15 @@
+{
+  "task": "P-20261011-push-branch-env/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 08:17",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(push-[1-8]\\) '` の出力が `8` で、各ケースが「決定済み」の `(push-1)`〜`(push-8)` に書いた内容を検査している（ケースの中身は smoke.sh を読んで確かめる）", "ok": true, "note": "worktree で smoke を実行し grep -cE の出力は 8。scripts/smoke.sh の push-1〜8 の中身を読み、決定済みの各内容（bare と HEAD の一致・head=・--source-branch 末尾2行・none で ccr-none 無し・non-ff で rc!=0 かつ記録無し・引数ありで引数不変）を検査していることを確認"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=<数> fail=0` の形である（既存のケースも全部通る）", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh | tail -1 / 出力: smoke: pass=517 fail=0"},
+    {"text": "`env HARNESS_PUSH_BRANCH=ccr-x bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=<数> fail=0` の形である（外の環境に値があっても smoke が影響を受けない）", "ok": true, "note": "実行コマンド: env HARNESS_PUSH_BRANCH=ccr-x bash scripts/smoke.sh | tail -1 / 出力: smoke: pass=517 fail=0。smoke.sh 17行目に unset HARNESS_PUSH_BRANCH あり"},
+    {"text": "`grep -nE 'git push.*(--force|-f( |$)|\\+HEAD)' scripts/vcs_finish.sh` の出力が空（force の push をしない）", "ok": true, "note": "実行コマンド: 同 grep / 出力: 空（終了コード1）"},
+    {"text": "`bash -n scripts/vcs_finish.sh` の終了コードが0", "ok": true, "note": "実行コマンド: bash -n scripts/vcs_finish.sh; echo $? / 出力: 0"},
+    {"text": "`scripts/vcs_finish.sh` の先頭のコメント（使い方の説明）に `HARNESS_PUSH_BRANCH` の意味（前後の空白を除いて空なら未設定・設定時の push と head・GitLab の `--source-branch`・none の経路では見ない）が書かれている（ファイルを読んで確かめる）", "ok": true, "note": "scripts/vcs_finish.sh 先頭の19〜24行目を Read して確認：空白除去で空なら未設定・毎回 git push -u origin HEAD:<値>・head=<値>・GitLab は --source-branch・none では見ない、の全て記載あり"}
+  ],
+  "reasons": []
+}

@@ -11,16 +11,18 @@ D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け�
 - 最後の T-06 で README・docs/install.md・docs/decisions.md を直し、ゴールの範囲（docs・.claude・scripts・README.md）に archive_plans や archive の古い記述が残っていないことをまとめて確かめる
 - D-016 の候補「最後の遷移が `→blocked` のタスク」は、対象（全行 done の計画）では最後の遷移が必ず `→done` になり一致しないため、「log に `→blocked` の遷移行があったタスクとその補足（質問）」と読み替えた（T-01 の決定済み）
 - 計画 ID の形式に合わない旧形式の計画（`vault/plans/P-019.md`〜`P-021.md`、`vault/tasks/T-00xx.md`）は、D-016 の条件1により `--merged` の対象外のまま残る。この計画では扱わず、runbook に「対象外で、必要なら人が `git rm` する」とだけ書く（T-04）
+- T-07 は人の指示で後から足した。T-04 が runbook 5節に存在しないパスをバッククォートで書き、smoke の (ref-1) が落ちて T-02 が blocked になったため。T-02 の after に T-07 を足した
 
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | purge_plan.sh に --merged（--list・--report・--apply）を足し smoke で確かめる | |
-| T-02 | blocked | 1 | T-01 | archive_plans.sh と smoke の archive_plans 節を消す | 受け入れ基準5（smoke 全体が fail=0）が満たせません。`bash scripts/smoke.sh ／ tail -1` が `smoke: pass=476 fail=1` になります。失敗しているのは `(ref-1) 主な文書のバッククォート内のパスがすべて存在する` で、原因は `docs/runbook.md:89` にある `vault/harness-improvements/` の参照です（このパスは存在しません）。docs/runbook.md はこのタスクの成果物に宣言されておらず、決定済みでも「docs はこのタスクでは直さない」とあるので、私は直していません。この行を修正するタスクを別に足すか、このタスクの成果物に docs/runbook.md を加えるかの判断をお願いします。基準1から4は満たしています。 |
+| T-02 | blocked | 1 | T-01,T-07 | archive_plans.sh と smoke の archive_plans 節を消す | 受け入れ基準5（smoke 全体が fail=0）が満たせません。`bash scripts/smoke.sh ／ tail -1` が `smoke: pass=476 fail=1` になります。失敗しているのは `(ref-1) 主な文書のバッククォート内のパスがすべて存在する` で、原因は `docs/runbook.md:89` にある `vault/harness-improvements/` の参照です（このパスは存在しません）。docs/runbook.md はこのタスクの成果物に宣言されておらず、決定済みでも「docs はこのタスクでは直さない」とあるので、私は直していません。この行を修正するタスクを別に足すか、このタスクの成果物に docs/runbook.md を加えるかの判断をお願いします。基準1から4は満たしています。 |
 | T-03 | todo | 0 | T-02 | install.sh・uninstall.sh から vault/archive を除く | |
 | T-04 | done | 1 | T-01 | runbook 5節を一括削除の手順に書き換える | |
 | T-05 | done | 1 | T-01 | vault-spec から archive の記述を除き --merged を書く | |
 | T-06 | todo | 0 | T-02,T-03,T-04,T-05 | README・install.md・decisions.md を直し archive の残りを確かめる | |
+| T-07 | todo | 0 | - | runbook 5節の存在しないパスの参照を直す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

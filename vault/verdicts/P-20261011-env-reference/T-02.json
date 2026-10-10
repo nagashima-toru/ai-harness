@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-env-reference/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 08:50",
+  "criteria": [
+    {"text": "追加・変更したケースがすべて ok：`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\((envref-1|envref-2|ref-1|ref-5)\\) '` が `4`", "ok": true, "note": "worktree で smoke を実行し同 grep -c を実行 / 出力: 4（ref-1, ref-5, envref-1, envref-2 が ok）。実リポジトリ照合の envref-1 とフィクスチャの envref-2 の両方が通っており目的と整合"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=520 fail=0"},
+    {"text": "`refcheck` の対象に `docs/configuration.md` が入っている：`grep -cxF 'docs += [...\"docs/configuration.md\"]' scripts/smoke.sh` が `1`", "ok": true, "note": "実行コマンド: grep -cxF（基準記載の行）scripts/smoke.sh / 出力: 1"},
+    {"text": "`(envref-2)` のフィクスチャの期待値が決定済みのとおり：`grep -cxF 'コードに無い: HARNESS_ONLY_DOC' scripts/smoke.sh` が `1`、`grep -cxF '表に無い: HARNESS_ONLY_CODE' scripts/smoke.sh` が `1`", "ok": true, "note": "実行コマンド: 両 grep -cxF / 出力: 1 と 1"},
+    {"text": "`.claude/agents/planner.md` の `(ref-1)` の対象の列挙が更新されている：`grep -cF '`docs/runbook.md`・`docs/install.md`・`docs/configuration.md`）を成果物に持つタスク' .claude/agents/planner.md` が `1`", "ok": true, "note": "実行コマンド: grep -cF（基準記載の文字列）.claude/agents/planner.md / 出力: 1"}
+  ],
+  "reasons": []
+}

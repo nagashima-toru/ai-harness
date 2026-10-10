@@ -1,0 +1,15 @@
+{
+  "task": "P-20261010-readme-improve/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 14:59",
+  "criteria": [
+    {"text": "仕組み節のコードブロック（図）が ASCII 文字だけで8行以上ある。確認：`awk '/^## 仕組み/{s=1;next} /^## /{s=0} s&&substr($0,1,3)==\"\\140\\140\\140\"{c=!c;next} s&&c' README.md | grep -cP '[^\\x00-\\x7F]'` の出力が `0`、かつ `awk '/^## 仕組み/{s=1;next} /^## /{s=0} s&&substr($0,1,3)==\"\\140\\140\\140\"{c=!c;next} s&&c' README.md | grep -c .` の出力が `8` 以上", "ok": true, "note": "worktree の README.md で両コマンドを実行 / 出力: 非ASCII行数 0、非空行数 18"},
+    {"text": "図の縦線（`|`）と矢印の桁が、同じレーンの中で行をまたいでそろっている（verifier が `README.md` の図を等幅で読んで確認する。ASCII だけなので文字数＝表示幅で判定できる）", "ok": true, "note": "awk で図の各行の |,+,>,< の桁を列挙して確認 / 出力: レーン縦線は全行で桁3・22・61にそろい、+---> の終端 > も桁20・59・51等で次の縦線の直前に収まっている。ずれなし"},
+    {"text": "仕組み節に番号付き手順が6項目以上あり、今の図の情報が残っている。確認：`awk '/^## 仕組み/{s=1;next} /^## /{s=0} s' README.md | grep -cE '^[0-9]+\\. '` の出力が `6` 以上。`awk '/^## 仕組み/{s=1;next} /^## /{s=0} s' README.md | grep -oF -e '/plan <ゴール>' -e 'work/<計画ID>' -e 'planner' -e 'approved' -e '/run' -e 'creator' -e 'worktree' -e 'verifier' -e 'vault/verdicts/<計画ID>/<id>.json' -e 'PASS' -e 'FAIL' -e 'blocked' -e '.claude/hooks/stop_gate.py' -e 'scripts/vcs_finish.sh' -e 'vault/plans/<計画ID>.md' -e 'vault/log/<計画ID>.md'` の出力に、この16個の文字列がすべて1回以上現れる", "ok": true, "note": "実行コマンド: 番号付き行数の grep -cE と、16文字列それぞれの grep -oF | wc -l / 出力: 番号付き手順 10 項目。16個すべて1回以上（最小1: /plan <ゴール>, work/<計画ID>, verdicts パス, stop_gate.py, plans/log）"},
+    {"text": "PR 後に人がマージする説明が残っている。確認：`grep -cE 'PR ができたら、人が内容を確認して `gh pr merge` でマージする.*`bash scripts/vcs_finish\\.sh` で PR を作るまでしか行わない' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 基準記載の grep -cE / 出力: 1"},
+    {"text": "見出し構成が変わっていない。確認：`grep -E '^## ' README.md` の出力がちょうど次の8行（この順）：`## 目的`・`## セットアップ`・`## クイックスタート`・`## 使い方`・`## 拡張ポイント（ルール）`・`## 仕組み`・`## 構成`・`## ライセンス`", "ok": true, "note": "実行コマンド: `grep -E '^## ' README.md` / 出力: 目的・セットアップ・クイックスタート・使い方・拡張ポイント（ルール）・仕組み・構成・ライセンスの8行が順どおり。なお git diff f545e04 HEAD -U0 の変更行は57-88行で仕組み節(56-90)内のみ"},
+    {"text": "文書中のパスが実在する。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "worktree で実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1"}
+  ],
+  "reasons": []
+}

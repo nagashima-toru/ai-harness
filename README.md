@@ -36,6 +36,7 @@ AI の作業を「作成 → 検証」の二段構成にし、検証が PASS し
 
 - 人が日々やることは `docs/runbook.md`、Vault の仕様は `docs/vault-spec.md` を参照
 - 無人で回す場合は `python3 scripts/run_unattended.py` を cron や CI から定期実行する（手順は `docs/runbook.md`）
+- 指定できる環境変数（`HARNESS_*`）の一覧は [docs/configuration.md](docs/configuration.md) を参照
 - 1セッション=1計画=1ブランチ。複数の計画を並行して進めたい時は、計画ごとに別のセッション（別のブランチ／worktree）を使う
 
 ## 拡張ポイント（ルール）
@@ -105,6 +106,7 @@ PR ができたら、人が内容を確認して `gh pr merge` でマージす�
 | `docs/vault-spec.md` | 仕様の正本 |
 | `docs/install.md` | インストール手順 |
 | `docs/runbook.md` | 運用手順 |
+| `docs/configuration.md` | 環境変数リファレンス |
 | `docs/vision.md` | ビジョン |
 | `docs/decisions.md` | 決定の記録 |
 | `scripts/smoke.sh` | フックの動作検証 |

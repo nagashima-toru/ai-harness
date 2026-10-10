@@ -1,6 +1,6 @@
 ---
 id: P-20261011-push-branch-env
-status: approved
+status: done
 ---
 # ゴール
 環境変数 `HARNESS_PUSH_BRANCH`（前後の空白を除いて空なら未設定）が設定されている時、`scripts/vcs_finish.sh` は GitHub・GitLab の経路で毎回 `git push -u origin HEAD:<値>` で push し、PR/MR の head（source branch）にその値を使う。`/plan`・`/design` の開始条件に「`HARNESS_PUSH_BRANCH` が設定され、現在のブランチがその値で、HEAD がローカルのベースブランチと同じコミットなら、ベース上とみなしてブランチを切る」を足す。`run`・`design` の MCP 代替時の head、`docs/` の説明（クラウドセッションでの使い方を含む）と `scripts/smoke.sh` のケースもそろえる。最後に決定事項を `docs/decisions.md` に取り出し、この設計文書（`vault/designs/D-20261010-base-branch-config.md`）を削除する（設計文書のフェーズ2。最終フェーズ）。

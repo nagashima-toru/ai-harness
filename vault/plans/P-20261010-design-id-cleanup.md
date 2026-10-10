@@ -1,6 +1,6 @@
 ---
 id: P-20261010-design-id-cleanup
-status: approved
+status: done
 ---
 # ゴール
 D-016 フェーズ3：設計文書の ID を `D-<YYYYMMDD>-<スラッグ>`（ブランチ `design/d-<YYYYMMDD>-<スラッグ>`）に変え、`/design` が最終フェーズの受け入れ基準に「決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する」を必ず入れるようにする。`docs/vault-spec.md` 13節・`.claude/skills/design/SKILL.md`・`vault/templates/design.md`・smoke を合わせて直す。あわせて既存の設計文書 `vault/designs/D-001.md`〜`D-016.md` を、D-016 の決定事項を `docs/decisions.md` に追記したうえで全部削除する。

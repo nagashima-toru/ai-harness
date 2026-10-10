@@ -1,0 +1,13 @@
+{
+  "task": "P-20261010-async-agent-wait/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 12:28",
+  "criteria": [
+    {"text": "9節の「verdict が無い」で始まる行の判定の列が「ブロック」のままで、同じ行に「完了通知」が書かれている：`awk '/^## 9\\. /{s=1;next} /^## /{s=0} s&&/^\\| verdict が無い/&&/\\| ブロック/&&/完了通知/{n++} END{print n+0}' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "worktree の docs/vault-spec.md で上記 awk を実行 / 出力: 1"},
+    {"text": "同じ行に、記録行の有無を `worktree path=` の行で見ることが書かれている：`awk '/^## 9\\. /{s=1;next} /^## /{s=0} s&&/^\\| verdict が無い/&&/worktree path=/{n++} END{print n+0}' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "worktree の docs/vault-spec.md で上記 awk を実行 / 出力: 1"},
+    {"text": "9節の表の行数が変わっていない（行を足さず既存の行を書き換える）：`awk '/^## 9\\. /{s=1;next} /^## /{s=0} s&&/^\\|/{n++} END{print n+0}' docs/vault-spec.md` の出力が `12`", "ok": true, "note": "worktree の docs/vault-spec.md で上記 awk を実行 / 出力: 12"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "worktree で実行 / 出力: 1"}
+  ],
+  "reasons": []
+}

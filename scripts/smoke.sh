@@ -748,6 +748,27 @@ expect_eq "(d) 旧ブロックの行は消える" "0" "$(grep -c '^# AI協働ハ
 expect_eq "(d) マーカー外の既存本文は無傷" "1" "$(grep -c '^- 既存のルール$' "$MTMP/CLAUDE.md")"
 expect_eq "(d) begin の出現は1回のまま" "1" "$(grep -c 'ai-harness:begin' "$MTMP/CLAUDE.md")"
 
+OTMP="$MTMP/out"
+mkdir -p "$OTMP"
+printf '# 前置き\n<!-- ai-harness:begin v1 -->\n# 見出し\n@.claude/ai-harness.md\n<!-- ai-harness:end -->\n@docs/vision.md\n' > "$OTMP/src.md"
+python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/new/CLAUDE.md" >/dev/null
+expect_eq "(mc-out) create でマーカーの外の行が配られない" \
+  "$(printf '<!-- ai-harness:begin v1 -->\n# 見出し\n@.claude/ai-harness.md\n<!-- ai-harness:end -->')" \
+  "$(cat "$OTMP/new/CLAUDE.md")"
+printf '# 既存\n\n- 既存のルール\n' > "$OTMP/merge.md"
+python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/merge.md" >/dev/null
+expect_eq "(mc-out) merge でマーカーの外の行が配られない" "0 0" \
+  "$(grep -c '^@docs/vision\.md$' "$OTMP/merge.md") $(grep -c '^# 前置き$' "$OTMP/merge.md")"
+printf '<!-- ai-harness:begin v1 -->\n# 古い見出し\n<!-- ai-harness:end -->\n' > "$OTMP/upd.md"
+out="$(python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/upd.md")"
+expect_eq "(mc-out) update でマーカーの外の行が配られない" "update 0" \
+  "${out%% *} $(grep -c '^@docs/vision\.md$' "$OTMP/upd.md")"
+out="$(python3 "$MERGE_PY" "$OTMP/src.md" "$OTMP/upd.md")"
+expect_eq "(mc-out) ブロックが同じなら skip" "skip" "${out%% *}"
+python3 "$MERGE_PY" "$ROOT/CLAUDE.md" "$OTMP/repo/CLAUDE.md" >/dev/null
+expect_eq "(mc-out) リポジトリの CLAUDE.md から create しても @docs/vision.md が入らない" "0" \
+  "$(grep -c '^@docs/vision\.md$' "$OTMP/repo/CLAUDE.md")"
+
 echo "== install.sh の CLAUDE.md 扱い =="
 ITMP="$(smoke_tmpdir)" || abort_tmp
 printf '# 既存プロジェクト\n\n- 既存のルール\n' > "$ITMP/CLAUDE.md"

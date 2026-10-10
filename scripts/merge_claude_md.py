@@ -3,8 +3,9 @@
 
 使い方: python3 scripts/merge_claude_md.py <src_claude_md> <dst_claude_md>
 
-src はハーネス側の CLAUDE.md（`<!-- ai-harness:begin ... -->` 〜
-`<!-- ai-harness:end -->` のブロックそのもの）。dst はインストール先の CLAUDE.md。
+src はハーネス側の CLAUDE.md。そのうち `<!-- ai-harness:begin ... -->` 〜
+`<!-- ai-harness:end -->` のマーカーブロックだけを使い、マーカーの外の行は配らない。
+dst はインストール先の CLAUDE.md。
 
 - dst が無い          → src の内容で作成し `create <dst>`
 - dst にブロックがある → その範囲だけを src に置換し `update <dst>`
@@ -22,20 +23,28 @@ BLOCK_RE = re.compile(r"<!-- ai-harness:begin.*?<!-- ai-harness:end -->", re.DOT
 USAGE = "usage: python3 scripts/merge_claude_md.py <src_claude_md> <dst_claude_md>"
 
 
+def extract_block(text):
+    """text 最初のマーカーブロックを末尾に改行1つ付けて返す。無ければ None。"""
+    m = BLOCK_RE.search(text)
+    if not m:
+        return None
+    return m.group(0) + "\n"
+
+
 def main(argv):
     if len(argv) != 3:
         print(USAGE, file=sys.stderr)
         return 2
     src, dst = Path(argv[1]), Path(argv[2])
     try:
-        block = src.read_text(encoding="utf-8")
+        text = src.read_text(encoding="utf-8")
     except OSError as err:
         print(f"merge_claude_md: src を読めない: {err}", file=sys.stderr)
         return 1
-    if not BLOCK_RE.search(block):
+    block = extract_block(text)
+    if block is None:
         print(f"merge_claude_md: src にハーネスのマーカーが無い: {src}", file=sys.stderr)
         return 1
-    block = block.rstrip("\n") + "\n"
 
     if not dst.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,6 @@
 ---
 id: P-20261010-planner-check-guide
-status: approved
+status: done
 ---
 # ゴール
 `.claude/agents/planner.md` の確認コマンド・受け入れ基準の書き方の指針（`## やらないこと` 節）に、次の4点を足す（Issue #150・#153・#157 の後半への対応）。

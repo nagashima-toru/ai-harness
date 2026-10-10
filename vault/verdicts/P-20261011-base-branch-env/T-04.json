@@ -1,0 +1,15 @@
+{
+  "task": "P-20261011-base-branch-env/T-04",
+  "attempt": 2,
+  "result": "PASS",
+  "checked_at": "2026-10-11 03:58",
+  "criteria": [
+    {"text": "plan の開始条件：`grep -cF '2. 現在のブランチがベースブランチ（環境変数 `HARNESS_BASE_BRANCH` の値。前後の空白を除いて空なら `main`）であることを確認する' .claude/skills/plan/SKILL.md` が `1`", "ok": true, "note": "worktree で実行したコマンド: 同 grep -cF / 出力: 1"},
+    {"text": "design の開始条件：`grep -cF '1. **ブランチを作る**：現在のブランチがベースブランチ（環境変数 `HARNESS_BASE_BRANCH` の値。前後の空白を除いて空なら `main`）であることを確認する' .claude/skills/design/SKILL.md` が `1`", "ok": true, "note": "worktree で実行したコマンド: 同 grep -cF / 出力: 1"},
+    {"text": "run 手順7の MCP 代替の base：`grep -cF 'base（ベースブランチ。`HARNESS_BASE_BRANCH` の値、前後の空白を除いて空なら `main`）' .claude/skills/run/SKILL.md` が `1`", "ok": true, "note": "worktree で実行したコマンド: 同 grep -cF / 出力: 1"},
+    {"text": "creator の注意：`grep -cF -- '- ベースブランチ（`HARNESS_BASE_BRANCH`、既定 `main`）と `main` に直接コミットしない' .claude/agents/creator.md` が `1`", "ok": true, "note": "worktree で実行したコマンド: 同 grep -cF -- / 出力: 1"},
+    {"text": "固定の `main` を指す旧い文言が残っていない：`grep -rnE 'ブランチが `main` であることを確認|base（`main`）|^- `main` に直接コミットしない' .claude/skills .claude/agents` の出力が空", "ok": true, "note": "worktree で実行したコマンド: 同 grep -rnE / 出力: 空"},
+    {"text": "文書の参照切れが無い：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "worktree で実行したコマンド: 同コマンド / 出力: 1"}
+  ],
+  "reasons": []
+}

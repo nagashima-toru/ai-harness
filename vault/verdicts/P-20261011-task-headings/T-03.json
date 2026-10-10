@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-task-headings/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 07:51",
+  "criteria": [
+    {"text": "`grep -rn '「進捗」は空のまま' .claude docs scripts vault/templates vault/rules README.md` の出力が空", "ok": true, "note": "実行コマンド: `grep -rn '「進捗」は空のまま' .claude docs scripts vault/templates vault/rules README.md`（worktree内） / 出力: 空"},
+    {"text": "`grep -c '「## 進捗」は見出しだけを書き、本文は空にする（見出しを省かない）' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同grep -c / 出力: 1"},
+    {"text": "`grep -c '各タスク票に6見出し（「## 進捗」を含む）がそろっているか' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同grep -c / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存して `grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存して `tail -1` / 出力: smoke: pass=502 fail=0"}
+  ],
+  "reasons": []
+}

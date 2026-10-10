@@ -17,9 +17,9 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | vcs_finish.sh の base とマージ案内を HARNESS_BASE_BRANCH にする | |
-| T-02 | todo | 0 | - | agent_write_guard.py (b) でベースブランチと main の直接コミットを拒否する | |
-| T-03 | todo | 0 | - | purge_plan.sh --merged のマージ済み判定をベースブランチの版で行う | |
+| T-01 | doing | 1 | - | vcs_finish.sh の base とマージ案内を HARNESS_BASE_BRANCH にする | |
+| T-02 | doing | 1 | - | agent_write_guard.py (b) でベースブランチと main の直接コミットを拒否する | |
+| T-03 | doing | 1 | - | purge_plan.sh --merged のマージ済み判定をベースブランチの版で行う | |
 | T-04 | todo | 0 | - | plan・design・run のスキルと creator.md の main をベースブランチにする | |
 | T-05 | todo | 0 | - | vault-spec・runbook・install に HARNESS_BASE_BRANCH を書く | |
 | T-06 | todo | 0 | T-01,T-02,T-03,T-04,T-05 | smoke.sh に既定 main と develop のケースを足す | |

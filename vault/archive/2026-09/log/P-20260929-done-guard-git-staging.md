@@ -1,9 +1,0 @@
-- 2026-09-30 00:33 T-01 todo→doing attempt=1
-- 2026-09-30 00:35 T-01 doing→blocked attempt=1 フック編集が auto mode 分類器に Self-Modification として拒否された（worktree: .claude/worktrees/agent-a2c17c5063c7b9c32、成果物なし）
-- 2026-09-30 05:32 T-01 blocked→todo attempt=0 人の指示で解除（permission mode を auto 以外にして再開）
-- 2026-09-30 05:33 T-01 todo→doing attempt=1
-- 2026-09-30 05:36 T-01 doing→review attempt=1
-- 2026-09-30 05:41 T-01 review→done attempt=1
-- 2026-09-30 05:41 T-02 todo→doing attempt=1
-- 2026-09-30 05:42 T-02 doing→review attempt=1
-- 2026-09-30 05:43 T-02 review→done attempt=1

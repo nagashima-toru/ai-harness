@@ -1,0 +1,15 @@
+{
+  "task": "P-20261011-push-branch-env/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 08:22",
+  "criteria": [
+    {"text": "`test ! -e vault/designs/D-20261010-base-branch-config.md` の終了コードが0", "ok": true, "note": "worktree で実行コマンド: `test ! -e vault/designs/D-20261010-base-branch-config.md; echo rc=$?` / 出力: rc=0"},
+    {"text": "`grep -rn --exclude-dir=.git --exclude-dir=plans --exclude-dir=tasks --exclude-dir=log --exclude-dir=verdicts --exclude-dir=worktrees 'vault/designs/D-20261010-base-branch-config' .` の出力が空", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 空"},
+    {"text": "`grep -cE '^\\| 20[0-9]{2}-[0-9]{2}-[0-9]{2} \\| .*(専用の設定ファイルは作らない|`HARNESS_PUSH_BRANCH` 上の直接コミットはフックで拒否しない|`origin/<ベースブランチ>` の fetch はしない|GitLab のターゲットブランチは指定しない).*（D-20261010-base-branch-config） \\| .+ \\|$' docs/decisions.md` の出力が `4`", "ok": true, "note": "worktree の docs/decisions.md に対し同 grep -c を実行 / 出力: 4（46〜49行目）"},
+    {"text": "追記した行の「なぜ」の列が、設計文書の決定事項の「なぜ」（または「今回やらないこと」の理由）に沿っている（ファイルを読んで確かめる）", "ok": true, "note": "docs/decisions.md 46〜49行を、削除前の設計文書（git show adec099^:vault/designs/D-20261010-base-branch-config.md）の決定事項と照合。既存パターンにそろえる／作業しない運用で足りる／同一コミットなら安全・違えば止める／設計で対象外、といずれも沿っている"}
+,
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=<数> fail=0` の形である", "ok": true, "note": "worktree で実行 / 出力: smoke: pass=517 fail=0"}
+  ],
+  "reasons": []
+}

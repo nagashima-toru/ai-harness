@@ -2,6 +2,7 @@
 
 AI の作業を「作成 → 検証」の二段構成にし、検証が PASS しない限り完了できないようにする Claude Code 用ハーネス。
 このリポジトリ自体が雛形であり、自分自身で動作確認する場でもある。
+実行を安いモデルに任せても成果が安定する汎用のタスク実行基盤です。目的・原則・非ゴールは [docs/vision.md](docs/vision.md) を参照。
 
 ## 目的
 - 作成エージェントの成果物を、別コンテキストの検証エージェント（verifier）が受け入れ基準に照らして採点し `verdict.json` を書く
@@ -9,20 +10,19 @@ AI の作業を「作成 → 検証」の二段構成にし、検証が PASS し
 - エージェントが読む情報を `vault/` に集約し、開始時に読むものを小さく保つ
 - 状態をすべてファイルに置き、セッションが切れても新セッションが続きから拾える
 
-ハーネス全体の目的・原則・非ゴールは [docs/vision.md](docs/vision.md) にまとめている。
-
 ## セットアップ
 前提：`claude`（Claude Code）、`git`、`python3` が使える。
 
-```bash
-# このリポジトリで試す
-git clone git@github.com:nagashima-toru/ai-harness.git && cd ai-harness
-bash scripts/smoke.sh        # フックの動作検証
-```
+他のプロジェクトへの組み込み・更新・取り外しは [docs/install.md](docs/install.md) の「パターン2: 既存リポジトリに追加する」「ハーネスを更新する（2回目以降）」を参照（更新は `bash scripts/install.sh --update <組み込み先>`）。
 
-他のプロジェクトへ組み込む場合（まっさらな新規ディレクトリ／既存リポジトリのどちらでも）は `docs/install.md` を参照。組み込んだ後にハーネス側が更新されたら `bash scripts/install.sh --update <組み込み先>` で取り込む。未編集のファイルだけが最新化され、組み込み先で編集したファイルは `skip (edited)` として報告されるだけで上書きされない。
+## クイックスタート
+最初の PR をマージするまでの最小手順。
 
-ハーネスのルール本文は `.claude/ai-harness.md` にあり、導入先の `CLAUDE.md` に入るのは、それを `@` で読み込むマーカー付きの4行ブロックだけである。このリポジトリの `CLAUDE.md` はマーカーの外に `@docs/vision.md` を1行持つが、マーカーの外の行は導入先に配らない。既存リポジトリに入れる時は `install.sh` がこのブロックだけを既存の `CLAUDE.md` にマージする（既存本文は残り、書き換え時は `CLAUDE.md.bak-<日時>` ができる）。`--no-claude-md` で抑止できる。
+1. リポジトリを取得する：`git clone git@github.com:nagashima-toru/ai-harness.git && cd ai-harness`
+2. フックの動作を確かめる：`bash scripts/smoke.sh`（最終行が `fail=0` なら OK）
+3. `claude` を起動し、ゴールを渡して計画を作る：`/plan <ゴール>`
+4. 粒度の確認を通ると自動で approved になり、続けて `/run` が走って PR までできる（planner の質問があれば、答えるまで止まる）
+5. PR ができたら、人が内容を確認してマージする：`gh pr merge`（エージェントはマージしない）
 
 ## 使い方
 | コマンド | 何をするか |
@@ -54,33 +54,70 @@ bash scripts/smoke.sh        # フックの動作検証
 - 導入先で積む拡張の例（導入先で書くルールの例）：開発案件なら、型・API・テスト雛形などの「契約」タスクを先に切り、実装タスクを `after` でそれに依存させる、というルールを `vault/rules/planner/` に置く
 
 ## 仕組み
+```text
+ human        orchestrator (main)                 verifier (separate context)
+   |                  |                                      |
+   | /plan <goal>     |                                      |
+   +----------------> | create branch work/<id>              |
+   |                  | planner: draft plan + tasks          |
+   |                  | granularity OK -> approved (auto)    |
+   |                  | /run: todo -> doing                  |
+   |                  | creator (worktree) builds -> review  |
+   |                  +------------------------------------> | check criteria
+   |                  |                                      | write verdicts/<id>.json
+   |                  | <------------------------------------+
+   |                  | PASS: done / FAIL: doing / cap: blocked
+   |                  | all done -> plan done, vcs_finish.sh -> PR
+   |                  v
+   |        Stop hook (stop_gate.py)
+   |        compares task table and verdicts, blocks mismatch
+   | answer blocked, merge PR
+   +----------------> vault/plans/<id>.md (truth) , vault/log/<id>.md (log)
 ```
- 人                      オーケストレーター（メイン）           verifier（別コンテキスト）
- │ /plan <ゴール>          │                                       │
- ├──────────────────────▶ ブランチ work/<計画ID> を作成             │
- │                        │ planner が計画票 <計画ID>.md / タスク票を draft │
- │                        │ 粒度の確認後、status を approved に（自動）  │
- │                        │ 続けて /run の手順を実行                   │
- │                        │ todo→doing → creator が worktree で作る → review ──▶ 受け入れ基準を照合
- │                        │                                       │ verdicts/<計画ID>/<id>.json
- │                        │ ◀─────────────────────────────────────┘
- │                        │ PASS → done / FAIL → doing(attempt+1) / 上限 → blocked
- │                        │ 全タスク done → status を done にし vcs_finish.sh で PR
- │                        ▼
- │               Stop フック（stop_gate.py）
- │               計画票のタスク表と verdict を照合し、整合しない終了をブロック
- │ blocked に答えて戻す・PR をマージ
- └──────────────────────▶ vault/plans/<計画ID>.md（状態の正本）  vault/log/<計画ID>.md（追記ログ）
-```
+
+1. 人が `/plan <ゴール>` を打つと、計画のブランチ `work/<計画ID>` が作られる。
+2. `planner` が計画票とタスク票を draft で作る。
+3. タスクの粒度の確認が通ると、計画票の status が `approved` になる（自動）。続けて `/run` の手順に入る。
+4. タスクを `todo` から `doing` にし、`creator` が `worktree` で成果物を作って `review` にする。
+5. `verifier`（別コンテキスト）が受け入れ基準を照合し、`vault/verdicts/<計画ID>/<id>.json` を書く。
+6. `PASS` なら `done`、`FAIL` なら `doing`（attempt+1）に戻す。試行の上限に達したら `blocked` にする。
+7. 全タスクが `done` になったら計画票を `done` にし、`scripts/vcs_finish.sh` で PR を作る。
+8. Stop フック `.claude/hooks/stop_gate.py` が、計画票のタスク表と verdict を照合し、整合しない終了をブロックする。
+9. 人は `blocked` に答えてタスクを戻し、PR をマージする。
+10. 状態の正本は `vault/plans/<計画ID>.md`、追記ログは `vault/log/<計画ID>.md`。
+
 PR ができたら、人が内容を確認して `gh pr merge` でマージする（コンフリクトがあれば計画のブランチ上で人が解決する。エージェント（オーケストレーター）は `bash scripts/vcs_finish.sh` で PR を作るまでしか行わない）。
 
 ## 構成
-```
-.claude/   settings.json（hooks・許可）、agents/（creator, verifier, planner）、hooks/、skills/（design, plan, run）
-vault/     plans/（計画票=状態の正本）、tasks/、designs/（設計文書）、verdicts/、log/、templates/、rules/（拡張ポイント。vault/rules/ 配下）
-docs/      vault-spec.md（仕様の正本）、install.md（インストール手順）、runbook.md、vision.md、decisions.md
-scripts/   smoke.sh（フック検証）、install.sh・uninstall.sh（他プロジェクトへの複製と取り外し）、rules.sh（ルール解決）、current_plan.sh（承認済みの計画の特定）、transition.py（状態遷移）、diff_gate.py（差分ゲート）、vcs_finish.sh（PR 作成）、discard_worktree.sh（worktree の破棄）、run_unattended.py（無人実行のラッパー）、purge_plan.sh（計画一式の除去とマージ済みの一括削除）
-```
+| パス | 内容 |
+|---|---|
+| `.claude/settings.json` | hooks・許可 |
+| `.claude/agents/` | エージェント定義（creator, verifier, planner） |
+| `.claude/hooks/` | フック |
+| `.claude/skills/` | スキル（design, plan, run） |
+| `vault/plans/` | 計画票（状態の正本） |
+| `vault/tasks/` | タスク票 |
+| `vault/designs/` | 設計文書 |
+| `vault/verdicts/` | 検証結果 |
+| `vault/log/` | ログ |
+| `vault/templates/` | テンプレート |
+| `vault/rules/` | 拡張ポイント。vault/rules/ 配下 |
+| `docs/vault-spec.md` | 仕様の正本 |
+| `docs/install.md` | インストール手順 |
+| `docs/runbook.md` | 運用手順 |
+| `docs/vision.md` | ビジョン |
+| `docs/decisions.md` | 決定の記録 |
+| `scripts/smoke.sh` | フックの動作検証 |
+| `scripts/install.sh` | 他プロジェクトへの複製 |
+| `scripts/uninstall.sh` | 他プロジェクトからの取り外し |
+| `scripts/rules.sh` | ルール解決 |
+| `scripts/current_plan.sh` | 承認済みの計画の特定 |
+| `scripts/transition.py` | 状態遷移 |
+| `scripts/diff_gate.py` | 差分ゲート |
+| `scripts/vcs_finish.sh` | PR 作成 |
+| `scripts/discard_worktree.sh` | worktree の破棄 |
+| `scripts/run_unattended.py` | 無人実行のラッパー |
+| `scripts/purge_plan.sh` | 計画一式の除去とマージ済みの一括削除 |
 
 ## ライセンス
 このリポジトリは `MIT License` の下で公開しています。詳細は [LICENSE](LICENSE) を参照してください。

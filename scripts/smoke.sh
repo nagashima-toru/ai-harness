@@ -2528,6 +2528,19 @@ printf '{}' > "$RC/c/.claude/harness-manifest.json"
 printf '`scripts/no-such.sh`\n' > "$RC/c/README.md"
 expect_eq "(ref-4) 導入先（.claude/harness-manifest.json がある）では検査しない" "" "$(refcheck "$RC/c")"
 
+# 記録行の無い doing の block 理由だけ完了通知の案内が付く（判定は変わらない）
+rm -rf "$TMP/vault/verdicts" "$TMP/vault/log"
+make_plan_task T-0001 doing 1; out="$(run_stop)"
+expect "(async-wait-1) 記録行の無い doing・verdict 無し → block（reason に完了通知）" block "$out" "完了通知"
+mkdir -p "$TMP/vault/log"
+echo '- 2026-10-10 10:00 T-0001 worktree path=/tmp/wt branch=b plan_head=0000000000000000000000000000000000000000' > "$TMP/vault/log/P-TEST.md"
+out="$(run_stop)"
+expect_eq "(async-wait-2) 記録行のある doing・verdict 無し → block・verdict が無い・完了通知なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '完了通知')"
+rm -f "$TMP/vault/log/P-TEST.md"
+make_plan_task T-0001 review 1; out="$(run_stop)"
+expect_eq "(async-wait-3) review・verdict 無し・log 無し → block・verdict が無い・完了通知なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '完了通知')"
+rm -rf "$TMP/vault/log" "$TMP/vault/verdicts"
+
 echo
 echo "smoke: pass=$PASS_N fail=$FAIL_N"
 [ "$FAIL_N" -eq 0 ]

@@ -58,7 +58,7 @@
 代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で log に上の形式の行を追記してコミットする。
 
 ## 5. 一括削除の手順
-`main` にマージ済みの計画一式（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）と `vault/archive/` を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。新しい計画は run の手順7で PR の前に除去されるので、この手順は `main` に残った分を片づける時に使う。
+`main` にマージ済みの計画一式（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）と vault/archive/ を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。新しい計画は run の手順7で PR の前に除去されるので、この手順は `main` に残った分を片づける時に使う。
 
 対象の条件（すべて満たす計画）：
 
@@ -82,7 +82,7 @@ PR を作り、人がマージする。
 
 `--report` は `<計画ID>/<id>: blocked <補足>`（log の `→blocked` の行の補足＝そのとき聞いた質問）と `<計画ID>/<id>: reasons <理由>`（verdict の `reasons`）を出す。`--report` の出力を見て、未解決のもの・改善提案になるものを人が Issue 化してから `--apply` する。
 
-`--apply` は対象の4種に加えて `vault/archive/` も丸ごと消える。コミットはしない。対象パスに未コミット・未追跡の変更があれば何も消さずに終了コード1になる。
+`--apply` は対象の4種に加えて vault/archive/ も丸ごと消える。コミットはしない。対象パスに未コミット・未追跡の変更があれば何も消さずに終了コード1になる。
 
 実行者の制限：--merged --apply は人だけが実行する。エージェントは --list・--report だけを使う。他の計画の done のタスク票・verdict を消すのは、フック（`agent_write_guard.py`）と差分ゲート（`scripts/diff_gate.py`）を通らない経路になるため。
 

@@ -73,7 +73,7 @@ scripts_list() { # SRC の scripts/ 直下にある *.sh・*.py を SCRIPTS_EXCL
 RETIRED_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
 
 # ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
-# 利用者の資産（vault/plans, tasks, verdicts, log, archive, designs の中身、README 以外の
+# 利用者の資産（vault/plans, tasks, verdicts, log, designs の中身、README 以外の
 # vault/rules/、settings.local.json）は含めない。.claude/settings.json は専用マージャの対象。
 manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存在するものだけ）
   {
@@ -155,11 +155,11 @@ done
 chmod +x "$DST"/.claude/hooks/*.py
 
 # vault/（空ディレクトリ構成のみ作る。計画票は /plan が作るので配らない）
-for d in plans tasks verdicts log designs archive templates rules; do mkdir -p "$DST/vault/$d"; done
+for d in plans tasks verdicts log designs templates rules; do mkdir -p "$DST/vault/$d"; done
 # vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）だけを複製する。
 # 役割定義の標準ルール6本（RETIRED_RULES）は配らない。ドメイン固有のルール（コーディングルール・
 # 方式設計・テスト観点など）も複製・上書きの対象にしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep archive/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 

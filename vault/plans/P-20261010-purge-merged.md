@@ -22,7 +22,7 @@ D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け�
 | T-04 | done | 1 | T-01 | runbook 5節を一括削除の手順に書き換える | |
 | T-05 | done | 1 | T-01 | vault-spec から archive の記述を除き --merged を書く | |
 | T-06 | todo | 0 | T-02,T-03,T-04,T-05 | README・install.md・decisions.md を直し archive の残りを確かめる | |
-| T-07 | doing | 1 | - | runbook 5節の存在しないパスの参照を直す | |
+| T-07 | review | 1 | - | runbook 5節の存在しないパスの参照を直す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

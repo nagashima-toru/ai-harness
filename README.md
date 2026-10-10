@@ -27,7 +27,7 @@ bash scripts/smoke.sh        # フックの動作検証
 ## 使い方
 | コマンド | 何をするか |
 |---|---|
-| `/design <ゴール>` | 大きなゴールを調査し、人に質問し、決定事項を固めた設計文書 `vault/designs/D-xxx.md` を作る |
+| `/design <ゴール>` | 大きなゴールを調査し、人に質問し、決定事項を固めた設計文書 `vault/designs/D-<YYYYMMDD>-<スラッグ>.md` を作る |
 | `/plan <ゴール>` | 計画 ID を決めてブランチ（`work/<計画ID>`）を切り、planner がタスクに分割して draft を作る。粒度の確認を通ったら approved にしてコミットし、続けて `/run` を実行する（planner の質問があれば、解消するまで止まる） |
 | `/run` | 自分のブランチの承認済み計画の取れるタスクを、全部 done になるまで処理し、PR を作る（creator → verifier → done / 再試行 / blocked） |
 | `python3 scripts/run_unattended.py` | 同じことを無人（非対話）で行う（タイムアウト付きのラッパー。中で `claude -p "/run"` を実行する） |

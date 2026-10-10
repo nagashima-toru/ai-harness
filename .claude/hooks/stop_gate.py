@@ -12,6 +12,9 @@ working tree の状態は見ない。承認済みの計画票が0件なら許可
 出力  : ブロック時は stdout に {"decision": "block", "reason": "..."}、許可時は何も出さず exit 0
 環境  : HARNESS_MAX_ATTEMPTS（既定 3）、HARNESS_STRICT_STOP=1 で stop_hook_active を無視
 
+doing で creator の記録行（vault/log/<計画ID>.md の `<id> worktree path=`）がまだ無い時は、
+ブロック理由に完了通知を待つ案内を足す（判定は同じで、文面だけが変わる）。
+
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/stop_gate.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
 タスク表と受け入れ基準の読み方は `_hooklib.py` の `parse_tasks`・`count_criteria` を使う。
@@ -22,6 +25,7 @@ done の行は verdict を検査する（`_hooklib.py` の `validate_verdict`・
 """
 import json
 import os
+import re
 import sys
 
 sys.dont_write_bytecode = True
@@ -48,6 +52,16 @@ def project_dir(payload):
             return cand
     here = os.path.dirname(os.path.abspath(__file__))
     return os.path.abspath(os.path.join(here, "..", ".."))
+
+
+def has_record_line(root, plan_id, tid):
+    """vault/log/<計画ID>.md に `- <日時> <日時> <id> worktree path=` の記録行が1行でもあるか。読めなければ False。"""
+    pat = re.compile(r"^- \S+ \S+ " + re.escape(tid) + r" worktree path=", re.M)
+    try:
+        with open(os.path.join(root, "vault", "log", plan_id + ".md"), encoding="utf-8") as f:
+            return pat.search(f.read()) is not None
+    except Exception:
+        return False
 
 
 def block(reason):
@@ -132,6 +146,14 @@ def main():
         )
         if verdict is None or stale:
             why = "verdict が古い（task/attempt が計画票のタスク表と不一致）" if stale else "verdict が無い"
+            if status == "doing" and not has_record_line(root, plan_id, tid):
+                block(
+                    f"[stop_gate] {task_key} は {status} ですが {why}。"
+                    f"まだ creator の記録行がありません（vault/log/{plan_id}.md）。"
+                    f"creator の完了通知を待っている場合は、そのままターンを終えて通知を待ってください（2回目の停止は許可されます）。"
+                    f"待っていないなら creator・verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"
+                    f"（attempt={attempt}）。"
+                )
             block(
                 f"[stop_gate] {task_key} は {status} ですが {why}。"
                 f"verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"

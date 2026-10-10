@@ -1,0 +1,13 @@
+{
+  "task": "P-20261010-purge-merged/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 09:23",
+  "criteria": [
+    {"text": "install.sh と uninstall.sh に `archive` の語が無い。確認：`grep -n 'archive' scripts/install.sh scripts/uninstall.sh` の出力が空", "ok": true, "note": "実行コマンド: `grep -n 'archive' scripts/install.sh scripts/uninstall.sh`（worktree内） / 出力: 空"},
+    {"text": "空のディレクトリへ install すると `vault/archive/` が作られず、ほかの vault の空ディレクトリ（plans・tasks・verdicts・log・designs・templates・rules）は作られることを smoke で確かめ、ok になる。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (inst-arch) install.sh は vault/archive/ を作らない$'` が `1`", "ok": true, "note": "実行コマンド: smoke を実行し同grep -c / 出力: 1。scripts/smoke.sh 769-771行で archive 不在と他7ディレクトリの存在を検査している"},
+    {"text": "uninstall.sh の最後の note が archive を除いた利用者資産の一覧を出す。確認：`grep -c '^echo \"note  vault/ の利用者資産（plans/tasks/verdicts/log/designs・vault/rules/ のルール）には触れていません\"$' scripts/uninstall.sh` が `1`", "ok": true, "note": "実行コマンド: 指定のgrep -c / 出力: 1"},
+    {"text": "smoke 全体が通る。確認：`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=478 fail=0"}
+  ],
+  "reasons": []
+}

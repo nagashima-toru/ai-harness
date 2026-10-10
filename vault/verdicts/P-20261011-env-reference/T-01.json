@@ -1,0 +1,16 @@
+{
+  "task": "P-20261011-env-reference/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 08:46",
+  "criteria": [
+    {"text": "表の1列目の変数がちょうど11個で重複が無い：`python3 -c 'print(sorted(__import__(\"re\").findall(r\"^\\| `(HARNESS_[A-Z_]+)` \\|\", open(\"docs/configuration.md\").read(), 8)))'` の出力が `['HARNESS_BASE_BRANCH', 'HARNESS_CREATOR_MODEL', 'HARNESS_MAX_ATTEMPTS', 'HARNESS_MAX_PARALLEL', 'HARNESS_PR_BODY_FILE', 'HARNESS_PR_TITLE', 'HARNESS_PUSH_BRANCH', 'HARNESS_RUN_CMD', 'HARNESS_RUN_TIMEOUT', 'HARNESS_STRICT_STOP', 'HARNESS_VCS_HOST']`", "ok": true, "note": "worktree の docs/configuration.md に対し基準のコマンドを実行 / 出力: 期待どおりの11変数のソート済みリスト（重複なし）"},
+    {"text": "6列の見出し行が2つ（2つの表）ある：`grep -cxF '| 変数 | 意味 | 既定値 | 読むもの | 使う場面 | 詳しく |' docs/configuration.md` が `2`", "ok": true, "note": "実行コマンド: grep -cxF（基準どおり） / 出力: 2"},
+    {"text": "利用者が設定する9変数と内部用2変数が見出しで分かれている：`python3 -c 'print(open(\"docs/configuration.md\").read().split(\"\\n## run が内部で渡す変数\\n\")[0].count(\"| `HARNESS_\"))'` が `9`、`python3 -c 'print(open(\"docs/configuration.md\").read().split(\"\\n## run が内部で渡す変数\\n\")[1].count(\"| `HARNESS_\"))'` が `2`、後者の2行は `HARNESS_PR_BODY_FILE`・`HARNESS_PR_TITLE`", "ok": true, "note": "基準の2コマンドを実行 / 出力: 9 と 2。表2の2行は Read した出力で HARNESS_PR_BODY_FILE・HARNESS_PR_TITLE と確認"},
+    {"text": "各行の「既定値」「読むもの」が決定済みの一覧と一致する：`python3 -c 'print(\"\\n\".join(c[1].strip()+\" | \"+c[3].strip()+\" | \"+c[4].strip() for c in (l.split(\"|\") for l in open(\"docs/configuration.md\")) if len(c)>7 and c[1].strip().startswith(\"`HARNESS_\")))'` の出力の各行で、既定値の列が決定済みの「既定値」の記述（値と、経路で違う時はその旨）を含み、読むものの列が決定済みの「読むもの」のパスをすべて含む", "ok": true, "note": "docs/configuration.md の全11行を決定済みの既定値・読むもの一覧と目視照合。STRICT_STOP は単体0と run_unattended 経由1の両方、MAX_PARALLEL は run スキルが読む旨、PR_BODY_FILE/PR_TITLE は指定の記述あり。読むもののパスは欠落なし"},
+    {"text": "表を含む本文のバッククォート内のパスがすべて実在する：`python3 -c 'print([p for p in __import__(\"re\").findall(r\"`((?:vault|scripts|docs|\\.claude)/[^`\\s<*{$]+)`\", open(\"docs/configuration.md\").read()) if not __import__(\"os\").path.exists(p)])'` の出力が `[]`", "ok": true, "note": "基準のコマンドを worktree で実行 / 出力: []"},
+    {"text": "「設定のしかた」の節に、決定済みの4つの語がある：`python3 -c 'print([w for w in (\"export \", \"env HARNESS_\", \"`.claude/settings.json`\", \"起動し直す\") if w not in open(\"docs/configuration.md\").read().split(\"## 設定のしかた\")[1].split(\"\\n## \")[0]])'` の出力が `[]`", "ok": true, "note": "基準のコマンドを実行 / 出力: []"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形", "ok": true, "note": "worktree で実行 / 出力: smoke: pass=517 fail=0"}
+  ],
+  "reasons": []
+}

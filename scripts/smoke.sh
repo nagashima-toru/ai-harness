@@ -13,6 +13,7 @@ abort_tmp() { echo "smoke: 一時ディレクトリを作れません（TMPDIR=$
 TMP="$(smoke_tmpdir)" || abort_tmp
 trap 'rm -rf "$TMP"' EXIT
 unset HARNESS_CREATOR_MODEL
+unset HARNESS_BASE_BRANCH
 PASS_N=0; FAIL_N=0
 
 make_plan() { # $1=planID $2=planStatus $3...=「## タスク表」のデータ行（複数可）
@@ -1804,6 +1805,58 @@ rm -f "$VF_REC"
 vf_out="$( cd "$VF_REPO" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE=NT bash "$ROOT/scripts/vcs_finish.sh" 2>/dev/null )"
 [ "$vf_out" = "https://github.com/o/r/pull/1" ] && vf_ok=1 || vf_ok=0
 vf_rest_check "(vf-rest-6) 標準出力は PR の URL の1行だけ" "$vf_ok" "$vf_out"
+
+# ベースブランチ（HARNESS_BASE_BRANCH）：develop と既定（未設定＝main）。既存のケースは未設定の前提で、
+# ここでは必要な呼び出しにだけ env で渡す。
+vf_notes_run "$VF_REPO" github HARNESS_PR_BODY_FILE="$VF_NOTES" HARNESS_PR_TITLE="NT" HARNESS_BASE_BRANCH=develop
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+vf_want=$'api\n-X\nPOST\nrepos/o/r/pulls\n-f\ntitle=NT\n-f\nhead=vfmain\n-f\nbase=develop\n-F\nbody=@'"$VF_NOTES"$'\n--jq\n.html_url'
+[ "$vf_got" = "$vf_want" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(base-1) github・本文ファイルとタイトル・HARNESS_BASE_BRANCH=develop → base=develop" "$vf_ok" "$vf_got"
+
+vf_notes_run "$VF_REPO" github HARNESS_BASE_BRANCH=' develop '
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+printf '%s\n' "$vf_got" | grep -qx 'base=develop' && vf_ok=1 || vf_ok=0
+vf_rest_check "(base-2) github・計画無し・引数なし・前後に空白のある ' develop ' → base=develop" "$vf_ok" "$vf_got"
+
+vf_out="$( cd "$VF_REPO" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=none HARNESS_BASE_BRANCH=develop bash "$ROOT/scripts/vcs_finish.sh" 2>/dev/null )"
+printf '%s\n' "$vf_out" | grep -q 'の内容を develop に取り込むには' && vf_ok=1 || vf_ok=0
+vf_rest_check "(base-3) HARNESS_VCS_HOST=none・develop → 取り込み先の案内が develop" "$vf_ok" "$vf_out"
+
+BGTMP="$(smoke_tmpdir)" || abort_tmp
+git -C "$BGTMP" init -q -b main
+git -C "$BGTMP" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m init
+git -C "$BGTMP" branch develop
+git -C "$BGTMP" branch work/p-test
+bg_run() { # $1=ブランチ $2=env 代入（空なら未設定のまま）
+  git -C "$BGTMP" checkout -q "$1"
+  printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}' | env ${2:+"$2"} CLAUDE_PROJECT_DIR="$BGTMP" python3 "$GUARD_HOOK"
+}
+expect_guard "(base-4) develop で git commit・HARNESS_BASE_BRANCH=develop → 拒否（reason に develop）" deny \
+  "$(bg_run develop HARNESS_BASE_BRANCH=develop)" "develop への直接コミットはできません"
+expect_guard "(base-5) main で git commit・HARNESS_BASE_BRANCH=develop → 拒否" deny \
+  "$(bg_run main HARNESS_BASE_BRANCH=develop)"
+expect_guard "(base-6) work/p-test で git commit・HARNESS_BASE_BRANCH=develop → 許可" allow \
+  "$(bg_run work/p-test HARNESS_BASE_BRANCH=develop)"
+expect_guard "(base-7) develop で git commit・未設定 → 許可" allow \
+  "$(bg_run develop '')"
+rm -rf "$BGTMP"
+
+# purge_plan --merged：main の版では B だけ done、develop の版では A だけ done。作業ツリーは両方 done
+BP_ID_A="P-20990201-basea"; BP_ID_B="P-20990202-baseb"
+rm -rf "$TMP/pmbase"; mkdir -p "$TMP/pmbase"
+( cd "$TMP/pmbase" && git init -q -b main . ) >/dev/null 2>&1
+pm_plan "$TMP/pmbase" "$BP_ID_B" done done
+( cd "$TMP/pmbase" && git add -A && pp_git commit -q -m main && git checkout -q -b develop ) >/dev/null 2>&1
+pm_plan "$TMP/pmbase" "$BP_ID_A" done done
+pm_plan "$TMP/pmbase" "$BP_ID_B" approved done
+( cd "$TMP/pmbase" && git add -A && pp_git commit -q -m develop && git checkout -q -b work/p-20990209-cur ) >/dev/null 2>&1
+pm_plan "$TMP/pmbase" "$BP_ID_B" done done
+( cd "$TMP/pmbase" && git add -A && pp_git commit -q -m work ) >/dev/null 2>&1
+HARNESS_BASE_BRANCH=develop pp_run pmbase --merged --list
+expect_eq "(base-8) purge_plan --merged --list・develop → develop の版で判定した計画だけ" "0|$BP_ID_A|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pmbase)"
+pp_run pmbase --merged --list
+expect_eq "(base-9) purge_plan --merged --list・未設定 → main の版で判定した計画だけ" "0|$BP_ID_B|" "$PP_RC|$(cat "$PP_OUT")|$(pp_status pmbase)"
 
 echo "== _hooklib.py =="
 HLB="$(smoke_tmpdir)" || abort_tmp

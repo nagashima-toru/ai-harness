@@ -35,9 +35,9 @@
   - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
   - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にしてコミットし、計画の記録を PR 本文に写し、残すべき情報を docs への追記か Issue 化で取り出し、`scripts/purge_plan.sh` で計画一式を除去してコミットしてから `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh api`（REST）で、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
   - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
-  - PR のマージ方式：スカッシュマージを推奨する。main の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。PR 本文には「タスク履歴」表に加えて計画の記録（ゴール・タスク表・log の全行）と verifier の指摘・取り出した情報が載り、計画一式は `main` に入らないので、マージ後に計画を調べる時は PR を見る。
-    - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= main の `git log`）にも残る（設定は人が行う）
-    - 通常のマージ（merge commit）も可。main にタスクごとのコミットが残る。ホスティング無しの `git merge --no-ff` の案内は今のまま
+  - PR のマージ方式：スカッシュマージを推奨する。ベースブランチ（既定 `main`）の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。PR 本文には「タスク履歴」表に加えて計画の記録（ゴール・タスク表・log の全行）と verifier の指摘・取り出した情報が載り、計画一式はベースブランチに入らないので、マージ後に計画を調べる時は PR を見る。
+    - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= ベースブランチの `git log`）にも残る（設定は人が行う）
+    - 通常のマージ（merge commit）も可。ベースブランチにタスクごとのコミットが残る。ホスティング無しの `git merge --no-ff` の案内は今のまま
   - run の振り返り（手順8）で issue の起票に失敗すると、`vault/harness-improvements/<計画ID>.md` に提案が残る。提案に対応する計画を立てる時は、その計画の中でそのファイルを削除する（対応が済んだ提案ファイルを残さない）
 
 ## 4. blocked に答えて戻す
@@ -58,7 +58,7 @@
 代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で log に上の形式の行を追記してコミットする。
 
 ## 5. 一括削除の手順
-`main` にマージ済みの計画一式（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）と vault/archive/ を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。新しい計画は run の手順7で PR の前に除去されるので、この手順は `main` に残った分を片づける時に使う。
+ベースブランチ（既定 `main`）にマージ済みの計画一式（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）と vault/archive/ を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。新しい計画は run の手順7で PR の前に除去されるので、この手順はベースブランチに残った分を片づける時に使う。
 
 対象の条件（すべて満たす計画）：
 
@@ -66,7 +66,7 @@
 2. 現在のブランチの計画でない
 3. 計画票が `status: done`
 4. タスク表が全行 `done`
-5. `main` の版の計画票も `status: done`
+5. ベースブランチ（`HARNESS_BASE_BRANCH`、既定 `main`）の版の計画票も `status: done`
 
 `--keep` は無く、マージ済みは全部消す。
 
@@ -75,7 +75,7 @@ git switch -c purge/merged-<YYYYMMDD>
 bash scripts/purge_plan.sh --merged --list
 bash scripts/purge_plan.sh --merged --report
 bash scripts/purge_plan.sh --merged --apply
-git commit -m "一括削除: main にマージ済みの計画一式と vault/archive/ を削除"
+git commit -m "一括削除: ベースブランチにマージ済みの計画一式と vault/archive/ を削除"
 ```
 
 PR を作り、人がマージする。
@@ -144,6 +144,6 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 | 状態が壊れた | `vault/log/<計画ID>.md` を見て計画票のタスク表を手で直す。doing/review は着手可能集合の範囲で複数になりうる（`docs/vault-spec.md` 2節） |
 | merge の途中で止まった（`git status` に `You have unmerged paths` や `All conflicts fixed but you are still merging`） | `git merge --abort` で取り込む前に戻す。計画ブランチへのタスクの取り込みは `transition.py` がやり直す（衝突なら blocked にする） |
 | rebase の途中で止まった（`git status` に `rebase in progress`） | `git rebase --abort` で始める前に戻す |
-| HEAD と作業ツリーが食い違っている（コミットしていない変更が残って次の操作が止まる、など） | 作業ブランチ（`work/<計画ID>` か creator の worktree のブランチ）の上でだけ、`git reset --hard HEAD`（または戻したいコミット）で作業ツリーを HEAD に戻す。`main` では使わない。 |
+| HEAD と作業ツリーが食い違っている（コミットしていない変更が残って次の操作が止まる、など） | 作業ブランチ（`work/<計画ID>` か creator の worktree のブランチ）の上でだけ、`git reset --hard HEAD`（または戻したいコミット）で作業ツリーを HEAD に戻す。ベースブランチや `main` では使わない。 |
 
 上の git の3行は、エージェントが自分で直してよい。`permissions.deny` に残っているのは `git push --force` 系・`rm -rf` 系・`sudo`・`gh pr merge`・`glab mr merge` だけで、作業ブランチの上の `git reset --hard`・`git clean`・`git branch -D` は止めない（D-015。壊れてもブランチを捨てて作り直せる）。半端な状態を見つける診断スクリプトは無い。

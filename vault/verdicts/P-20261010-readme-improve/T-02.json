@@ -1,0 +1,15 @@
+{
+  "task": "P-20261010-readme-improve/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 14:55",
+  "criteria": [
+    {"text": "セットアップ節が短い。確認：`awk '/^## セットアップ/{s=1;next} /^## /{s=0} s' README.md | grep -c .` の出力が `5` 以下", "ok": true, "note": "実行コマンド: 指定の awk|grep -c . / 出力: 2"},
+    {"text": "セットアップ節から docs/install.md の該当箇所へ辿れる。確認：`awk '/^## セットアップ/{s=1;next} /^## /{s=0} s' README.md | grep -oF -e '](docs/install.md)' -e 'パターン2: 既存リポジトリに追加する' -e 'ハーネスを更新する（2回目以降）'` の出力に、この3つの文字列がすべて1回以上現れる", "ok": true, "note": "実行コマンド: 指定の awk|grep -oF / 出力: 3文字列とも1回ずつ出現"},
+    {"text": "細かい挙動の説明が README から無くなっている。確認：`grep -cE 'skip \\(edited\\)|CLAUDE\\.md\\.bak-|--no-claude-md|マーカーの外|未編集のファイルだけ|4行ブロック' README.md` の出力が `0`。clone の手順はクイックスタートだけにある：`grep -c 'git clone' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -cE と grep -c 'git clone' / 出力: 0 と 1"},
+    {"text": "README から落とした情報（このリポジトリの CLAUDE.md のマーカーの外の `@docs/vision.md` は導入先に配らないこと）が docs/install.md に残っている。確認：`grep -cF 'マーカーの外の行（ハーネス本体のリポジトリだけが読む `@docs/vision.md` など）は配らない' docs/install.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -cF docs/install.md / 出力: 1"},
+    {"text": "見出し構成が変わっていない。確認：`grep -E '^## ' README.md` の出力がちょうど次の8行（この順）：`## 目的`・`## セットアップ`・`## クイックスタート`・`## 使い方`・`## 拡張ポイント（ルール）`・`## 仕組み`・`## 構成`・`## ライセンス`", "ok": true, "note": "実行コマンド: grep -E '^## ' README.md / 出力: 8行が指定の順で一致"},
+    {"text": "文書中のパスが実在する。確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の smoke.sh|grep -c / 出力: 1"}
+  ],
+  "reasons": []
+}

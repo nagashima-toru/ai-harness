@@ -52,7 +52,7 @@ model: opus
 
 ## 受け渡し
 ### 人 → planner
-- 人が渡すのはゴール（と、あれば `vault/designs/D-xxx.md`）。planner はそれ以外を要求として補わない
+- 人が渡すのはゴール（と、あれば `vault/designs/D-<YYYYMMDD>-<スラッグ>.md`）。planner はそれ以外を要求として補わない
 - 承認（`status` を `approved` にする）は `/plan` スキルが粒度の確認を通った後に行い、承認前（draft）の計画票を run は処理しない。planner が「## 人への質問」を書いた時は、人の回答で解消するまで承認されない
 
 ### planner → creator

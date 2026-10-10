@@ -5,7 +5,7 @@
 #
 # 使い方: bash scripts/vcs_finish.sh [引数...]（引数なしなら GitHub は REST の gh api、glab は --fill --yes を既定で付ける）
 #   GitHub は GraphQL が使えない環境（Claude Code の Web セッション等）でも通るよう、PR を REST
-#   （gh api -X POST repos/<owner>/<repo>/pulls、base は main 固定、head は現在のブランチ）で作り、
+#   （gh api -X POST repos/<owner>/<repo>/pulls、base は HARNESS_BASE_BRANCH、head は現在のブランチ）で作り、
 #   PR の URL を標準出力に出す。owner/repo は origin の URL から取り、取れなければ push の前に終了コード2で終わる
 #   引数がある時は gh pr create / glab mr create にそのまま渡す（既定値は足さない。REST には変換しない）
 #   引数なしで、現在のブランチ（work/<計画IDの英小文字>）の計画票が見つかった時は、
@@ -14,6 +14,8 @@
 #   引数なしで HARNESS_PR_BODY_FILE（本文のファイル）が空でない値で設定されている時だけ、その内容を本文として渡す
 #   （gh api は -F body=@パス でファイルを読ませ、glab は --description にファイルの中身を渡す）。引数がある時は見ない。
 #   読めないファイルなら git push の前に標準エラーへ出して終了コード2で終わる（none の経路では検査しない）
+#   HARNESS_BASE_BRANCH は PR の base（ホスティング無しの案内では取り込み先）。前後の空白を除いて空なら main。
+#   引数ありの経路と GitLab の経路は base を指定しない（gh / glab の既定に任せる）
 #   HARNESS_PR_TITLE は上の経路でだけ使うタイトル。未設定か空なら計画ID、計画が見つからなければ現在のブランチ名
 #
 # ホスティング判定は環境変数 HARNESS_VCS_HOST で上書きできる：
@@ -23,6 +25,11 @@
 #   gitlab を含む     -> gitlab
 #   それ以外・origin が無い -> none
 set -u
+
+base_branch="${HARNESS_BASE_BRANCH:-}"
+base_branch="${base_branch#"${base_branch%%[![:space:]]*}"}"
+base_branch="${base_branch%"${base_branch##*[![:space:]]}"}"
+[ -n "$base_branch" ] || base_branch=main
 
 # 現在のブランチ（work/<計画IDの英小文字>）に対応する計画票を探し、plan_id と plan_toplevel を設定する。無ければ1を返す。
 find_plan_id() {
@@ -142,11 +149,11 @@ case "$host" in
       gh_head="$(git rev-parse --abbrev-ref HEAD)"
       gh_api=(gh api -X POST "repos/$gh_owner/$gh_repo/pulls")
       if [ "$use_notes" = 1 ]; then
-        "${gh_api[@]}" -f "title=$(notes_title)" -f "head=$gh_head" -f base=main -F "body=@$HARNESS_PR_BODY_FILE" --jq .html_url
+        "${gh_api[@]}" -f "title=$(notes_title)" -f "head=$gh_head" -f "base=$base_branch" -F "body=@$HARNESS_PR_BODY_FILE" --jq .html_url
       elif find_plan_body; then
-        "${gh_api[@]}" -f "title=$pr_title" -f "head=$gh_head" -f base=main -f "body=$pr_body" --jq .html_url
+        "${gh_api[@]}" -f "title=$pr_title" -f "head=$gh_head" -f "base=$base_branch" -f "body=$pr_body" --jq .html_url
       else
-        "${gh_api[@]}" -f "title=$(git log -1 --format=%s)" -f "head=$gh_head" -f base=main -f "body=$(git log -1 --format=%b)" --jq .html_url
+        "${gh_api[@]}" -f "title=$(git log -1 --format=%s)" -f "head=$gh_head" -f "base=$base_branch" -f "body=$(git log -1 --format=%b)" --jq .html_url
       fi
     else
       gh pr create "$@"
@@ -185,11 +192,11 @@ case "$host" in
     branch="$(git rev-parse --abbrev-ref HEAD)"
     cat <<EOF
 ホスティングサービス（GitHub/GitLab）は検出されませんでした。PR/MR の作成はスキップします。
-ブランチ「${branch}」の内容を main に取り込むには、人が以下を実行してください：
+ブランチ「${branch}」の内容を ${base_branch} に取り込むには、人が以下を実行してください：
 
   git merge --no-ff ${branch}
 
-（本スクリプトはマージを実行しません。main への取り込みは人が行ってください。）
+（本スクリプトはマージを実行しません。${base_branch} への取り込みは人が行ってください。）
 EOF
     exit 0
     ;;

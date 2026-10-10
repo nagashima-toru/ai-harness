@@ -26,7 +26,7 @@ D-016 フェーズ2の一括削除（`bash scripts/purge_plan.sh --merged --appl
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vault-spec.md の vault/archive/ をバッククォートのパス参照でない書き方にする | |
 | T-02 | done | 1 | - | runbook.md の vault/archive/ をバッククォートのパス参照でない書き方にする | |
-| T-03 | doing | 1 | T-01,T-02 | smoke.sh の fixtures-comment の依存を外し、一括削除後も smoke が全部通ることを確かめる | |
+| T-03 | blocked | 1 | T-01,T-02 | smoke.sh の fixtures-comment の依存を外し、一括削除後も smoke が全部通ることを確かめる | 受け入れ基準5（一括削除した一時 worktree で smoke が全部通る）の確認ができていません。一時 worktree（/tmp/claude/P-20261010-purge-prereq-T-03/wt、detached HEAD は 5e4c5a0）の中で `env -C ... bash scripts/purge_plan.sh --merged --apply ／ tail -1` を実行したところ、auto mode の権限分類器に「Irreversible Local Destruction」として拒否されました。この削除は一時 worktree の中だけを対象にする想定です。拒否を回避する別の方法は試していません。このコマンドの実行を許可してもらえますか。あるいは基準5の確認をオーケストレーターか人が実行しますか。基準1〜4は満たしています（成果物は 5e4c5a0 にコミット済み）。 |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

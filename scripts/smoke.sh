@@ -765,6 +765,10 @@ bash "$ROOT/scripts/install.sh" >/dev/null 2>&1; rc=$?
 expect_eq "(g) 引数なし → exit 2" "2" "$rc"
 bash "$ROOT/scripts/install.sh" --unknown "$ITMP" >/dev/null 2>&1; rc=$?
 expect_eq "(g) 不正なオプション → exit 2" "2" "$rc"
+arch_ok=ok
+[ -e "$ITMP/vault/archive" ] && arch_ok=ng
+for d in plans tasks verdicts log designs templates rules; do [ -d "$ITMP/vault/$d" ] || arch_ok=ng; done
+expect_eq "(inst-arch) install.sh は vault/archive/ を作らない" "ok" "$arch_ok"
 rm -rf "$ITMP"
 
 echo "== install.sh のマニフェスト =="

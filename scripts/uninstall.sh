@@ -8,7 +8,7 @@
 # scripts/unmerge_settings_json.py に委譲する（このスクリプト自身は CLAUDE.md や
 # settings.json を直接パースしない）。settings_src キーが無ければ settings.json の
 # 自動処理はスキップし、案内だけを出す（エラー終了はしない）。
-# vault/ の利用者資産（plans/tasks/verdicts/log/designs/archive、vault/rules/ のルール）と、
+# vault/ の利用者資産（plans/tasks/verdicts/log/designs、vault/rules/ のルール）と、
 # vault/plans・vault/tasks・vault/verdicts・vault/log 自体には一切触れない。
 # 空になった .claude/ や vault/rules/<role>/ 等のディレクトリ自体は削除しない（ファイル削除のみ）。
 USAGE="usage: bash scripts/uninstall.sh <target-dir>"
@@ -76,7 +76,7 @@ else
   echo "note  .claude/settings.json は手動確認してください（docs/install.md 参照）"
 fi
 
-echo "note  vault/ の利用者資産（plans/tasks/verdicts/log/designs/archive・vault/rules/ のルール）には触れていません"
+echo "note  vault/ の利用者資産（plans/tasks/verdicts/log/designs・vault/rules/ のルール）には触れていません"
 
 # マニフェスト自体（利用者資産ではなくハーネスの記帳ファイルなので最後に消す）
 rm -f "$MANIFEST_FILE"

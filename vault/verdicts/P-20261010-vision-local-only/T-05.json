@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-vision-local-only/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 13:12",
+  "criteria": [
+    {"text": "`grep -n 'マーカーの外の行.*配らない' docs/install.md` の出力が1行以上（マージに使うのはマーカーブロックだけで、マーカーの外の行は配らないと書いてある）", "ok": true, "note": "実行コマンド: grep -n 'マーカーの外の行.*配らない' docs/install.md（worktree内） / 出力: 84行目に該当（マーカーの外の行（...@docs/vision.md など）は配らない）。対象文書と主張が一致。"},
+    {"text": "`grep -n 'が無い時はマーカーブロックだけで作る' docs/install.md` の出力が1行以上（`--no-claude-md` で `CLAUDE.md` が無い時の挙動が書いてある）", "ok": true, "note": "実行コマンド: grep -n 'が無い時はマーカーブロックだけで作る' docs/install.md / 出力: 103行目に該当（--no-claude-md の段落内、create 出力も明記）。"},
+    {"text": "`grep -n 'ブロックだけを持つ' README.md` の出力が空、かつ `grep -c 'マーカーの外の行は導入先に配らない' README.md` が `1`（このリポジトリの `CLAUDE.md` が4行ブロックだけを持つという、事実と食い違う記述が残っていない）", "ok": true, "note": "実行コマンド: grep -n 'ブロックだけを持つ' README.md / 出力: 空。grep -c 'マーカーの外の行は導入先に配らない' README.md / 出力: 1（25行目）。"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh（worktree内で実行し出力をファイルへ）後 grep -c '^  ok   (ref-1) ' / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  NG '` が `0`", "ok": true, "note": "同じ smoke.sh 出力に対し grep -c '^  NG ' / 出力: 0"}
+  ],
+  "reasons": []
+}

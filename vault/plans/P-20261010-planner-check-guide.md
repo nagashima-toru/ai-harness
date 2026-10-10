@@ -18,7 +18,7 @@ status: approved
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | planner.md の「やらないこと」に確認コマンドの指針4点を足す | |
+| T-01 | done | 1 | - | planner.md の「やらないこと」に確認コマンドの指針4点を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

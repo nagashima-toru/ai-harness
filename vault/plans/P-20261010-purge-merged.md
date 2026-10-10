@@ -17,7 +17,7 @@ D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | purge_plan.sh に --merged（--list・--report・--apply）を足し smoke で確かめる | |
-| T-02 | blocked | 1 | T-01,T-07 | archive_plans.sh と smoke の archive_plans 節を消す | 受け入れ基準5（smoke 全体が fail=0）が満たせません。`bash scripts/smoke.sh ／ tail -1` が `smoke: pass=476 fail=1` になります。失敗しているのは `(ref-1) 主な文書のバッククォート内のパスがすべて存在する` で、原因は `docs/runbook.md:89` にある `vault/harness-improvements/` の参照です（このパスは存在しません）。docs/runbook.md はこのタスクの成果物に宣言されておらず、決定済みでも「docs はこのタスクでは直さない」とあるので、私は直していません。この行を修正するタスクを別に足すか、このタスクの成果物に docs/runbook.md を加えるかの判断をお願いします。基準1から4は満たしています。 |
+| T-02 | todo | 0 | T-01,T-07 | archive_plans.sh と smoke の archive_plans 節を消す | |
 | T-03 | todo | 0 | T-02 | install.sh・uninstall.sh から vault/archive を除く | |
 | T-04 | done | 1 | T-01 | runbook 5節を一括削除の手順に書き換える | |
 | T-05 | done | 1 | T-01 | vault-spec から archive の記述を除き --merged を書く | |

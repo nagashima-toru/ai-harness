@@ -86,7 +86,7 @@ PR を作り、人がマージする。
 
 実行者の制限：--merged --apply は人だけが実行する。エージェントは --list・--report だけを使う。他の計画の done のタスク票・verdict を消すのは、フック（`agent_write_guard.py`）と差分ゲート（`scripts/diff_gate.py`）を通らない経路になるため。
 
-対象外：計画 ID が `P-YYYYMMDD-<slug>` の形でない旧形式の計画（`P-019` など）と、旧形式のタスク票（`vault/tasks/T-0036.md` など）は対象にならない。消す時は人が `git rm` する。`vault/harness-improvements/` も対象外。
+対象外：計画 ID が `P-YYYYMMDD-<slug>` の形でない旧形式の計画（`P-019` など）と、旧形式のタスク票（`vault/tasks/T-0036.md` など）は対象にならない。消す時は人が `git rm` する。`vault/harness-improvements/<計画ID>.md`（run の振り返りの提案ファイル）も対象外。
 
 ## 6. ルールを足す
 1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く

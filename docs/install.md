@@ -31,7 +31,7 @@ git init
 ```bash
 bash /path/to/ai-harness/scripts/install.sh .
 ```
-複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと `vault/{plans,tasks,verdicts,log,designs,templates,rules}` の空ディレクトリ、`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）、`docs/vault-spec.md`、`CLAUDE.md`）。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
+複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/`（`ai-harness.md` を含む）、`vault/` のテンプレートと `vault/{plans,tasks,verdicts,log,designs,templates,rules}` の空ディレクトリ、`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）、`docs/vault-spec.md`、`CLAUDE.md`（マーカーブロックだけ））。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
 
 あわせて `.claude/harness-manifest.json` が作られる。配ったハーネス本体ファイルの sha256 を記録したもので、次の「ハーネスを更新する」で使う。`.claude/settings.json` は複製ではなく `scripts/merge_settings_json.py` によるマージで用意される。
 
@@ -81,7 +81,7 @@ bash /path/to/ai-harness/scripts/install.sh /path/to/your-project
 ```
 2回目以降（ハーネス側の更新を取り込む時）は `--update` を付ける（「ハーネスを更新する（2回目以降）」を参照）。
 
-既存ファイルは上書きしない。唯一の例外が `CLAUDE.md` で、ハーネスのルールを読み込む4行のブロックだけを既定でマージする（既存の本文はそのまま残る）。出力は次のとおり。
+既存ファイルは上書きしない。唯一の例外が `CLAUDE.md` で、ハーネスのルールを読み込む4行のブロックだけを既定でマージする（既存の本文はそのまま残る）。マージに使うのはハーネス側の `CLAUDE.md` のマーカーブロックだけで、マーカーの外の行（ハーネス本体のリポジトリだけが読む `@docs/vision.md` など）は配らない。出力は次のとおり。
 
 | 出力 | 意味 | やること |
 |---|---|---|
@@ -100,7 +100,7 @@ bash /path/to/ai-harness/scripts/install.sh /path/to/your-project
 <!-- ai-harness:end -->
 ```
 
-`CLAUDE.md` に一切触れたくない場合は `--no-claude-md` を付ける。その場合は従来どおり `note  CLAUDE.md は既にあります。...` の案内が出るだけで、ハーネスのルールはメインコンテキストに載らない。
+`CLAUDE.md` に一切触れたくない場合は `--no-claude-md` を付ける。その場合は従来どおり `note  CLAUDE.md は既にあります。...` の案内が出るだけで、ハーネスのルールはメインコンテキストに載らない。なお、`--no-claude-md` を付けない時に導入先に `CLAUDE.md` が無い時はマーカーブロックだけで作る（出力は `create <path>/CLAUDE.md`）。
 
 ```bash
 bash /path/to/ai-harness/scripts/install.sh --no-claude-md /path/to/your-project

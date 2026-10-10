@@ -1,6 +1,6 @@
 ---
 id: P-20261010-vision-local-only
-status: approved
+status: done
 ---
 # ゴール
 docs/vision.md を、このリポジトリ（ai-harness 本体）で動くエージェントだけが意識するようにする。導入先には配らない。vision の本文は二重持ちしない（docs/vision.md が唯一の正本で、写し・要約を他に書かない）。

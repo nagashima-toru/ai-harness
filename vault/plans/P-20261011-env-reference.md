@@ -1,6 +1,6 @@
 ---
 id: P-20261011-env-reference
-status: approved
+status: done
 ---
 # ゴール
 D-20261011-user-guide フェーズ1：利用者が指定できる環境変数（`HARNESS_*`）を `docs/configuration.md` に1つの表で一覧化する。各変数について、意味・既定値（未設定の時に実際に使われる値。経路で違う時はその旨）・読むもの（スクリプト・フック・スキル）・使う場面・詳しい説明へのリンクを書く。run が内部で渡すだけの変数（`HARNESS_PR_BODY_FILE`・`HARNESS_PR_TITLE`）は利用者が設定するものと分けて載せる。`README.md` からリンクし、`scripts/smoke.sh` に表とコードの変数の一致を確かめるケースを足す。

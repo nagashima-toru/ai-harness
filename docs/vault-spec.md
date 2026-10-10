@@ -21,15 +21,17 @@
 
 証跡は3層で残る（計画ブランチの中の証跡。マージ後は PR の本文とコミット履歴から辿る）。`vault/log/<計画ID>.md`（状態遷移）・`vault/verdicts/<計画ID>/T-01.json`（判定の根拠）・git の履歴（タスクごとの状態のコミット（transition.py の `<計画ID>/<id,...>: <旧>→<新>`）・worktree 側の収集コミット（`<計画ID>/<id>: creator 成果物をオーケストレーターが収集`）・計画ブランチへの `--no-ff` のマージコミット（`<計画ID>/<id>: マージ`））と、オーケストレーターが `bash scripts/vcs_finish.sh` で作る PR。どれも計画のブランチ内に閉じるので、セッション間で競合しない。
 
-計画一式4種（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）は、run の手順7で PR を作る直前に除去し、`main` には入れない。除去は `bash scripts/purge_plan.sh [--dry-run] <計画ID>` で行う。条件は、ブランチが `work/<計画IDの英小文字>`・計画票が `status: done`・タスク表が1行以上で全行 `done`・対象パスに未コミットの変更が無いこと。存在しないパスは飛ばす。`--dry-run` は消す予定のパスを1行1件で出し、何も変えない。終了コードは 0（消した／dry-run で出した）・1（条件を満たさない、または `git rm` の失敗）・2（引数の誤り、git リポジトリの外）。スクリプトはコミットしない（オーケストレーターが `<計画ID>: 計画一式を除去` でコミットする）。`vault/harness-improvements/<ファイル名>` は除去の対象外。
+計画一式4種（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）は、run の手順7で PR を作る直前に除去し、ベースブランチ（既定 `main`）には入れない。除去は `bash scripts/purge_plan.sh [--dry-run] <計画ID>` で行う。条件は、ブランチが `work/<計画IDの英小文字>`・計画票が `status: done`・タスク表が1行以上で全行 `done`・対象パスに未コミットの変更が無いこと。存在しないパスは飛ばす。`--dry-run` は消す予定のパスを1行1件で出し、何も変えない。終了コードは 0（消した／dry-run で出した）・1（条件を満たさない、または `git rm` の失敗）・2（引数の誤り、git リポジトリの外）。スクリプトはコミットしない（オーケストレーターが `<計画ID>: 計画一式を除去` でコミットする）。`vault/harness-improvements/<ファイル名>` は除去の対象外。
 
-`bash scripts/purge_plan.sh --merged (--list|--report|--apply)` は、`main` にマージ済みのまま残った計画一式をまとめて扱う。対象は、計画 ID が `P-YYYYMMDD-<slug>` の形・現在のブランチの計画でない・計画票が `status: done`・タスク表が1行以上で全行 `done`・`main` の版の計画票も `status: done`、の全部を満たす計画。`--list` は対象の計画 ID を1行1件で出す。`--report` は log の `→blocked` の行の補足（`<計画ID>/<id>: blocked <補足>`）と verdict の空でない `reasons`（`<計画ID>/<id>: reasons <理由>`）を出す。どちらも何も変えない。`purge_plan.sh --merged --apply` は対象の4種と vault/archive/（旧方式の移動先。中身を問わず丸ごと）を `git rm` し、コミットはしない。対象パスに未コミットの変更があれば何も消さずに終了コード1。--merged --apply は人だけが実行する（他の計画の done のタスク票・verdict を消すのは、フックと差分ゲートを通らない経路になるため）。エージェントは --list・--report だけを使う。手順は `docs/runbook.md` 5節
+`bash scripts/purge_plan.sh --merged (--list|--report|--apply)` は、ベースブランチ（既定 `main`）にマージ済みのまま残った計画一式をまとめて扱う。対象は、計画 ID が `P-YYYYMMDD-<slug>` の形・現在のブランチの計画でない・計画票が `status: done`・タスク表が1行以上で全行 `done`・ベースブランチの版の計画票も `status: done`、の全部を満たす計画。`--list` は対象の計画 ID を1行1件で出す。`--report` は log の `→blocked` の行の補足（`<計画ID>/<id>: blocked <補足>`）と verdict の空でない `reasons`（`<計画ID>/<id>: reasons <理由>`）を出す。どちらも何も変えない。`purge_plan.sh --merged --apply` は対象の4種と vault/archive/（旧方式の移動先。中身を問わず丸ごと）を `git rm` し、コミットはしない。対象パスに未コミットの変更があれば何も消さずに終了コード1。--merged --apply は人だけが実行する（他の計画の done のタスク票・verdict を消すのは、フックと差分ゲートを通らない経路になるため）。エージェントは --list・--report だけを使う。手順は `docs/runbook.md` 5節
 
 証跡は PR に残る。PR 本文に計画のゴール・タスク表・log の全行・verifier の指摘が写り、タスク票と verdict の中身は PR のコミット履歴から辿る。残すべき情報は、除去の前に docs への追記か Issue 化で取り出す（取り出した結果は PR 本文の `## 取り出した情報` に載る）。
 
 引数なしの `scripts/vcs_finish.sh` は、現在のブランチ（`work/<計画IDの英小文字>`）の計画が見つかれば、PR/MR のタイトルを `<計画ID>: <ゴールの1行目>`、本文を `scripts/pr_body.py` が出す「タスク履歴」表（タスク ID・title・`<計画ID>/<id>: done`（従来の run）か `<計画ID>/<id>: review→done`（transition.py。複数 id の `<計画ID>/T-01,T-02: review→done` も含む）のコミットの短縮ハッシュ・verdict）にする。PR がスカッシュマージされて main にタスクごとのコミットが残らなくても、この表から辿れる。マージ方式の運用は `docs/runbook.md` 3節を参照。
 
-環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh api -X POST repos/<owner>/<repo>/pulls -f title=<タイトル> -f head=<ブランチ> -f base=main -F body=@<パス> --jq .html_url`（REST）を呼ぶ。owner/repo は origin の URL の最後の2つの区切りから取り、取れなければ push の前に終了コード2で終わる。作った PR の URL は標準出力に出す。base は `main` 固定。引数なしで計画が見つからない時は、最新コミットの件名と本文でタイトルと本文を作る。引数がある時は `gh pr create` にそのまま渡す。GitLab は `glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID の1行・`scripts/pr_body.py` の出力・`## verifier の指摘`・`scripts/plan_record.py` の出力・`## 取り出した情報` の順）を渡す（6節・7節）。
+環境変数 `HARNESS_PR_BODY_FILE`（本文のファイルのパス）が空でない値で設定されていて、引数が無い時だけ、上の「タスク履歴」表の代わりにそのファイルの中身を本文にする。引数がある時は見ない。GitHub は `gh api -X POST repos/<owner>/<repo>/pulls -f title=<タイトル> -f head=<ブランチ> -f base=<ベースブランチ> -F body=@<パス> --jq .html_url`（REST）を呼ぶ。owner/repo は origin の URL の最後の2つの区切りから取り、取れなければ push の前に終了コード2で終わる。作った PR の URL は標準出力に出す。base はベースブランチ（`HARNESS_BASE_BRANCH`、既定 `main`）。引数なしで計画が見つからない時は、最新コミットの件名と本文でタイトルと本文を作る。引数がある時は `gh pr create` にそのまま渡す。GitLab はターゲットブランチを指定せず（glab の既定）、`glab mr create --title <タイトル> --description <ファイルの中身> --yes` を呼ぶ。タイトルは `HARNESS_PR_TITLE`（未設定か空なら計画 ID、計画が見つからなければ現在のブランチ名）で、この経路でだけ使う。ファイルが読めない時は push の前に標準エラーへ出して終了コード2で終わる（ホスティング無しの経路では検査しない）。run は全タスクが done になった後、この経路で本文（計画 ID の1行・`scripts/pr_body.py` の出力・`## verifier の指摘`・`scripts/plan_record.py` の出力・`## 取り出した情報` の順）を渡す（6節・7節）。
+
+環境変数 `HARNESS_BASE_BRANCH` はベースブランチ（計画・設計のブランチを切る元で、PR/MR の取り込み先）の名前。前後の空白を除いて空（未設定を含む）なら `main` とする。値の形式は検査しない。影響する箇所は `scripts/vcs_finish.sh`（GitHub REST の `base`・ホスティング無しのマージ案内の取り込み先）、`/plan` 手順A-2・`/design` 手順1 の開始条件、`agent_write_guard.py` の (b)（ベースブランチと `main` の両方で `git commit` を拒否）、`scripts/purge_plan.sh --merged` のマージ済み判定、run 手順7の MCP 代替時の base。恒久的に変える時は導入先の `.claude/settings.json` の `env` に書く（`docs/install.md`）。
 
 ## 2. 状態（5つで固定、英小文字）
 
@@ -102,9 +104,9 @@ frontmatter は `id` と `status` の2つ。
 | `approved` | `/plan` が粒度の確認を通した後に自動で承認した。このブランチで進行中の計画 |
 | `done` | 全タスクが `done` になり、計画一式を除去して `scripts/vcs_finish.sh` を実行済み |
 
-done にした計画票は除去のコミットで消えるため計画ブランチの履歴にだけ残る（`main` にある done の計画票はこの方式より前のもの）。
+done にした計画票は除去のコミットで消えるため計画ブランチの履歴にだけ残る（ベースブランチにある done の計画票はこの方式より前のもの）。
 
-`done` は **PR 作成済み**という意味で、main へのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。
+`done` は **PR 作成済み**という意味で、ベースブランチへのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。
 
 本文は `ゴール / 分割方針 / タスク一覧 / 計画の受け入れ基準`。このうち「タスク一覧」の表が状態の正本で、次の形にする。
 
@@ -245,7 +247,7 @@ log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は 
 
 ## 9. Stop フックの判定
 
-`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。判定は次の順に行う：1. worktree への委譲、2. `stop_hook_active`、3. approved な計画票の件数、4. done の行、5. doing/review の行。4 では、status が done の行それぞれについて、attempt が一致する正しい PASS の verdict があるかを検査する（doing/review の行の検査より前。条件と理由の順は10節の done の行の verdict の検査と同じ）。続いて 5 では、doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。ブランチ名は見ない：承認済みの計画票はその計画のブランチにしか無く、`main` では PR を作った時点で done になっているため、approved が0件であることが計画ブランチ以外（`main` など）を表す。無人実行（`scripts/run_unattended.py`）は `HARNESS_STRICT_STOP` が未設定なら `1` を入れて子プロセスに渡す（`stop_hook_active` が真でも判定を続ける）。`HARNESS_STRICT_STOP=0` を明示すれば従来の動きになる。
+`.claude/hooks/stop_gate.py` は、自分のブランチの承認済み計画票のタスク表と verdict を読んで判定だけを行い、状態は書き換えない。判定は次の順に行う：1. worktree への委譲、2. `stop_hook_active`、3. approved な計画票の件数、4. done の行、5. doing/review の行。4 では、status が done の行それぞれについて、attempt が一致する正しい PASS の verdict があるかを検査する（doing/review の行の検査より前。条件と理由の順は10節の done の行の verdict の検査と同じ）。続いて 5 では、doing/review が複数件になりうる前提（2節）のため、doing/review の行それぞれについて下表の判定を行い、いずれか1行でもブロック対象なら停止をブロックする。ブランチ名は見ない：承認済みの計画票はその計画のブランチにしか無く、ベースブランチでは PR を作った時点で done になっているため、approved が0件であることが計画ブランチ以外（`main` など）を表す。無人実行（`scripts/run_unattended.py`）は `HARNESS_STRICT_STOP` が未設定なら `1` を入れて子プロセスに渡す（`stop_hook_active` が真でも判定を続ける）。`HARNESS_STRICT_STOP=0` を明示すれば従来の動きになる。
 
 | 状況 | 判定 |
 |---|---|
@@ -304,7 +306,7 @@ vault/rules/
 | 判定 | 対象 | 結果 |
 |---|---|---|
 | (a) done のタスクの保護 | Write・Edit・MultiEdit・NotebookEdit の書き込み先が `vault/tasks/<計画ID>/<id>.md` か `vault/verdicts/<計画ID>/<id>.json` で、計画票（`vault/plans/<計画ID>.md`）のタスク表でその id が `done` | 拒否。計画票が無い・読めない・該当 id の行が無い時は許可。Bash による書き換えは見ない（PR の差分と、plan_guard・stop_gate の verdict の検査で見える） |
-| (b) main への直接コミット | Bash のコマンドを `&&`・`||`・`;`・`|`・改行で区切った各部分の先頭が `git commit`（`git -C <パス> commit` のように `git` のオプションを挟む形を含む）で、現在のブランチが `main` | 拒否。引用符の中の区切り文字では区切らず、引用符の中の文字列（`grep -n "git commit" …` など）は拒否しない。`env`・変数代入の前置き、`bash -c` やサブシェルの中は見ない。ブランチが取れない時（detached HEAD など）は素通り |
+| (b) ベースブランチと main への直接コミット | Bash のコマンドを `&&`・`||`・`;`・`|`・改行で区切った各部分の先頭が `git commit`（`git -C <パス> commit` のように `git` のオプションを挟む形を含む）で、現在のブランチが `HARNESS_BASE_BRANCH` の値（前後の空白を除いて空なら `main`）か `main` | 拒否。理由にはそのブランチ名を入れる。引用符の中の区切り文字では区切らず、引用符の中の文字列（`grep -n "git commit" …` など）は拒否しない。`env`・変数代入の前置き、`bash -c` やサブシェルの中は見ない。ブランチが取れない時（detached HEAD など）は素通り |
 | (c) verifier の書き込み先 | `agent_type` が verifier の Write・Edit・MultiEdit・NotebookEdit で、書き込み先が `vault/verdicts/` の外 | 拒否。verifier の Bash は制限しない |
 
 上記のどれにも当たらない呼び出しは許可する。
@@ -358,12 +360,12 @@ vault/rules/
 「受け入れ基準の候補」は、そのフェーズだけが単体で `main` にマージされてもシステムが動作する状態を保証する内容にする。フェーズは `/plan` によって1本の PR として `main` に単体マージされる実行単位であり、他フェーズの実装を前提にしないと動作しない基準は書かない。
 
 ### ブランチと PR
-- `/design` は `main` から `git checkout -b design/d-<YYYYMMDD>-<スラッグ>`（設計文書 ID を英小文字にして `design/` を付けたもの）でブランチを切り、設計文書をそのブランチ上でコミットする（`main` 上では `agent_write_guard.py` が `git commit` を拒否するため）
-- 設計文書は全フェーズ分を一括で1回の PR で `main` にマージする（フェーズ単位で分割マージしない）。`scripts/vcs_finish.sh` を実行して PR/MR を作り（ホスティング無しの場合は案内を受け取り）、人がレビューして `main` へマージする（`/plan` の `run` が最後に作る PR と同じ運用。`gh pr merge`/`glab mr merge` はエージェントが実行しない。マージは人が行う）
+- `/design` は ベースブランチ（既定 `main`）から `git checkout -b design/d-<YYYYMMDD>-<スラッグ>`（設計文書 ID を英小文字にして `design/` を付けたもの）でブランチを切り、設計文書をそのブランチ上でコミットする（ベースブランチ上では `agent_write_guard.py` が `git commit` を拒否するため）
+- 設計文書は全フェーズ分を一括で1回の PR でベースブランチにマージする（フェーズ単位で分割マージしない）。`scripts/vcs_finish.sh` を実行して PR/MR を作り（ホスティング無しの場合は案内を受け取り）、人がレビューしてベースブランチへマージする（`/plan` の `run` が最後に作る PR と同じ運用。`gh pr merge`/`glab mr merge` はエージェントが実行しない。マージは人が行う）
 - マージのタイミングはフェーズ1の実装着手前。人が PR をレビュー・マージしてから、フェーズ1のゴール文を `/plan` に渡す
 
 ### 最終フェーズでの削除
-- 設計文書は全フェーズを `/plan` に渡し終えるまで `main` に要るが、最後のフェーズが終われば読まれない。削除までは全フェーズの `/plan` のために `main` に残す
+- 設計文書は全フェーズを `/plan` に渡し終えるまでベースブランチに要るが、最後のフェーズが終われば読まれない。削除までは全フェーズの `/plan` のためにベースブランチに残す
 - `/design` は最終フェーズの「受け入れ基準の候補」に「決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書を削除する」を必ず入れる
 - 削除は creator がタスクの成果物として行ってよい（成果物に `vault/designs/` を宣言する。`vault/designs/` は差分ゲートの禁止対象ではない）
 - 設計文書を読む他のタスクの後に `after` で依存させて置く
@@ -371,5 +373,5 @@ vault/rules/
 ### `/plan` との関係
 - `/design` は planner サブエージェントを呼ばない。設計文書を書いて提示し、そこで止まる
 - 人が設計文書を確認してから、フェーズのゴール文を1つずつ `/plan` に渡す
-- この時点で設計文書は `main` にマージ済みなので、`/plan` は既存の手順どおり「現在のブランチが `main` であることを確認してから `work/...` を切る」を変えずに使える
+- この時点で設計文書はベースブランチにマージ済みなので、`/plan` は既存の手順どおり「現在のブランチがベースブランチ（既定 `main`）であることを確認してから `work/...` を切る」を変えずに使える
 - 使うのは、受け入れ基準が7行に収まらない・成果物が複数ファイルにまたがる・人に聞くことがある、のいずれかに当てはまる時だけ。小さい要求は `/plan` に直行する

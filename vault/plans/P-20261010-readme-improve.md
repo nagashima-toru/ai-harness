@@ -1,6 +1,6 @@
 ---
 id: P-20261010-readme-improve
-status: approved
+status: done
 ---
 # ゴール
 README.md を改善する。

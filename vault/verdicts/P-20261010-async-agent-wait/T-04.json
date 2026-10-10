@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-async-agent-wait/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 12:24",
+  "criteria": [
+    {"text": "手順4（`4. Agent ツールで` で始まる行から `5. ` の行の前まで）に、起動通知が返った時はターンを終えて完了通知を待つ行がある：`awk '/^4\\. Agent ツールで/{s=1} /^5\\. /{s=0} s&&/起動通知/&&/完了通知/&&/ターンを終え/{n++} END{print n+0}' .claude/skills/plan/SKILL.md` の出力が `1` 以上", "ok": true, "note": "実行コマンド: 基準記載の awk（worktree の .claude/skills/plan/SKILL.md）/ 出力: 1。手順4配下の字下げ項目に3語が同一行にある"},
+    {"text": "同じ範囲に、出力ファイルの最終更新から10分進まなければ TaskStop で止める行がある：`awk '/^4\\. Agent ツールで/{s=1} /^5\\. /{s=0} s&&/10分/&&/出力ファイル/&&/TaskStop/{n++} END{print n+0}' .claude/skills/plan/SKILL.md` の出力が `1` 以上", "ok": true, "note": "実行コマンド: 基準記載の awk / 出力: 1。10分・出力ファイル・TaskStop を含む行を確認"},
+    {"text": "`run_in_background: false` の指定が残っている：`grep -c '`run_in_background: false` を指定し' .claude/skills/plan/SKILL.md` の出力が `1`", "ok": true, "note": "実行コマンド: 基準記載の grep -c / 出力: 1"},
+    {"text": "`grep -c CLAUDE_CODE_DISABLE_BACKGROUND_TASKS .claude/skills/plan/SKILL.md` の出力が `0`", "ok": true, "note": "実行コマンド: 基準記載の grep -c / 出力: 0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: 基準記載のコマンド（worktree で実行）/ 出力: 1"}
+  ],
+  "reasons": []
+}

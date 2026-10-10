@@ -1,6 +1,6 @@
 ---
 id: P-20261011-task-headings
-status: approved
+status: done
 ---
 # ゴール
 planner が作るタスク票に「## 進捗」の見出しが無いと、creator が見出し無しで末尾に足した追記が「決定済み」節の変更と判定され、差分ゲートで差し戻される（GitHub Issue #166）。これを直す。

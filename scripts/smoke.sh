@@ -2707,7 +2707,7 @@ if os.path.exists(os.path.join(root, ".claude/harness-manifest.json")):
 docs = [".claude/ai-harness.md"]
 docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/skills/*/SKILL.md")))
 docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/agents/*.md")))
-docs += ["README.md", "docs/vault-spec.md", "docs/runbook.md", "docs/install.md"]
+docs += ["README.md", "docs/vault-spec.md", "docs/runbook.md", "docs/install.md", "docs/configuration.md"]
 excl = {".claude/projects", ".claude/harness-manifest.json", ".claude/settings.local.json"}
 for d in docs:
     f = os.path.join(root, d)
@@ -2723,6 +2723,42 @@ for d in docs:
                     continue
                 if not os.path.exists(os.path.join(root, p)):
                     print(f"{d}:{n}: {p}")
+PY
+}
+
+# --- scripts/・.claude/ の HARNESS_* と docs/configuration.md の表の一致検査 ---
+envcheck() { # $1=ルート。コードと表のずれを 表に無い: / コードに無い: で出す
+  python3 - "$1" <<'PY'
+import os, re, sys
+root = sys.argv[1]
+skip_dirs = {"__pycache__"}
+skip_files = {"smoke.sh", "settings.local.json"}
+code = set()
+for base in ("scripts", ".claude"):
+    for dp, dns, fns in os.walk(os.path.join(root, base)):
+        rel = os.path.relpath(dp, root)
+        dns[:] = [d for d in dns if d not in skip_dirs
+                  and os.path.join(rel, d) not in (".claude/worktrees", ".claude/projects")]
+        for fn in fns:
+            if fn in skip_files:
+                continue
+            try:
+                with open(os.path.join(dp, fn), encoding="utf-8", errors="ignore") as fh:
+                    code |= set(re.findall(r"HARNESS_[A-Z_]+", fh.read()))
+            except OSError:
+                pass
+table = set()
+cf = os.path.join(root, "docs/configuration.md")
+if os.path.isfile(cf):
+    with open(cf, encoding="utf-8", errors="ignore") as fh:
+        for line in fh:
+            m = re.match(r"^\| `(HARNESS_[A-Z_]+)` \|", line)
+            if m:
+                table.add(m.group(1))
+for v in sorted(code - table):
+    print(f"表に無い: {v}")
+for v in sorted(table - code):
+    print(f"コードに無い: {v}")
 PY
 }
 
@@ -2751,6 +2787,25 @@ mkdir -p "$RC/c/.claude"
 printf '{}' > "$RC/c/.claude/harness-manifest.json"
 printf '`scripts/no-such.sh`\n' > "$RC/c/README.md"
 expect_eq "(ref-4) 導入先（.claude/harness-manifest.json がある）では検査しない" "" "$(refcheck "$RC/c")"
+mkdir -p "$RC/d/docs"
+printf '`docs/no-such-g.md`\n' > "$RC/d/docs/configuration.md"
+expect_eq "(ref-5) docs/configuration.md の存在しないパスも見つける" "docs/configuration.md:1: docs/no-such-g.md" "$(refcheck "$RC/d")"
+
+expect_eq "(envref-1) scripts/・.claude/ の HARNESS_* と docs/configuration.md の表の変数が一致する" "" "$(envcheck "$ROOT")"
+EV="$TMP/envref"
+mkdir -p "$EV/scripts" "$EV/.claude/worktrees/w" "$EV/docs"
+printf 'HARNESS_ONLY_CODE HARNESS_BOTH\n' > "$EV/scripts/a.sh"
+printf 'HARNESS_ONLY_CLAUDE\n' > "$EV/.claude/x.md"
+printf 'HARNESS_IN_SMOKE\n' > "$EV/scripts/smoke.sh"
+printf 'HARNESS_IN_WORKTREE\n' > "$EV/.claude/worktrees/w/y.sh"
+printf '%s\n' '| `HARNESS_BOTH` | x | x | x | x | x |' '| `HARNESS_ONLY_DOC` | x | x | x | x | x |' > "$EV/docs/configuration.md"
+EV_WANT="$(cat <<'EOF'
+表に無い: HARNESS_ONLY_CLAUDE
+表に無い: HARNESS_ONLY_CODE
+コードに無い: HARNESS_ONLY_DOC
+EOF
+)"
+expect_eq "(envref-2) 表とコードのずれを見つけ、除外対象は見ない" "$EV_WANT" "$(envcheck "$EV")"
 
 # 記録行の無い doing の block 理由だけ完了通知の案内が付く（判定は変わらない）
 rm -rf "$TMP/vault/verdicts" "$TMP/vault/log"

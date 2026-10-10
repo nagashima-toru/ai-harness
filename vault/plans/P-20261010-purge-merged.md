@@ -1,6 +1,6 @@
 ---
 id: P-20261010-purge-merged
-status: approved
+status: done
 ---
 # ゴール
 D-016 フェーズ2（`vault/designs/D-016.md` の「フェーズ2」の受け入れ基準の候補・決定済みを前提にする。フェーズ1（#146）はマージ済み）：`scripts/purge_plan.sh` に、`main` にマージ済みの計画一式と `vault/archive/` をまとめて削除する `--merged` モード（`--list`・`--report`・`--apply`）を足し、`scripts/archive_plans.sh` を廃止する。`--report` は削除の前に人が Issue 化すべき情報（`→blocked` の遷移があったタスクとその補足、verdict の `reasons`）を一覧で出す。`docs/runbook.md` 5節を「一括削除の手順」に書き換え、`docs/vault-spec.md`・`scripts/install.sh`・`scripts/uninstall.sh`・smoke（と、同じ記述を持つ `README.md`・`docs/install.md`）から archive の記述を除く。実際の削除はこの計画のマージ後に人が runbook の手順で行う（この計画では既存の計画一式や `vault/archive/` を実際に消さない）。

@@ -33,6 +33,8 @@
 
 環境変数 `HARNESS_BASE_BRANCH` はベースブランチ（計画・設計のブランチを切る元で、PR/MR の取り込み先）の名前。前後の空白を除いて空（未設定を含む）なら `main` とする。値の形式は検査しない。影響する箇所は `scripts/vcs_finish.sh`（GitHub REST の `base`・ホスティング無しのマージ案内の取り込み先）、`/plan` 手順A-2・`/design` 手順1 の開始条件、`agent_write_guard.py` の (b)（ベースブランチと `main` の両方で `git commit` を拒否）、`scripts/purge_plan.sh --merged` のマージ済み判定、run 手順7の MCP 代替時の base。恒久的に変える時は導入先の `.claude/settings.json` の `env` に書く（`docs/install.md`）。
 
+環境変数 `HARNESS_PUSH_BRANCH` は push 先と PR/MR の head（source branch）を上書きするブランチ名。前後の空白を除いて空（未設定を含む）なら未設定で、今の動作（上流が無ければ現在のブランチ名で push、head は現在のブランチ）のまま。設定時は GitHub・GitLab の経路で上流の有無に関係なく毎回 `git push -u origin HEAD:<値>` で push し、GitHub の REST は `head=<値>`、GitLab の引数なしの経路は `glab mr create` に `--source-branch <値>` を足す。引数ありの経路でも push は `HEAD:<値>` で行い、PR/MR 作成の引数は足さない。push が失敗したら（non-fast-forward を含む）その終了コードで終わり、force はしない。ホスティング無し（`none`）の経路は値を見ない。`/plan` 手順A-2・`/design` 手順1 の開始条件には「`HARNESS_PUSH_BRANCH` が設定され、現在のブランチがその値で、`git rev-parse HEAD` がローカルの `<ベースブランチ>` と同じコミットなら、ベース上とみなして現在の HEAD から切る」が加わる（ローカルにベースブランチが無ければ止まる。`origin/<ベース>` の fetch はしない）。run 手順7・design 手順8 の MCP 代替時の head もこの値。ローカルのブランチ名（`work/…`・`design/…`）と `transition.py` のブランチ検査は変えない。この値のブランチ上の直接コミットはフックで拒否しない。
+
 ## 2. 状態（5つで固定、英小文字）
 
 | status | 意味 | 誰が付けるか |

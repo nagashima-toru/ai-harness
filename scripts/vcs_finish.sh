@@ -17,6 +17,12 @@
 #   HARNESS_BASE_BRANCH は PR の base（ホスティング無しの案内では取り込み先）。前後の空白を除いて空なら main。
 #   引数ありの経路と GitLab の経路は base を指定しない（gh / glab の既定に任せる）
 #   HARNESS_PR_TITLE は上の経路でだけ使うタイトル。未設定か空なら計画ID、計画が見つからなければ現在のブランチ名
+#   HARNESS_PUSH_BRANCH は push 先のブランチ名。前後の空白を除いて空なら未設定（今までどおり）。
+#   設定時は GitHub・GitLab の経路で、上流の有無に関係なく毎回 git push -u origin HEAD:<値> で push する
+#   （force は使わない。失敗したらその終了コードで終わり、gh / glab は呼ばない）。
+#   PR/MR の head（source branch）にもその値を使う（GitHub の REST は head=<値>、GitLab の引数なしの経路は
+#   末尾に --source-branch <値> を足す。引数ありの経路は push だけ行い、引数は足さない）。
+#   ホスティング無し（none）の経路は HARNESS_PUSH_BRANCH を見ない（push しない）
 #
 # ホスティング判定は環境変数 HARNESS_VCS_HOST で上書きできる：
 #   github | gitlab | none | auto（未指定時の既定値）
@@ -30,6 +36,25 @@ base_branch="${HARNESS_BASE_BRANCH:-}"
 base_branch="${base_branch#"${base_branch%%[![:space:]]*}"}"
 base_branch="${base_branch%"${base_branch##*[![:space:]]}"}"
 [ -n "$base_branch" ] || base_branch=main
+
+push_branch="${HARNESS_PUSH_BRANCH:-}"
+push_branch="${push_branch#"${push_branch%%[![:space:]]*}"}"
+push_branch="${push_branch%"${push_branch##*[![:space:]]}"}"
+
+# push する。push_branch があれば毎回 HEAD:<値>、無ければ上流が無い時だけ現在のブランチ。失敗したらその終了コードで終わる。
+do_push() {
+  local current_branch push_status
+  if [ -n "$push_branch" ]; then
+    git push -u origin "HEAD:$push_branch"
+    push_status=$?
+    [ "$push_status" -eq 0 ] || exit "$push_status"
+  elif ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+    current_branch="$(git rev-parse --abbrev-ref HEAD)"
+    git push -u origin "$current_branch"
+    push_status=$?
+    [ "$push_status" -eq 0 ] || exit "$push_status"
+  fi
+}
 
 # 現在のブランチ（work/<計画IDの英小文字>）に対応する計画票を探し、plan_id と plan_toplevel を設定する。無ければ1を返す。
 find_plan_id() {
@@ -137,16 +162,9 @@ case "$host" in
         exit 2
       fi
     fi
-    if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
-      current_branch="$(git rev-parse --abbrev-ref HEAD)"
-      git push -u origin "$current_branch"
-      push_status=$?
-      if [ "$push_status" -ne 0 ]; then
-        exit "$push_status"
-      fi
-    fi
+    do_push
     if [ "$#" -eq 0 ]; then
-      gh_head="$(git rev-parse --abbrev-ref HEAD)"
+      gh_head="${push_branch:-$(git rev-parse --abbrev-ref HEAD)}"
       gh_api=(gh api -X POST "repos/$gh_owner/$gh_repo/pulls")
       if [ "$use_notes" = 1 ]; then
         "${gh_api[@]}" -f "title=$(notes_title)" -f "head=$gh_head" -f "base=$base_branch" -F "body=@$HARNESS_PR_BODY_FILE" --jq .html_url
@@ -166,22 +184,17 @@ case "$host" in
       exit 127
     fi
     check_notes
-    if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
-      current_branch="$(git rev-parse --abbrev-ref HEAD)"
-      git push -u origin "$current_branch"
-      push_status=$?
-      if [ "$push_status" -ne 0 ]; then
-        exit "$push_status"
-      fi
-    fi
+    do_push
+    glab_src=()
+    [ -z "$push_branch" ] || glab_src=(--source-branch "$push_branch")
     if [ "$use_notes" = 1 ]; then
       notes_text="$(cat "$HARNESS_PR_BODY_FILE")"
-      glab mr create --title "$(notes_title)" --description "$notes_text" --yes
+      glab mr create --title "$(notes_title)" --description "$notes_text" --yes "${glab_src[@]+"${glab_src[@]}"}"
     elif [ "$#" -eq 0 ]; then
       if find_plan_body; then
-        glab mr create --title "$pr_title" --description "$pr_body" --yes
+        glab mr create --title "$pr_title" --description "$pr_body" --yes "${glab_src[@]+"${glab_src[@]}"}"
       else
-        glab mr create --fill --yes
+        glab mr create --fill --yes "${glab_src[@]+"${glab_src[@]}"}"
       fi
     else
       glab mr create "$@"

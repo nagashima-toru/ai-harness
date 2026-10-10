@@ -14,6 +14,7 @@ TMP="$(smoke_tmpdir)" || abort_tmp
 trap 'rm -rf "$TMP"' EXIT
 unset HARNESS_CREATOR_MODEL
 unset HARNESS_BASE_BRANCH
+unset HARNESS_PUSH_BRANCH
 PASS_N=0; FAIL_N=0
 
 make_plan() { # $1=planID $2=planStatus $3...=「## タスク表」のデータ行（複数可）
@@ -1855,6 +1856,88 @@ vf_rest_check "(base-2) github・計画無し・引数なし・前後に空白�
 vf_out="$( cd "$VF_REPO" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST=none HARNESS_BASE_BRANCH=develop bash "$ROOT/scripts/vcs_finish.sh" 2>/dev/null )"
 printf '%s\n' "$vf_out" | grep -q 'の内容を develop に取り込むには' && vf_ok=1 || vf_ok=0
 vf_rest_check "(base-3) HARNESS_VCS_HOST=none・develop → 取り込み先の案内が develop" "$vf_ok" "$vf_out"
+
+# HARNESS_PUSH_BRANCH：push 先と head。origin はすべて $TMP の中のローカルの bare。
+PB_BARE="$TMP/pbowner/pbrepo.git"; PB_WORK="$TMP/pbwork"
+mkdir -p "$PB_BARE" "$PB_WORK"
+git init -q --bare "$PB_BARE" >/dev/null 2>&1
+(
+  cd "$PB_WORK" && git init -q -b pbmain . \
+    && git -c user.name=smoke -c user.email=smoke@example.com commit -q --allow-empty -m init \
+    && git remote add origin "$PB_BARE"
+) >/dev/null 2>&1
+pb_run() { # $1=host、続いて env 代入、-- の後が vcs_finish.sh への引数。gh/glab は偽コマンド
+  local host="$1"; shift
+  local envs=()
+  while [ "$#" -gt 0 ] && [ "$1" != -- ]; do envs+=("$1"); shift; done
+  [ "${1:-}" = -- ] && shift
+  rm -f "$VF_REC"
+  ( cd "$PB_WORK" && env PATH="$VF_BIN:$PATH" HARNESS_VCS_HOST="$host" ${envs[@]+"${envs[@]}"} bash "$ROOT/scripts/vcs_finish.sh" "$@" ) >"$TMP/pb_out.txt" 2>/dev/null
+}
+pb_head() { git -C "$PB_WORK" rev-parse HEAD; }
+pb_bare() { git -C "$PB_BARE" rev-parse "$1" 2>/dev/null || echo none; }
+pb_reset() { # bare の全ブランチと作業リポジトリの上流設定を消す
+  local b
+  for b in $(git -C "$PB_BARE" for-each-ref --format='%(refname:short)' refs/heads); do git -C "$PB_BARE" update-ref -d "refs/heads/$b"; done
+  git -C "$PB_WORK" config --unset branch.pbmain.remote >/dev/null 2>&1
+  git -C "$PB_WORK" config --unset branch.pbmain.merge >/dev/null 2>&1
+  return 0
+}
+pb_commit() { git -C "$PB_WORK" -c user.name=smoke -c user.email=smoke@example.com commit -q --allow-empty -m "$1"; }
+
+pb_reset
+pb_run github HARNESS_PUSH_BRANCH=ccr-x
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+[ "$(pb_bare ccr-x)" = "$(pb_head)" ] && printf '%s\n' "$vf_got" | grep -qx 'head=ccr-x' && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-1) github・引数なし・HARNESS_PUSH_BRANCH=ccr-x → bare の ccr-x が HEAD と一致・head=ccr-x" "$vf_ok" "$vf_got"
+
+pb_reset
+pb_run github "HARNESS_PUSH_BRANCH= ccr-x "
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+[ "$(pb_bare ccr-x)" = "$(pb_head)" ] && printf '%s\n' "$vf_got" | grep -qx 'head=ccr-x' && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-2) github・引数なし・前後に空白のある ' ccr-x ' → head=ccr-x" "$vf_ok" "$vf_got"
+
+pb_reset
+pb_run github
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+[ "$(pb_bare pbmain)" = "$(pb_head)" ] && printf '%s\n' "$vf_got" | grep -qx 'head=pbmain' && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-3) github・引数なし・未設定・上流無し → 現在のブランチ名で push・head=現在のブランチ名" "$vf_ok" "$vf_got"
+
+pb_reset
+pb_run github HARNESS_PUSH_BRANCH=ccr-x
+pb_commit second
+pb_run github HARNESS_PUSH_BRANCH=ccr-x
+[ "$(pb_bare ccr-x)" = "$(pb_head)" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-4) github・引数なし・上流あり・HARNESS_PUSH_BRANCH=ccr-x → 新しい HEAD に更新される" "$vf_ok" "bare=$(pb_bare ccr-x) head=$(pb_head)"
+
+pb_reset
+pb_run gitlab HARNESS_PUSH_BRANCH=ccr-x
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+[ "$(pb_bare ccr-x)" = "$(pb_head)" ] && [ "$(printf '%s\n' "$vf_got" | tail -2)" = $'--source-branch\nccr-x' ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-5) gitlab・引数なし・HARNESS_PUSH_BRANCH=ccr-x → push して最後の2行が --source-branch ccr-x" "$vf_ok" "$vf_got"
+
+pb_reset
+pb_run none HARNESS_PUSH_BRANCH=ccr-none; vf_rc=$?
+vf_out="$(cat "$TMP/pb_out.txt")"
+[ "$vf_rc" = 0 ] && printf '%s\n' "$vf_out" | grep -q 'ブランチ「pbmain」' && ! git -C "$PB_BARE" rev-parse --verify ccr-none >/dev/null 2>&1 && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-6) none・HARNESS_PUSH_BRANCH=ccr-none → 終了コード0・案内に現在のブランチ・push しない" "$vf_ok" "rc=$vf_rc $vf_out"
+
+pb_reset
+pb_run github HARNESS_PUSH_BRANCH=ccr-x
+pb_commit third
+git -C "$PB_WORK" push -q origin HEAD:refs/heads/side >/dev/null 2>&1
+git -C "$PB_WORK" reset -q --hard HEAD~1
+pb_commit diverged
+git -C "$PB_BARE" update-ref refs/heads/ccr-x "$(git -C "$PB_BARE" rev-parse side)"
+pb_run github HARNESS_PUSH_BRANCH=ccr-x; vf_rc=$?
+[ "$vf_rc" != 0 ] && [ ! -e "$VF_REC" ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-7) github・bare の ccr-x が HEAD の祖先でない → 終了コードが0でなく gh を呼ばない" "$vf_ok" "rc=$vf_rc rec=$([ -e "$VF_REC" ] && echo yes || echo no)"
+
+pb_reset
+pb_run github HARNESS_PUSH_BRANCH=ccr-x -- --title T --body B
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+[ "$(pb_bare ccr-x)" = "$(pb_head)" ] && [ "$vf_got" = $'pr\ncreate\n--title\nT\n--body\nB' ] && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-8) github・引数あり・HARNESS_PUSH_BRANCH=ccr-x → ccr-x に push・gh の引数はそのまま" "$vf_ok" "$vf_got"
 
 BGTMP="$(smoke_tmpdir)" || abort_tmp
 git -C "$BGTMP" init -q -b main

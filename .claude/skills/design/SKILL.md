@@ -17,7 +17,7 @@ argument-hint: [ゴール（自然文）]
 - 人に聞くこと（方式の選択・命名・置き場など）がある
 
 ## 手順
-1. **ブランチを作る**：現在のブランチがベースブランチ（環境変数 `HARNESS_BASE_BRANCH` の値。前後の空白を除いて空なら `main`）であることを確認する。確認は `git branch --show-current` の出力と、`echo "${HARNESS_BASE_BRANCH:-}"` の出力（前後の空白を除き、空なら `main`）を比べる。違えばブランチを切らず「ベースブランチ（`<値>`）に戻ってから `/design` を実行してください」と伝えて**止まる**。ベースブランチ上なら `git checkout -b design/d-<YYYYMMDD>-<スラッグ>` でブランチを作る（ブランチ名は設計文書の ID を英小文字にして `design/` を付けたもの。ID の決め方は手順6）
+1. **ブランチを作る**：現在のブランチがベースブランチ（環境変数 `HARNESS_BASE_BRANCH` の値。前後の空白を除いて空なら `main`）であることを確認する。確認は `git branch --show-current` の出力と、`echo "${HARNESS_BASE_BRANCH:-}"` の出力（前後の空白を除き、空なら `main`）を比べる。一致すればベースブランチ上とみなす。一致しなくても、`echo "${HARNESS_PUSH_BRANCH:-}"` の出力（前後の空白を除いた値。空なら未設定）が設定され、現在のブランチ（`git branch --show-current`）がその値で、`git rev-parse HEAD` の出力と `git rev-parse --verify <ベースブランチ>` の出力が同じ（ローカルのベースブランチの ref とだけ比べる。`origin/<ベース>` との比較や fetch はしない）なら、ベース上とみなし、現在の HEAD から`design/d-<YYYYMMDD>-<スラッグ>`を切る。どちらの条件も満たさなければ従来どおり、ブランチを切らず「ベースブランチ（`<値>`）に戻ってから `/design` を実行してください」と伝えて**止まる**。`git rev-parse --verify <ベースブランチ>` が失敗した時（ローカルにベースブランチが無い）も止まる。環境変数に無く、実行環境の指示で push 先が決められている時（クラウドセッションなど）は、オーケストレーターがその値を `env HARNESS_PUSH_BRANCH=<指定ブランチ> …` でコマンドに渡す（開始条件の確認と `vcs_finish.sh` の両方。`env` で始めると許可リストの `Bash(env *)` で通る）。ベースブランチ上なら `git checkout -b design/d-<YYYYMMDD>-<スラッグ>` でブランチを作る（ブランチ名は設計文書の ID を英小文字にして `design/` を付けたもの。ID の決め方は手順6）
 2. **調査する**：ゴールに関係する既存ファイルを読む。`docs/vault-spec.md`、`vault/plans/`（既存の計画と重複しないか）、関係するコード・ドキュメント。既に決まっている仕様を設計に反映する
 3. **人に聞く**：設計上の選択肢のうち、人が決めるべきものを洗い出し、`AskUserQuestion` で**まとめて**聞く。着手後に小出しに聞かない。推奨案がある時は先頭に置いて「（推奨）」と書く
 4. **決定事項を固める**：回答を設計文書の「決定事項」に1件1行で書く。なぜそう決めたかも残す。以降のフェーズはこれを前提にする
@@ -31,7 +31,7 @@ argument-hint: [ゴール（自然文）]
 6. **書く**：`vault/designs/D-<YYYYMMDD>-<スラッグ>.md` に `vault/templates/design.md` の見出し構成で書く。ID は `D-<YYYYMMDD>-<スラッグ>`。日付は `/design` を実行した日（JST、`TZ=Asia/Tokyo date +%Y%m%d`）、スラッグは計画 ID と同じ規則 `[a-z0-9][a-z0-9-]*`。採番は要らない。`vault/designs/` に同じ ID のファイルか、同名のローカルブランチが既にあればスラッグを変える
 7. **コミットする**：設計文書を `git add` してコミットする（`design/d-<YYYYMMDD>-<スラッグ>` ブランチ上のため ベースブランチと `main` への直接コミット拒否には引っかからない）
 8. **PR/MR を作って提示し、止まる**：`bash scripts/vcs_finish.sh` を実行する。GitHub/GitLab なら作成された PR/MR の URL を、`none`（ホスティング無し）ならスクリプトが出力するブランチ名と `git merge --no-ff <branch>` の案内をそのまま人に伝える（マージは実行しない。マージは常に人が行う）。あわせて設計文書の ID、フェーズの一覧（順序・タイトル・依存）、決定事項の要約を報告し、この設計文書がレビューされベースブランチにマージされてから、フェーズ1のゴール文を `/plan` に渡す運用にする、と伝えて**止まる**
-   - `bash scripts/vcs_finish.sh` が `command not found`（exit 127 相当）、または同スクリプトが出す「`gh`/`glab` が見つからない」旨の明示エラーで失敗した場合、GitHub MCP ツール（例：`mcp__github__create_pull_request` 等、実行環境で使える GitHub MCP ツール）で同内容の PR を作成してよい。その際、`gh api` の PR 作成に渡すはずだったブランチ名・タイトル・本文などの情報を、MCP ツールの引数にそのまま引き継ぐ
+   - `bash scripts/vcs_finish.sh` が `command not found`（exit 127 相当）、または同スクリプトが出す「`gh`/`glab` が見つからない」旨の明示エラーで失敗した場合、GitHub MCP ツール（例：`mcp__github__create_pull_request` 等、実行環境で使える GitHub MCP ツール）で同内容の PR を作成してよい。その際、`gh api` の PR 作成に渡すはずだったブランチ名・タイトル・本文などの情報（head（`HARNESS_PUSH_BRANCH` があればその値、無ければ現在のブランチ）・base（ベースブランチ）を含む）を、MCP ツールの引数にそのまま引き継ぐ
    - GitLab（`glab`）が同様の理由で失敗した場合も、GitLab MCP 等の代替手段があればそれを使ってよい。使える代替手段が無い環境では、人にブランチ名と状況を案内して止まる
    - この代替経路を使った場合でも `gh pr merge`/`glab mr merge` は実行しない（マージは人が行う。design スキルは元々マージを実行しない）。`gh` はあるが REST の呼び出しが失敗した時（認証エラー・ネットワークエラー等）や、`glab` がコマンド自体が無い以外の理由で失敗する場合は本項の対象外であり、通常どおり止まって人に判断を仰ぐ
    - PR/MR の本文で issue 番号に触れる場合は、`Closes #N`・`Fixes #N`・`Resolves #N` などの自動クローズキーワードは使わない。代わりに `Relates to #N` のような非クローズキーワードを使い、設計段階の PR/MR のマージで issue が自動的にクローズされないようにする

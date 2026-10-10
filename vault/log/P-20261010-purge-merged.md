@@ -16,3 +16,5 @@
 - 2026-10-10 08:59 T-05 review→done attempt=1 verifier=sonnet
 - 2026-10-10 09:01 T-02 blocked→todo 人の指示: /plan unblock P-20261010-purge-merged T-02
 - 2026-10-10 09:01 T-02 todo→doing attempt=1
+- 2026-10-10 09:06 T-02 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a9b8cec222437cf8f branch=worktree-agent-a9b8cec222437cf8f plan_head=49ee2f4e144443f7fe770c22cd5a820872315f46
+- 2026-10-10 09:06 T-02 doing→blocked attempt=1 creator=sonnet

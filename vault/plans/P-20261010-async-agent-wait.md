@@ -19,7 +19,7 @@ D-20261010-async-agent-wait フェーズ1（最終フェーズ）：run・plan �
 | T-02 | done | 1 | T-01 | vault-spec.md 9節の表に記録行の無い doing の時のメッセージの違いを書く | |
 | T-03 | done | 1 | - | run の SKILL.md に起動通知が返った時の待ち方と10分のハング基準を書く | |
 | T-04 | done | 1 | - | plan の SKILL.md の手順4に planner の起動通知が返った時の待ち方を書く | |
-| T-05 | doing | 1 | T-01,T-02,T-03,T-04 | 決定事項を docs/decisions.md に追記し設計文書を削除する | |
+| T-05 | review | 1 | T-01,T-02,T-03,T-04 | 決定事項を docs/decisions.md に追記し設計文書を削除する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

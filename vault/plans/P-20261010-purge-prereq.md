@@ -26,7 +26,7 @@ D-016 フェーズ2の一括削除（`bash scripts/purge_plan.sh --merged --appl
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vault-spec.md の vault/archive/ をバッククォートのパス参照でない書き方にする | |
 | T-02 | done | 1 | - | runbook.md の vault/archive/ をバッククォートのパス参照でない書き方にする | |
-| T-03 | todo | 0 | T-01,T-02 | smoke.sh の fixtures-comment の依存を外し、一括削除後も smoke が全部通ることを確かめる | |
+| T-03 | doing | 1 | T-01,T-02 | smoke.sh の fixtures-comment の依存を外し、一括削除後も smoke が全部通ることを確かめる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

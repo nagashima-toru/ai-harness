@@ -24,3 +24,4 @@
 - 2026-10-10 11:06 T-06 todo→doing attempt=1
 - 2026-10-10 11:07 T-06 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a6819836e1fd02296 branch=worktree-agent-a6819836e1fd02296 plan_head=0227fff0e36605ab59ad705bb1ef5fef8cd64c26
 - 2026-10-10 11:07 T-06 doing→blocked attempt=1 creator=sonnet
+- 2026-10-10 11:12 T-06 blocked→todo 人の指示: /plan unblock P-20261010-design-id-cleanup T-06

@@ -14,14 +14,15 @@
 # 実行時は git rm -r -q を1回呼び、消したパスを同じ形で標準出力に出す。
 # コミットはしない（コミットはオーケストレーターが行う）。verdict の PASS 検査もしない。
 #
-# --merged: main にマージ済みの計画一式と vault/archive/ をまとめて扱う。
+# --merged: ベースブランチ（HARNESS_BASE_BRANCH、前後の空白を除いて空なら main）にマージ済みの計画一式と vault/archive/ をまとめて扱う。
 # --merged --apply は人だけが実行する。エージェントは --merged では --list・--report だけを使う。
 #   対象の計画（vault/plans/*.md を LC_ALL=C のファイル名順に見て、次の全部を満たすもの）：
 #     1. 計画 ID が ^P-[0-9]{8}-[a-z0-9][a-z0-9-]*$ に一致する（P-019 のような旧形式は対象外）
 #     2. 現在のブランチが work/<計画IDを英小文字にしたもの> でない
 #     3. 作業ツリーの計画票の frontmatter の status が done
 #     4. タスク表のデータ行が1行以上あり、全行の status 列が done
-#     5. main の vault/plans/<計画ID>.md の frontmatter の status が done（main が無い・その版が無い時は対象外）
+#     5. ベースブランチ（HARNESS_BASE_BRANCH、前後の空白を除いて空なら main）の vault/plans/<計画ID>.md の
+#        frontmatter の status が done（そのブランチが無い・その版が無い時は対象外）
 #   --list   対象の計画 ID を1行1件で標準出力に出す。何も変えない。0件なら何も出さず終了コード0。
 #   --report 対象の計画ごとに、log の <旧>→blocked の行を <計画ID>/<id>: blocked <補足> で、
 #            続けて verdict の空でない reasons を <計画ID>/<id>: reasons <理由> で1行ずつ出す。何も変えない。
@@ -30,7 +31,7 @@
 #            git rm -r -q を1回呼び、消したパスを1行1件で標準出力に出す。コミットはしない。
 #            対象パスに未コミット・未追跡・stage 済みの変更があれば何も消さず終了コード1。
 #            対象が0件で vault/archive/ も無ければ標準エラーに出して終了コード0（標準出力は空）。
-#            現在のブランチが main かどうかは検査しない。
+#            現在のブランチがどれかは検査しない。
 #
 # 終了コード:
 #   0 消した／dry-run で出した
@@ -38,6 +39,11 @@
 #   2 引数の誤り（--merged の組み合わせの誤りを含む）、git リポジトリの外
 set -u
 export LC_ALL=C
+
+BASE_BRANCH="${HARNESS_BASE_BRANCH:-}"
+BASE_BRANCH="${BASE_BRANCH#"${BASE_BRANCH%%[![:space:]]*}"}"
+BASE_BRANCH="${BASE_BRANCH%"${BASE_BRANCH##*[![:space:]]}"}"
+[ -n "$BASE_BRANCH" ] || BASE_BRANCH=main
 
 USAGE="usage: bash scripts/purge_plan.sh [--dry-run] <計画ID> | bash scripts/purge_plan.sh --merged (--list|--report|--apply)"
 usage_exit() {
@@ -127,7 +133,7 @@ if [ "$MERGED" -eq 1 ]; then
     [ "$(fm_status < "$f")" = "done" ] || continue
     counts="$(table_counts "$f")"
     { [ "${counts% *}" -ge 1 ] && [ "${counts#* }" -eq 0 ]; } || continue
-    mst="$(git show "main:vault/plans/$pid.md" 2>/dev/null | fm_status)"
+    mst="$(git show "$BASE_BRANCH:vault/plans/$pid.md" 2>/dev/null | fm_status)"
     [ "$mst" = "done" ] || continue
     TARGETS+=("$pid")
   done

@@ -1,6 +1,6 @@
 ---
 id: P-20261010-async-agent-wait
-status: approved
+status: done
 ---
 # ゴール
 D-20261010-async-agent-wait フェーズ1（最終フェーズ）：run・plan の Agent 呼び出し（creator・planner・verifier）が `run_in_background: false` を指定してもバックグラウンドで起動して即座に戻る場合の扱いを決める。`.claude/skills/run/SKILL.md` の手順3・手順5・「ハング時の復旧」と `.claude/skills/plan/SKILL.md` の手順4に、起動通知が返った時はターンを終えて完了通知を待ち、通知が来るまで後続の手順に進まないことと、出力ファイル（transcript）の最終更新から10分進まなければハングとみなして既存の復旧手順で扱うことを書く。`.claude/hooks/stop_gate.py` は判定を変えず、記録行の無い doing でブロックする時のメッセージを「creator の完了通知を待っているなら、そのままターンを終えて待つ」旨に変え、`docs/vault-spec.md` 9節の表と `scripts/smoke.sh` をそれに合わせる。最後に、決定事項のうち docs に無いものを `docs/decisions.md` に追記し、設計文書 `vault/designs/D-20261010-async-agent-wait.md` を削除する。

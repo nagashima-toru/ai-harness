@@ -1,0 +1,14 @@
+{
+  "task": "P-20261010-vision-local-only/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-10 13:08",
+  "criteria": [
+    {"text": "`git ls-files -s vault/rules/common/vision.md | grep -c '^120000 '` が `1`（git でシンボリックリンクとして追跡されている）", "ok": true, "note": "実行コマンド: `git -C <worktree> ls-files -s vault/rules/common/vision.md | grep -c '^120000 '` / 出力: 1"},
+    {"text": "`readlink vault/rules/common/vision.md` の出力が `../../../docs/vision.md`、かつ `cmp vault/rules/common/vision.md docs/vision.md` が終了コード `0`（リンクが解決でき、中身が正本そのもの）", "ok": true, "note": "実行コマンド: `readlink vault/rules/common/vision.md; cmp vault/rules/common/vision.md docs/vision.md; echo $?` / 出力: ../../../docs/vision.md、cmp=0"},
+    {"text": "`bash scripts/rules.sh creator | grep -cx 'vault/rules/common/vision.md'`・`bash scripts/rules.sh verifier | grep -cx 'vault/rules/common/vision.md'`・`bash scripts/rules.sh planner | grep -cx 'vault/rules/common/vision.md'` がどれも `1`", "ok": true, "note": "実行コマンド: 3役割それぞれ `bash scripts/rules.sh <役割> | grep -cx 'vault/rules/common/vision.md'` / 出力: 1, 1, 1"},
+    {"text": "`git grep -lF '実行を安いモデルに任せても成果が安定する' -- ':!vault/tasks/' ':!vault/plans/' ':!vault/verdicts/' ':!vault/log/'` の出力が `docs/vision.md` の1行だけ（vision の本文の写しがリポジトリのどこにも無い）", "ok": true, "note": "実行コマンド: 上記 git grep / 出力: docs/vision.md の1行のみ"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (in-out) '` が `5`、かつ `bash scripts/smoke.sh 2>&1 | grep -c '^  NG '` が `0`（導入先に `vault/rules/common/vision.md` と `docs/vision.md` が配られない）", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存し両 grep -c / 出力: (in-out) ok 行=5、NG 行=0"}
+  ],
+  "reasons": []
+}

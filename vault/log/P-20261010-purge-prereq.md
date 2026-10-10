@@ -10,3 +10,4 @@
 - 2026-10-10 10:02 T-03 todo→doing attempt=1
 - 2026-10-10 10:05 T-03 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a63d2ef867e7d5417 branch=worktree-agent-a63d2ef867e7d5417 plan_head=37f8d16160ffdec2e1a9760d49835c4b54c809ef
 - 2026-10-10 10:05 T-03 doing→blocked attempt=1 creator=sonnet
+- 2026-10-10 10:06 T-03 blocked→todo 人の指示: /plan unblock P-20261010-purge-prereq T-03

@@ -46,10 +46,18 @@ make_task() { # $1=id $2=受け入れ基準の箇条書き行数
   {
     echo "# $1 テスト"
     echo
+    echo "## 目的"
+    echo
+    echo "## 入力"
+    echo
+    echo "## 成果物"
+    echo
     echo "## 受け入れ基準"
     for i in $(seq 1 "$2"); do echo "- 基準$i"; done
     echo
     echo "## 決定済み"
+    echo
+    echo "## 進捗"
   } > "$TMP/vault/tasks/P-TEST/$1.md"
 }
 write_verdict() { # $1=id $2=json 文字列（形式検証のテスト用。保存先は P-TEST スコープ）
@@ -516,6 +524,31 @@ make_plan "P-TEST" "approved" "| T-01 | doing | 1 | - | A | |"
 expect "(granularity-task) approved・基準8行 → 許可（検査しない）" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
 rm -f "$TMP/vault/plans/P-TEST.md"
 expect "(granularity-task) 計画票が無い・基準8行 → 許可（fail-open）" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+rm -rf "$TMP/vault/tasks"
+
+# タスク票の6見出し検査（Issue #166）
+make_task_without() { # $1=id $2=除く見出し行（複数なら改行区切り）。6見出しの票から該当行を除く
+  make_task "$1" 3
+  local f="$TMP/vault/tasks/P-TEST/$1.md" h
+  while IFS= read -r h; do
+    grep -vxF -- "$h" "$f" > "$f.tmp"; mv "$f.tmp" "$f"
+  done <<< "$2"
+}
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+make_task_without T-01 "## 進捗"
+expect "(headings-task) draft・「## 進捗」欠落 → ブロック" block "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")" "## 進捗"
+make_task_without T-01 "## 決定済み
+## 進捗"
+expect "(headings-task) draft・「## 決定済み」「## 進捗」欠落 → ブロック（欠落を列挙）" block "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")" "## 決定済み、## 進捗"
+make_task T-01 3
+expect "(headings-task) draft・6見出しそろい・基準3行 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_plan "P-TEST" "approved" "| T-01 | doing | 1 | - | A | |"
+make_task_without T-01 "## 進捗"
+expect "(headings-task) approved・「## 進捗」欠落 → 許可（検査しない）" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+make_task_without T-01 "## 進捗"
+expect "(headings-task) draft・「## 進捗」欠落・Bash → 許可（対象外）" allow "$(run_plan_guard_file Bash "$TMP/vault/tasks/P-TEST/T-01.md")"
+rm -f "$TMP/vault/plans/P-TEST.md"
 rm -rf "$TMP/vault/tasks"
 
 # 計画票のタスク表行数検査（D-010 フェーズ3）
@@ -2281,6 +2314,25 @@ print(" ".join(p for p, _ in v))
 PY
 )"
 expect_eq "(diff_gate) 20 check() が 02 と同じ変更で違反のパスのリストを返す" "extra.txt" "$DG_CHK"
+
+# 21 22 base の票に「## 進捗」が無い時の進捗の追記
+dg_setup_noprog() { # dg_setup の後、main の T-01 から「## 進捗」の行を除いて work/b を作り直す
+  local f="$DG/vault/tasks/P-TEST/T-01.md"
+  git -C "$DG" checkout -q main
+  grep -vxF '## 進捗' "$f" > "$f.tmp"; mv "$f.tmp" "$f"
+  git -C "$DG" add -A; git -C "$DG" commit -q -m noprog
+  git -C "$DG" checkout -q -B work/b
+}
+dg_setup
+dg_setup_noprog
+printf '\n## 進捗\n- 進捗の追記\n' >> "$DG/vault/tasks/P-TEST/T-01.md"; dg_commit
+dg_run
+expect_eq "(diff_gate-progress) 見出し無しの票に空行を挟んで「## 進捗」を足すと終了コード 0" "0" "$DG_RC"
+dg_setup
+dg_setup_noprog
+printf '## 進捗\n- 進捗の追記\n' >> "$DG/vault/tasks/P-TEST/T-01.md"; dg_commit
+dg_run
+expect_eq "(diff_gate-progress) 見出し無しの票に空行を挟まず「## 進捗」を足すと終了コード 1" "1" "$DG_RC"
 
 echo
 echo "== transition.py worktree（D-012 フェーズ4） =="

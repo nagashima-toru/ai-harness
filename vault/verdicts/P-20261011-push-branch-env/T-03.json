@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-push-branch-env/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 08:14",
+  "criteria": [
+    {"text": "`grep -cE '^環境変数 `HARNESS_PUSH_BRANCH` .*前後の空白を除いて空.*git push -u origin HEAD:<値>.*head=<値>.*--source-branch <値>' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で上記 grep -cE / 出力: 1（36行目の1段落）"},
+    {"text": "上の段落に、ホスティング無し（`none`）の経路は値を見ないこと、push が失敗したらその終了コードで終わり force しないこと、`/plan` 手順A-2・`/design` 手順1 の開始条件（現在のブランチがその値で `git rev-parse HEAD` がローカルのベースブランチと同じコミットなら切る）、ローカルのブランチ名は変えないことが書かれている（ファイルを読んで確かめる）", "ok": true, "note": "docs/vault-spec.md 36行目を読んだ。none は値を見ない、push 失敗時は終了コードで終わり force しない、A-2・手順1 の開始条件（rev-parse HEAD がローカルのベースと同じなら切る）、ローカルのブランチ名（work/…・design/…）は変えない、の全て記載あり"},
+    {"text": "`grep -nx '## 10. push 先が決められている環境（クラウドセッション）' docs/runbook.md` が1行を出し、その行が `## 困ったとき` より前にある", "ok": true, "note": "実行コマンド: grep -nx ... docs/runbook.md / 出力: 137行目の1行。`## 困ったとき` は151行目で後ろ"},
+    {"text": "`grep -nF 'env HARNESS_PUSH_BRANCH=<指定ブランチ>' docs/runbook.md` が1行以上を出す", "ok": true, "note": "実行コマンド: grep -nF ... docs/runbook.md / 出力: 144:env HARNESS_PUSH_BRANCH=<指定ブランチ> bash scripts/vcs_finish.sh"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で上記を実行 / 出力: 1"}
+  ],
+  "reasons": []
+}

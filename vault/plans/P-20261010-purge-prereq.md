@@ -26,7 +26,7 @@ D-016 フェーズ2の一括削除（`bash scripts/purge_plan.sh --merged --appl
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | vault-spec.md の vault/archive/ をバッククォートのパス参照でない書き方にする | |
 | T-02 | done | 1 | - | runbook.md の vault/archive/ をバッククォートのパス参照でない書き方にする | |
-| T-03 | doing | 1 | T-01,T-02 | smoke.sh の fixtures-comment の依存を外し、一括削除後も smoke が全部通ることを確かめる | |
+| T-03 | blocked | 1 | T-01,T-02 | smoke.sh の fixtures-comment の依存を外し、一括削除後も smoke が全部通ることを確かめる | 受け入れ基準5が実行できません。一時 worktree（/tmp/claude/P-20261010-purge-prereq-T-03/wt、detached HEAD 2805b38）の中で `env -C /tmp/claude/P-20261010-purge-prereq-T-03/wt bash scripts/purge_plan.sh --merged --apply ／ tail -1` を実行したところ、権限システム（auto mode classifier）が「Irreversible Deletion」を理由に拒否しました。タスク票の「決定済み」には人がこの実行を許可したと書かれていますが、権限側で通りません。回避はしていません。一時 worktree は `git worktree remove --force` で片づけ済みです。質問：この権限拒否を解除（Bash の許可ルールを追加）したうえで基準5を再実行してよいですか。それとも、基準5を verifier かあなたの権限で実行しますか。基準1〜4は通っています（成果物は 2805b38 にコミット済み）。 |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

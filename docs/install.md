@@ -153,6 +153,19 @@ note .claude/settings.json: permissions.allow にハーネスが使う許可が 
 
 判定は文字列の完全一致で、パターンの包含関係は見ない。たとえば導入先に `Bash(git:*)` があっても `Bash(git *)` は不足として出る。またスクリプトは利用者の個人設定を含め `~/.claude/settings.json` は読まない（そこで許可していれば実際は確認が出ないこともある）。
 
+## main 以外のブランチをベースにする（任意）
+`develop` などをベースブランチ（計画・設計のブランチを切る元で、PR/MR の取り込み先）にする導入先は、導入先の `.claude/settings.json` の `env` に `HARNESS_BASE_BRANCH` を書く。`env` キーが既にあればその中に足す。
+
+```json
+{
+  "env": {
+    "HARNESS_BASE_BRANCH": "develop"
+  }
+}
+```
+
+未設定か空（前後の空白を除いて空）なら `main` になる。効く箇所は、PR の base、`/plan`・`/design` の開始条件、`git commit` の直接コミットの拒否（ベースブランチと `main` の両方）、`scripts/purge_plan.sh --merged` のマージ済み判定。詳細は `docs/vault-spec.md` を見る。
+
 ## サンドボックスを有効にする（任意）
 Claude Code のサンドボックスは、Bash とその子プロセス（`python3`・`bash -c` を含む）の書き込みと通信を OS で制限する。ハーネスは使わなくても同じに動き、ハーネス本体（ai-harness）では使っていない（理由は `docs/vault-spec.md` 12節の「サンドボックス（使っていない）」）。導入先で、Bash の書き込みと通信を OS で絞りたい時に使う任意の追加の守り。
 

@@ -1,6 +1,6 @@
 ---
 id: P-20261011-plan-detached-head
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #178（/plan・/design: detached HEAD で開始すると開始条件で止まる）に対応する。`.claude/skills/plan/SKILL.md` の手順A-2 と `.claude/skills/design/SKILL.md` の手順1 に、detached HEAD（`git branch --show-current` の出力が空）で `git rev-parse HEAD` がローカルのベースブランチの ref と一致する時は `git checkout <ベースブランチ>` してからベース上とみなす手順を加える。

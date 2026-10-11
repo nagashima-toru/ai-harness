@@ -1,6 +1,6 @@
 ---
 id: P-20261011-verifier-note-merge-base
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #183 に対応する。`.claude/agents/verifier.md` の「手順」7の note の書式の例 `git diff --numstat -- README.md` は、`scripts/transition.py` が review への遷移で worktree の未コミット分を収集コミットにした後は空になる。例を、PR #185 で `.claude/agents/planner.md` の差分確認の指針に入れた形 `git diff --merge-base work/<計画IDの英小文字> --numstat -- <path>` に揃える。

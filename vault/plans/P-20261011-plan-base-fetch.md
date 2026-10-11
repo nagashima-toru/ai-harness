@@ -13,7 +13,7 @@ GitHub Issue #175（/plan・/design: クラウドセッションでローカル�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | /plan 手順A-2・/design 手順1 の開始条件の前に best-effort の git fetch を入れる | |
+| T-01 | doing | 1 | - | /plan 手順A-2・/design 手順1 の開始条件の前に best-effort の git fetch を入れる | |
 | T-02 | todo | 0 | T-01 | vault-spec の開始条件の記述を fetch 手順に合わせ、decisions に判断の変更を記録する | |
 
 ## 計画の受け入れ基準

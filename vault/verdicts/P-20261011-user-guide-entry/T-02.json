@@ -1,0 +1,44 @@
+{
+  "task": "P-20261011-user-guide-entry/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 15:32",
+  "criteria": [
+    {
+      "text": "見出し（`## ` の行）が決定済みの11項目の文言・順序と完全に一致する：`python3 -c 'print([l.rstrip(\"\\n\") ...] == [...])'` が `True`",
+      "ok": true,
+      "note": "実行コマンド: 基準の python3 -c（worktree の docs/guide.md） / 出力: True"
+    },
+    {
+      "text": "各項目に「すること：」「詳しく：」があり、詳しくで挙げた節がリンク先に実在する：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guide-1) '` が `1`",
+      "ok": true,
+      "note": "実行コマンド: smoke.sh 出力を保存し `grep -c '^  ok   (guide-1) '` / 出力: 1"
+    },
+    {
+      "text": "環境変数を使う項目が、バッククォートで書いた変数名と、バッククォートで書いた `docs/configuration.md`（リンクのテキスト）を含む：`python3 -c ...` が `6`",
+      "ok": true,
+      "note": "実行コマンド: 基準の python3 -c / 出力: 6"
+    },
+    {
+      "text": "コマンドを使う項目が決定済みのコマンドを含み、クラウドセッションの項目が `work/` に push する方法にも触れている：`python3 -c ...` が `10`",
+      "ok": true,
+      "note": "実行コマンド: 基準の python3 -c / 出力: 10"
+    },
+    {
+      "text": "最小例のコードブロックがちょうど11個で、どれも1〜3行：`python3 -c ...` が `True`",
+      "ok": true,
+      "note": "実行コマンド: 基準の python3 -c / 出力: True"
+    },
+    {
+      "text": "planner.md の `(ref-1)` の列挙に guide.md があり、参照切れが無い：`grep -cF ...` が `1`、かつ `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`",
+      "ok": true,
+      "note": "実行コマンド: grep -cF（planner.md）と smoke 出力の grep -c '(ref-1)' / 出力: 1 と 1"
+    },
+    {
+      "text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` で終わる",
+      "ok": true,
+      "note": "実行コマンド: smoke.sh | tail -1 / 出力: smoke: pass=523 fail=0"
+    }
+  ],
+  "reasons": []
+}

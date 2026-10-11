@@ -14,7 +14,7 @@ GitHub Issue #178（/plan・/design: detached HEAD で開始すると開始条�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | /plan 手順A-2・/design 手順1 に detached HEAD でベースと一致する時の checkout を加える | |
+| T-01 | done | 1 | - | /plan 手順A-2・/design 手順1 に detached HEAD でベースと一致する時の checkout を加える | |
 | T-02 | review | 1 | - | vault-spec の開始条件の記述に detached HEAD の扱いを足し、decisions に記録する | |
 
 ## 計画の受け入れ基準

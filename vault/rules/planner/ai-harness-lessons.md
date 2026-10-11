@@ -15,8 +15,9 @@
 **成果物本文に無い文字列を grep しない**
 - 経緯：T-0012（`vault/rules`）・T-0013（「## 構成」ツリーの `rules.sh`）では、基準を通すために creator が後から文言を足す羽目になった。
 
-**他ファイル不変の確認に `git diff main` を使わない（`git status --porcelain` を使う）**
+**差分の確認を `main` と比べない（計画ブランチとの分岐点と比べる）**
 - 経緯：`P-20260925-worktree-baseref-merge` の T-01・T-03 で、`git diff main -- ...` が空という形の基準が、先行タスクの変更が計画ブランチに既にマージされているため字句どおり機能しなかった。過去2回 verifier が自力で `git status --porcelain` 等の代替確認に切り替えて PASS 判定した（issue #42）。
+- 経緯：`P-20261011-smoke-worktree-remove-quiet`（単一タスクの計画）で、planner が受け入れ基準の差分確認を `git diff --numstat main -- <path>` の形で書いた。作業中にローカルの `main` が進むと（`/plan` の手順2の `git fetch origin main:main` など）誤って FAIL になる形で、振り返りで指摘された。あわせて、それまで勧めていた `git status --porcelain` は、review への遷移の収集コミットの後は空になり、verifier の時点では何も確かめないことを、`P-20261011-planner-check-cmd-guidance` の planner が一時リポジトリで確かめた（`git diff --merge-base` で計画ブランチからの分岐点と比べる形は、収集の前後とも成果物だけを出した）。
 
 **後片付けに `rm -rf` を前提にしない（固定パス＋`mkdir -p`）**
 - 経緯：`P-20260925-vcs-finish-push-and-diff-criteria` の T-01 で、確認コマンドが `$(mktemp -d)` と事前の `rm -rf` 前提で書かれていたため、verifier が `.claude/settings.json` の `permissions.deny`（`Bash(rm -rf *)`）に阻まれ、その場で固定パス `/tmp/vftest_a`・`/tmp/vftest_b`・`/tmp/vftest_c` に書き換えて回避した（issue #46）。
@@ -33,6 +34,9 @@
 
 **新しく作るファイルへの参照は、そのファイルを作るタスク以降に入れる**
 - 経緯：P-20261011-user-guide-entry の T-01 で `.claude/agents/planner.md` に、後続の T-02 で作る `docs/guide.md` をバッククォートで書かせたため、smoke の `(ref-1)` が NG になり `fail=0` の基準と同時に満たせず blocked になった（issue #172）
+
+**確認コマンドの grep パターンにシェルの特殊文字を入れない**
+- 経緯：`P-20261011-smoke-worktree-remove-quiet` の T-01 で、creator が受け入れ基準の `grep -cF 'git -C "$WTMAIN" worktree remove --force "$LEAF" >/dev/null 2>&1' scripts/smoke.sh` を実行しようとしたところ、Claude Code 側のガード（サンドボックス／権限判定）がコマンドごと拒否し、creator はパターンの一部（`git -C "`）を削って確かめた。`P-20261011-planner-check-cmd-guidance` の planner のセッション（メインセッション、auto mode）で同じコマンドを実行した時は拒否されず（出力 `1`）、このリポジトリのフックと `.claude/settings.json` の `permissions.deny` にも該当する判定が無いため、原因は確定していない。
 
 ## 確認方法
 - planner が受け入れ基準を書く時、ここの経緯を参照し、同じ失敗（状態ファイルの差分不変・緩い grep・複合コマンド・`rm -rf` 前提・除外パスの漏れなど）を繰り返していないかを見る。

@@ -14,7 +14,7 @@ GitHub Issue #175（/plan・/design: クラウドセッションでローカル�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | /plan 手順A-2・/design 手順1 の開始条件の前に best-effort の git fetch を入れる | |
-| T-02 | review | 1 | T-01 | vault-spec の開始条件の記述を fetch 手順に合わせ、decisions に判断の変更を記録する | |
+| T-02 | done | 1 | T-01 | vault-spec の開始条件の記述を fetch 手順に合わせ、decisions に判断の変更を記録する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

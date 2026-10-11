@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-user-guide-entry/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 15:28",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-6) '` が `1`（フィクスチャの `docs/guide.md` の存在しないパスを refcheck が見つける）", "ok": true, "note": "worktree で `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-6) '` / 出力: 1。smoke.sh L2710 に docs/guide.md、L2850-2851 にフィクスチャあり"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guide-1) '` が `1`（リポジトリの `docs/guide.md` に guidecheck の指摘が無い。guide.md が無い今は出力が空で ok）", "ok": true, "note": "実行コマンド: 同形の grep -c (guide-1) / 出力: 1。docs/guide.md は未存在で空出力 ok"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (guide-2) '` が `1`（フィクスチャで、節名の無いリンク・「すること：」の無い項目・「詳しく：」にリンクの無い項目を、決定済みの書式の行で見つけ、正しい項目は指摘しない）", "ok": true, "note": "実行コマンド: 同形の grep -c (guide-2) / 出力: 1。smoke.sh L2854-2861 で3項目フィクスチャと期待3行（構造2行→リンク1行）を確認"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: 同形の grep -c (ref-1) / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=523 fail=0"}
+  ],
+  "reasons": []
+}

@@ -17,7 +17,7 @@ D-20261011-user-guide フェーズ2：利用者がやりたいことから必要
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | smoke に docs/guide.md の参照切れ・項目の形・節の実在の検査を足す | |
-| T-02 | todo | 0 | T-01 | やりたいこと別の入口 docs/guide.md を書く | |
+| T-02 | doing | 1 | T-01 | やりたいこと別の入口 docs/guide.md を書く | |
 | T-03 | todo | 0 | T-02 | README.md から docs/guide.md へリンクする | |
 
 ## 計画の受け入れ基準

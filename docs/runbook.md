@@ -1,8 +1,9 @@
 # Runbook（人が日々やること）
 
-ハーネスは無人で回る。人の仕事は「ゴールを入れる」「blocked に答える」「PR をマージする」「月次で片づける」の4つ。
+ハーネスは無人で回る。人の仕事は「ゴールを入れる」「blocked に答える」「PR をマージする」「マージ済みの計画を片づける」（`scripts/purge_plan.sh --merged` を随時使う。5節）の4つ。
 
 まだインストールしていない場合は先に `docs/install.md` を読む。
+仕様は `docs/vault-spec.md`、エージェントの手順は各スキル（`.claude/skills/*/SKILL.md`）、環境変数は `docs/configuration.md`、やりたいこと別の入口は `docs/guide.md` にある。
 
 ## 0. 大きなゴールは先に設計する
 ```
@@ -15,30 +16,40 @@
 ```
 /plan <ゴール（自然文）>
 ```
-計画 ID（`P-YYYYMMDD-<slug>`）を決めてブランチ `work/<計画ID>` を作り、planner が計画票 `vault/plans/<計画ID>.md`（draft）とタスク票 `vault/tasks/<計画ID>/T-01.md` 以降を作る。粒度の確認を通ると計画票の `status` を `approved` にしてコミットし、続けて `/run` を実行する（人の承認を待たない）。planner に人への質問がある時だけ、質問を提示して止まる。会話で答えると、回答を反映してから承認と `/run` に進む。
-粒度の基準は `docs/vault-spec.md` の第8節。
+ブランチ `work/<計画ID>` を切り、planner が計画票とタスク票を作り、粒度の確認を通ると承認してコミットし、続けて `/run` を実行する（人の承認を待たない。手順は `.claude/skills/plan/SKILL.md` 手順A）。planner に人への質問がある時だけ、質問を提示して止まる。会話で答えると、回答を反映してから承認と `/run` に進む。
+粒度の基準は `docs/vault-spec.md` 8節。
 `/plan` も考える工程なので、強いモデル（opus）のセッションで実行する（選び方は 0 節と同じ）。続けて実行する `/run` もそのセッションのモデルのまま動く。creator・verifier はサブエージェントで、それぞれの定義のモデル（sonnet）で動く（creator は 8 節の手順で試せる）。
 
 ## 2. 計画は自動で承認される
-`/plan` が計画票の `status` を `approved` にし、`vault/log/<計画ID>.md` に `- <日時> - draft→approved /plan による自動承認` を追記してコミットする。人が承認のコマンドを打つことは無い。計画の中身は、最後にできる PR で人が確認する。1ブランチにつき approved は1件（`plan_guard.py` が2件以上を検出する）。
+`/plan` が計画票を承認してコミットするので、人が承認のコマンドを打つことは無い（記録の形は `docs/vault-spec.md` 7節、承認済みが1件であることの検査は同10節）。計画の中身は、最後にできる PR で人が確認する。
 計画を直したい時は、`/run` の途中でも止めて指示を出してよい。PR の段階で気づいた時は、マージせずに指示を出す。
 
 ## 3. キューを回す
-- 対話：`/run`（1件処理して報告。続けて呼べば次へ）
-- 無人：`python3 scripts/run_unattended.py` を cron / CI から定期実行（素の `claude -p "/run"` を直接呼ばず、タイムアウト付きラッパー経由にしてハングで居座らないようにする）
-  - 環境変数 `HARNESS_RUN_CMD`：実行するコマンド。未設定なら既定の `claude -p "/run"` が実行される
-  - 環境変数 `HARNESS_RUN_TIMEOUT`：制限時間（秒、既定 3600）。超えると SIGTERM を送り、10秒待っても終わらなければ SIGKILL し、終了コード124で終わる。時間内に終わった場合は子の終了コードをそのまま返す
-  - 環境変数 `HARNESS_STRICT_STOP`：未設定ならラッパーが `1` を入れて子プロセスに渡す。Stop フックが `stop_hook_active` の真でも判定を続け、verdict の無い終了を止める。`HARNESS_STRICT_STOP=0` を明示すれば従来の動き（2回目の停止は通す）になる。承認済みの計画票が0件なら Stop フックは何もしない
-  - タイムアウトは標準エラーの `run_unattended: timeout <秒>s` で分かる（cron のログや CI のログで確認できる）。ラッパーは vault のファイルに書かない
-  - タイムアウトで止めた後は、次回の `/run` が `.claude/skills/run/SKILL.md` 手順2.2（再開手順）で中断した地点から続きを再開する。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で blocked になって止まる
-  - 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）
-  - 上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）
-  - 承認済み計画の全タスクが `done` になったら、計画票の `status` を `done` にしてコミットし、計画の記録を PR 本文に写し、残すべき情報を docs への追記か Issue 化で取り出し、`scripts/purge_plan.sh` で計画一式を除去してコミットしてから `bash scripts/vcs_finish.sh` を実行する（GitHub なら `gh api`（REST）で、GitLab なら `glab mr create` が呼ばれて PR/MR ができる。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える）
-  - PR/MR ができたら、人が内容を確認して GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントは `scripts/vcs_finish.sh` の実行までしか行わない。
-  - PR のマージ方式：スカッシュマージを推奨する。ベースブランチ（既定 `main`）の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は、`scripts/vcs_finish.sh` が作る PR 本文の「タスク履歴」表（タスク ID・title・コミット・verdict。生成は `scripts/pr_body.py`）から辿れる。表のコミットは PR の Commits タブで見られる。PR 本文には「タスク履歴」表に加えて計画の記録（ゴール・タスク表・log の全行）と verifier の指摘・取り出した情報が載り、計画一式はベースブランチに入らないので、マージ後に計画を調べる時は PR を見る。
-    - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= ベースブランチの `git log`）にも残る（設定は人が行う）
-    - 通常のマージ（merge commit）も可。ベースブランチにタスクごとのコミットが残る。ホスティング無しの `git merge --no-ff` の案内は今のまま
-  - run の振り返り（手順8）で issue の起票に失敗すると、`vault/harness-improvements/<計画ID>.md` に提案が残る。提案に対応する計画を立てる時は、その計画の中でそのファイルを削除する（対応が済んだ提案ファイルを残さない）
+
+### 対話で回す
+```
+/run
+```
+自分のブランチの承認済み計画の、取れるタスクが無くなるまで処理する。全タスクが done になったら PR を作る。
+
+### 無人で回す
+`python3 scripts/run_unattended.py` を cron / CI から定期実行する。素の `claude -p "/run"` を直接呼ばず、タイムアウト付きラッパー経由にしてハングで居座らないようにする。
+- 初回は対象フォルダで一度 `claude` を対話起動してフォルダを信頼する（`.claude/settings.json` の許可設定は信頼後にしか効かない）
+- 関係する環境変数は `HARNESS_RUN_CMD`・`HARNESS_RUN_TIMEOUT`・`HARNESS_STRICT_STOP`・`HARNESS_MAX_ATTEMPTS`。意味と既定値は `docs/configuration.md`
+- タイムアウトは標準エラーの `run_unattended: timeout <秒>s` で分かる（cron のログや CI のログで確認できる）。止め方と終了コードの詳細は `docs/vault-spec.md` 14節
+- 止まった後は、次回の `/run` が中断した地点から続きを再開する（`.claude/skills/run/SKILL.md` 手順2）
+
+全タスクが done になった後の流れ（計画票の done・PR 本文への記録・情報の取り出し・計画一式の除去・PR/MR の作成）は `.claude/skills/run/SKILL.md` 手順7。ホスティング無しの場合はブランチ名と `git merge --no-ff` の案内が出るので、それを人に伝える。
+
+### PR をマージする
+人が内容を確認して、GitHub/GitLab 上の通常のマージ操作でマージする（ホスティング無しの場合は案内された `git merge --no-ff` を人が実行する）。コンフリクトがあれば計画のブランチ上で人が解決する。エージェントはマージしない。
+- PR 本文に載るもの（「タスク履歴」表など）とその生成元は `docs/vault-spec.md` 1節。計画一式はベースブランチに入らないので、マージ後に計画を調べる時は PR を見る
+- マージ方式：スカッシュマージを推奨する。ベースブランチ（既定 `main`）の履歴が1計画1コミットになり読みやすい。タスクごとの履歴は PR 本文の「タスク履歴」表から辿れ、表のコミットは PR の Commits タブで見られる
+  - GitHub でスカッシュする時は、リポジトリ設定の squash merge の既定コミットメッセージを `Pull request title and description` にする。表がスカッシュコミットのメッセージ（= ベースブランチの `git log`）にも残る（設定は人が行う）
+  - 通常のマージ（merge commit）も可。ベースブランチにタスクごとのコミットが残る
+
+### 振り返りの提案ファイル
+run の振り返りで issue の起票に失敗すると、`vault/harness-improvements/<計画ID>.md` に提案が残る。提案に対応する計画を立てる時は、その計画の中でそのファイルを削除する（対応が済んだ提案ファイルを残さない）。詳細は `docs/vault-spec.md` 1節と `.claude/skills/run/SKILL.md` 手順8。
 
 ## 4. blocked に答えて戻す
 ```

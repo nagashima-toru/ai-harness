@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-smoke-worktree-remove-quiet/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 19:38",
+  "criteria": [
+    {"text": "`scripts/` と `.claude/` に `worktree remove -q` が残っていない。確認：`grep -rn 'worktree remove -q' scripts .claude` の出力が空（終了コード1）", "ok": true, "note": "実行コマンド: `grep -rn 'worktree remove -q' scripts .claude` (worktree内) / 出力: 空, rc=1"},
+    {"text": "`(stop_gate worktree)` の後の行が `git -C \"$WTMAIN\" worktree remove --force \"$LEAF\" >/dev/null 2>&1` になっている。確認：`grep -cF 'git -C \"$WTMAIN\" worktree remove --force \"$LEAF\" >/dev/null 2>&1' scripts/smoke.sh` が `1`", "ok": true, "note": "実行コマンド: 同grep -cF / 出力: 1。scripts/smoke.sh の2006行目で、直前の2004行目が `(stop_gate worktree)` の expect であることも grep -n で確認"},
+    {"text": "smoke.sh の変更は `-q` の削除10箇所と `>/dev/null 2>&1` の追加1箇所だけである。確認：`git diff --numstat main -- scripts/smoke.sh` の出力が `10\t10\tscripts/smoke.sh`、かつ `grep -c '^--q'` が `10`、かつ除外 grep の出力が空", "ok": true, "note": "実行コマンド: `git diff --numstat main -- scripts/smoke.sh | cat -A` / 出力: 10^I10^Iscripts/smoke.sh。word-diff の `grep -c '^--q'` は 10、除外 grep -vE は出力空(rc=1)"},
+    {"text": "smoke が全件通る。確認：`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` を含む", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` (worktree内) / 出力: smoke: pass=524 fail=0"},
+    {"text": "smoke の出力に `-q` 起因の git のエラーが出ない。確認：`bash scripts/smoke.sh 2>&1 | grep -c 'unknown switch'` が `0`（計画時点では `1`）", "ok": true, "note": "実行コマンド: smoke出力を保存し `grep -c 'unknown switch'` / 出力: 0"}
+  ],
+  "reasons": []
+}

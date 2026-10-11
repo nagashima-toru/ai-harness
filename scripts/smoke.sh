@@ -2707,7 +2707,7 @@ if os.path.exists(os.path.join(root, ".claude/harness-manifest.json")):
 docs = [".claude/ai-harness.md"]
 docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/skills/*/SKILL.md")))
 docs += sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, ".claude/agents/*.md")))
-docs += ["README.md", "docs/vault-spec.md", "docs/runbook.md", "docs/install.md", "docs/configuration.md"]
+docs += ["README.md", "docs/vault-spec.md", "docs/runbook.md", "docs/install.md", "docs/configuration.md", "docs/guide.md"]
 excl = {".claude/projects", ".claude/harness-manifest.json", ".claude/settings.local.json"}
 for d in docs:
     f = os.path.join(root, d)
@@ -2762,6 +2762,45 @@ for v in sorted(table - code):
 PY
 }
 
+# --- docs/guide.md の項目の形とリンク先の節の実在の検査 ---
+guidecheck() { # $1=ルート。項目の形の崩れと実在しない節を出す
+  python3 - "$1" <<'PY'
+import os, re, sys
+root = sys.argv[1]
+gf = os.path.join(root, "docs/guide.md")
+if not os.path.isfile(gf):
+    sys.exit(0)
+with open(gf, encoding="utf-8") as fh:
+    lines = fh.read().split("\n")
+link = re.compile(r"\[`(docs/[^`]+\.md)`\]\([^)]*\) の「([^」]+)」")
+items = []
+for ln in lines:
+    if ln.startswith("## "):
+        items.append([ln[3:].strip(), []])
+    elif items:
+        items[-1][1].append(ln)
+for title, body in items:
+    if not any(l.startswith("すること：") for l in body):
+        print(f"docs/guide.md: {title}: すること：が無い")
+    det = [l for l in body if l.startswith("詳しく：")]
+    if not det:
+        print(f"docs/guide.md: {title}: 詳しく：が無い")
+    elif not any(link.search(l) for l in det):
+        print(f"docs/guide.md: {title}: 詳しく：にリンクが無い")
+for n, ln in enumerate(lines, 1):
+    for m in link.finditer(ln):
+        path, sec = m.group(1), m.group(2)
+        f = os.path.join(root, path)
+        ok = False
+        if os.path.isfile(f):
+            pat = re.compile(r"^#{1,6} " + re.escape(sec) + r"\s*$")
+            with open(f, encoding="utf-8", errors="ignore") as fh:
+                ok = any(pat.match(l) for l in fh.read().split("\n"))
+        if not ok:
+            print(f"docs/guide.md:{n}: {path} 「{sec}」")
+PY
+}
+
 RC="$TMP/refcheck"
 expect_eq "(ref-1) 主な文書のバッククォート内のパスがすべて存在する" "" "$(refcheck "$ROOT")"
 
@@ -2806,6 +2845,20 @@ EV_WANT="$(cat <<'EOF'
 EOF
 )"
 expect_eq "(envref-2) 表とコードのずれを見つけ、除外対象は見ない" "$EV_WANT" "$(envcheck "$EV")"
+
+mkdir -p "$RC/e/docs"
+printf '`docs/no-such-h.md`\n' > "$RC/e/docs/guide.md"
+expect_eq "(ref-6) docs/guide.md の存在しないパスも見つける" "docs/guide.md:1: docs/no-such-h.md" "$(refcheck "$RC/e")"
+
+expect_eq "(guide-1) docs/guide.md の各項目に すること・詳しく があり、詳しく の節がリンク先に実在する" "" "$(guidecheck "$ROOT")"
+GD="$TMP/guidecheck"
+mkdir -p "$GD/docs"
+printf '%s\n' '# runbook' '' '## 1. A' '' 'x' > "$GD/docs/runbook.md"
+printf '%s\n' '# guide' '' '## 正しい項目' 'すること：' '```' 'x' '```' '詳しく：[`docs/runbook.md`](runbook.md) の「1. A」' '' '## 形が崩れた項目' '詳しく：[`docs/runbook.md`](runbook.md) の「9. 無い」' '' '## リンクが無い項目' 'すること：' '詳しく：runbook を見る' > "$GD/docs/guide.md"
+GD_WANT='docs/guide.md: 形が崩れた項目: すること：が無い
+docs/guide.md: リンクが無い項目: 詳しく：にリンクが無い
+docs/guide.md:11: docs/runbook.md 「9. 無い」'
+expect_eq "(guide-2) 項目の形の崩れと実在しない節を見つけ、正しい項目は指摘しない" "$GD_WANT" "$(guidecheck "$GD")"
 
 # 記録行の無い doing の block 理由だけ完了通知の案内が付く（判定は変わらない）
 rm -rf "$TMP/vault/verdicts" "$TMP/vault/log"

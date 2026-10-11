@@ -1,6 +1,6 @@
 ---
 id: P-20261011-envref-skip-no-config
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #176 に対応する。導入先（`docs/configuration.md` が配布されないルート）で `bash scripts/smoke.sh` を走らせると `(envref-1)` が全 HARNESS_* を「表に無い」として NG にし `fail=1` になる問題を、対応案 A（`docs/configuration.md` が無い時は `scripts/smoke.sh` の `envcheck` が何も出さずに終わり、`(envref-1)` が実質スキップされる）で直す。対応案 B（install.sh で `docs/configuration.md` を配る）は採らない。

@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-user-guide-entry/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 15:36",
+  "criteria": [
+    {"text": "「使い方」節にリンクの行がある：`grep -cxF -- '- やりたいこと別の入口は [docs/guide.md](docs/guide.md) を参照' README.md` が `1`", "ok": true, "note": "実行コマンド: 同grep（worktree の README.md） / 出力: 1。git diff --numstat 856479b 680125d -- README.md は 2 0 で追加は2行のみ"},
+    {"text": "「構成」節の表に行がある：``grep -cxF '| `docs/guide.md` | やりたいこと別の入口 |' README.md`` が `1`", "ok": true, "note": "実行コマンド: 同grep / 出力: 1"},
+    {"text": "`scripts/install.sh` が guide.md を配らない：`grep -c 'guide.md' scripts/install.sh` が `0`", "ok": true, "note": "実行コマンド: `grep -c 'guide.md' scripts/install.sh` / 出力: 0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存し `grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `fail=0` で終わる", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存し `tail -1` / 出力: smoke: pass=523 fail=0"}
+  ],
+  "reasons": []
+}

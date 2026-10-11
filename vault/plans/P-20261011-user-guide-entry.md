@@ -1,6 +1,6 @@
 ---
 id: P-20261011-user-guide-entry
-status: approved
+status: done
 ---
 # ゴール
 D-20261011-user-guide フェーズ2：利用者がやりたいことから必要な手順・設定に辿り着ける入口を `docs/guide.md` に作る。各項目は「やりたいこと」「すること（コマンドや設定の最小例）」「詳しく（`docs/install.md`・`docs/runbook.md`・`docs/configuration.md` の節へのリンク）」の形にする。`README.md` からリンクする。

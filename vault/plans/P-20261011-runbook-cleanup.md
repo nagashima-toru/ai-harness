@@ -16,7 +16,7 @@ D-20261011-user-guide フェーズ3（最終）：`docs/runbook.md` を「人が
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | runbook にしか無い内部仕様を docs/vault-spec.md に移す | |
+| T-01 | doing | 1 | - | runbook にしか無い内部仕様を docs/vault-spec.md に移す | |
 | T-02 | todo | 0 | T-01 | runbook の冒頭と0〜3節を人向けに整理する | |
 | T-03 | todo | 0 | T-02 | runbook の4〜10節と「困ったとき」を人向けに整理する | |
 | T-04 | todo | 0 | T-03 | runbook の整理に合わせて他の文書からの参照を直す | |

@@ -212,7 +212,7 @@ expect "(delegate stop_gate) worktree 側が常に block を返す差し替え �
 expect "(delegate stop_gate) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（正常な計画票は許可）" allow \
   "$(printf '%s' '{"cwd":"'"$DWSLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWSMAIN" _HOOK_DELEGATED=1 python3 "$STOP_HOOK")"
 
-git -C "$DWSMAIN" worktree remove -q --force "$DWSLEAF" >/dev/null 2>&1
+git -C "$DWSMAIN" worktree remove --force "$DWSLEAF" >/dev/null 2>&1
 rm -rf "$DWSMAIN" "$DWSLEAF"
 
 DWSMAIN2="$(smoke_tmpdir)" || abort_tmp
@@ -238,7 +238,7 @@ sys.exit(1)
 PYEOF
 expect "(delegate stop_gate) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（verdict 無しのブロックが引き続き効く）" block \
   "$(printf '%s' '{"cwd":"'"$DWSLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWSMAIN2" python3 "$STOP_HOOK")" "verifier"
-git -C "$DWSMAIN2" worktree remove -q --force "$DWSLEAF2" >/dev/null 2>&1
+git -C "$DWSMAIN2" worktree remove --force "$DWSLEAF2" >/dev/null 2>&1
 rm -rf "$DWSMAIN2" "$DWSLEAF2"
 
 echo "== agent_write_guard.py =="
@@ -314,7 +314,7 @@ git -C "$WMAIN" worktree add -q -b work/p-wt "$WLEAF" >/dev/null 2>&1
 mkdir -p "$WLEAF/vault/verdicts"
 expect_guard "(worktree) verifier が worktree 内の vault/verdicts/ に Write（CLAUDE_PROJECT_DIR はメインチェックアウト側のまま）→ 許可" allow \
   "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WLEAF"'/vault/verdicts/T-1.json"}}' | CLAUDE_PROJECT_DIR="$WMAIN" python3 "$GUARD_HOOK")"
-git -C "$WMAIN" worktree remove -q --force "$WLEAF" >/dev/null 2>&1
+git -C "$WMAIN" worktree remove --force "$WLEAF" >/dev/null 2>&1
 rm -rf "$WMAIN" "$WLEAF"
 
 WMAIN2="$(smoke_tmpdir)" || abort_tmp
@@ -324,7 +324,7 @@ WLEAF2="$(smoke_tmpdir)" || abort_tmp; rmdir "$WLEAF2"
 git -C "$WMAIN2" worktree add -q -b work/p-wt-nested "$WLEAF2" >/dev/null 2>&1
 expect_guard "(worktree nested) verifier が worktree 内の未作成ネストディレクトリ vault/verdicts/P-NEW/ に Write（事前 mkdir なし）→ 許可" allow \
   "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$WLEAF2"'/vault/verdicts/P-NEW/T-1.json"}}' | CLAUDE_PROJECT_DIR="$WMAIN2" python3 "$GUARD_HOOK")"
-git -C "$WMAIN2" worktree remove -q --force "$WLEAF2" >/dev/null 2>&1
+git -C "$WMAIN2" worktree remove --force "$WLEAF2" >/dev/null 2>&1
 rm -rf "$WMAIN2" "$WLEAF2"
 
 # 委譲判定を確認するテストでは、verifier の worktree 内 README.md への Write をローカル判定の目印にする
@@ -347,7 +347,7 @@ expect_guard "(delegate) worktree 側が常に allow を返す差し替え → �
 expect_guard "(delegate) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（verifier の書き込み先制限が効く）" deny \
   "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$DWTLEAF"'/README.md"},"cwd":"'"$DWTLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN" _HOOK_DELEGATED=1 python3 "$GUARD_HOOK")"
 
-git -C "$DWTMAIN" worktree remove -q --force "$DWTLEAF" >/dev/null 2>&1
+git -C "$DWTMAIN" worktree remove --force "$DWTLEAF" >/dev/null 2>&1
 rm -rf "$DWTMAIN" "$DWTLEAF"
 
 DWTMAIN2="$(smoke_tmpdir)" || abort_tmp
@@ -363,7 +363,7 @@ sys.exit(1)
 PYEOF
 expect_guard "(delegate) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（verifier の書き込み先制限が引き続き効く）" deny \
   "$(printf '%s' '{"agent_type":"verifier","tool_name":"Write","tool_input":{"file_path":"'"$DWTLEAF2"'/README.md"},"cwd":"'"$DWTLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWTMAIN2" python3 "$GUARD_HOOK")"
-git -C "$DWTMAIN2" worktree remove -q --force "$DWTLEAF2" >/dev/null 2>&1
+git -C "$DWTMAIN2" worktree remove --force "$DWTLEAF2" >/dev/null 2>&1
 rm -rf "$DWTMAIN2" "$DWTLEAF2"
 
 # done タスクへの書き込み拒否（issue #76 / D-010 フェーズ2）。expect_guard を拡張し、4番目の
@@ -465,7 +465,7 @@ expect_guard "(wds-3) Bash ls → 委譲される" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"ls"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
 expect_guard "(wds-4) Bash touch <メインリポジトリ>/x.txt → 常に委譲される" allow \
   "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"touch '"$WDSMAIN"'/x.txt"},"cwd":"'"$WDSLEAF"'"}' | CLAUDE_PROJECT_DIR="$WDSMAIN" python3 "$GUARD_HOOK")" "(wds-stub)"
-git -C "$WDSMAIN" worktree remove -q --force "$WDSLEAF" >/dev/null 2>&1
+git -C "$WDSMAIN" worktree remove --force "$WDSLEAF" >/dev/null 2>&1
 rm -rf "$WDSMAIN" "$WDSLEAF"
 
 echo "== plan_guard.py =="
@@ -654,7 +654,7 @@ expect "(delegate plan_guard) worktree 側が常に block を返す差し替え 
 expect "(delegate plan_guard) 呼び出し前に _HOOK_DELEGATED が既にセット済み → 二重委譲を防止しローカル判定にフォールバック（正常な計画票は許可）" allow \
   "$(printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"'"$DWPLEAF"'"}' | CLAUDE_PROJECT_DIR="$DWPMAIN" _HOOK_DELEGATED=1 python3 "$PLAN_GUARD_HOOK")"
 
-git -C "$DWPMAIN" worktree remove -q --force "$DWPLEAF" >/dev/null 2>&1
+git -C "$DWPMAIN" worktree remove --force "$DWPLEAF" >/dev/null 2>&1
 rm -rf "$DWPMAIN" "$DWPLEAF"
 
 DWPMAIN2="$(smoke_tmpdir)" || abort_tmp
@@ -678,7 +678,7 @@ sys.exit(1)
 PYEOF
 expect "(delegate plan_guard) 委譲先 subprocess が非0で終了 → フェイルオープンでメインリポジトリ側のローカル判定にフォールバック（不正な status のブロックが引き続き効く）" block \
   "$(printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"'"$DWPLEAF2"'"}' | CLAUDE_PROJECT_DIR="$DWPMAIN2" python3 "$PLAN_GUARD_HOOK")" "status"
-git -C "$DWPMAIN2" worktree remove -q --force "$DWPLEAF2" >/dev/null 2>&1
+git -C "$DWPMAIN2" worktree remove --force "$DWPLEAF2" >/dev/null 2>&1
 rm -rf "$DWPMAIN2" "$DWPLEAF2"
 
 echo "== done-verdict（D-012 フェーズ1） =="
@@ -2003,7 +2003,7 @@ expect "(stop_gate worktree) 未コミットのファイルがある → 許可"
 rm -f "$LEAF/x.txt"
 expect "(stop_gate worktree) ファイルを消す → 許可" allow \
   "$(printf '%s' "$DEFAULT_STDIN" | CLAUDE_PROJECT_DIR="$LEAF" HARNESS_MAX_ATTEMPTS=3 python3 "$STOP_HOOK")"
-git -C "$WTMAIN" worktree remove -q --force "$LEAF"
+git -C "$WTMAIN" worktree remove --force "$LEAF" >/dev/null 2>&1
 rm -rf "$WTBASE"
 
 HPC="$(smoke_tmpdir)" || abort_tmp

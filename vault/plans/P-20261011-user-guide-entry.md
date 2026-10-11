@@ -16,7 +16,7 @@ D-20261011-user-guide フェーズ2：利用者がやりたいことから必要
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | blocked | 1 | - | smoke に docs/guide.md の参照切れ・項目の形・節の実在の検査を足す | T-01 の受け入れ基準が、今の時点では同時に満たせません。基準4(planner.md に `docs/guide.md` を足す)を満たすと、基準5(`(ref-1)` が ok)と基準6(smoke が `fail=0`)が落ちます。planner.md の73行目にバッククォート付きで書く `docs/guide.md` が、まだ存在しないからです。docs/guide.md は T-02 の成果物で、本票の成果物には入っていません。どう進めますか。(a) T-02 を先にして T-01 を後にする(after の入れ替え) (b) 基準5と6を T-02 完了後に判定する形へ人が差し替える (c) T-01 の成果物に空に近い docs/guide.md を足す |
+| T-01 | todo | 0 | - | smoke に docs/guide.md の参照切れ・項目の形・節の実在の検査を足す | |
 | T-02 | todo | 0 | T-01 | やりたいこと別の入口 docs/guide.md を書く | |
 | T-03 | todo | 0 | T-02 | README.md から docs/guide.md へリンクする | |
 

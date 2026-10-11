@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-planner-ref-order/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 18:12",
+  "criteria": [
+    {"text": "手順A-5 の行に、新しく作るファイルへの参照順の確認がある：`grep -c '^5\\. .*そのファイルを作るタスクより前のタスク' .claude/skills/plan/SKILL.md` が `1`", "ok": true, "note": "実行コマンド: `grep -c '^5\\. .*そのファイルを作るタスクより前のタスク' .claude/skills/plan/SKILL.md`(worktree内) / 出力: 1。A-5 の行に参照順の確認文があることも目視確認"},
+    {"text": "手順A-5 の行に、既存の粒度基準の確認が残っている：`grep -c '^5\\. .*受け入れ基準3〜7行、成果物1つ、依存に循環なし' .claude/skills/plan/SKILL.md` が `1`", "ok": true, "note": "実行コマンド: 該当 grep -c / 出力: 1"},
+    {"text": "手順の番号付きの行の数が変わっていない：`grep -c '^[0-9]*\\. ' .claude/skills/plan/SKILL.md` が `18`", "ok": true, "note": "実行コマンド: `grep -c '^[0-9]*\\. ' .claude/skills/plan/SKILL.md` / 出力: 18"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: smoke 出力を保存し `grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: smoke 出力の `tail -1` / 出力: smoke: pass=523 fail=0"}
+  ],
+  "reasons": []
+}

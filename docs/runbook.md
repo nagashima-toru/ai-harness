@@ -57,29 +57,14 @@ run の振り返りで issue の起票に失敗すると、`vault/harness-improv
 ```
 1. 計画票（`vault/plans/<計画ID>.md`）のタスク表で `status=blocked` の行の `question` を読む
 2. `/plan unblock <計画ID> <id> <回答>` を打つ。答える質問が無い blocked（ハングやマージコンフリクトなど）は回答を省いてよい。1回のコマンドで解除するのは1行だけ。複数あれば1行ずつ打つ
+3. 解除したら `/run` で再開する
 
-エージェントが次を行う。
-- 回答を `vault/tasks/<計画ID>/<id>.md` の「決定済み」に追記する（回答を省いた時は追記しない）
-- 計画票のその行の `status` を `todo`、`attempt` を `0`、`question` を空にする
-- `vault/log/<計画ID>.md` に `- YYYY-MM-DD HH:MM <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>` を追記する
-- 変更をコミットする
+エージェントは、回答をタスク票の「決定済み」に追記し、その行を `todo` に戻し、log に解除の行を足してコミットする。手順は `.claude/skills/plan/SKILL.md` の「B. blocked を解除する」。エージェントは人の指示なしに解除しない。
 
-`blocked→todo` は、人が `/plan unblock` で指示して初めて行われる。`/plan` スキルが `/plan unblock <計画ID> <id> [回答]` の形でない指示（「T-03 解除して」のような自由な文・AskUserQuestion への回答）を断る。フックでは確かめない（D-015 フェーズ2 で廃止）ので、エージェントは人の指示なしに解除しない。
-
-代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で log に上の形式の行を追記してコミットする。
+代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で、log に `docs/vault-spec.md` 7節の blocked の解除の形の行を追記してコミットする。
 
 ## 5. 一括削除の手順
-ベースブランチ（既定 `main`）にマージ済みの計画一式（`vault/plans/<計画ID>.md`・`vault/tasks/<計画ID>/`・`vault/verdicts/<計画ID>/`・`vault/log/<計画ID>.md`）と vault/archive/ を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。新しい計画は run の手順7で PR の前に除去されるので、この手順はベースブランチに残った分を片づける時に使う。
-
-対象の条件（すべて満たす計画）：
-
-1. 計画 ID が `P-YYYYMMDD-<slug>` の形
-2. 現在のブランチの計画でない
-3. 計画票が `status: done`
-4. タスク表が全行 `done`
-5. ベースブランチ（`HARNESS_BASE_BRANCH`、既定 `main`）の版の計画票も `status: done`
-
-`--keep` は無く、マージ済みは全部消す。
+ベースブランチ（既定 `main`）に残ったマージ済みの計画一式と、旧方式の vault/archive/ を、人が `scripts/purge_plan.sh --merged` でまとめて削除する。対象の条件と `--report` の出力の形は `docs/vault-spec.md` 1節。
 
 ```bash
 git switch -c purge/merged-<YYYYMMDD>
@@ -91,19 +76,17 @@ git commit -m "一括削除: ベースブランチにマージ済みの計画一
 
 PR を作り、人がマージする。
 
-`--report` は `<計画ID>/<id>: blocked <補足>`（log の `→blocked` の行の補足＝そのとき聞いた質問）と `<計画ID>/<id>: reasons <理由>`（verdict の `reasons`）を出す。`--report` の出力を見て、未解決のもの・改善提案になるものを人が Issue 化してから `--apply` する。
-
-`--apply` は対象の4種に加えて vault/archive/ も丸ごと消える。コミットはしない。対象パスに未コミット・未追跡の変更があれば何も消さずに終了コード1になる。
-
-実行者の制限：--merged --apply は人だけが実行する。エージェントは --list・--report だけを使う。他の計画の done のタスク票・verdict を消すのは、フック（`agent_write_guard.py`）と差分ゲート（`scripts/diff_gate.py`）を通らない経路になるため。
-
-対象外：計画 ID が `P-YYYYMMDD-<slug>` の形でない旧形式の計画（`P-019` など）と、旧形式のタスク票（vault/tasks/T-0036.md など）は対象にならない。消す時は人が `git rm` する。`vault/harness-improvements/<計画ID>.md`（run の振り返りの提案ファイル）も対象外。
+- `--report` の出力を見て、未解決のもの・改善提案になるものを人が Issue 化してから `--apply` する
+- `--apply` は人だけが実行する（エージェントは `--list`・`--report` だけ）。コミットはしない
+- 対象パスに未コミット・未追跡の変更があれば、何も消さずに終了コード1になる
+- 旧形式の計画（`P-019` など）と旧形式のタスク票（vault/tasks/T-0036.md など）は対象外。消す時は人が `git rm` する
+- `vault/harness-improvements/<計画ID>.md`（run の振り返りの提案ファイル）も対象外
 
 ## 6. ルールを足す
 1. `vault/rules/{common,creator,verifier,planner}/` のどれかにルールファイル（`*.md`）を置く
 2. 渡したい相手（全員／作成エージェント／verifier／planner）でディレクトリを決める
 3. 反映させたい受け入れ基準の行にルールファイルを名指しして参照する
-4. ルールの追加・変更は、人が編集するか、タスクの「成果物」に宣言して変える。フックは `vault/rules/` を止めず、宣言の無い変更は差分ゲート `scripts/diff_gate.py` が差し戻す。変更は PR の差分で見える
+4. ルールの追加・変更は、人が編集するか、タスクの「成果物」に宣言して変える。フックは止めず、宣言の無い変更は差分ゲートが差し戻す（`docs/vault-spec.md` 11節・5節）。変更は PR の差分で見える
 
 ## 7. ハーネス自体の更新を取り込む
 このハーネスを他のプロジェクトに組み込んでいる場合、フックやスキルを直しても組み込み先には届かない。取り込みたい時に次を打つ。
@@ -112,12 +95,12 @@ PR を作り、人がマージする。
 bash /path/to/ai-harness/scripts/install.sh --update /path/to/your-project
 ```
 
-未編集のファイルは `update <path>` で最新化され、組み込み先で編集したファイルは `skip (edited) <path>` と報告されるだけで上書きされない。`.claude/settings.json` は hooks の欠落エントリと `permissions.deny` の不足分だけが足される。詳細は `docs/install.md` の「ハーネスを更新する（2回目以降）」。
+未編集のファイルは `update <path>` で最新化され、組み込み先で編集したファイルは `skip (edited) <path>` と報告されるだけで上書きされない。`.claude/settings.json` は hooks の欠落エントリと 拒否設定（deny）の不足分だけが足される。詳細は `docs/install.md` の「ハーネスを更新する（2回目以降）」。
 
 ## 8. creator のモデルを比べる
 creator のモデルだけを haiku に替えて計画を回し、sonnet の時と成績・使用量を比べる。verifier・planner のモデルは変えない。どの計画で試すか、採用するかどうかは人が決める。
 
-1. 環境変数 `HARNESS_CREATOR_MODEL=haiku` を付けて回す。対話は、セッションの起動時に設定する（起動後に変えても run の Bash には効かない場合があるので、変えたい時は起動し直す）。
+1. 環境変数 `HARNESS_CREATOR_MODEL=haiku` を付けて回す（説明は `docs/configuration.md`）。対話は、セッションの起動時に設定する（起動後に変えても run の Bash には効かない場合があるので、変えたい時は起動し直す）。
 
    ```bash
    HARNESS_CREATOR_MODEL=haiku claude        # 対話：起動後に /run
@@ -147,9 +130,9 @@ creator のモデルだけを haiku に替えて計画を回し、sonnet の時�
 
 ## 10. push 先が決められている環境（クラウドセッション）
 
-クラウドセッションのように、実行環境の指示で push 先のブランチが決められている環境では、セッションはベースブランチと同じコミットのその指定ブランチ上で始まる。この時は `HARNESS_PUSH_BRANCH` に指定ブランチ名を渡す。
+クラウドセッションのように、実行環境の指示で push 先のブランチが決められている環境では、セッションはベースブランチと同じコミットのその指定ブランチ上で始まる。この時は `HARNESS_PUSH_BRANCH` に指定ブランチ名を渡す。環境変数の説明は `docs/configuration.md`。
 
-- 環境変数に無い時は、オーケストレーターがその値を次のようにコマンドに渡す。`/plan`・`/design` の開始条件の確認と `vcs_finish.sh` の両方に付ける。`env` で始めると許可リストの `Bash(env *)` で通る。
+- 環境変数に無い時は、オーケストレーターがその値をコマンドに渡す（`/plan`・`/design` の開始条件の確認と `vcs_finish.sh`）。仕組みは `.claude/skills/plan/SKILL.md` 手順A の2と `.claude/skills/run/SKILL.md` 手順7。
 
 ```
 env HARNESS_PUSH_BRANCH=<指定ブランチ> bash scripts/vcs_finish.sh
@@ -171,4 +154,4 @@ env HARNESS_PUSH_BRANCH=<指定ブランチ> bash scripts/vcs_finish.sh
 | rebase の途中で止まった（`git status` に `rebase in progress`） | `git rebase --abort` で始める前に戻す |
 | HEAD と作業ツリーが食い違っている（コミットしていない変更が残って次の操作が止まる、など） | 作業ブランチ（`work/<計画ID>` か creator の worktree のブランチ）の上でだけ、`git reset --hard HEAD`（または戻したいコミット）で作業ツリーを HEAD に戻す。ベースブランチや `main` では使わない。 |
 
-上の git の3行は、エージェントが自分で直してよい。`permissions.deny` に残っているのは `git push --force` 系・`rm -rf` 系・`sudo`・`gh pr merge`・`glab mr merge` だけで、作業ブランチの上の `git reset --hard`・`git clean`・`git branch -D` は止めない（D-015。壊れてもブランチを捨てて作り直せる）。半端な状態を見つける診断スクリプトは無い。
+上の git の3行の復旧をエージェントがどこまで自分で行うかは、`docs/vault-spec.md` 12節の「作業ブランチの git の復旧」。

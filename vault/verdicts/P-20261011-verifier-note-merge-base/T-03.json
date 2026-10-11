@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-verifier-note-merge-base/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 20:24",
+  "criteria": [
+    {"text": "`grep -rnE 'git diff (--[a-z-]+ )?-- ' .claude docs README.md vault/rules vault/templates scripts` の出力が空（ゴールの範囲に作業ツリーと比べる形の例が残っていない）", "ok": true, "note": "実行コマンド（worktree内）: `grep -rnE 'git diff (--[a-z-]+ )?-- ' .claude docs README.md vault/rules vault/templates scripts` / 出力: 空"},
+    {"text": "`grep -c 'git diff --merge-base work/.計画IDの英小文字. -- vault/plans/' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同上 grep -c / 出力: 1。248行目に merge-base 形の例を確認"},
+    {"text": "対象 worktree の中で `git diff --merge-base work/p-20261011-verifier-note-merge-base --numstat -- docs/vault-spec.md` を実行した出力が、`1\t1\tdocs/vault-spec.md`（追加1行・削除1行）の1行だけである", "ok": true, "note": "実行コマンド: `git diff --merge-base work/p-20261011-verifier-note-merge-base --numstat -- docs/vault-spec.md | cat -A` / 出力: 1^I1^Idocs/vault-spec.md$ の1行のみ"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存し `grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` を含む", "ok": true, "note": "実行コマンド: smoke.sh の出力を保存し `tail -1` / 出力: smoke: pass=524 fail=0"}
+  ],
+  "reasons": []
+}

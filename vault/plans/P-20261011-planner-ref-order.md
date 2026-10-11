@@ -1,6 +1,6 @@
 ---
 id: P-20261011-planner-ref-order
-status: approved
+status: done
 ---
 # ゴール
 planner が、後続タスクで作るファイルのパスを先行タスクの成果物（smoke の `(ref-1)` が検査する文書）に書かせる計画を作らないようにする（GitHub Issue #172）。

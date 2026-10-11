@@ -1,6 +1,6 @@
 ---
 id: P-20261011-smoke-worktree-remove-quiet
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #181（smoke.sh の `git worktree remove -q` が古い git（2.43）で失敗し、エラーが出力に混ざる）に対応する。`scripts/smoke.sh` の `git worktree remove` から `-q` をすべて外し、リダイレクトが無い `(stop_gate worktree)` 後の1箇所に `>/dev/null 2>&1` を足して他と揃える。

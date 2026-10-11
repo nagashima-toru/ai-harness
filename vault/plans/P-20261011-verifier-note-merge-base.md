@@ -20,7 +20,7 @@ GitHub Issue #183 に対応する。`.claude/agents/verifier.md` の「手順」
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | verifier.md の note の書式の例を merge-base の形にする | |
-| T-02 | review | 1 | - | planner.md の形式の不変を見る例を merge-base の形にする | |
+| T-02 | done | 1 | - | planner.md の形式の不変を見る例を merge-base の形にする | |
 | T-03 | todo | 0 | T-01,T-02 | vault-spec.md の形式の不変を見る例を merge-base の形にする | |
 
 ## 計画の受け入れ基準

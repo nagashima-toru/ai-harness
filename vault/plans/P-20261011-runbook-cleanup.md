@@ -1,6 +1,6 @@
 ---
 id: P-20261011-runbook-cleanup
-status: approved
+status: done
 ---
 # ゴール
 D-20261011-user-guide フェーズ3（最終）：`docs/runbook.md` を「人が日々やること」に絞る。エージェントが内部でやること（transition.py・スキルの手順の中身など）の説明は、`docs/vault-spec.md` やスキルに同じ内容があれば runbook から削ってリンクに置き換え、runbook にしか無い内部仕様は `docs/vault-spec.md` に移す。環境変数の説明は `docs/configuration.md` へのリンクにする。古くなった記述（例：「`/run` は1件処理して報告」）を今の動作に直す。`docs/guide.md` のリンク先の節がずれたら直す。最後に決定事項を `docs/decisions.md` に取り出し、この設計文書を削除する。

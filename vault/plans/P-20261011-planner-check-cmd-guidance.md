@@ -1,6 +1,6 @@
 ---
 id: P-20261011-planner-check-cmd-guidance
-status: approved
+status: done
 ---
 # ゴール
 前回の計画（P-20261011-smoke-worktree-remove-quiet、PR #182、マージ済み）の振り返りで出たハーネスへの改善提案2件に対応する。

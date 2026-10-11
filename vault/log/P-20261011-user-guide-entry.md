@@ -4,3 +4,5 @@
 - 2026-10-11 12:48 T-01 doing→blocked attempt=1 creator=sonnet
 - 2026-10-11 14:20 T-01 blocked→todo 人の指示: /plan unblock P-20261011-user-guide-entry T-01
 - 2026-10-11 15:27 T-01 todo→doing attempt=1
+- 2026-10-11 15:28 T-01 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a9551954d3fa79e01 branch=worktree-agent-a9551954d3fa79e01 plan_head=81e602af04ecc061216497892a87568d41e76fcb
+- 2026-10-11 15:28 T-01 doing→review attempt=1 creator=sonnet

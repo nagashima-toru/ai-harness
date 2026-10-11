@@ -1,6 +1,6 @@
 ---
 id: P-20261011-creator-check-cmd-denied
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #184 に対応する。creator が受け入れ基準の確認コマンドを Claude Code 側のガード（権限判定・サンドボックスなど）に拒否された時のふるまいを `.claude/agents/creator.md` に定める。verifier 側の同種のルール（`.claude/agents/verifier.md` の「手順」8：実行できなかった旨と代替の確認方法・結果をセットで書き、黙って置き換えない）と整合させる。

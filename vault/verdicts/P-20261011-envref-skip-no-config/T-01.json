@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-envref-skip-no-config/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 19:17",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (envref-3) '` の出力が `1`（導入先相当のルートで envcheck が空を返す新しい検査が pass する）", "ok": true, "note": "worktree で smoke.sh を実行し出力ファイルに grep -c '^  ok   (envref-3) ' / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -cE '^  ok   \\(envref-[12]\\) '` の出力が `2`（ハーネス本体での一致検査と、偽ツリーでのずれ検出が従来どおり pass する）", "ok": true, "note": "同じ実行出力に grep -cE '^  ok   \\(envref-[12]\\) ' / 出力: 2"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  NG   '` の出力が `0`", "ok": true, "note": "同じ実行出力に grep -c '^  NG   ' / 出力: 0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=<数> fail=0` の形で、`fail=0` で終わる", "ok": true, "note": "実行コマンド: tail -1 / 出力: smoke: pass=524 fail=0"},
+    {"text": "`scripts/smoke.sh` の `(envref-3)` の検査が使うフィクスチャのルートは、`scripts/` 配下に `HARNESS_` で始まる変数名を含むファイルがあり、`docs/configuration.md` が無い（`scripts/smoke.sh` の該当箇所を読んで確認する。修正前の `envcheck` ならこのルートで「表に無い:」の行が出る構成であること）", "ok": true, "note": "実行コマンド: `git diff main...HEAD -- scripts/smoke.sh` / 出力: NC=$TMP/envref-noconf に mkdir -p scripts、printf 'HARNESS_NOCONF\\n' > scripts/a.sh、docs/configuration.md は作らない。修正前は scripts の HARNESS_NOCONF が表に無いため「表に無い:」が出る構成"}
+  ],
+  "reasons": []
+}

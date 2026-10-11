@@ -1,0 +1,15 @@
+{
+  "task": "P-20261011-runbook-cleanup/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 15:59",
+  "criteria": [
+    {"text": "`grep -c '^## 14\\. 無人実行ラッパー（`scripts/run_unattended.py`）$' docs/vault-spec.md` が `1`、`grep -c '^## ' docs/vault-spec.md` が `14`（1〜13節の見出しは変えていない）", "ok": true, "note": "実行コマンド: worktree の docs/vault-spec.md に対する両 grep / 出力: 1 と 14"},
+    {"text": "14節に「決定済み」の (1)〜(7) がすべて書かれ、値が `scripts/run_unattended.py` の実装と一致している（verifier が14節と実装を読んで項目ごとに確かめる）", "ok": true, "note": "14節と scripts/run_unattended.py を読んで照合。用途・shlex/シェル非経由/exit2・TIMEOUT 3600/正整数/exit2・SIGTERM→10秒→SIGKILL/124/新セッション・子の終了コード/128+sig/127/130・HARNESS_STRICT_STOP の未設定時のみ1・vault 非書込と再開手順、の7項目すべて実装と一致"},
+    {"text": "`env HARNESS_RUN_CMD=\"sleep 5\" HARNESS_RUN_TIMEOUT=1 python3 scripts/run_unattended.py` が標準エラーに `run_unattended: timeout 1s` を出して終了コード `124` で終わり、`sed -n '/^## 14\\./,$p' docs/vault-spec.md | grep -cF 'run_unattended: timeout <秒>s'` が1以上", "ok": true, "note": "実行コマンド: 上記 env ... run_unattended.py; echo exit=$? / 出力: run_unattended: timeout 1s, exit=124。sed|grep -cF は 1"},
+    {"text": "`grep -c '^### 作業ブランチの git の復旧$' docs/vault-spec.md` が `1` で、その小見出しに「決定済み」の (8)〜(11) がすべて書かれている（`sed -n '/^### 作業ブランチの git の復旧/,/^## 13\\./p' docs/vault-spec.md | grep -c 'git rebase --abort'` が1以上）", "ok": true, "note": "grep -c 小見出し=1、rebase --abort の grep -c=1。小見出し本文を読み (8)作業ブランチのみ・merge/rebase/reset、(9)deny の内容と D-015、(10)診断スクリプト無し、(11)creator は git clean/reset --hard を使わない、すべて記載"},
+    {"text": "タスク票の「進捗」に、移した記述ごとに runbook の元の節（3節・「困ったとき」）と移し先（14節・12節の小見出し）の対応が書かれている", "ok": true, "note": "vault/tasks/P-20261011-runbook-cleanup/T-01.md の進捗を Read。3節の各項目→14節の各項目、困ったとき各行・段落→12節小見出しの対応が列挙されている"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0`、`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: 上記2つ / 出力: smoke: pass=523 fail=0、ref-1 の grep -c は 1"}
+  ],
+  "reasons": []
+}

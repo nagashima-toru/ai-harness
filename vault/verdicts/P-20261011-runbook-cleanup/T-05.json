@@ -1,0 +1,15 @@
+{
+  "task": "P-20261011-runbook-cleanup/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 16:13",
+  "criteria": [
+    {"text": "`test ! -e vault/designs/D-20261011-user-guide.md` が終了コード0で終わる", "ok": true, "note": "実行コマンド: `cd <worktree> && test ! -e vault/designs/D-20261011-user-guide.md; echo $?` / 出力: 0"},
+    {"text": "`grep -c '^| 2026-10-11 | [^|]*（D-20261011-user-guide） |' docs/decisions.md` が `6`", "ok": true, "note": "実行コマンド: 同grep（worktree内） / 出力: 6"},
+    {"text": "`grep -c '^| 20' docs/decisions.md` が `49`（既存の43行を残し、6行だけを足している）", "ok": true, "note": "実行コマンド: `grep -c '^| 20' docs/decisions.md` / 出力: 49。足された行は50〜55行目の6行のみ（D-20261011-user-guide の grep -n で確認）"},
+    {"text": "足した6行が設計文書の「決定事項」の6行と1対1に対応し、各行の「なぜ」に設計文書の「なぜ」の内容（人の選択・人の要望である旨を含む）が書かれている（設計文書は削除済みなので、verifier はこのタスク票の「決定済み」の6項目と照らして確かめる）", "ok": true, "note": "実行コマンド: `grep -n 'D-20261011-user-guide' docs/decisions.md` / 出力: 50〜55行目の6行を、タスク票「決定済み」の1〜6と照合。何を・なぜとも順に一致。なぜは1〜4,6が「人の選択…」、5が「人の要望…」で始まり、原則8・原則2の参照も一致"},
+    {"text": "`grep -rn 'vault/designs/D-20261011-user-guide' README.md docs .claude/skills .claude/agents .claude/ai-harness.md scripts` の出力が空", "ok": true, "note": "実行コマンド: 同grep（worktree内） / 出力: 空（終了コード1）"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=523 fail=0"}
+  ],
+  "reasons": []
+}

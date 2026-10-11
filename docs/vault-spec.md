@@ -342,6 +342,17 @@ vault/rules/
 - 一時ファイル：スクリプトは今までどおり `mktemp [-d] "${TMPDIR:-/tmp}/<名前>.XXXXXX"` の形で作り、作れない時は中断する（D-013 の書き方を戻さない）
 - 導入先：`merge_settings_json.py` は導入先の settings.json に `sandbox` を足さない。導入先で有効にする手順は `docs/install.md` の「サンドボックスを有効にする（任意）」
 
+### 作業ブランチの git の復旧
+
+merge の途中・rebase の途中・HEAD と作業ツリーの食い違いは、エージェントが自分で直してよい。
+- 直してよい場所：作業ブランチ（`work/<計画ID>` か creator の worktree のブランチ）の上だけ。ベースブランチと `main` では使わない。直す主体はオーケストレーター
+- merge の途中（`git status` に `You have unmerged paths` や `All conflicts fixed but you are still merging`）：`git merge --abort` で取り込む前に戻す。計画ブランチへのタスクの取り込みは `transition.py` がやり直す（衝突なら blocked にする）
+- rebase の途中（`git status` に `rebase in progress`）：`git rebase --abort` で始める前に戻す
+- HEAD と作業ツリーの食い違い（コミットしていない変更が残って次の操作が止まる、など）：`git reset --hard HEAD`（または戻したいコミット）で作業ツリーを HEAD に戻す
+- `.claude/settings.json` の `permissions.deny` に残っているのは `git push --force` 系・`rm -rf` 系・`sudo`・`gh pr merge`・`glab mr merge` だけ。作業ブランチの上の `git reset --hard`・`git clean`・`git branch -D` は止めない（D-015。壊れてもブランチを捨てて作り直せる）
+- 半端な状態を見つける診断スクリプトは無い
+- creator 自身は `.claude/agents/creator.md` の `## git` 節のとおり `git clean`・`git reset --hard` を使わない（worktree の中の自分の作業まで消すため）。この小見出しの復旧はオーケストレーターが行う
+
 ## 13. 設計文書（`vault/designs/`）
 
 大きなゴールを `/plan` に渡す前に、調査と人への質問を済ませて決定事項を固めるための文書。`/design` スキルが `vault/designs/D-<YYYYMMDD>-<スラッグ>.md` に書く。テンプレートは `vault/templates/design.md`。
@@ -380,3 +391,13 @@ vault/rules/
 - 人が設計文書を確認してから、フェーズのゴール文を1つずつ `/plan` に渡す
 - この時点で設計文書はベースブランチにマージ済みなので、`/plan` は既存の手順どおり「現在のブランチがベースブランチ（既定 `main`）であることを確認してから `work/...` を切る」を変えずに使える
 - 使うのは、受け入れ基準が7行に収まらない・成果物が複数ファイルにまたがる・人に聞くことがある、のいずれかに当てはまる時だけ。小さい要求は `/plan` に直行する
+
+## 14. 無人実行ラッパー（`scripts/run_unattended.py`）
+
+- 用途：cron・CI から無人で `/run` を回すためのタイムアウト付きラッパー。素の `claude -p "/run"` を直接呼ばずにこれを使う（ハングで居座らないため）
+- 実行するコマンド：環境変数 `HARNESS_RUN_CMD`（未設定か空なら `claude -p "/run"`）を shlex で分割し、シェルを経由せずに実行する。分割できない・空の時は標準エラーに理由を出して終了コード2
+- 制限時間：環境変数 `HARNESS_RUN_TIMEOUT`（秒。未設定か空なら3600）。正の整数でなければ標準エラーに理由を出して終了コード2
+- タイムアウト時：標準エラーに `run_unattended: timeout <秒>s` を出し、子のプロセスグループ（子は新しいセッションで起動する）に SIGTERM を送り、10秒待っても終わらなければ SIGKILL を送って、終了コード124で終わる。cron・CI のログでこの行を確認できる
+- 終了コード：時間内に終わった時は子の終了コードをそのまま返す（シグナルで死んだ子は 128+シグナル番号）。コマンドが見つからない時は127、Ctrl-C で止めた時は子に SIGTERM を送って130
+- 環境変数：子にそのまま引き継ぐ。`HARNESS_STRICT_STOP` が未設定（キーが無い）の時だけ `1` を入れて渡し、設定済みなら値を変えない。`0` を明示すれば `stop_hook_active` が真の時に許可する従来の動きになる（判定は9節）
+- vault との関係：ラッパーは vault のファイルに書かない。止めた後の復旧は、次回の `/run` が再開手順（`.claude/skills/run/SKILL.md` 手順2の2）で中断した地点から続ける。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で blocked になる

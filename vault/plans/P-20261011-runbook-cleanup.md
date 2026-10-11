@@ -19,7 +19,7 @@ D-20261011-user-guide フェーズ3（最終）：`docs/runbook.md` を「人が
 | T-01 | done | 1 | - | runbook にしか無い内部仕様を docs/vault-spec.md に移す | |
 | T-02 | done | 1 | T-01 | runbook の冒頭と0〜3節を人向けに整理する | |
 | T-03 | done | 1 | T-02 | runbook の4〜10節と「困ったとき」を人向けに整理する | |
-| T-04 | todo | 0 | T-03 | runbook の整理に合わせて他の文書からの参照を直す | |
+| T-04 | doing | 1 | T-03 | runbook の整理に合わせて他の文書からの参照を直す | |
 | T-05 | todo | 0 | T-01,T-02,T-03,T-04 | 決定事項を docs/decisions.md に取り出し設計文書を削除する | |
 
 ## 計画の受け入れ基準

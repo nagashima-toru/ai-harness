@@ -12,7 +12,7 @@ GitHub Issue #176 に対応する。導入先（`docs/configuration.md` が配�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | smoke.sh の envcheck を docs/configuration.md が無い時にスキップし (envref-3) を足す | |
+| T-01 | doing | 1 | - | smoke.sh の envcheck を docs/configuration.md が無い時にスキップし (envref-3) を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

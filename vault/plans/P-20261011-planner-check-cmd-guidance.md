@@ -20,7 +20,7 @@ status: approved
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | planner.md の差分確認の指針を main と比べない形（計画ブランチとの分岐点）に直す | |
-| T-02 | review | 1 | T-01 | planner.md に拒否されにくい grep パターンの書き方の指針を足す | |
+| T-02 | done | 1 | T-01 | planner.md に拒否されにくい grep パターンの書き方の指針を足す | |
 | T-03 | done | 1 | - | ai-harness-lessons.md に2件の経緯を足し見出しを直す | |
 
 ## 計画の受け入れ基準

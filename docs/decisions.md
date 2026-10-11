@@ -47,3 +47,9 @@
 | 2026-10-11 | `HARNESS_PUSH_BRANCH` 上の直接コミットはフックで拒否しない（フック (b) はベースブランチと `main` だけを拒否する）（D-20261010-base-branch-config） | push 先ブランチ上ではそもそも作業しない運用で足りる（人の選択） |
 | 2026-10-11 | `/plan`・`/design` の開始条件はローカルの `<ベースブランチ>` の ref と比べ、`origin/<ベースブランチ>` の fetch はしない（D-20261010-base-branch-config） | クラウドセッションはベースと同一コミットの指定ブランチ上で始まるので、ローカルの ref と内容が同じなら安全に切れる。違うコミットなら他の作業が乗っている可能性があるので止める |
 | 2026-10-11 | `vcs_finish.sh` の GitLab の経路では GitLab のターゲットブランチは指定しない（`--target-branch` を `HARNESS_BASE_BRANCH` で指定せず、glab の既定＝リポジトリの既定ブランチに任せる）（D-20261010-base-branch-config） | 設計で対象外にした。必要になれば別途 |
+| 2026-10-11 | 環境変数リファレンス `docs/configuration.md` とやりたいこと別の入口 `docs/guide.md` の2ファイルを作り、`README.md` から両方へリンクする（D-20261011-user-guide） | 人の選択。一覧（引く場所）と入口（探す場所）を分け、既存の install・runbook の手順は重ねて書かずにリンクで辿らせる |
+| 2026-10-11 | 2ファイルは導入先に配らない（`scripts/install.sh` の配布対象に足さない）。ai-harness リポジトリで読む（D-20261011-user-guide） | 人の選択。`docs/install.md`・`docs/runbook.md` と同じ扱い。導入先の docs を増やさない（原則8） |
+| 2026-10-11 | 環境変数の一覧とコードのずれは `scripts/smoke.sh` で検査する。表は手で書き、`scripts/`・`.claude/` に出てくる `HARNESS_*` がすべて表にあること、表の変数がすべてコードに出てくることを確かめる（D-20261011-user-guide） | 人の選択。自動生成の仕組みを増やさず、変数を足した時の書き忘れだけを機械で止める（原則2） |
+| 2026-10-11 | 利用者向けガイドの範囲は、環境変数リファレンス・やりたいこと別の入口・runbook 全体の人向け整理まで。`settings.json` の権限やスキル引数のリファレンス化は含めない（D-20261011-user-guide） | 人の選択 |
+| 2026-10-11 | 環境変数の既定値は「未設定の時に実際に使われる値」をコードから書き、経路で違うものはその旨を書く（例：`HARNESS_STRICT_STOP` は Stop フック単体では `0`、`scripts/run_unattended.py` 経由では `1` を入れて渡す）（D-20261011-user-guide） | 人の要望「各変数のデフォルト値も分かるようにする」。値が1つに決まらないものを1つに書くと誤る |
+| 2026-10-11 | runbook はエージェントが内部でやること（transition.py が何を書くか等）を本文に持たない。仕様は `docs/vault-spec.md`、手順はスキル（`.claude/skills/*/SKILL.md`）が正本で、runbook はそこへリンクする。runbook にしか無い内部仕様は削らずに `docs/vault-spec.md` へ移す（D-20261011-user-guide） | 人の選択「runbook 全体の整理」。runbook を「人が日々やること」に絞り、仕様の二重持ちをやめる |

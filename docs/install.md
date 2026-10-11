@@ -227,4 +227,4 @@ bash scripts/uninstall.sh /path/to/your-project
 
 ## インストール後の次の一歩
 どちらのパターンでも、最初に打つのは `/plan <ゴール>` になる。
-人が日々やること（ゴールを入れる・blocked に答える・PR をマージする・月次で片づける）は `docs/runbook.md` にまとまっている。
+人が日々やること（ゴールを入れる・blocked に答える・PR をマージする・マージ済みの計画を片づける）は `docs/runbook.md` にまとまっている。

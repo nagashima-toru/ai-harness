@@ -12,7 +12,7 @@ GitHub Issue #181（smoke.sh の `git worktree remove -q` が古い git（2.43�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | smoke.sh の git worktree remove から -q を外しリダイレクトを揃える | |
+| T-01 | doing | 1 | - | smoke.sh の git worktree remove から -q を外しリダイレクトを揃える | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

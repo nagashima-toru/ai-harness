@@ -1,0 +1,14 @@
+{
+  "task": "P-20261011-planner-check-cmd-guidance/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-11 19:57",
+  "criteria": [
+    {"text": "`git status --porcelain` を勧める旧い見出しが残っていない：`grep -c 'porcelain. を使う' vault/rules/planner/ai-harness-lessons.md` の出力が `0`", "ok": true, "note": "実行コマンド: worktree で `grep -c 'porcelain. を使う' vault/rules/planner/ai-harness-lessons.md` / 出力: 0"},
+    {"text": "差分の教訓の見出しが新しい形になっている：`grep -cF '計画ブランチとの分岐点と比べる' vault/rules/planner/ai-harness-lessons.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -cF '計画ブランチとの分岐点と比べる' vault/rules/planner/ai-harness-lessons.md` / 出力: 1"},
+    {"text": "grep パターンの教訓の見出しがある：`grep -cF '確認コマンドの grep パターンにシェルの特殊文字を入れない' vault/rules/planner/ai-harness-lessons.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -cF '確認コマンドの grep パターンにシェルの特殊文字を入れない' vault/rules/planner/ai-harness-lessons.md` / 出力: 1"},
+    {"text": "2件の経緯が前回の計画 ID を挙げている：`grep -cF 'P-20261011-smoke-worktree-remove-quiet' vault/rules/planner/ai-harness-lessons.md` の出力が `2`", "ok": true, "note": "実行コマンド: `grep -cF 'P-20261011-smoke-worktree-remove-quiet' vault/rules/planner/ai-harness-lessons.md` / 出力: 2"},
+    {"text": "このファイルが導入先に配られていない（既存の不変条件の維持）：`grep -c 'ai-harness-lessons' scripts/install.sh` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c 'ai-harness-lessons' scripts/install.sh` / 出力: 0"}
+  ],
+  "reasons": []
+}

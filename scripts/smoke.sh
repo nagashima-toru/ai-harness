@@ -2731,6 +2731,8 @@ envcheck() { # $1=ルート。コードと表のずれを 表に無い: / コー
   python3 - "$1" <<'PY'
 import os, re, sys
 root = sys.argv[1]
+if not os.path.isfile(os.path.join(root, "docs/configuration.md")):
+    sys.exit(0)
 skip_dirs = {"__pycache__"}
 skip_files = {"smoke.sh", "settings.local.json"}
 code = set()
@@ -2845,6 +2847,10 @@ EV_WANT="$(cat <<'EOF'
 EOF
 )"
 expect_eq "(envref-2) 表とコードのずれを見つけ、除外対象は見ない" "$EV_WANT" "$(envcheck "$EV")"
+NC="$TMP/envref-noconf"
+mkdir -p "$NC/scripts"
+printf 'HARNESS_NOCONF\n' > "$NC/scripts/a.sh"
+expect_eq "(envref-3) docs/configuration.md が無いルート（導入先）では検査しない" "" "$(envcheck "$NC")"
 
 mkdir -p "$RC/e/docs"
 printf '`docs/no-such-h.md`\n' > "$RC/e/docs/guide.md"

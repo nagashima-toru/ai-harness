@@ -1,6 +1,6 @@
 ---
 id: P-20261011-plan-base-fetch
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #175（/plan・/design: クラウドセッションでローカルの main が古く開始条件で止まる）に対応する。`/plan` 手順A-2 と `/design` 手順1 の開始条件の確認の前に、`git fetch origin <ベースブランチ>:<ベースブランチ>` を best-effort で1回行う手順を入れ、同じ開始条件を説明する文書の記述をそろえる。

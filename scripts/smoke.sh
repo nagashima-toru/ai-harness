@@ -2697,6 +2697,62 @@ expect_eq "(run-skill-5) run 手順7の本文ファイルの節が D-016 の順�
 if ! grep -qF '起点コミット' "$ROOT/.claude/agents/creator.md" "$ROOT/.claude/agents/verifier.md" "$ROOT/.claude/agents/planner.md"; then ag1=ok; else ag1=NG; fi
 expect_eq "(agents-1) creator・verifier・planner の定義に「起点コミット」の語が無い" ok "$ag1"
 
+# amend_task.py（タスク票の成果物の追加・受け入れ基準の差し替えと log の記録）
+am_run() { # amend_task.py を $TWR で1回実行。AM_RC を設定する
+  ( cd "$TWR" && python3 "$ROOT/scripts/amend_task.py" "$@" ) > "$TW_OUT" 2> "$TW_ERR"
+  AM_RC=$?
+}
+am_task() { echo "$TWR/vault/tasks/P-TEST/T-01.md"; }
+am_state() { echo "$(git -C "$TWR" rev-list --count HEAD) $(cksum < "$(am_task)") $(cksum < "$TWR/vault/log/P-TEST.md")"; }
+AM_PRE_TAG='- `src/new.txt`（amend_task.py で追加）'
+tw_setup blocked 1
+AM_N0="$(git -C "$TWR" rev-list --count HEAD)"
+am_run P-TEST T-01 --add-deliverable src/new.txt
+AM_RC1="$AM_RC"
+AM_LOG1="$(tail -n 1 "$TWR/vault/log/P-TEST.md")"
+expect_eq "(amend-task) 01 blocked の行に --add-deliverable で成果物節に追加の行が1行できる" "0 1" \
+  "$AM_RC1 $(sed -n '/^## 成果物/,/^## 受け入れ基準/p' "$(am_task)" | grep -cxF -e "$AM_PRE_TAG")"
+AM_N1="$(git -C "$TWR" rev-list --count HEAD)"
+AM_SUBJ="$(git -C "$TWR" log -1 --format=%s)"
+AM_FILES="$(git -C "$TWR" show --name-only --format= HEAD | sort | tr '\n' ' ')"
+AM_HEAD="$(git -C "$TWR" rev-parse HEAD)"
+git -C "$TWR" checkout -q -b am-work "$AM_HEAD"
+echo new > "$TWR/src/new.txt"
+git -C "$TWR" add -A
+git -C "$TWR" commit -q -m "new.txt"
+( cd "$TWR" && python3 "$ROOT/scripts/diff_gate.py" P-TEST T-01 "$AM_HEAD" am-work ) > /dev/null 2>&1
+AM_GATE=$?
+git -C "$TWR" checkout -q work/p-test
+expect_eq "(amend-task) 02 追加した宣言が差分ゲートに効く（終了コード 0）" "0" "$AM_GATE"
+am_run P-TEST T-01 --replace-criterion 1 新しい基準
+AM_RC3="$AM_RC"
+AM_LOG3="$(tail -n 1 "$TWR/vault/log/P-TEST.md")"
+expect_eq "(amend-task) 03 1行目が差し替わり基準の行数が変わらない" "0 - 新しい基準 1" \
+  "$AM_RC3 $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -m1 '^- ') $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '^- ')"
+AM_D1="$(printf '%s' "$AM_LOG1" | sed -E 's/^- [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} (.*)$/\1/')"
+AM_D3="$(printf '%s' "$AM_LOG3" | sed -E 's/^- [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} (.*)$/\1/')"
+expect_eq "(amend-task) 04 log の最後の行が決定済みの形で → を含まない" \
+  "T-01 amend 成果物追加=src/new.txt|T-01 amend 基準差し替え=1|0" \
+  "$AM_D1|$AM_D3|$(printf '%s\n%s\n' "$AM_LOG1" "$AM_LOG3" | grep -c '→')"
+AM_REF=""
+for AM_ST in done doing review; do
+  tw_setup "$AM_ST" 1
+  AM_B="$(am_state)"
+  am_run P-TEST T-01 --add-deliverable src/x.txt
+  AM_REF="$AM_REF $AM_RC $([ "$(am_state)" = "$AM_B" ] && echo same || echo diff)"
+done
+tw_setup blocked 1
+AM_B="$(am_state)"
+am_run P-TEST T-01 --replace-criterion 2 範囲外
+AM_REF="$AM_REF $AM_RC $([ "$(am_state)" = "$AM_B" ] && echo same || echo diff)"
+am_run P-TEST T-01 --add-deliverable vault/plans/x.md
+AM_REF="$AM_REF $AM_RC $([ "$(am_state)" = "$AM_B" ] && echo same || echo diff)"
+expect_eq "(amend-task) 05 拒否は終了コード 1 でタスク票・log・コミット数が変わらない" \
+  " 1 same 1 same 1 same 1 same 1 same" "$AM_REF"
+expect_eq "(amend-task) 06 成功時のコミットが1つ増え、ファイルがタスク票と log の2つで件名が決まった形" \
+  "1 vault/log/P-TEST.md vault/tasks/P-TEST/T-01.md  P-TEST/T-01: amend" \
+  "$((AM_N1 - AM_N0)) $AM_FILES $AM_SUBJ"
+
 # --- 主な文書の参照切れの検査 ---
 refcheck() { # $1=ルート。存在しないパスを <文書>:<行>: <パス> で出す
   python3 - "$1" <<'PY'

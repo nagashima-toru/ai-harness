@@ -31,7 +31,7 @@ git init
 ```bash
 bash /path/to/ai-harness/scripts/install.sh .
 ```
-複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/` は `scripts/install.sh` の `CLAUDE_FILES` の固定リストの11ファイルだけ：`.claude/ai-harness.md`、`.claude/agents/` の `creator.md`・`planner.md`・`verifier.md`、`.claude/hooks/` の `_hooklib.py`・`agent_write_guard.py`・`plan_guard.py`・`stop_gate.py`、Skill の `.claude/skills/plan/SKILL.md`・`.claude/skills/run/SKILL.md`・`.claude/skills/design/SKILL.md`。配布元が独自に置いたファイルは配らない。導入済みのリポジトリを配布元にしても、そこに置かれた業務用の Skill・agent・hook や `vault/templates/` の独自テンプレートは配らず、マニフェストにも記録しない）、`vault/` のテンプレートと `vault/{plans,tasks,verdicts,log,designs,templates,rules}` の空ディレクトリ、`scripts/` 配下のスクリプト一式（`scripts/*.sh`・`scripts/*.py` を検索方式で配布する。`scripts/vcs_finish.sh` を含み、除外リストに載ったものだけを除く）、`docs/vault-spec.md`、`CLAUDE.md`（マーカーブロックだけ））。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
+複製されるものは `scripts/install.sh` 冒頭のコメントのとおり（`.claude/` は `scripts/install.sh` の `CLAUDE_FILES` の固定リストの11ファイルだけ：`.claude/ai-harness.md`、`.claude/agents/` の `creator.md`・`planner.md`・`verifier.md`、`.claude/hooks/` の `_hooklib.py`・`agent_write_guard.py`・`plan_guard.py`・`stop_gate.py`、Skill の `.claude/skills/plan/SKILL.md`・`.claude/skills/run/SKILL.md`・`.claude/skills/design/SKILL.md`。配布元が独自に置いたファイルは配らない。導入済みのリポジトリを配布元にしても、そこに置かれた業務用の Skill・agent・hook や `vault/templates/` の独自テンプレートは配らず、マニフェストにも記録しない）、`vault/` のテンプレートと `vault/{plans,tasks,verdicts,log,designs,templates,rules}` の空ディレクトリ、`scripts/` 直下は `scripts/install.sh` の `SCRIPTS_FILES` の固定リストのスクリプトだけ（`scripts/vcs_finish.sh` を含む。導入済みのリポジトリを配布元にしても、配布元が `scripts/` に独自に置いたスクリプトは配らず、マニフェストにも記録しない）、`docs/vault-spec.md`、`CLAUDE.md`（マーカーブロックだけ））。状態は `vault/plans/<計画ID>.md`（`/plan` が作る）が持つので、キューのファイルは配らない。既存ファイルは上書きしない。
 
 あわせて `.claude/harness-manifest.json` が作られる。配ったハーネス本体ファイルの sha256 を記録したもので、次の「ハーネスを更新する」で使う。`.claude/settings.json` は複製ではなく `scripts/merge_settings_json.py` によるマージで用意される。
 
@@ -144,7 +144,7 @@ bash /path/to/ai-harness/scripts/install.sh --update .
 - **インストール先で編集したファイル**は上書きされず、`skip (edited) <path>` として一覧報告される。取り込みたい差分があれば手で当てる
 - **`.claude/settings.json`** は `scripts/merge_settings_json.py` が hooks の欠落エントリと `permissions.deny` の不足分、`worktree.baseRef`（導入先に無ければ足す。別の値が入っていれば上書きせず `note` 行で案内するだけにとどめる）を足す。インストール先で足した `permissions.allow` は変更しない。不足があれば `note` 行で案内する（後述）
 - 旧版で配った役割定義のルール6本は、未編集なら削除されて `remove <path>` と表示され、編集済みなら残って `note` の行で案内される（役割定義は `.claude/agents/` にある）
-- 旧版の install で配布元の独自ファイルが複製・記録されていた導入先では、`--update` はそのファイルを削除せずに残し、マニフェストからは外れる（以降は導入先の資産として扱われ、`uninstall.sh` でも消えない）。不要なら手で消す
+- 旧版の install で配布元の独自ファイル（`scripts/` 直下の独自スクリプトを含む）が複製・記録されていた導入先では、`--update` はそのファイルを削除せずに残し、マニフェストからは外れる（以降は導入先の資産として扱われ、`uninstall.sh` でも消えない）。不要なら手で消す
 - マニフェストが無いインストール先（`--update` より前に入れたもの）では、既存ファイルはすべて `skip (edited)` になる。編集していないものは一度手で消してから `--update` すれば配られる
 
 `merge_settings_json.py` は書き換える時だけ `.claude/settings.json.bak-<日時>` を残す。不要なら消してよい（`.gitignore` に `*.bak-*` を足しておくと楽）。

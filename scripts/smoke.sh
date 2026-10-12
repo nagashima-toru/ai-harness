@@ -2997,7 +2997,7 @@ out="$(run_stop)"
 expect_eq "(async-wait-2) 記録行だけある doing・verdict 無し → block・verdict が無い・待機中なしの文言なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '待機中なら問題ありません')"
 rm -f "$TMP/vault/log/P-TEST.md"
 make_plan_task T-0001 review 1; out="$(run_stop)"
-expect_eq "(async-wait-3) review・verdict 無し・log 無し → block・verdict が無い・待機中なしの文言なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '待機中なら問題ありません')"
+expect_eq "(async-wait-3) review・verdict 無し・log 無し → block・verdict が無い・verifier の完了通知を待っている場合の文言あり" "block 1 1 1" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '待機中なら問題ありません') $(echo "$out" | grep -c 'verifier の完了通知を待っている場合')"
 make_plan_task T-0001 doing 2
 {
   echo '- 2026-10-10 10:00 T-0001 worktree path=/tmp/wt branch=b plan_head=0000000000000000000000000000000000000000'
@@ -3012,6 +3012,8 @@ make_plan_task T-0001 doing 1
 } > "$TMP/vault/log/P-TEST.md"
 out="$(run_stop)"
 expect_eq "(async-wait-5) todo→doing の後に記録行がある doing・verdict 無し → block・待機中なしの文言なし" "block 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c '待機中なら問題ありません')"
+make_plan_task T-0001 review 2; make_verdict T-0001 1 FAIL; out="$(run_stop)"
+expect_eq "(async-wait-6) review・古い verdict（attempt 不一致）→ block・verifier の完了通知を待っている場合の文言あり" "block 1 1" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が古い') $(echo "$out" | grep -c 'verifier の完了通知を待っている場合')"
 rm -rf "$TMP/vault/log" "$TMP/vault/verdicts"
 
 echo

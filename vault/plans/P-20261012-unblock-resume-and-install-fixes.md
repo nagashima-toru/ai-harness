@@ -20,7 +20,7 @@ GitHub Issue #189・#190・#191 の提案をハーネスに取り込む。
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | review | 1 | - | scripts/amend_task.py を作る（成果物の追加・受け入れ基準の差し替えと log の記録） | |
-| T-02 | doing | 1 | - | transition.py に todo→doing の --resume-worktree（blocked の worktree の引き継ぎ）を足す | |
+| T-02 | review | 1 | - | transition.py に todo→doing の --resume-worktree（blocked の worktree の引き継ぎ）を足す | |
 | T-03 | review | 1 | - | stop_gate.py の creator 待ちの文言と条件を直す | |
 | T-04 | todo | 0 | - | install.sh・uninstall.sh で導入先の .gitignore の .claude/worktrees/ を足し・戻す | |
 | T-05 | todo | 0 | T-01,T-02 | /plan unblock の手順に amend_task.py・基準の文字列での todo 票の探索・--fresh を入れる | |

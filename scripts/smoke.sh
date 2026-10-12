@@ -1318,6 +1318,66 @@ expect_eq "(inst-only) 05 旧版が記録した独自ファイルは --update �
   "$([ -f "$IO_C/.claude/skills/biz-skill/SKILL.md" ] && echo 1 || echo 0) $(io_mf_biz "$IO_C")"
 rm -rf "$IO_A" "$IO_B" "$IO_C"
 
+echo "== install.sh は配布元の独自スクリプトを配らない =="
+IS_BIZ="scripts/biz_tool.sh scripts/biz_tool.py"
+is_files_words() { # $1=install.sh のパス。SCRIPTS_FILES= の行の値（スペース区切り）
+  sed -n 's/^SCRIPTS_FILES="\(.*\)"$/\1/p' "$1"
+}
+IS_WORDS="$(is_files_words "$ROOT/scripts/install.sh")"
+is_biz_files() { # $1=導入先。独自スクリプトのうち存在する数
+  local n=0 rel
+  for rel in $IS_BIZ; do [ -e "$1/$rel" ] && n=$((n+1)); done
+  echo "$n"
+}
+is_mf_biz() { # $1=導入先。マニフェストの files に載っている独自スクリプトの数
+  io_mf_has "$1" $IS_BIZ
+}
+is_unlisted() { # $1=ディレクトリ。その scripts/ 直下の *.sh・*.py のうち SCRIPTS_FILES に無いものの数
+  local n=0 f rel
+  for f in "$1"/scripts/*.sh "$1"/scripts/*.py; do
+    [ -f "$f" ] || continue
+    rel="scripts/$(basename "$f")"
+    case " $IS_WORDS " in *" $rel "*) ;; *) n=$((n+1)) ;; esac
+  done
+  echo "$n"
+}
+IS_A="$(smoke_tmpdir)" || abort_tmp
+IS_B="$(smoke_tmpdir)" || abort_tmp
+IS_C="$(smoke_tmpdir)" || abort_tmp
+bash "$ROOT/scripts/install.sh" "$IS_A" >/dev/null 2>&1
+for rel in $IS_BIZ; do echo "biz" > "$IS_A/$rel"; done
+bash "$IS_A/scripts/install.sh" "$IS_B" >/dev/null 2>&1
+expect_eq "(inst-scr) 01 独自スクリプトを持つ導入先を導入元にして install → 独自スクリプトが1つも無い" "0" "$(is_biz_files "$IS_B")"
+expect_eq "(inst-scr) 02 マニフェストの files に独自スクリプトのキーが無い" "0" "$(is_mf_biz "$IS_B")"
+is_n=0
+for rel in $IS_WORDS; do [ -f "$IS_B/$rel" ] && is_n=$((is_n+1)); done
+is_total="$(echo $IS_WORDS | wc -w | tr -d ' ')"
+# shellcheck disable=SC2086
+expect_eq "(inst-scr) 03 SCRIPTS_FILES の全パスが導入先にあり、マニフェストにも全部載っている" "$is_total $is_total" \
+  "$is_n $(io_mf_has "$IS_B" $IS_WORDS)"
+bash "$IS_A/scripts/install.sh" --update "$IS_B" >/dev/null 2>&1
+expect_eq "(inst-scr) 04 --update の後も独自スクリプトが無く、マニフェストにも載らない" "0 0" "$(is_biz_files "$IS_B") $(is_mf_biz "$IS_B")"
+bash "$ROOT/scripts/install.sh" "$IS_C" >/dev/null 2>&1
+echo "biz" > "$IS_C/scripts/biz_tool.sh"
+python3 -c '
+import hashlib, json, sys
+m = sys.argv[1]
+d = json.load(open(m, encoding="utf-8"))
+d["files"]["scripts/biz_tool.sh"] = hashlib.sha256(open(sys.argv[2], "rb").read()).hexdigest()
+json.dump(d, open(m, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+' "$IS_C/.claude/harness-manifest.json" "$IS_C/scripts/biz_tool.sh"
+bash "$ROOT/scripts/install.sh" --update "$IS_C" >/dev/null 2>&1
+expect_eq "(inst-scr) 05 旧版が記録した独自スクリプトは --update でも残り、マニフェストからは外れる" "1 0" \
+  "$([ -f "$IS_C/scripts/biz_tool.sh" ] && echo 1 || echo 0) $(is_mf_biz "$IS_C")"
+if [ -f "$ROOT/.claude/harness-manifest.json" ]; then
+  is_missing=0
+else
+  is_missing="$(is_unlisted "$ROOT")"
+fi
+expect_eq "(inst-scr) 06 scripts/ 直下の *.sh・*.py がすべて SCRIPTS_FILES にある（導入先では省略）" "0" "$is_missing"
+expect_eq "(inst-scr) 07 06 の数え方は独自スクリプト2つを置いた A で 2 になる" "2" "$(is_unlisted "$IS_A")"
+rm -rf "$IS_A" "$IS_B" "$IS_C"
+
 echo "== 標準ルール6本を配らない（install / --update / uninstall） =="
 SR_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
 sr_count_existing() { # $1=導入先。6本のうち存在する数

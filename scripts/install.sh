@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>
-# 複製するもの: .claude/ はハーネス本体の固定リスト CLAUDE_FILES の11ファイルだけ（配布元が独自に置いた Skill・agent・hook は配らない）、vault/（テンプレート・rules/ 雛形・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
+# 複製するもの: .claude/ はハーネス本体の固定リスト CLAUDE_FILES の11ファイルだけ（配布元が独自に置いた Skill・agent・hook は配らない）、vault/（テンプレート・rules/ 雛形・空ディレクトリ）、scripts/ はハーネス本体の固定リスト SCRIPTS_FILES のスクリプトだけ（配布元が独自に置いたスクリプトは配らない）、docs/vault-spec.md
 # 状態は vault/plans/<計画ID>.md が持つ（キューは無い）。既存ファイルは上書きしない。
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
 # permissions.deny の不足分、worktree.baseRef（導入先に無ければ足す。別の値が入っていれば
@@ -52,24 +52,6 @@ copy_if_absent() { # $1=src $2=dst
   if [ -e "$2" ]; then echo "skip  (exists) $rel"; else mkdir -p "$(dirname "$2")"; cp "$1" "$2"; echo "copy  $rel"; fi
 }
 
-# scripts/ 直下で配らないファイル名（スペース区切り、当面は空）。manifest_paths() と
-# 通常複製の両方がこの変数を見る。
-SCRIPTS_EXCLUDE=""
-
-scripts_list() { # SRC の scripts/ 直下にある *.sh・*.py を SCRIPTS_EXCLUDE を除いて列挙する
-  (
-    cd "$SRC" || exit 0
-    find scripts -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null
-  ) | while read -r p; do
-    name="$(basename "$p")"
-    keep=1
-    for ex in $SCRIPTS_EXCLUDE; do
-      [ "$name" = "$ex" ] && keep=0
-    done
-    [ "$keep" -eq 1 ] && echo "$p"
-  done
-}
-
 # 旧版が配っていた標準ルール6本（リポジトリ相対パス、スペース区切り）。役割定義は .claude/agents/ に
 # 統合されたので、もう複製もマニフェストへの記録もしない。--update で未編集のものを削除する対象。
 # $SRC に実ファイルがあるかどうかでは動きを変えない（固定で持つ）。
@@ -79,6 +61,11 @@ RETIRED_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules
 # 配布元が独自に置いた Skill・agent・hook は配らない（マニフェストにも記録しない）。
 CLAUDE_FILES=".claude/ai-harness.md .claude/agents/creator.md .claude/agents/planner.md .claude/agents/verifier.md .claude/hooks/_hooklib.py .claude/hooks/agent_write_guard.py .claude/hooks/plan_guard.py .claude/hooks/stop_gate.py .claude/skills/plan/SKILL.md .claude/skills/run/SKILL.md .claude/skills/design/SKILL.md"
 
+# scripts/ 直下で配るハーネス本体のスクリプト。固定で持ち、配布元が独自に置いたスクリプトは配らない
+# （マニフェストにも記録しない）。ハーネス本体にスクリプトを足したらここにも足す
+# （smoke の (inst-scr) 06 が足し忘れを検出する）。
+SCRIPTS_FILES="scripts/amend_task.py scripts/current_plan.sh scripts/diff_gate.py scripts/discard_worktree.sh scripts/install.sh scripts/merge_claude_md.py scripts/merge_settings_json.py scripts/model_stats.py scripts/plan_record.py scripts/pr_body.py scripts/purge_plan.sh scripts/rules.sh scripts/run_unattended.py scripts/smoke.sh scripts/transition.py scripts/uninstall.sh scripts/unmerge_claude_md.py scripts/unmerge_settings_json.py scripts/usage_stats.py scripts/vcs_finish.sh scripts/verdict_notes.py"
+
 # ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
 # 利用者の資産（vault/plans, tasks, verdicts, log, designs の中身、README 以外の
 # vault/rules/、settings.local.json）は含めない。.claude/settings.json は専用マージャの対象。
@@ -86,11 +73,10 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
   {
     (
       cd "$SRC" || exit 0
-      for p in $CLAUDE_FILES vault/templates/task.md vault/templates/plan.md vault/templates/rule.md vault/templates/design.md docs/vault-spec.md vault/rules/README.md; do
+      for p in $CLAUDE_FILES $SCRIPTS_FILES vault/templates/task.md vault/templates/plan.md vault/templates/rule.md vault/templates/design.md docs/vault-spec.md vault/rules/README.md; do
         [ -f "$p" ] && echo "$p"
       done
     ) | sed 's|^\./||'
-    scripts_list
   } | sort -u
 }
 
@@ -166,8 +152,8 @@ for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep designs/.gitkeep templa
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 
-# scripts/ 直下の *.sh・*.py（SCRIPTS_EXCLUDE を除く）、docs/vault-spec.md（エージェントが参照する正本）
-for rel in $(scripts_list); do
+# scripts/ はハーネス本体の固定リスト SCRIPTS_FILES のスクリプトだけ（配布元が独自に置いたスクリプトは配らない）、docs/vault-spec.md（エージェントが参照する正本）
+for rel in $SCRIPTS_FILES; do
   copy_if_absent "$SRC/$rel" "$DST/$rel"
 done
 copy_if_absent "$SRC/docs/vault-spec.md" "$DST/docs/vault-spec.md"

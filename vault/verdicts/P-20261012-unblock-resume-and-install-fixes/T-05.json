@@ -1,0 +1,15 @@
+{
+  "task": "P-20261012-unblock-resume-and-install-fixes/T-05",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-12 14:17",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "worktree で実行 / 出力: 1"},
+    {"text": "`grep -c '^argument-hint: .ゴール . unblock .計画ID. .id. .--fresh. .回答..$' .claude/skills/plan/SKILL.md` の出力が `1`", "ok": true, "note": "worktree で実行 / 出力: 1。SKILL.md の3行目が指定の形であることも目視確認"},
+    {"text": "`grep -c 'python3 scripts/amend_task.py .計画ID. .id. ' .claude/skills/plan/SKILL.md` の出力が1以上（B 節に呼び出しの形がある）", "ok": true, "note": "実行 / 出力: 1。B 節の手順3に `--add-deliverable` と `--replace-criterion` を含む呼び出しの形がある"},
+    {"text": "`grep -c 'grep -l -F -e ' .claude/skills/plan/SKILL.md` の出力が1以上（他の todo 票を基準の文字列で探すコマンドがある）", "ok": true, "note": "実行 / 出力: 1。手順5にコマンドがあり、todo の票だけに追記する旨も書かれている"},
+    {"text": "`grep -c 'discard_worktree.sh' .claude/skills/plan/SKILL.md` の出力が1以上（`--fresh` の時の破棄）", "ok": true, "note": "実行 / 出力: 1。手順6が --fresh の時だけ discard_worktree.sh <パス> <ブランチ名> で破棄する"},
+    {"text": "`grep -rn '大きな書き換えは planner を呼ぶ' .claude docs README.md` の出力が空（受け入れ基準を直す時に planner へ回す古い案内が残っていない）", "ok": true, "note": "worktree で実行 / 出力: 空"}
+  ],
+  "reasons": []
+}

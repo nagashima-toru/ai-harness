@@ -1,6 +1,6 @@
 ---
 id: P-20261012-planner-no-subprocess-in-python
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #187 の提案1を取り込む。`.claude/agents/planner.md` の「## やらないこと」に、確認コマンドを `python3 -c` の中から subprocess（`subprocess.check_output` 等）で git などの外部コマンドを呼ぶ形にしない旨の箇条を1つ加え、代わりの書き方（外部コマンドは単独のコマンドとして基準に書く・パイプ1段まで）と、planner 自身が確認コマンドをガードを通る形で試走してから書くことを示す。「## 書き終えた後の確認」にも対応する確認項目を1つ加える。

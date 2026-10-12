@@ -1,0 +1,13 @@
+{
+  "task": "P-20261012-unblock-resume-and-install-fixes/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-12 14:11",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=526 fail=0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (async-wait-[1-5]) '` の出力が `5`（決定済みのテスト 1〜5 がすべて通る）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (async-wait-[1-5]) '` / 出力: 5"},
+    {"text": "`grep -c '待機中なら問題ありません' .claude/hooks/stop_gate.py` の出力が1以上（ブロック理由の文言）", "ok": true, "note": "実行コマンド: `grep -c '待機中なら問題ありません' .claude/hooks/stop_gate.py` / 出力: 2"},
+    {"text": "`git diff --merge-base work/p-20261012-unblock-resume-and-install-fixes --name-only -- .claude/hooks/stop_gate.py` の出力が `.claude/hooks/stop_gate.py`", "ok": true, "note": "実行コマンド: 同コマンドを worktree で実行 / 出力: .claude/hooks/stop_gate.py"}
+  ],
+  "reasons": []
+}

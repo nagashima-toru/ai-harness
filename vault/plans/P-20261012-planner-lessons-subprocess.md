@@ -1,6 +1,6 @@
 ---
 id: P-20261012-planner-lessons-subprocess
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #195 を解決する。経緯集 `vault/rules/planner/ai-harness-lessons.md` の「## ルール」節に、`.claude/agents/planner.md` の「## やらないこと」に #196 で追加済みの「確認コマンドを、`python3 -c` の中から subprocess で git などの外部コマンドを呼ぶ形にしない」教訓に対応する項目（太字の教訓の一言＋「- 経緯：」行）を1つ足す。

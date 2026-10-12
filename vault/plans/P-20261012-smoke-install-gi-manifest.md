@@ -1,6 +1,6 @@
 ---
 id: P-20261012-smoke-install-gi-manifest
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #198「導入先で smoke を実行すると (install-gi) 03 が NG になる（manifest の gitignore キーが一時導入先へ引き継がれる）」を解決する。`scripts/install.sh` の `.claude/` 複製ループが導入元の `.claude/harness-manifest.json` を導入先へ持ち込まないようにし、`scripts/smoke.sh` に回帰テストを足す。

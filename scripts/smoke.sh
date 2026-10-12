@@ -1225,6 +1225,37 @@ expect_eq "(t) unmerge_settings_json.py の unmerge 報告がある" "1" "$(echo
 expect_eq "(u) マニフェストファイル自体も削除される" "0" "$([ -f "$UNTMP/.claude/harness-manifest.json" ] && echo 1 || echo 0)"
 rm -rf "$UNTMP"
 
+echo "== install.sh の .gitignore =="
+gi_mf() { # $1=導入先。マニフェストの gitignore の値（キーが無ければ none）
+  python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('gitignore','none'))" "$1/.claude/harness-manifest.json"
+}
+GI1="$(smoke_tmpdir)" || abort_tmp
+bash "$ROOT/scripts/install.sh" "$GI1" >/dev/null 2>&1
+expect_eq "(install-gi) 01 .gitignore が無い導入先 → 1行だけ作られ created" ".claude/worktrees/ 1 created" \
+  "$(cat "$GI1/.gitignore") $(wc -l < "$GI1/.gitignore" | tr -d ' ') $(gi_mf "$GI1")"
+GI2="$(smoke_tmpdir)" || abort_tmp
+printf 'node_modules/' > "$GI2/.gitignore"
+bash "$ROOT/scripts/install.sh" "$GI2" >/dev/null 2>&1
+expect_eq "(install-gi) 02 末尾改行の無い .gitignore → 2行になり appended" "node_modules/,.claude/worktrees/ appended" \
+  "$(paste -sd, "$GI2/.gitignore") $(gi_mf "$GI2")"
+GI3="$(smoke_tmpdir)" || abort_tmp
+printf 'a/\n.claude/worktrees/\nb/\n' > "$GI3/.gitignore"
+bash "$ROOT/scripts/install.sh" "$GI3" >/dev/null 2>&1
+gi3_a="$(grep -cx '.claude/worktrees/' "$GI3/.gitignore") $(gi_mf "$GI3")"
+bash "$ROOT/scripts/uninstall.sh" "$GI3" >/dev/null 2>&1
+expect_eq "(install-gi) 03 すでに行がある → 1行のままキー無し、uninstall 後も残る" "1 none 1" \
+  "$gi3_a $(grep -cx '.claude/worktrees/' "$GI3/.gitignore")"
+bash "$ROOT/scripts/uninstall.sh" "$GI2" >/dev/null 2>&1
+expect_eq "(install-gi) 04 02 の導入先を uninstall → node_modules/ の1行だけ残る" "node_modules/" \
+  "$(paste -sd, "$GI2/.gitignore")"
+bash "$ROOT/scripts/install.sh" --update "$GI1" >/dev/null 2>&1
+expect_eq "(install-gi) 05 01 の導入先に --update → 1行のままで created のまま" "1 created" \
+  "$(grep -cx '.claude/worktrees/' "$GI1/.gitignore") $(gi_mf "$GI1")"
+bash "$ROOT/scripts/uninstall.sh" "$GI1" >/dev/null 2>&1
+expect_eq "(install-gi) 06 05 の後に uninstall → .gitignore が無い" "0" \
+  "$([ -e "$GI1/.gitignore" ] && echo 1 || echo 0)"
+rm -rf "$GI1" "$GI2" "$GI3"
+
 echo "== 標準ルール6本を配らない（install / --update / uninstall） =="
 SR_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
 sr_count_existing() { # $1=導入先。6本のうち存在する数

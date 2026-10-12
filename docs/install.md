@@ -38,7 +38,7 @@ bash /path/to/ai-harness/scripts/install.sh .
 ハーネスのルール本文は `.claude/ai-harness.md` にあり、`CLAUDE.md` はそれを読み込むだけのマーカー付きブロック（4行）になっている。
 
 ### 4. `.gitignore` を作る
-ai-harness と同じ4行を使う。
+ai-harness と同じ5行を使う。
 
 ```bash
 cat > .gitignore <<'EOF'
@@ -46,8 +46,11 @@ cat > .gitignore <<'EOF'
 __pycache__/
 *.pyc
 .claude/settings.local.json
+.claude/worktrees/
 EOF
 ```
+
+最後の行は creator の worktree の置き場を未追跡ファイルとして見せないためのもので、`install.sh` は導入先の `.gitignore` にこの行が無ければ自動で足し、`uninstall.sh` は足した分だけを戻す。
 
 ### 5. 初期コミットする
 ```bash

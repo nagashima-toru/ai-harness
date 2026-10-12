@@ -151,8 +151,8 @@ with open(skipped, "w", encoding="utf-8") as fh:
   rm -f "$UPDATE_LIST"
 fi
 
-# .claude/（settings.json は専用マージャで扱うのでこのループから外す）
-for f in $(cd "$SRC/.claude" && find . -path './worktrees' -prune -o -type f ! -name 'settings.local.json' ! -name 'settings.json' -print | sed 's|^\./||'); do
+# .claude/（settings.json は専用マージャで扱うのでこのループから外す。harness-manifest.json も外す：導入元の manifest を導入先へ持ち込まない。manifest は末尾で書く）
+for f in $(cd "$SRC/.claude" && find . -path './worktrees' -prune -o -type f ! -name 'settings.local.json' ! -name 'settings.json' ! -name 'harness-manifest.json' -print | sed 's|^\./||'); do
   copy_if_absent "$SRC/.claude/$f" "$DST/.claude/$f"
 done
 chmod +x "$DST"/.claude/hooks/*.py

@@ -16,7 +16,7 @@ GitHub Issue #201「install.sh の scripts/ 配布も検索方式のため、配
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | install.sh の scripts/ の複製とマニフェスト記録を固定リスト SCRIPTS_FILES に限り、smoke に (inst-scr) を足す | |
+| T-01 | doing | 1 | - | install.sh の scripts/ の複製とマニフェスト記録を固定リスト SCRIPTS_FILES に限り、smoke に (inst-scr) を足す | |
 | T-02 | todo | 0 | T-01 | docs/install.md の scripts/ の配布の説明を固定リストに合わせ、decisions.md に判断を記録する | |
 
 ## 計画の受け入れ基準

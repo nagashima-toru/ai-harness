@@ -76,6 +76,37 @@ else
   echo "note  .claude/settings.json は手動確認してください（docs/install.md 参照）"
 fi
 
+# .gitignore（マニフェストの gitignore が created / appended の時だけ、install が足した行を戻す）
+python3 -c '
+import json, os, sys
+target, manifest = sys.argv[1:3]
+with open(manifest, encoding="utf-8") as fh:
+    mode = json.load(fh).get("gitignore")
+path = os.path.join(target, ".gitignore")
+LINE = ".claude/worktrees/"
+if mode not in ("created", "appended") or not os.path.isfile(path):
+    sys.exit(0)
+with open(path, encoding="utf-8", newline="") as fh:
+    text = fh.read()
+lines = text.splitlines(True)
+idx = None
+for i in range(len(lines) - 1, -1, -1):
+    if lines[i].strip() == LINE:
+        idx = i
+        break
+if idx is None:
+    sys.exit(0)
+del lines[idx]
+rest = "".join(lines)
+if mode == "created" and not rest.strip():
+    os.remove(path)
+    print("remove .gitignore")
+else:
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(rest)
+    print("unmerge .gitignore")
+' "$TARGET" "$MANIFEST_FILE"
+
 echo "note  vault/ の利用者資産（plans/tasks/verdicts/log/designs・vault/rules/ のルール）には触れていません"
 
 # マニフェスト自体（利用者資産ではなくハーネスの記帳ファイルなので最後に消す）

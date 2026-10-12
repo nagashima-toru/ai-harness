@@ -6,6 +6,8 @@
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
 # permissions.deny の不足分、worktree.baseRef（導入先に無ければ足す。別の値が入っていれば
 # 上書きせず note で案内する）を足す（インストール先が足した permissions.allow は消さない）。
+# 導入先の .gitignore に .claude/worktrees/ の行が無ければ足し（無ければ作り）、マニフェストの gitignore に
+# created / appended を記録する（uninstall.sh が足した分だけ戻す。元からある時は前の記録を引き継ぐ）。
 # 複製の最後に .claude/harness-manifest.json を書く。記録するのは「この install で配った内容」＝
 # src 側の実ファイルの sha256 であり、dst の現状ではない（dst を記録すると、利用者が編集済みの
 # ファイルが「未編集」と誤判定され、次の更新で編集が黙って上書きされるため）。
@@ -184,6 +186,29 @@ else
   python3 "$SRC/scripts/merge_claude_md.py" "$SRC/CLAUDE.md" "$DST/CLAUDE.md"
 fi
 
+# 導入先の .gitignore に .claude/worktrees/ を足す（creator の worktree が未追跡に見えないように）。
+# 足した・作った時だけ GITIGNORE_RESULT（created / appended）に入れ、マニフェストに記録する。
+GITIGNORE_RESULT="$(python3 -c '
+import os, sys
+path = sys.argv[1]
+LINE = ".claude/worktrees/"
+if not os.path.exists(path):
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(LINE + "\n")
+    print("created")
+    sys.exit(0)
+with open(path, encoding="utf-8", newline="") as fh:
+    text = fh.read()
+if any(l.strip() == LINE for l in text.splitlines()):
+    sys.exit(0)
+with open(path, "a", encoding="utf-8", newline="") as fh:
+    if text and not text.endswith("\n"):
+        fh.write("\n")
+    fh.write(LINE + "\n")
+print("appended")
+' "$DST/.gitignore")"
+if [ -n "$GITIGNORE_RESULT" ]; then echo "gitignore  .gitignore に .claude/worktrees/ を追記"; fi
+
 # ハーネス本体のマニフェスト（配ったファイルの sha256 を記録する）。
 # 記録するのは src の実ファイルのハッシュ。ただし --update で「編集済み」としてスキップした
 # パスは、今回配っていないので既存の記録を据え置く。
@@ -191,14 +216,18 @@ MANIFEST_LIST="$(install_tmpfile)" || abort_tmp
 manifest_paths > "$MANIFEST_LIST"
 python3 -c '
 import hashlib, json, os, sys
-src, out, version, listfile, skipped = sys.argv[1:6]
+src, out, version, listfile, skipped, gi_new = sys.argv[1:7]
 prev = {}
+prev_gi = None
 if os.path.isfile(out):
     try:
         with open(out, encoding="utf-8") as fh:
-            prev = json.load(fh).get("files") or {}
+            _m = json.load(fh)
+            prev = _m.get("files") or {}
+            prev_gi = _m.get("gitignore")
     except Exception:
         prev = {}
+        prev_gi = None
 keep = set()
 if os.path.isfile(skipped):
     with open(skipped, encoding="utf-8") as fh:
@@ -224,10 +253,14 @@ if os.path.isfile(settings_path):
         settings_src = json.load(fh)
 os.makedirs(os.path.dirname(out), exist_ok=True)
 with open(out, "w", encoding="utf-8") as fh:
-    json.dump({"version": version, "files": files, "settings_src": settings_src}, fh, ensure_ascii=False, indent=2)
+    manifest = {"version": version, "files": files, "settings_src": settings_src}
+    gi = gi_new or prev_gi
+    if gi:
+        manifest["gitignore"] = gi
+    json.dump(manifest, fh, ensure_ascii=False, indent=2)
     fh.write("\n")
 print("manifest  .claude/harness-manifest.json (%d files)" % len(files))
-' "$SRC" "$MANIFEST_FILE" "$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')" "$MANIFEST_LIST" "$SKIPPED_LIST"
+' "$SRC" "$MANIFEST_FILE" "$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')" "$MANIFEST_LIST" "$SKIPPED_LIST" "$GITIGNORE_RESULT"
 rm -f "$MANIFEST_LIST"
 
 echo

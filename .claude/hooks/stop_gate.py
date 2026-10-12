@@ -12,8 +12,9 @@ working tree の状態は見ない。承認済みの計画票が0件なら許可
 出力  : ブロック時は stdout に {"decision": "block", "reason": "..."}、許可時は何も出さず exit 0
 環境  : HARNESS_MAX_ATTEMPTS（既定 3）、HARNESS_STRICT_STOP=1 で stop_hook_active を無視
 
-doing で creator の記録行（vault/log/<計画ID>.md の `<id> worktree path=`）がまだ無い時は、
-ブロック理由に完了通知を待つ案内を足す（判定は同じで、文面だけが変わる）。
+doing で、その id の最後の着手（vault/log/<計画ID>.md の `→doing` の遷移行）より後に creator の
+記録行（`<id> worktree path=`）がまだ無い時は、ブロック理由に「待機中なら問題ありません」と完了通知を
+待つ案内を足す（判定は同じで、文面だけが変わる）。`→doing` の行が無ければ記録行が1行も無い時とする。
 
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/stop_gate.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
@@ -55,13 +56,22 @@ def project_dir(payload):
 
 
 def has_record_line(root, plan_id, tid):
-    """vault/log/<計画ID>.md に `- <日時> <日時> <id> worktree path=` の記録行が1行でもあるか。読めなければ False。"""
-    pat = re.compile(r"^- \S+ \S+ " + re.escape(tid) + r" worktree path=", re.M)
+    """その id の最後の着手（`→doing` を含む遷移行）より後に、記録行（`- <日時> <id> worktree path=`）があるか。
+
+    `→doing` の行が1つも無い時は、記録行が1行でもあるか。log が読めなければ False。
+    """
+    rec = re.compile(r"^- \S+ \S+ " + re.escape(tid) + r" worktree path=")
+    dng = re.compile(r"^- \S+ \S+ " + re.escape(tid) + r" \S+→doing attempt=")
     try:
         with open(os.path.join(root, "vault", "log", plan_id + ".md"), encoding="utf-8") as f:
-            return pat.search(f.read()) is not None
+            lines = f.read().splitlines()
     except Exception:
         return False
+    last = -1
+    for i, ln in enumerate(lines):
+        if dng.match(ln):
+            last = i
+    return any(rec.match(ln) for ln in lines[last + 1:])
 
 
 def block(reason):
@@ -149,7 +159,7 @@ def main():
             if status == "doing" and not has_record_line(root, plan_id, tid):
                 block(
                     f"[stop_gate] {task_key} は {status} ですが {why}。"
-                    f"まだ creator の記録行がありません（vault/log/{plan_id}.md）。"
+                    f"creator の作業中です（最後の着手の後に記録行がありません: vault/log/{plan_id}.md）。待機中なら問題ありません。"
                     f"creator の完了通知を待っている場合は、そのままターンを終えて通知を待ってください（2回目の停止は許可されます）。"
                     f"待っていないなら creator・verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"
                     f"（attempt={attempt}）。"

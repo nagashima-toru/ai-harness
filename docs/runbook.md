@@ -53,13 +53,13 @@ run の振り返りで issue の起票に失敗すると、`vault/harness-improv
 
 ## 4. blocked に答えて戻す
 ```
-/plan unblock <計画ID> <id> [回答]
+/plan unblock <計画ID> <id> [--fresh] [回答]
 ```
 1. 計画票（`vault/plans/<計画ID>.md`）のタスク表で `status=blocked` の行の `question` を読む
-2. `/plan unblock <計画ID> <id> <回答>` を打つ。答える質問が無い blocked（ハングやマージコンフリクトなど）は回答を省いてよい。1回のコマンドで解除するのは1行だけ。複数あれば1行ずつ打つ
+2. `/plan unblock <計画ID> <id> [--fresh] <回答>` を打つ。答える質問が無い blocked（ハングやマージコンフリクトなど）は回答を省いてよい。1回のコマンドで解除するのは1行だけ。複数あれば1行ずつ打つ
 3. 解除したら `/run` で再開する
 
-エージェントは、回答をタスク票の「決定済み」に追記し、その行を `todo` に戻し、log に解除の行を足してコミットする。手順は `.claude/skills/plan/SKILL.md` の「B. blocked を解除する」。エージェントは人の指示なしに解除しない。
+既定は再着手で、blocked の時に残した worktree を引き継ぐ（`/run` が `--resume-worktree` で行う）。`--fresh` を付けると前回の worktree を破棄して作り直す。回答が成果物の追加や受け入れ基準の変更を含む時は、エージェントがタスク票を直接書き換えず `scripts/amend_task.py` で直す。回答が他の todo の票にも効く時は、回答文のタスク ID ではなく受け入れ基準の文字列で探して、同じ回答を追記する。エージェントは回答を「決定済み」に追記し、その行を `todo` に戻し、log に解除の行を足してコミットする。手順は `.claude/skills/plan/SKILL.md` の「B. blocked を解除する」。エージェントは人の指示なしに解除しない。
 
 代替手段として、人がエディタで計画票を直接直してもよい（「決定済み」への回答追記、`status` を `todo`、`attempt` を `0`、`question` を空に）。この場合は `/plan` スキルを通らない。変更後は自分で、log に `docs/vault-spec.md` 7節の blocked の解除の形の行を追記してコミットする。
 

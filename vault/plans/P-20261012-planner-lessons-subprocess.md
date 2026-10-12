@@ -13,7 +13,7 @@ GitHub Issue #195 を解決する。経緯集 `vault/rules/planner/ai-harness-le
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | 経緯集に python3 -c 内の subprocess の教訓と経緯を足す | |
+| T-01 | done | 1 | - | 経緯集に python3 -c 内の subprocess の教訓と経緯を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

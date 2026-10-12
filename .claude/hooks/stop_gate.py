@@ -15,6 +15,8 @@ working tree の状態は見ない。承認済みの計画票が0件なら許可
 doing で、その id の最後の着手（vault/log/<計画ID>.md の `→doing` の遷移行）より後に creator の
 記録行（`<id> worktree path=`）がまだ無い時は、ブロック理由に「待機中なら問題ありません」と完了通知を
 待つ案内を足す（判定は同じで、文面だけが変わる）。`→doing` の行が無ければ記録行が1行も無い時とする。
+review で verdict が無い・古い時も同じく、ブロック理由に「待機中なら問題ありません」と verifier の完了通知を
+待つ案内を足す（記録行は見ず、判定は変えない）。
 
 worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree を指す場合、そのルート配下の
 同名スクリプト（.claude/hooks/stop_gate.py）へ判定を委譲する（issue #56 / D-008 フェーズ2）。
@@ -162,6 +164,14 @@ def main():
                     f"creator の作業中です（最後の着手の後に記録行がありません: vault/log/{plan_id}.md）。待機中なら問題ありません。"
                     f"creator の完了通知を待っている場合は、そのままターンを終えて通知を待ってください（2回目の停止は許可されます）。"
                     f"待っていないなら creator・verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"
+                    f"（attempt={attempt}）。"
+                )
+            if status == "review":
+                block(
+                    f"[stop_gate] {task_key} は {status} ですが {why}。"
+                    f"verifier の検証待ちです。待機中なら問題ありません。"
+                    f"verifier の完了通知を待っている場合は、そのままターンを終えて通知を待ってください（2回目の停止は許可されます）。"
+                    f"待っていないなら verifier サブエージェントを実行して vault/verdicts/{task_key}.json を書くこと"
                     f"（attempt={attempt}）。"
                 )
             block(

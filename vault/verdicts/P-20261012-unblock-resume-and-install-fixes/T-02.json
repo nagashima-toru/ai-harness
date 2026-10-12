@@ -1,0 +1,14 @@
+{
+  "task": "P-20261012-unblock-resume-and-install-fixes/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-12 14:13",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree 内） / 出力: smoke: pass=531 fail=0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (transition-resume) 0[1-7] '` の出力が `7`（決定済みのテスト 01〜07 がすべて通る）", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: 7。01〜07 が各 ok。smoke.sh の `# 26 --resume-worktree`(2648行)が `# 25 pr_body`(2682行)の直前にある"},
+    {"text": "`python3 scripts/transition.py --help` の終了コードが0で、出力に `--resume-worktree` が現れる", "ok": true, "note": "実行コマンド: `python3 scripts/transition.py --help` / 終了コード0、`--resume-worktree` を含む行が2行"},
+    {"text": "`python3 scripts/transition.py P-X T-01 doing --resume-worktree --worktree /tmp/x --branch b` の終了コードが2（`--worktree` との併用は引数の誤り）", "ok": true, "note": "実行コマンド: 左記 / 出力: 「--resume-worktree は --worktree／--branch／... と併用できません」 rc=2"},
+    {"text": "`git diff --merge-base work/p-20261012-unblock-resume-and-install-fixes --name-only -- scripts/transition.py` の出力が `scripts/transition.py`", "ok": true, "note": "実行コマンド: 左記（worktree 内） / 出力: scripts/transition.py"}
+  ],
+  "reasons": []
+}

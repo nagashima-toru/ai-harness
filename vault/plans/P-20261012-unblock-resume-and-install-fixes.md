@@ -25,7 +25,7 @@ GitHub Issue #189・#190・#191 の提案をハーネスに取り込む。
 | T-04 | done | 1 | - | install.sh・uninstall.sh で導入先の .gitignore の .claude/worktrees/ を足し・戻す | |
 | T-05 | done | 1 | T-01,T-02 | /plan unblock の手順に amend_task.py・基準の文字列での todo 票の探索・--fresh を入れる | |
 | T-06 | done | 1 | T-02,T-03 | /run の手順に worktree の引き継ぎ・起動通知が普通という主従・PR テンプレートを入れる | |
-| T-07 | todo | 0 | T-01,T-02,T-03,T-04,T-05,T-06 | vault-spec・runbook・guide・README・decisions を今回の変更に追従させる | |
+| T-07 | doing | 1 | T-01,T-02,T-03,T-04,T-05,T-06 | vault-spec・runbook・guide・README・decisions を今回の変更に追従させる | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

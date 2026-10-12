@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 他プロジェクトへハーネスを複製する。
 # 使い方: bash scripts/install.sh [--update] [--no-claude-md] <target-dir>
-# 複製するもの: .claude/（agents/, hooks/, skills/, ai-harness.md）、vault/（テンプレート・rules/ 雛形・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
+# 複製するもの: .claude/ はハーネス本体の固定リスト CLAUDE_FILES の11ファイルだけ（配布元が独自に置いた Skill・agent・hook は配らない）、vault/（テンプレート・rules/ 雛形・空ディレクトリ）、scripts/*.sh・scripts/*.py（scripts/ 直下を検索。除外リスト SCRIPTS_EXCLUDE にあるものは除く）、docs/vault-spec.md
 # 状態は vault/plans/<計画ID>.md が持つ（キューは無い）。既存ファイルは上書きしない。
 # .claude/settings.json は複製せず、merge_settings_json.py が hooks の欠落エントリと
 # permissions.deny の不足分、worktree.baseRef（導入先に無ければ足す。別の値が入っていれば
@@ -75,6 +75,10 @@ scripts_list() { # SRC の scripts/ 直下にある *.sh・*.py を SCRIPTS_EXCL
 # $SRC に実ファイルがあるかどうかでは動きを変えない（固定で持つ）。
 RETIRED_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
 
+# .claude/ 配下で配るハーネス本体のファイル（リポジトリ相対パス、スペース区切り）。固定で持ち、
+# 配布元が独自に置いた Skill・agent・hook は配らない（マニフェストにも記録しない）。
+CLAUDE_FILES=".claude/ai-harness.md .claude/agents/creator.md .claude/agents/planner.md .claude/agents/verifier.md .claude/hooks/_hooklib.py .claude/hooks/agent_write_guard.py .claude/hooks/plan_guard.py .claude/hooks/stop_gate.py .claude/skills/plan/SKILL.md .claude/skills/run/SKILL.md .claude/skills/design/SKILL.md"
+
 # ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
 # 利用者の資産（vault/plans, tasks, verdicts, log, designs の中身、README 以外の
 # vault/rules/、settings.local.json）は含めない。.claude/settings.json は専用マージャの対象。
@@ -82,11 +86,7 @@ manifest_paths() { # SRC からの相対パスを1行1つで列挙する（存�
   {
     (
       cd "$SRC" || exit 0
-      find .claude/hooks -name '*.py' -type f 2>/dev/null
-      find .claude/agents -name '*.md' -type f 2>/dev/null
-      find .claude/skills -name 'SKILL.md' -type f 2>/dev/null
-      find vault/templates -name '*.md' -type f 2>/dev/null
-      for p in .claude/ai-harness.md docs/vault-spec.md vault/rules/README.md; do
+      for p in $CLAUDE_FILES vault/templates/task.md vault/templates/plan.md vault/templates/rule.md vault/templates/design.md docs/vault-spec.md vault/rules/README.md; do
         [ -f "$p" ] && echo "$p"
       done
     ) | sed 's|^\./||'
@@ -151,9 +151,9 @@ with open(skipped, "w", encoding="utf-8") as fh:
   rm -f "$UPDATE_LIST"
 fi
 
-# .claude/（settings.json は専用マージャで扱うのでこのループから外す。harness-manifest.json も外す：導入元の manifest を導入先へ持ち込まない。manifest は末尾で書く）
-for f in $(cd "$SRC/.claude" && find . -path './worktrees' -prune -o -type f ! -name 'settings.local.json' ! -name 'settings.json' ! -name 'harness-manifest.json' -print | sed 's|^\./||'); do
-  copy_if_absent "$SRC/.claude/$f" "$DST/.claude/$f"
+# .claude/（固定リスト CLAUDE_FILES だけ。settings.json は専用マージャで扱うので含めない。manifest は末尾で書く）
+for rel in $CLAUDE_FILES; do
+  copy_if_absent "$SRC/$rel" "$DST/$rel"
 done
 chmod +x "$DST"/.claude/hooks/*.py
 

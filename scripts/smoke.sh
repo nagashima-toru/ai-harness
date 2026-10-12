@@ -1266,6 +1266,58 @@ expect_eq "(install-gi) 07 gitignore キーのある manifest を持つ導入先
   "$gi4_mf $(gi_mf "$GI5")"
 rm -rf "$GI4" "$GI5"
 
+echo "== install.sh は配布元の独自ファイルを配らない =="
+IO_BIZ=".claude/skills/biz-skill/SKILL.md .claude/skills/biz-skill/templates/t.md .claude/skills/biz-skill/references/r.md .claude/agents/biz-agent.md .claude/hooks/biz_hook.py vault/templates/biz.md"
+IO_FIXED=".claude/ai-harness.md .claude/agents/creator.md .claude/agents/planner.md .claude/agents/verifier.md .claude/hooks/_hooklib.py .claude/hooks/agent_write_guard.py .claude/hooks/plan_guard.py .claude/hooks/stop_gate.py .claude/skills/plan/SKILL.md .claude/skills/run/SKILL.md .claude/skills/design/SKILL.md"
+io_biz_files() { # $1=導入先。独自ファイル6つのうち存在する数
+  local n=0 rel
+  for rel in $IO_BIZ; do [ -e "$1/$rel" ] && n=$((n+1)); done
+  echo "$n"
+}
+io_mf_has() { # $1=導入先 $2...=相対パス。マニフェストの files に載っている数
+  local d="$1"; shift
+  python3 -c '
+import json, sys
+f = json.load(open(sys.argv[1], encoding="utf-8")).get("files") or {}
+print(sum(1 for r in sys.argv[2:] if r in f))
+' "$d/.claude/harness-manifest.json" "$@"
+}
+io_mf_biz() { # $1=導入先。独自ファイル由来のキー（.claude/skills/biz-skill/ 始まりを含む）の数
+  python3 -c '
+import json, sys
+f = json.load(open(sys.argv[1], encoding="utf-8")).get("files") or {}
+print(sum(1 for k in f if k.startswith(".claude/skills/biz-skill/") or k in sys.argv[2:]))
+' "$1/.claude/harness-manifest.json" .claude/agents/biz-agent.md .claude/hooks/biz_hook.py vault/templates/biz.md
+}
+IO_A="$(smoke_tmpdir)" || abort_tmp
+IO_B="$(smoke_tmpdir)" || abort_tmp
+IO_C="$(smoke_tmpdir)" || abort_tmp
+bash "$ROOT/scripts/install.sh" "$IO_A" >/dev/null 2>&1
+for rel in $IO_BIZ; do mkdir -p "$IO_A/$(dirname "$rel")"; echo "biz" > "$IO_A/$rel"; done
+bash "$IO_A/scripts/install.sh" "$IO_B" >/dev/null 2>&1
+expect_eq "(inst-only) 01 独自ファイルを持つ導入先を導入元にして install → 独自ファイル6つがどれも無い" "0" "$(io_biz_files "$IO_B")"
+expect_eq "(inst-only) 02 マニフェストの files に独自ファイルのキーが無い" "0" "$(io_mf_biz "$IO_B")"
+io_fixed_n=0
+for rel in $IO_FIXED; do [ -f "$IO_B/$rel" ] && io_fixed_n=$((io_fixed_n+1)); done
+# shellcheck disable=SC2086
+expect_eq "(inst-only) 03 固定リストの11ファイルがすべてあり、マニフェストにも11パス載っている" "11 11" \
+  "$io_fixed_n $(io_mf_has "$IO_B" $IO_FIXED)"
+bash "$IO_A/scripts/install.sh" --update "$IO_B" >/dev/null 2>&1
+expect_eq "(inst-only) 04 --update の後も独自ファイルが無く、マニフェストにも載らない" "0 0" "$(io_biz_files "$IO_B") $(io_mf_biz "$IO_B")"
+bash "$ROOT/scripts/install.sh" "$IO_C" >/dev/null 2>&1
+mkdir -p "$IO_C/.claude/skills/biz-skill"; echo "biz" > "$IO_C/.claude/skills/biz-skill/SKILL.md"
+python3 -c '
+import hashlib, json, sys
+m = sys.argv[1]
+d = json.load(open(m, encoding="utf-8"))
+d["files"][".claude/skills/biz-skill/SKILL.md"] = hashlib.sha256(open(sys.argv[2], "rb").read()).hexdigest()
+json.dump(d, open(m, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+' "$IO_C/.claude/harness-manifest.json" "$IO_C/.claude/skills/biz-skill/SKILL.md"
+bash "$ROOT/scripts/install.sh" --update "$IO_C" >/dev/null 2>&1
+expect_eq "(inst-only) 05 旧版が記録した独自ファイルは --update でも残り、マニフェストからは外れる" "1 0" \
+  "$([ -f "$IO_C/.claude/skills/biz-skill/SKILL.md" ] && echo 1 || echo 0) $(io_mf_biz "$IO_C")"
+rm -rf "$IO_A" "$IO_B" "$IO_C"
+
 echo "== 標準ルール6本を配らない（install / --update / uninstall） =="
 SR_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"
 sr_count_existing() { # $1=導入先。6本のうち存在する数

@@ -2959,14 +2959,28 @@ expect_eq "(guide-2) 項目の形の崩れと実在しない節を見つけ、�
 # 記録行の無い doing の block 理由だけ完了通知の案内が付く（判定は変わらない）
 rm -rf "$TMP/vault/verdicts" "$TMP/vault/log"
 make_plan_task T-0001 doing 1; out="$(run_stop)"
-expect "(async-wait-1) 記録行の無い doing・verdict 無し → block（reason に完了通知）" block "$out" "完了通知"
+expect "(async-wait-1) 記録行の無い doing・verdict 無し・log 無し → block（reason に待機中なら問題ありません）" block "$out" "待機中なら問題ありません"
 mkdir -p "$TMP/vault/log"
 echo '- 2026-10-10 10:00 T-0001 worktree path=/tmp/wt branch=b plan_head=0000000000000000000000000000000000000000' > "$TMP/vault/log/P-TEST.md"
 out="$(run_stop)"
-expect_eq "(async-wait-2) 記録行のある doing・verdict 無し → block・verdict が無い・完了通知なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '完了通知')"
+expect_eq "(async-wait-2) 記録行だけある doing・verdict 無し → block・verdict が無い・待機中なしの文言なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '待機中なら問題ありません')"
 rm -f "$TMP/vault/log/P-TEST.md"
 make_plan_task T-0001 review 1; out="$(run_stop)"
-expect_eq "(async-wait-3) review・verdict 無し・log 無し → block・verdict が無い・完了通知なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '完了通知')"
+expect_eq "(async-wait-3) review・verdict 無し・log 無し → block・verdict が無い・待機中なしの文言なし" "block 1 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c 'verdict が無い') $(echo "$out" | grep -c '待機中なら問題ありません')"
+make_plan_task T-0001 doing 2
+{
+  echo '- 2026-10-10 10:00 T-0001 worktree path=/tmp/wt branch=b plan_head=0000000000000000000000000000000000000000'
+  echo '- 2026-10-10 10:30 T-0001 review→doing attempt=2 FAIL後の再試行'
+} > "$TMP/vault/log/P-TEST.md"
+out="$(run_stop)"
+expect "(async-wait-4) 記録行の後に review→doing の行がある doing・verdict 無し → block（reason に待機中なら問題ありません）" block "$out" "待機中なら問題ありません"
+make_plan_task T-0001 doing 1
+{
+  echo '- 2026-10-10 10:00 T-0001 todo→doing attempt=1'
+  echo '- 2026-10-10 10:01 T-0001 worktree path=/tmp/wt branch=b plan_head=0000000000000000000000000000000000000000'
+} > "$TMP/vault/log/P-TEST.md"
+out="$(run_stop)"
+expect_eq "(async-wait-5) todo→doing の後に記録行がある doing・verdict 無し → block・待機中なしの文言なし" "block 0" "$(echo "$out" | grep -q '"decision": *"block"' && echo block) $(echo "$out" | grep -c '待機中なら問題ありません')"
 rm -rf "$TMP/vault/log" "$TMP/vault/verdicts"
 
 echo

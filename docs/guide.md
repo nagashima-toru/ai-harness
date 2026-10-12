@@ -69,11 +69,11 @@ env HARNESS_RUN_TIMEOUT=7200 python3 scripts/run_unattended.py
 
 ## blocked に答えて再開する
 
-計画票のタスク表の `question` を読んでから答えます。1回で1行だけ解除されるので、続けて `/run` で再開します。
+計画票のタスク表の `question` を読んでから答えます。1回で1行だけ解除されるので、続けて `/run` で再開します。既定は blocked の時の worktree を引き継いで再開し、`--fresh` を付けると worktree を破棄して作り直します。
 
 すること：
 ```text
-/plan unblock <計画ID> <id> [回答]
+/plan unblock <計画ID> <id> [--fresh] [回答]
 ```
 詳しく：[`docs/runbook.md`](runbook.md) の「4. blocked に答えて戻す」
 

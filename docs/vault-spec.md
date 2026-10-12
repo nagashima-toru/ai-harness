@@ -49,7 +49,7 @@
 
 同時に `doing`/`review` になれるのは、着手可能集合（`todo` かつ `after` の依存が全て `done` なタスクの集合）のうち、互いに `after` で依存し合わないものに限る。計画票・`vault/log/<計画ID>.md` への書き込みは、並行して作業していても常にオーケストレーター（`run` のメインセッション）1プロセスに集約し、複数プロセスが同じファイルへ同時に書き込むことは無い。
 
-遷移：`todo→doing→review→(done | doing[attempt+1] | blocked)`。`blocked→todo` は、人が `/plan unblock <計画ID> <id> [回答]` で指示した時だけ行う。フックでは確かめない（D-015 フェーズ2 で廃止）ので、エージェントは人の指示なしに解除しない。
+遷移：`todo→doing→review→(done | doing[attempt+1] | blocked)`。`blocked→todo` は、人が `/plan unblock <計画ID> <id> [--fresh] [回答]` で指示した時だけ行う。フックでは確かめない（D-015 フェーズ2 で廃止）ので、エージェントは人の指示なしに解除しない。
 
 `attempt` は「現在の試行回数」。`todo→doing` で 1 になり、`review→doing`（FAIL 後の再試行）で +1 する。上限は環境変数 `HARNESS_MAX_ATTEMPTS`（既定 3）。上限に達して FAIL なら `blocked` にする。
 
@@ -70,10 +70,12 @@
 - done（review→done）：PASS の verdict を確認し（条件は10節の done の行の検査と同じ）、worktree の未コミット・未追跡分は収集しない（マージに入れない）。新規コミットの判定（0件なら review→blocked）→ 差分ゲート（違反なら review→blocked。タスク票の「進捗」には書かない）→ メインの作業ツリーで `git merge --no-ff <branch> -m "<計画ID>/<id>: マージ"` → フェーズ2と同じ review→done（計画票・log・verdict をコミット）→ `git worktree remove --force` と `git branch -d` で後始末（失敗は警告だけで終了コード 0）。マージが衝突したら `git diff --name-only --diff-filter=U` で衝突ファイルを取り、`git merge --abort` で中止して review→blocked にする（question に衝突ファイル。worktree とブランチは残す）
 - doing（review→doing。verifier の FAIL の再試行。review からだけ）：verdict が JSON として読め、task・attempt が一致し、result が FAIL の時だけ行う。attempt+1 が上限以内なら review→doing にして worktree とブランチを破棄する。log の補足は reasons の先頭1件を80文字で切ったもの。上限を超えるなら、reasons を `／` でつないで200文字で切ったものを question にして review→blocked にし、worktree を残す
 - blocked（doing→blocked。creator の blocked の報告。doing からだけ）：`--question` か `--question-file` が必須。再開情報の記録行（7節）と doing→blocked の行を書いてコミットし、worktree は残す。worktree の中身には触れない（収集・差分ゲートはしない）
-- 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
+- 終了コード：0 遷移した（worktree 運用では review/done にした）／1 前提を満たさず何も変えていない（理由は標準エラー）／2 引数の誤り／3 差し戻した（doing→doing・review→doing。creator を呼び直す）／4 blocked にした／5 `--resume-worktree` で worktree を引き継げなかった（何も変えていない）。終了コード 3・4 の時は、何をしたかを標準出力に1行で出す（run が完了報告に写せるように）
+- 引き継ぎ（`--resume-worktree`。todo→doing。unblock した id の再着手）：`python3 scripts/transition.py <計画ID> <id> doing --resume-worktree [--note <補足>]`。id は1つ、遷移先は doing だけで、`--worktree`・`--branch`・`--plan-head`・`--question`・`--question-file` とは併用できない（終了コード 2）。blocked の時に残した worktree を破棄せず引き継ぐ。引き継ぐ worktree は log のその id の最後の記録行（7節）から取る。引き継げる時の順序：(1) worktree の未コミット分を `<計画ID>/<id>: creator 成果物をオーケストレーターが収集` でコミットする。(2) 計画ブランチの今の HEAD を H とし、H が worktree のブランチの祖先でなければ worktree の中で `git merge --no-ff H` を行う。(3) 計画票の行を doing・attempt=1 にし、log に `todo→doing attempt=1 worktree を引き継ぎ` を書いて、計画票と log だけをコミットする。成功時の標準出力の `plan_head=<H>`（状態のコミットの前の HEAD）を、run はその id の review・blocked・done の `--plan-head` に使う（差分ゲートは base と branch の2点比較なので、base は worktree に取り込み済みの H でなければならず、状態のコミット後の HEAD では他の変更が混ざる）。引き継げない時（記録行が無い・worktree の検証に通らない・マージの衝突）は何も変えず終了コード 5 で、標準出力に `<計画ID>/<id>: 引き継げない（<理由>）` を出す。run はその id を通常の todo→doing に回す
+- `scripts/amend_task.py`（unblock での成果物の追加・受け入れ基準の差し替え）：`python3 scripts/amend_task.py <計画ID> <id> [--add-deliverable <パス>]... [--replace-criterion <番号> <文>]... [--note <補足>]`。どちらも1つも無ければ引数の誤り（終了コード 2）。タスク表の status が blocked か todo の行だけ直せる。拒否して何も変えない条件（終了コード 1）：git リポジトリでない／計画票が approved でない／ブランチが `work/<計画IDの英小文字>` でない／id がタスク表に無い／status が blocked・todo 以外／タスク票に「成果物」「受け入れ基準」の見出しが無い／`--replace-criterion` の番号が範囲外／`--add-deliverable` のパスが不正、または宣言しても差分ゲート（5節）が違反にする場所（`vault/plans/`・`vault/log/`・`vault/verdicts/` 配下）。「成果物」への追加は「## 成果物」節の最後の空でない行の直後に `- `<パス>`（amend_task.py で追加）` の行を足す（同じパスがバッククォートで宣言済みなら足さない）。`--replace-criterion` は <番号> 番目の行を `- <文>` の1行に置き換え、基準の追加・削除はしない（行数は変わらない）。適用したら log に `- <日時> <id> amend <要約>`（7節）を1行追記し、タスク票と log だけを `git commit -m "<計画ID>/<id>: amend"` する。計画票は読むだけで、status・attempt は変えない。受け入れ基準と食い違う回答は、「決定済み」の読み替えの注記で済ませず、これで基準そのものを差し替える
 - 承認（draft→approved。`/plan` の自動承認）と blocked の解除（`/plan unblock`）は扱わず、`/plan` の Edit のまま
 - 推奨の経路であって強制ではない。Edit による計画票の直接の書き換えはフックで拒否しない。done の行の verdict の検査（9節・10節）で「PASS の無い done」が残らないことを守る
-- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、その後 `git add vault/plans/<計画ID>.md` と名前を指定した `git commit` でコミットしてから `scripts/vcs_finish.sh` を呼び（`vcs_finish.sh` は計画票の変更をコミットしないため）、計画一式の除去（`scripts/purge_plan.sh` の `git rm` と除去のコミット）も transition.py を通さない例外で、承認・blocked の解除は `/plan` の Edit のまま
+- `/run`（`.claude/skills/run/SKILL.md`）は、計画票のタスク表と log の変更をすべて `scripts/transition.py` で行う。場面と遷移先の対応：着手は複数 id の todo→doing（unblock 後の再着手は `--resume-worktree`）、creator の完了後は `--worktree` の review、creator の blocked 報告と分岐元の不一致は `--worktree` の blocked、PASS は `--worktree` の done、FAIL は `--worktree` の doing、中断からの再開・ハング・worktree が無い時は `--no-model --note` の doing・blocked。呼び出しの形の早見表は run/SKILL.md にある。例外として、計画票の frontmatter の approved→done（手順7）は Edit で行い、その後 `git add vault/plans/<計画ID>.md` と名前を指定した `git commit` でコミットしてから `scripts/vcs_finish.sh` を呼び（`vcs_finish.sh` は計画票の変更をコミットしないため）、計画一式の除去（`scripts/purge_plan.sh` の `git rm` と除去のコミット）も transition.py を通さない例外で、承認・blocked の解除は `/plan` の Edit のまま
 
 ## 3. ID・ファイル名・ブランチ名
 
@@ -191,7 +193,7 @@ done にした計画票は除去のコミットで消えるため計画ブラン
 
 タスクに紐づかない計画単位の行は、タスク ID の位置を `-` にする。`/plan` の自動承認は次の形で1行追記する：`- <日時> - draft→approved /plan による自動承認`。D-015 フェーズ2 より前の承認の行（補足が `人の指示:` で始まるもの）は書き換えない
 
-blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク ID の位置にその id を書き、次の形で1行追記する（解除の根拠の記録）：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`
+blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク ID の位置にその id を書き、次の形で1行追記する（解除の根拠の記録）：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`。`--fresh` 付きの解除（前回の worktree を破棄して作り直す）は末尾を `... /plan unblock <計画ID> <id> --fresh` にする。解除で成果物や受け入れ基準を直した時は、`scripts/amend_task.py`（2節）が `- <日時> <id> amend <要約>` を1行追記する（`→` を含まない補足行で、状態の集計に使わない）。unblock 後の再着手で worktree を引き継いだ時の遷移行は `- <日時> <id> todo→doing attempt=1 worktree を引き継ぎ`（モデルは付けない。補足 `worktree を引き継ぎ` に path・branch・plan_head が続く）
 
 run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了後に run が transition.py の review・blocked（`--worktree` 付き）を呼ぶと、transition.py が1タスク1行ずつ書く。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
 
@@ -260,7 +262,7 @@ log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は 
 | approved な計画票が2件以上 | ブロック：1つだけ approved にする |
 | done の行に attempt が一致する正しい PASS の verdict が無い（verdict が無い・JSON として読めない・task / attempt が不一致・result が PASS でない・形式が不正） | ブロック：表の上から最初のその行について、status を review に戻し verifier を実行するよう指示する |
 | doing / review のタスクが無い | 許可 |
-| verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く。status が doing で、log（7節）にその id の記録行（`- <日時> <id> worktree path=...`）が無い時は、creator の完了通知を待っているならそのままターンを終えて待つよう案内する文面になる（判定は同じ） |
+| verdict が無い、または task / attempt が不一致 | ブロック：verifier を実行して verdict を書く。status が doing で、log（7節）のその id の最後の `→doing` の行より後に記録行（`- <日時> <id> worktree path=...`）が無い時（`→doing` の行が無ければ記録行が1行も無い時）は、理由に `待機中なら問題ありません` を含め、creator の完了通知を待っているならそのままターンを終えて待つよう案内する文面になる（判定は同じでブロックは変わらない。文面だけが変わる） |
 | verdict が不正（result が PASS/FAIL 以外、criteria の要素に text/ok/note が無い、criteria の行数がタスク票の受け入れ基準の行数（5節の数え方）と不一致、note が空、reasons が配列でない） | ブロック：何が不正かを示し、verifier を再実行して書き直す |
 | FAIL かつ attempt < 上限 | ブロック：doing に戻し attempt を +1 して修正 |
 | FAIL かつ attempt ≥ 上限 | ブロック：blocked にし question を書く（既に blocked なら許可） |

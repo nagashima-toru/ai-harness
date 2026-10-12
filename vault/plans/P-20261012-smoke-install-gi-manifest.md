@@ -12,7 +12,7 @@ GitHub Issue #198「導入先で smoke を実行すると (install-gi) 03 が NG
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | install.sh が導入元の harness-manifest.json を複製しないようにし smoke に回帰テスト (install-gi) 07 を足す | |
+| T-01 | doing | 1 | - | install.sh が導入元の harness-manifest.json を複製しないようにし smoke に回帰テスト (install-gi) 07 を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

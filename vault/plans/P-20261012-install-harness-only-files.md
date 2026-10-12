@@ -1,6 +1,6 @@
 ---
 id: P-20261012-install-harness-only-files
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #200「install.sh を導入済みリポジトリから実行すると、配布元の業務用 Skill まで導入先に複製されマニフェストに記録される」を解決する。`scripts/install.sh` が配る `.claude/` 配下のファイル（と、マニフェストに記録するファイル）をハーネス本体の固定リストに限り、配布元が独自に置いた Skill・agent・hook・テンプレートが導入先に複製されず、マニフェストにも載らないようにする。smoke に「配布元に独自の Skill がある状態で install しても導入先に届かない」ケースを足し、利用者向けの説明（`docs/install.md`）を実装に合わせる。

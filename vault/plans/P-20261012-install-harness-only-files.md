@@ -13,7 +13,7 @@ GitHub Issue #200「install.sh を導入済みリポジトリから実行する�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | install.sh の .claude/ の複製とマニフェスト記録をハーネス本体の固定リストに限り、smoke にケースを足す | |
+| T-01 | done | 1 | - | install.sh の .claude/ の複製とマニフェスト記録をハーネス本体の固定リストに限り、smoke にケースを足す | |
 | T-02 | todo | 0 | T-01 | docs/install.md の「複製されるもの」を固定リストに合わせる | |
 
 ## 計画の受け入れ基準

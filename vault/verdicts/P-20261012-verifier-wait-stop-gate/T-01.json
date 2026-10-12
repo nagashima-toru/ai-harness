@@ -1,0 +1,14 @@
+{
+  "task": "P-20261012-verifier-wait-stop-gate/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-12 14:44",
+  "criteria": [
+    {"text": "`grep -c 'verifier の完了通知を待っている場合は' .claude/hooks/stop_gate.py` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c 'verifier の完了通知を待っている場合は' .claude/hooks/stop_gate.py`（worktree内） / 出力: 1"},
+    {"text": "`grep -c 'async-wait-3.*verifier の完了通知を待っている場合' scripts/smoke.sh` の出力が `1`（async-wait-3 が新しい文言を期待する形に書き換わっている）", "ok": true, "note": "実行コマンド: `grep -c 'async-wait-3.*verifier の完了通知を待っている場合' scripts/smoke.sh` / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (async-wait-[1-6]) '` の出力が `6`（既存の1〜5と、追加した6がすべて ok）", "ok": true, "note": "実行コマンド: smoke を実行し出力を保存して `grep -c '^  ok   (async-wait-[1-6]) '` / 出力: 6"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c 'fail=0$'` の出力が `1`（smoke 全体が通り、`stop_hook_active=true + HARNESS_STRICT_STOP=1 → ブロック` などの既存テストも壊していない）", "ok": true, "note": "実行コマンド: 同上の出力に `grep -c 'fail=0$'` / 出力: 1（末尾 smoke: pass=546 fail=0）"},
+    {"text": "`git diff --merge-base work/p-20261012-verifier-wait-stop-gate --name-only` の出力に `.claude/hooks/stop_gate.py` と `scripts/smoke.sh` の両方が含まれる", "ok": true, "note": "実行コマンド: `git diff --merge-base work/p-20261012-verifier-wait-stop-gate --name-only` / 出力: .claude/hooks/stop_gate.py, scripts/smoke.sh, vault/tasks/.../T-01.md"}
+  ],
+  "reasons": []
+}

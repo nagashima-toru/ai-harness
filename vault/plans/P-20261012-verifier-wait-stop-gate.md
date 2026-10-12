@@ -14,7 +14,7 @@ review で verdict が無い（または古い）時の stop_gate の理由文�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | stop_gate の review・verdict なしの理由文に verifier の完了通知を待つ案内を入れる | |
+| T-01 | done | 1 | - | stop_gate の review・verdict なしの理由文に verifier の完了通知を待つ案内を入れる | |
 | T-02 | todo | 0 | T-01 | run 手順5の verifier の起動通知の扱いと vault-spec 9節・decisions を新しい文言にそろえる | |
 
 ## 計画の受け入れ基準

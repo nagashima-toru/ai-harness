@@ -1,9 +1,0 @@
-- 2026-10-12 23:17 - draft→approved /plan による自動承認
-- 2026-10-12 23:17 T-01 todo→doing attempt=1
-- 2026-10-12 23:21 T-01 worktree path=/home/user/ai-harness/.claude/worktrees/agent-ad0b304a4c8beed43 branch=worktree-agent-ad0b304a4c8beed43 plan_head=54afd72a2132d148beb6356af5d4a417aa9b910a
-- 2026-10-12 23:21 T-01 doing→review attempt=1 creator=sonnet
-- 2026-10-12 23:23 T-01 review→done attempt=1 verifier=sonnet
-- 2026-10-12 23:23 T-02 todo→doing attempt=1
-- 2026-10-12 23:25 T-02 worktree path=/home/user/ai-harness/.claude/worktrees/agent-ad356ec35598824f2 branch=worktree-agent-ad356ec35598824f2 plan_head=14c228091835e923befb6e2bc451c7e68433e227
-- 2026-10-12 23:25 T-02 doing→review attempt=1 creator=sonnet
-- 2026-10-12 23:27 T-02 review→done attempt=1 verifier=sonnet

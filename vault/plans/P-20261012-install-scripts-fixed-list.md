@@ -1,6 +1,6 @@
 ---
 id: P-20261012-install-scripts-fixed-list
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #201「install.sh の scripts/ 配布も検索方式のため、配布元の独自スクリプトが導入先に複製されマニフェストに載る」を解決する。

@@ -1,0 +1,16 @@
+{
+  "task": "P-20261012-install-harness-only-files/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-12 23:27",
+  "criteria": [
+    {"text": "34行目の段落の旧い書き方（`.claude/`（`ai-harness.md` を含む））が利用者向けの文書・スクリプトに残っていない（`grep -rln 'ai-harness.md. を含む' README.md docs .claude scripts` の出力が空）", "ok": true, "note": "実行コマンド: worktree で `grep -rln 'ai-harness.md. を含む' README.md docs .claude scripts` / 出力: 空（ヒットなし）。git diff でも該当段落が固定リスト11ファイルの列挙に置換されていることを確認"},
+    {"text": "`docs/install.md` に「配布元が独自に置いたファイルは配らない」の文言がちょうど1回ある（`grep -c '配布元が独自に置いたファイルは配らない' docs/install.md` が `1`）", "ok": true, "note": "実行コマンド: `grep -c '配布元が独自に置いたファイルは配らない' docs/install.md` / 出力: 1。diff で34行目の段落内にあり、業務用 Skill・agent・hook と vault/templates の独自テンプレートを配らずマニフェストにも記録しない旨が書かれている"},
+    {"text": "`docs/install.md` に、旧版で配られた独自ファイルの扱いの文言がちょうど1回ある（`grep -c 'マニフェストからは外れ' docs/install.md` が `1`）", "ok": true, "note": "実行コマンド: `grep -c 'マニフェストからは外れ' docs/install.md` / 出力: 1。更新節の箇条書きに追加され、--update は削除せず残す旨が書かれている"},
+    {"text": "`docs/install.md` が固定リストの Skill 3本を列挙している（`grep -c '.claude/skills/design/SKILL.md' docs/install.md` が `1` 以上、`grep -c '.claude/skills/plan/SKILL.md' docs/install.md` が `1` 以上、`grep -c '.claude/skills/run/SKILL.md' docs/install.md` が `1` 以上）", "ok": true, "note": "実行コマンド: design/plan/run それぞれ `grep -c '.claude/skills/<名>/SKILL.md' docs/install.md` / 出力: 1, 1, 1"},
+    {"text": "smoke の参照チェックが通る（`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`）", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "smoke 全体が失敗0で終わる（`bash scripts/smoke.sh 2>&1 | tail -1` が `smoke: pass=<数> fail=0` の形）", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=552 fail=0"},
+    {"text": "計画ブランチとの分岐点からの差分に `docs/install.md` が含まれる（creator の worktree の中で `git diff --merge-base work/p-20261012-install-harness-only-files --name-only` の出力に `docs/install.md` がある）", "ok": true, "note": "実行コマンド: worktree で `git diff --merge-base work/p-20261012-install-harness-only-files --name-only` / 出力: docs/install.md と vault/tasks/.../T-02.md"}
+  ],
+  "reasons": []
+}

@@ -13,7 +13,7 @@ GitHub Issue #187 の提案1を取り込む。`.claude/agents/planner.md` の「
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | planner.md に python3 -c 内の subprocess で外部コマンドを呼ぶ確認コマンドを禁じる指針を足す | |
+| T-01 | done | 1 | - | planner.md に python3 -c 内の subprocess で外部コマンドを呼ぶ確認コマンドを禁じる指針を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -5,6 +5,7 @@
     python3 scripts/transition.py <計画ID> <id>[,<id>...] <遷移先>
         [--question <文> | --question-file <パス>] [--note <補足>] [--no-model]
         [--worktree <パス> --branch <ブランチ> --plan-head <sha>]
+    python3 scripts/transition.py <計画ID> <id> doing --resume-worktree [--note <補足>]
 
 やること（すべての id の検査を先に済ませ、通った時だけ行う）:
   1. 計画票 vault/plans/<計画ID>.md のタスク表の status・attempt・question を書き換える
@@ -70,12 +71,29 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
   5. マージに失敗したら衝突ファイルを取ってから merge --abort で中止し、review→blocked にして
      worktree とブランチを残す（終了コード4）
 
+--resume-worktree（todo→doing。unblock した id の再着手。id は1つ、遷移先は doing だけ。
+  --worktree／--branch／--plan-head／--question／--question-file とは併用できない＝終了コード2）:
+  blocked の時に残した worktree を破棄せず引き継ぐ。前提の検査は通常の todo→doing と同じ
+  （その行が todo でなければ終了コード1）。引き継ぐ worktree は log のその id の最後の
+  `worktree path=… branch=… plan_head=…` の記録行から取る。
+  1. worktree の未コミット分があれば `<計画ID>/<id>: creator 成果物をオーケストレーターが収集` でコミットする
+  2. 計画ブランチの今の HEAD を H とし、H が worktree のブランチの祖先でなければ worktree の中で
+     `git merge --no-ff H` を行う（衝突・失敗したら merge --abort して終了コード5）
+  3. 計画票の行を doing・attempt=1 にし、log に `todo→doing attempt=1 worktree を引き継ぎ`
+     （モデルは付けない）を追記して、計画票と log だけをコミットする
+  成功（終了コード0）の標準出力の `plan_head=<H>` を、run はその id の review・blocked・done の
+  `--plan-head` に使う（diff_gate は base と branch の2点比較なので、base は worktree に取り込み済みの H）。
+  引き継げない時（記録行が無い・worktree の検証に通らない・マージの衝突）は何も変えず終了コード5で、
+  標準出力に `<計画ID>/<id>: 引き継げない（<理由>）` を出す。run はその id を通常の todo→doing に回す。
+  状態のコミットに失敗したら計画票・log を戻して終了コード1（worktree 側のマージは取り消さない）。
+
 終了コード:
     0  review／done にした
     1  前提を満たさず何も変えていない（理由は標準エラーに `[transition] ` で出す）
     2  引数の誤り
     3  差し戻した（doing→doing／review→doing。creator を呼び直す）
     4  blocked にした
+    5  --resume-worktree で worktree を引き継げなかった（何も変えていない）
 """
 import sys
 
@@ -185,12 +203,27 @@ def parse_args(argv):
     p.add_argument("--worktree", default=None)
     p.add_argument("--branch", default=None)
     p.add_argument("--plan-head", dest="plan_head", default=None)
+    p.add_argument("--resume-worktree", dest="resume_worktree", action="store_true")
     args = p.parse_args(argv)
 
     ids = [x.strip() for x in args.ids.split(",")]
     if any(x == "" for x in ids) or len(set(ids)) != len(ids):
         p.error("id の指定が不正です（空の要素または重複）: %s" % args.ids)
     args.id_list = ids
+
+    if args.resume_worktree:
+        if (
+            args.worktree is not None
+            or args.branch is not None
+            or args.plan_head is not None
+            or args.question is not None
+            or args.question_file is not None
+        ):
+            p.error("--resume-worktree は --worktree／--branch／--plan-head／--question／--question-file と併用できません")
+        if len(ids) != 1:
+            p.error("--resume-worktree を使う時の id は1つだけです")
+        if args.target != "doing":
+            p.error("--resume-worktree は遷移先 doing にだけ対応しています")
 
     if args.worktree is None:
         if args.branch is not None or args.plan_head is not None:
@@ -334,14 +367,14 @@ def commit_files(root, files, subject, paths):
         fail("git の操作に失敗したため元に戻しました: %s" % err.strip())
 
 
-def verify_worktree(root, worktree, branch):
-    """discard_worktree.sh と同じ条件で検証し、realpath を返す。通らなければ fail。"""
+def check_worktree(root, worktree, branch):
+    """discard_worktree.sh と同じ条件で検証し、(realpath, 問題の文面または None) を返す。"""
     if not branch.startswith(BRANCH_PREFIX):
-        fail("ブランチ名が '%s' で始まっていません: %s" % (BRANCH_PREFIX, branch))
+        return None, "ブランチ名が '%s' で始まっていません: %s" % (BRANCH_PREFIX, branch)
     target = os.path.realpath(worktree)
     r = run_git(root, "worktree", "list", "--porcelain")
     if r.returncode != 0:
-        fail("git worktree list に失敗しました: %s" % r.stderr.strip())
+        return None, "git worktree list に失敗しました: %s" % r.stderr.strip()
     found = False
     matching = False
     actual = ""
@@ -354,9 +387,17 @@ def verify_worktree(root, worktree, branch):
         elif line.startswith("branch refs/heads/") and matching:
             actual = line[len("branch refs/heads/"):]
     if not found:
-        fail("指定パスは登録済み worktree ではありません: %s" % target)
+        return None, "指定パスは登録済み worktree ではありません: %s" % target
     if actual != branch:
-        fail("登録済み worktree のブランチが指定と一致しません: 実際=%s 指定=%s" % (actual, branch))
+        return None, "登録済み worktree のブランチが指定と一致しません: 実際=%s 指定=%s" % (actual, branch)
+    return target, None
+
+
+def verify_worktree(root, worktree, branch):
+    """check_worktree の結果を返す。通らなければ fail。"""
+    target, problem = check_worktree(root, worktree, branch)
+    if problem:
+        fail(problem)
     return target
 
 
@@ -659,6 +700,82 @@ def blocked_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, po
     return 4
 
 
+RECORD_RE = r"^- \S+ \S+ %s worktree path=(.+) branch=(\S+) plan_head=([0-9a-f]{40})\s*$"
+
+
+def resume_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, positions, tid):
+    """todo→doing（blocked の worktree の引き継ぎ）。終了コードを返す。"""
+    log_path = os.path.join(root, log_rel)
+
+    def cannot(reason):
+        print("%s/%s: 引き継げない（%s）" % (plan_id, tid, reason))
+        return 5
+
+    rec = None
+    try:
+        with open(log_path, encoding="utf-8") as f:
+            for line in f.read().splitlines():
+                m = re.match(RECORD_RE % re.escape(tid), line)
+                if m:
+                    rec = m
+    except (OSError, UnicodeDecodeError):
+        pass
+    if rec is None:
+        return cannot("log に worktree の記録行が無い")
+    path, branch = rec.group(1), rec.group(2)
+    worktree, problem = check_worktree(root, path, branch)
+    if problem:
+        return cannot(problem)
+
+    collect_worktree(worktree, plan_id, tid)
+
+    r = run_git(root, "rev-parse", "HEAD")
+    head = r.stdout.strip()
+    if r.returncode != 0 or len(head) != 40:
+        fail("計画ブランチの HEAD を解決できません: %s" % r.stderr.strip())
+    if run_git(root, "merge-base", "--is-ancestor", head, branch).returncode != 0:
+        r = run_git(
+            worktree, "merge", "--no-ff", head, "-m", "%s/%s: 計画ブランチを取り込み" % (plan_id, tid)
+        )
+        if r.returncode != 0:
+            err_first = (r.stderr.strip().splitlines() or [""])[0]
+            u = run_git(worktree, "diff", "--name-only", "--diff-filter=U")
+            conflicts = [x for x in u.stdout.splitlines() if x.strip()]
+            gp = run_git(worktree, "rev-parse", "--git-path", "MERGE_HEAD").stdout.strip()
+            if gp:
+                if not os.path.isabs(gp):
+                    gp = os.path.join(worktree, gp)
+                if os.path.exists(gp):
+                    run_git(worktree, "merge", "--abort")
+            if conflicts:
+                return cannot(clean_text("計画ブランチの取り込みで衝突したファイル: %s" % ", ".join(conflicts)))
+            return cannot(clean_text("計画ブランチの取り込みに失敗した: %s" % err_first))
+
+    new_plan = rewrite_rows(plan_lines, positions, [(tid, "todo", "doing", 1)], "")
+    note = "worktree を引き継ぎ"
+    if args.note_text:
+        note += " " + args.note_text
+    new_log, _before = log_with_lines(
+        log_path, [transition_line(now_jst(), tid, "todo", "doing", 1, None, note)]
+    )
+    try:
+        commit_files(
+            root, [(plan_rel, new_plan), (log_rel, new_log)],
+            "%s/%s: todo→doing" % (plan_id, tid), [plan_rel, log_rel],
+        )
+    except SystemExit:
+        sys.stderr.write(
+            "[transition] worktree 側の計画ブランチの取り込みは取り消していません。"
+            "状態のコミットだけ失敗したため、計画票と log は元に戻しました\n"
+        )
+        raise
+    print(
+        "%s/%s: todo→doing attempt=1 worktree を引き継いだ path=%s branch=%s plan_head=%s"
+        % (plan_id, tid, worktree, branch, head)
+    )
+    return 0
+
+
 def main(argv):
     args = parse_args(argv)
     plan_id = args.plan_id
@@ -723,6 +840,8 @@ def main(argv):
             new_attempt = cur + 1
         else:
             new_attempt = cur
+        if args.resume_worktree and old != "todo":
+            fail("%s: --resume-worktree は todo の時だけ行えます（今は %s）" % (tid, old))
         wt_retry = args.worktree is not None and target == "doing"
         if wt_retry and old != "review":
             fail("%s: --worktree 付きの doing は review の時だけ行えます（今は %s）" % (tid, old))
@@ -748,6 +867,11 @@ def main(argv):
             for tid, reason in bad:
                 sys.stderr.write("[transition] %s/%s: %s\n" % (plan_id, tid, reason))
             sys.exit(1)
+
+    if args.resume_worktree:
+        return resume_worktree(
+            args, root, plan_id, plan_rel, log_rel, plan_lines, positions, args.id_list[0]
+        )
 
     wt_reasons = None
     if args.worktree is not None and target == "doing":

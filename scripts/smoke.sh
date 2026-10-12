@@ -2645,6 +2645,40 @@ expect_eq "(transition-wt) 23 --branch 無しの --worktree は終了コード 2
 tw_run P-TEST T-01,T-02 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
 expect_eq "(transition-wt) 23 --worktree と複数の id は終了コード 2" "2" "$TW_RC"
 
+# 26 --resume-worktree
+tw_rec() { echo "- 2026-01-01 00:00 T-01 worktree path=$TW_RP branch=$TWB plan_head=$TW_PH" >> "$TWR/vault/log/P-TEST.md"; git -C "$TWR" add -A; git -C "$TWR" commit -q -m "記録行"; }
+tw_mergehead() { git -C "$TWW" rev-parse -q --verify MERGE_HEAD > /dev/null 2>&1 && echo yes || echo no; }
+tw_setup todo 0; tw_rec
+TW_H="$(git -C "$TWR" rev-parse HEAD)"
+tw_run P-TEST T-01 doing --resume-worktree
+expect_eq "(transition-resume) 01 引き継ぎは終了コード 0 で T-01 が doing・attempt=1" "0 1" "$TW_RC $(tw_row | grep -c '^| T-01 | doing | 1 |')"
+expect_eq "(transition-resume) 02 log の最後の行が引き継ぎで終わりモデルの記録が無い" "T-01 todo→doing attempt=1 worktree を引き継ぎ" "$(tw_logtail 1)"
+expect_eq "(transition-resume) 03 標準出力は1行で path・branch・plan_head を含む" \
+  "1 P-TEST/T-01: todo→doing attempt=1 worktree を引き継いだ path=$TW_RP branch=$TWB plan_head=$TW_H" "$TW_OL $(cat "$TW_OUT")"
+
+tw_setup todo 0; tw_rec
+sed -i '0,/^- なし$/s//- 入力の追加/' "$TWR/vault/tasks/P-TEST/T-01.md"; git -C "$TWR" add -A; git -C "$TWR" commit -q -m "票の変更"
+TW_H="$(git -C "$TWR" rev-parse HEAD)"
+tw_mod
+tw_run P-TEST T-01 doing --resume-worktree
+expect_eq "(transition-resume) 04 worktree が計画ブランチの HEAD を祖先に持ち未コミット分が収集される" "0 yes 0 1" \
+  "$TW_RC $(git -C "$TWR" merge-base --is-ancestor "$TW_H" "$TWB" && echo yes || echo no) $(git -C "$TWW" status --porcelain | wc -l | tr -d ' ') $(git -C "$TWR" log --format=%s "$TWB" | grep -c '^P-TEST/T-01: creator 成果物をオーケストレーターが収集$')"
+TW_PH2="$(sed -n 's/.*plan_head=\([0-9a-f]*\)$/\1/p' "$TW_OUT")"
+tw_run P-TEST T-01 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH2"
+expect_eq "(transition-resume) 05 出力の plan_head を使った review は差分ゲートの違反が無く終了コード 0" "0" "$TW_RC"
+
+tw_setup todo 0
+cp "$TWR/vault/log/P-TEST.md" "$TW/log.before"; TW_C0="$(git -C "$TWR" rev-list --count HEAD)"
+tw_run P-TEST T-01 doing --resume-worktree
+expect_eq "(transition-resume) 06 記録行が無い時は終了コード 5 で計画票・log・コミット数が変わらない" "5 same same $TW_C0" \
+  "$TW_RC $TW_PLAN $(cmp -s "$TW/log.before" "$TWR/vault/log/P-TEST.md" && echo same || echo diff) $(git -C "$TWR" rev-list --count HEAD)"
+
+tw_setup todo 0; tw_mod; tw_commit
+echo other > "$TWR/src/ok.txt"; git -C "$TWR" add -A; git -C "$TWR" commit -q -m "計画ブランチ側の変更"
+tw_rec
+tw_run P-TEST T-01 doing --resume-worktree
+expect_eq "(transition-resume) 07 マージが衝突したら終了コード 5 で計画票が変わらず MERGE_HEAD が残らない" "5 same no" "$TW_RC $TW_PLAN $(tw_mergehead)"
+
 # 25 pr_body の件名のパターン
 tw_setup doing 1
 git -C "$TWR" commit -q --allow-empty -m 'P-TEST/T-01,T-02: review→done'

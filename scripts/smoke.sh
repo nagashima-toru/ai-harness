@@ -1255,6 +1255,16 @@ bash "$ROOT/scripts/uninstall.sh" "$GI1" >/dev/null 2>&1
 expect_eq "(install-gi) 06 05 の後に uninstall → .gitignore が無い" "0" \
   "$([ -e "$GI1/.gitignore" ] && echo 1 || echo 0)"
 rm -rf "$GI1" "$GI2" "$GI3"
+GI4="$(smoke_tmpdir)" || abort_tmp
+printf 'x/\n' > "$GI4/.gitignore"
+bash "$ROOT/scripts/install.sh" "$GI4" >/dev/null 2>&1
+GI5="$(smoke_tmpdir)" || abort_tmp
+printf 'a/\n.claude/worktrees/\n' > "$GI5/.gitignore"
+gi4_mf="$(gi_mf "$GI4")"
+bash "$GI4/scripts/install.sh" "$GI5" >/dev/null 2>&1
+expect_eq "(install-gi) 07 gitignore キーのある manifest を持つ導入先を導入元にして、行が既にある導入先へ install → キー無し" "appended none" \
+  "$gi4_mf $(gi_mf "$GI5")"
+rm -rf "$GI4" "$GI5"
 
 echo "== 標準ルール6本を配らない（install / --update / uninstall） =="
 SR_RULES="vault/rules/common/roles.md vault/rules/common/git.md vault/rules/creator/creator.md vault/rules/creator/git-workflow.md vault/rules/verifier/verifier.md vault/rules/planner/planner.md"

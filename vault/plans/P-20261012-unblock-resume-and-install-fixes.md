@@ -1,6 +1,6 @@
 ---
 id: P-20261012-unblock-resume-and-install-fixes
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #189・#190・#191 の提案をハーネスに取り込む。

@@ -1,6 +1,6 @@
 ---
 id: P-20261012-verifier-wait-stop-gate
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #193「verifier の完了待ち（review・verdict なし）でも stop_gate が「verifier を実行せよ」で止める」を解決する。

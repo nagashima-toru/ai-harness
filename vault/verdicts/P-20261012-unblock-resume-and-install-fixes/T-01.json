@@ -1,0 +1,14 @@
+{
+  "task": "P-20261012-unblock-resume-and-install-fixes/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-12 14:13",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=530 fail=0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (amend-task) 0[1-6] '` の出力が `6`（決定済みのテスト 01〜06 がすべて通る）", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: 6（(amend-task) 01〜06 がすべて ok 行）"},
+    {"text": "`python3 scripts/amend_task.py --help` の終了コードが0で、出力に `--add-deliverable` と `--replace-criterion` の両方が現れる", "ok": true, "note": "実行コマンド: `python3 scripts/amend_task.py --help; echo rc=$?` / 出力: rc=0、usage に --add-deliverable と --replace-criterion の両方が表示"},
+    {"text": "`python3 scripts/amend_task.py P-X T-01` （変更の指定が1つも無い）の終了コードが2", "ok": true, "note": "実行コマンド: `python3 scripts/amend_task.py P-X T-01; echo rc=$?` / 出力: argparse エラー、rc=2"},
+    {"text": "`git diff --merge-base work/p-20261012-unblock-resume-and-install-fixes --name-only -- scripts/amend_task.py` の出力が `scripts/amend_task.py`", "ok": true, "note": "実行コマンド: 同コマンド（worktree 内） / 出力: scripts/amend_task.py"}
+  ],
+  "reasons": []
+}

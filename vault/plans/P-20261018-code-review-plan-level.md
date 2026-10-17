@@ -18,9 +18,9 @@ GitHub Issue #214（P-20261017-code-review-in-agents、#216 でマージ済み�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | planner 定義に計画単位のレビュータスクを足す規則を書く | |
-| T-02 | todo | 0 | - | creator 定義の先回りレビューを計画全体の差分に合わせる | |
-| T-03 | todo | 0 | - | verifier 定義のコードレビューの判定を計画全体の差分に合わせる | |
+| T-01 | doing | 1 | - | planner 定義に計画単位のレビュータスクを足す規則を書く | |
+| T-02 | doing | 1 | - | creator 定義の先回りレビューを計画全体の差分に合わせる | |
+| T-03 | doing | 1 | - | verifier 定義のコードレビューの判定を計画全体の差分に合わせる | |
 | T-04 | todo | 0 | T-01,T-02,T-03 | vault-spec と run スキルのコードレビューの記述を計画単位に合わせる | |
 | T-05 | todo | 0 | T-04 | decisions.md に方針変更を記録し古い記述が残っていないことを確かめる | |
 

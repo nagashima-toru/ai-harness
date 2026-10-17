@@ -826,6 +826,20 @@ arch_ok=ok
 for d in plans tasks verdicts log designs templates rules; do [ -d "$ITMP/vault/$d" ] || arch_ok=ng; done
 expect_eq "(inst-arch) install.sh は vault/archive/ を作らない" "ok" "$arch_ok"
 rm -rf "$ITMP"
+LGTMP="$(smoke_tmpdir)" || abort_tmp
+bash "$ROOT/scripts/install.sh" "$LGTMP" >/dev/null 2>&1
+expect_eq "(inst-log) 01 新規の install で vault/log/.gitkeep が配られる" "1" \
+  "$([ -f "$LGTMP/vault/log/.gitkeep" ] && echo 1 || echo 0)"
+out="$(bash "$ROOT/scripts/install.sh" "$LGTMP" 2>&1)"
+expect_eq "(inst-log) 02 2回目の install で skip  (exists) vault/log/.gitkeep が出る" "1" \
+  "$(printf '%s\n' "$out" | grep -cxF 'skip  (exists) vault/log/.gitkeep')"
+expect_eq "(inst-log) 03 マニフェストの files に vault/log/.gitkeep が無い" "0" \
+  "$(python3 -c "import json,sys;print(1 if 'vault/log/.gitkeep' in json.load(open(sys.argv[1]))['files'] else 0)" "$LGTMP/.claude/harness-manifest.json")"
+rm -f "$LGTMP/vault/log/.gitkeep"
+out="$(bash "$ROOT/scripts/install.sh" --update "$LGTMP" 2>&1)"
+expect_eq "(inst-log) 04 vault/log/.gitkeep が無い導入先に --update すると配られる" "1 1" \
+  "$(printf '%s\n' "$out" | grep -cxF 'copy  vault/log/.gitkeep') $([ -f "$LGTMP/vault/log/.gitkeep" ] && echo 1 || echo 0)"
+rm -rf "$LGTMP"
 IOTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$IOTMP" >/dev/null 2>&1
 expect_eq "(in-out) 既定の install で作った CLAUDE.md に @docs/vision.md の行が無い" "0" \

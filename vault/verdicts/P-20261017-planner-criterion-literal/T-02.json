@@ -1,0 +1,15 @@
+{
+  "task": "P-20261017-planner-criterion-literal/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-17 19:12",
+  "criteria": [
+    {"text": "planner.md の「やらないこと」節に、バッククォートをまたいで文字列を抜き出さない箇条がある：`grep -c '文言のバッククォートをまたいで、受け入れ基準の grep の文字列を抜き出さない' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で `grep -c '文言のバッククォートをまたいで、受け入れ基準の grep の文字列を抜き出さない' .claude/agents/planner.md` / 出力: 1"},
+    {"text": "その箇条に、決定済みの文言の例と、バッククォートを `.` に置き換えたパターンの例が同じ行にある：`grep -c 'JobConfig.。命名は方式設計' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: `grep -c 'JobConfig.。命名は方式設計' .claude/agents/planner.md` / 出力: 1。`grep -c JobConfig` も 1 で他の行に無い"},
+    {"text": "その箇条に、plan_guard が止めることが書かれている：`grep -c 'plan_guard.py. が draft のタスク票の Write・Edit の後に止める' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 該当 grep -c / 出力: 1"},
+    {"text": "planner.md の「書き終えた後の確認」節に確認の行がある：`grep -c 'バッククォートの有無で食い違っていないか' .claude/agents/planner.md` の出力が `1`", "ok": true, "note": "実行コマンド: 該当 grep -c / 出力: 1"},
+    {"text": "経緯集に Issue #204 の経緯がある：`grep -c 'Issue #204' vault/rules/planner/ai-harness-lessons.md` の出力が `1`", "ok": true, "note": "実行コマンド: 該当 grep -c / 出力: 1"},
+    {"text": "smoke の参照切れの検査が通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1"}
+  ],
+  "reasons": []
+}

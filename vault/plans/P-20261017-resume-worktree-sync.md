@@ -17,7 +17,7 @@ GitHub Issue #208「worktree を引き継いで再開すると、待機中にマ
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | 新規コミットの判定で取り込みのマージコミットを数えず、Issue #208 の場面を smoke で確かめる | |
-| T-02 | review | 1 | - | vault-spec と run SKILL に引き継ぎの取り込みと新規コミットの判定を書く | |
+| T-02 | done | 1 | - | vault-spec と run SKILL に引き継ぎの取り込みと新規コミットの判定を書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

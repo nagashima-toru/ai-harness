@@ -1,0 +1,16 @@
+{
+  "task": "P-20261017-resume-worktree-sync/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-17 15:31",
+  "criteria": [
+    {"text": "`grep -c 'git rev-list --no-merges .plan-head....branch.' docs/vault-spec.md` の出力が `1` である（2節の review の (2) の判定の式）", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 1"},
+    {"text": "`grep -c 'マージコミットは数えない' docs/vault-spec.md` の出力が `1` である", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 1"},
+    {"text": "`git grep -n 'rev-list .plan-head' -- . ':!vault'` の出力が空である（`--no-merges` の無い旧い判定の式がリポジトリに残っていない）", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 空"},
+    {"text": "`grep -c '計画ブランチを取り込み' docs/vault-spec.md` の出力が `2` である（1節の証跡のコミットの種類と、2節の引き継ぎの項 (2) の件名）", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 2"},
+    {"text": "`grep -c '取り込んだ計画ブランチの HEAD' .claude/skills/run/SKILL.md` の出力が `1` である（手順3の1）", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1` である", "ok": true, "note": "worktree で同コマンドを実行 / 出力: 1"},
+    {"text": "`git diff --merge-base work/p-20261017-resume-worktree-sync --name-only` の出力に `docs/vault-spec.md` と `.claude/skills/run/SKILL.md` の両方の行がある", "ok": true, "note": "worktree で同コマンドを実行 / 出力: .claude/skills/run/SKILL.md, docs/vault-spec.md, vault/tasks/.../T-02.md の3行（両方含む）"}
+  ],
+  "reasons": []
+}

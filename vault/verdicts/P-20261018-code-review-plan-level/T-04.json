@@ -1,0 +1,16 @@
+{
+  "task": "P-20261018-code-review-plan-level/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-18 04:28",
+  "criteria": [
+    {"text": "小見出しが変わっていない：`grep -c '^### コードレビューを参照する受け入れ基準' docs/vault-spec.md` が `1`", "ok": true, "note": "実行コマンド: `grep -c '^### コードレビューを参照する受け入れ基準' docs/vault-spec.md`（worktree 内） / 出力: 1"},
+    {"text": "要約の範囲がベースブランチとの分岐点からの差分になっている：`grep -c 'diff --merge-base .ベースブランチ.' docs/vault-spec.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'diff --merge-base .ベースブランチ.' docs/vault-spec.md` / 出力: 1"},
+    {"text": "要約の対象の行の既定の書き方が計画の差分になっている：`grep -c 'で計画の差分に致命的な指摘が残っていない' docs/vault-spec.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c 'で計画の差分に致命的な指摘が残っていない' docs/vault-spec.md` / 出力: 1"},
+    {"text": "8節の粒度の基準に計画単位のレビュータスクの箇条がある：`grep -c '最後に計画単位のレビュータスクを持つ' docs/vault-spec.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '最後に計画単位のレビュータスクを持つ' docs/vault-spec.md` / 出力: 1"},
+    {"text": "タスク単位の範囲・導入先任せ・レビューを強制しないの古い記述が残っていない：`grep -c -e 'そのタスクの差分' -e '導入先の planner ルール' -e 'で差分に致命的な指摘' -e 'レビューを強制しない' docs/vault-spec.md` が `0`", "ok": true, "note": "実行コマンド: 4パターンの `grep -c -e ... docs/vault-spec.md` / 出力: 0"},
+    {"text": "run スキルに計画単位のレビュータスクが書かれている：`grep -c '計画単位のレビュータスク' .claude/skills/run/SKILL.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '計画単位のレビュータスク' .claude/skills/run/SKILL.md` / 出力: 2"},
+    {"text": "smoke の `(ref-1)` が通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '`（worktree 内） / 出力: 1"}
+  ],
+  "reasons": []
+}

@@ -179,9 +179,11 @@ done にした計画票は除去のコミットで消えるため計画ブラン
   - 書式の例：`実行コマンド: \`<command>\` / 出力: <判定に使った部分の要点>`
   - 確認コマンドが実行できなかった場合（権限拒否・ツール不足など）は、その旨と代替の確認方法、その結果をセットで書く。例：`\`awk ...\` は権限拒否で実行不可。代替として README.md を Read で確認し、使い方節に cron の行が1行あった`
   - 受け入れ基準がルールを根拠にした場合（`vault/rules/` 配下のファイル名や「コーディングルールに従う」等を参照する行）は、参照したルールファイルのパスを `note` に書く
-- `reasons` は FAIL の理由だけでなく、次の2つの記録にも使う（`.claude/agents/verifier.md` を根拠とする）。いずれも `result` を FAIL にはしない。
+- `reasons` は FAIL の理由だけでなく、次の記録にも使う（`.claude/agents/verifier.md` を根拠とする）。いずれも `result` を FAIL にはしない。
   - 基準が曖昧で判定不能だった場合
   - 基準が緩いと判断した場合（確認コマンドは通るが、タスク票の「目的」の達成を保証しない）
+  - コードレビューを参照する基準で、差分の外（既存コード）への指摘を残す場合（要素は `対象外（既存コード）: ` で始める。result を FAIL にしない）
+  - コードレビューを参照する基準で、人の判断が要る場合（要素は `人の判断が必要: ` で始める。result を FAIL にしないが、run は PASS でも done にせず blocked にする）
 
 `reasons` の使われ方：`reasons` は言い換えず、分類しない。`scripts/verdict_notes.py <計画ID> [--dir <ディレクトリ>]` が、計画の verdict のうち `reasons` が空でないものを要素ごとに `<id>: <reason>` の1行で標準出力に出す（`<id>` はファイル名から `.json` を除いたもの、ファイル名順、要素内の改行は空白1つにする）。出す行が無ければ `指摘なし` の1行だけを出す。読み込み先は既定で `vault/verdicts/<計画ID>/` の `*.json` で、`--dir` を渡すとそのディレクトリ（`<id>.json` を直接持つ。archive など）を読み、計画 ID は使わない。JSON として読めない・`reasons` が無い／配列でない verdict は読み飛ばし、標準エラーに出す。ファイルには書き込まない。終了コードは 0（出力した。「指摘なし」を含む）・1（読み込み先のディレクトリが無い）・2（引数の誤り）。run の手順7（全タスクが done になった後）で、この出力を PR 本文の「verifier の指摘」節と完了報告に入れる（本文は `HARNESS_PR_BODY_FILE` で `scripts/vcs_finish.sh` に渡す。1節）。また `model_stats.py` の指摘あり率（7節）の元になる。
 
@@ -198,6 +200,8 @@ blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク
 run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了後に run が transition.py の review・blocked（`--worktree` 付き）を呼ぶと、transition.py が1タスク1行ずつ書く。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
 
 再開・ハング・worktree が無い時の遷移行は、run が transition.py を `--no-model --note "<補足>"` で呼んで書く。補足は `中断から再開`・`中断が上限に達した`・`worktree が無いため作り直し`・`worktree が無いため`・`creator呼び出しハングにより再試行`・`creator呼び出しハング`・`verifier呼び出しハング` のいずれか。
+
+verifier が `reasons` に `人の判断が必要:` で始まる要素を書いた PASS を run が blocked にする時の遷移行は `- <日時> <id> review→blocked attempt=<n> verifier=<モデル> 人の判断が必要` とする（run が transition.py を `--note "人の判断が必要"` で呼んで書く）。
 
 `scripts/transition.py` の worktree 運用（2節）が書く行：再開情報の記録行は、review・blocked の時に transition.py が遷移の行の直前に、同じ日時で書く（run が別に追記する必要は無い）。差し戻しの行は `- <日時> <id> doing→doing attempt=<n+1> 宣言外の変更: <パス>, ...` で、モデル（`creator=`・`verifier=`）を付けない。done の前に blocked にした時の補足は `新規コミット無し`・`宣言外の変更: <パス>, ...`・`マージコンフリクト` のいずれか。
 
@@ -305,6 +309,16 @@ vault/rules/
 
 ### ルールと受け入れ基準の関係
 ルールは受け入れ基準を増やすものではなく、**基準の判定方法を与えるもの**。受け入れ基準が `vault/rules/` のルールを参照する時（例：「コーディングルールに従っている」）だけ、verifier はルールを根拠に真偽を判定する。受け入れ基準がルールに触れていなければ、ルールを理由に FAIL にしない。作成側だけに渡した `creator/` のルールは verifier から見えないため、それを根拠に落とすこともない。
+
+### コードレビューを参照する受け入れ基準
+正本は `.claude/agents/verifier.md`（「コードレビューを参照する基準の判定」節）・`.claude/agents/creator.md`（「コードレビューを参照する基準がある時」節）・`.claude/skills/run/SKILL.md`（手順6の3と早見表）で、ここは要約。
+
+- (1) 対象の行：受け入れ基準の行が `/code-review`（Claude Code 組み込みの Skill の `code-review`）の結果で真偽を決める行である時。書き方の既定は「`/code-review` で差分に致命的な指摘が残っていない」。どのタスクにこの行を入れるかは導入先の planner ルール（`vault/rules/planner/` など）で決め、ハーネス本体はレビューを強制しない（`docs/vision.md` 原則7）。
+- (2) ツール：creator・verifier の tools に `Skill` がある（`.claude/settings.json` の `permissions.allow` の `Skill` は既存）。smoke の `(agents-2)`・`(agents-3)` が tools の欠けを検査する。
+- (3) 範囲と呼び方：そのタスクの差分（`git -C <worktree のパス> diff --merge-base work/<計画IDの英小文字>`。PLAN_HEAD から）で、対象 worktree のパスを引数で明示して呼ぶ（明示しないと呼び出し元の作業ディレクトリをレビューする）。`effort`・`--max-findings` などの引数は、受け入れ基準の行にあればそれを使い、ハーネスは既定値を持たない。
+- (4) verifier の判定：差分で変えた行へのクラッシュ・データ破損・誤った結果の指摘が残れば、その行は `ok: false`。差分の外への指摘と致命的でない指摘は FAIL の根拠にしない。設計・仕様の変更が要る指摘と `/code-review` を実行できなかった時は `ok: true` のまま接頭辞 `人の判断が必要:` で reasons に書く。
+- (5) creator：完了報告の前に同じ範囲で実行し、差分内の致命的な指摘を直して、もう1回だけ実行して確かめる。設計・仕様の変更が要る指摘は「blocked: <質問文>」で返す。
+- (6) run：PASS の verdict の reasons に `人の判断が必要:` で始まる要素があれば done にせず review→blocked にする（question はその要素）。
 
 ## 12. agent_write_guard フックの判定
 

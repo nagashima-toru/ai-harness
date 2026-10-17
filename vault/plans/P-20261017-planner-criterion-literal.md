@@ -1,6 +1,6 @@
 ---
 id: P-20261017-planner-criterion-literal
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #204「planner が受け入れ基準の grep 文字列と「決定済み」の置換文言を食い違わせる」を解決する。

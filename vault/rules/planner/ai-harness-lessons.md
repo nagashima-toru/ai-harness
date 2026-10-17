@@ -41,6 +41,9 @@
 **確認コマンドを `python3 -c` の中の subprocess で外部コマンドを呼ぶ形にしない**
 - 経緯：導入先 nagashima-toru/spring-batch-ai-coding-samples の計画 `P-20261011-harness-rules` の T-05 で、planner が書いた `python3 -c "...subprocess.check_output(['git','show',...])..."` の受け入れ基準が creator の worktree でツールの制限により拒否され、creator は `git show` を単独で実行してファイルに保存し、比較式の読み込み元を差し替えて確かめた（verifier は通った）。Issue #187 として ai-harness に移され、`P-20261012-planner-no-subprocess-in-python`（PR #196）で `.claude/agents/planner.md` に教訓を足した。
 
+**「決定済み」の文言のバッククォートをまたいで grep の文字列を抜き出さない**
+- 経緯：導入先の計画の T-03 で、受け入れ基準が `-F` の `{Xxx}JobConfig。命名は方式設計 §11`、決定済みの置換文言がバッククォートありの「`{Xxx}JobConfig`。命名は方式設計 §11」だったため、creator が決定済みどおりに書いて基準が通らず blocked になり、人の `/plan unblock` と `scripts/amend_task.py` の `--replace-criterion` が要った。Issue #204 として ai-harness に移され、`P-20261017-planner-criterion-literal` で plan_guard の検査と planner.md の箇条を足した。
+
 ## 確認方法
 - planner が受け入れ基準を書く時、ここの経緯を参照し、同じ失敗（状態ファイルの差分不変・緩い grep・複合コマンド・`rm -rf` 前提・除外パスの漏れなど）を繰り返していないかを見る。
 - 経緯に対応する教訓が `.claude/agents/planner.md` の「やらないこと」節に残っているか（教訓を消してここだけに経緯が残る形になっていないか）。

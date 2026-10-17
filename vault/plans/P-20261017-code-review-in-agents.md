@@ -27,7 +27,7 @@ GitHub Issue #214（nagashima-toru/ai-harness）「creator・verifier から /co
 | T-03 | done | 1 | T-01 | run の手順6で、人の判断を求める PASS の verdict を blocked に回す | |
 | T-04 | done | 1 | T-01,T-02 | smoke に creator・verifier の tools の Skill の検査を足す | |
 | T-05 | done | 1 | T-01,T-02,T-03 | vault-spec にコードレビューを参照する基準の仕様を書く | |
-| T-06 | review | 1 | T-05 | decisions にコードレビューを参照する基準の判断を記録する | |
+| T-06 | done | 1 | T-05 | decisions にコードレビューを参照する基準の判断を記録する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

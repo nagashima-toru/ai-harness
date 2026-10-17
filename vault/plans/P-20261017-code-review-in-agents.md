@@ -24,8 +24,8 @@ GitHub Issue #214（nagashima-toru/ai-harness）「creator・verifier から /co
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | verifier の tools に Skill を足し、コードレビューを参照する基準の判定規則を書く | |
 | T-02 | done | 1 | - | creator の tools に Skill を足し、完了前のコードレビューの手順を書く | |
-| T-03 | todo | 0 | T-01 | run の手順6で、人の判断を求める PASS の verdict を blocked に回す | |
-| T-04 | todo | 0 | T-01,T-02 | smoke に creator・verifier の tools の Skill の検査を足す | |
+| T-03 | doing | 1 | T-01 | run の手順6で、人の判断を求める PASS の verdict を blocked に回す | |
+| T-04 | doing | 1 | T-01,T-02 | smoke に creator・verifier の tools の Skill の検査を足す | |
 | T-05 | todo | 0 | T-01,T-02,T-03 | vault-spec にコードレビューを参照する基準の仕様を書く | |
 | T-06 | todo | 0 | T-05 | decisions にコードレビューを参照する基準の判断を記録する | |
 

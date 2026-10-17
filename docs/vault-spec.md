@@ -252,6 +252,7 @@ log の全行は `scripts/plan_record.py` が PR 本文に写す。使い方は 
 - 成果物が1つに特定できる（「〜を改善」は不可）
 - 1コンテキストで終わる（目安：人手で1〜2時間相当）
 - run で必ず変わるファイル（計画票のタスク表、`vault/log/<計画ID>.md`、タスク票の「進捗」）を「変更していない」と差分で検査する受け入れ基準は書かない。形式の不変を見たい時は見出し行・列構成に限定した確認コマンドにする（例：`git diff --merge-base work/<計画IDの英小文字> -- vault/plans/<計画ID>.md | grep -E '^[+-](## |\| id )'`）
+- コードを変更するタスクがある計画は、最後に計画単位のレビュータスクを持つ（`.claude/agents/planner.md` の「計画単位のレビュータスク」節。1計画7タスクの上限に含める）
 - `vault/rules/`（common・planner）にルールがある場合は、その具体的な基準を受け入れ基準や決定済みに反映する。ただし受け入れ基準3〜7行の上限は優先し、超えそうな場合は要約に留める
 - 「受け入れ基準が3〜7行」と「1計画は7タスク以下」は、計画が draft の間、plan_guard フックで機械検査される（詳細は10節）。各基準が「真偽で判定できる文か」は機械では検査されず、planner・verifier の運用に残る
 
@@ -312,12 +313,12 @@ vault/rules/
 ルールは受け入れ基準を増やすものではなく、**基準の判定方法を与えるもの**。受け入れ基準が `vault/rules/` のルールを参照する時（例：「コーディングルールに従っている」）だけ、verifier はルールを根拠に真偽を判定する。受け入れ基準がルールに触れていなければ、ルールを理由に FAIL にしない。作成側だけに渡した `creator/` のルールは verifier から見えないため、それを根拠に落とすこともない。
 
 ### コードレビューを参照する受け入れ基準
-正本は `.claude/agents/verifier.md`（「コードレビューを参照する基準の判定」節）・`.claude/agents/creator.md`（「コードレビューを参照する基準がある時」節）・`.claude/skills/run/SKILL.md`（手順6の3と早見表）で、ここは要約。
+正本は `.claude/agents/planner.md`（「計画単位のレビュータスク」節）・`.claude/agents/verifier.md`（「コードレビューを参照する基準の判定」節）・`.claude/agents/creator.md`（「コードレビューを参照する基準がある時」節）・`.claude/skills/run/SKILL.md`（手順6の3と早見表）で、ここは要約。
 
-- (1) 対象の行：受け入れ基準の行が `/code-review`（Claude Code 組み込みの Skill の `code-review`）の結果で真偽を決める行である時。書き方の既定は「`/code-review` で差分に致命的な指摘が残っていない」。どのタスクにこの行を入れるかは導入先の planner ルール（`vault/rules/planner/` など）で決め、ハーネス本体はレビューを強制しない（`docs/vision.md` 原則7）。
+- (1) 対象の行：受け入れ基準の行が `/code-review`（Claude Code 組み込みの Skill の `code-review`）の結果で真偽を決める行である時。この行を持つのは planner が計画の最後に足す「計画単位のレビュータスク」で、書き方の既定は「`/code-review` で計画の差分に致命的な指摘が残っていない」。コードを変更するタスクが1件以上ある計画にだけ足し、通常のタスクの受け入れ基準には `/code-review` の行を入れない。判定基準の正本は planner 定義。
 - (2) ツール：creator・verifier の tools に `Skill` がある（`.claude/settings.json` の `permissions.allow` の `Skill` は既存）。smoke の `(agents-2)`・`(agents-3)` が tools の欠けを検査する。
-- (3) 範囲と呼び方：そのタスクの差分（`git -C <worktree のパス> diff --merge-base work/<計画IDの英小文字>`。PLAN_HEAD から）で、対象 worktree のパスを引数で明示して呼ぶ（明示しないと呼び出し元の作業ディレクトリをレビューする）。`effort`・`--max-findings` などの引数は、受け入れ基準の行にあればそれを使い、ハーネスは既定値を持たない。
-- (4) verifier の判定：差分で変えた行へのクラッシュ・データ破損・誤った結果の指摘が残れば、その行は `ok: false`。差分の外への指摘と致命的でない指摘は FAIL の根拠にしない。設計・仕様の変更が要る指摘と `/code-review` を実行できなかった時は `ok: true` のまま接頭辞 `人の判断が必要:` で reasons に書く。
+- (3) 範囲と呼び方：計画全体の差分（`git -C <worktree のパス> diff --merge-base <ベースブランチ>`。ベースブランチは `HARNESS_BASE_BRANCH`、既定 `main`。分岐点から。計画一式4種はレビューの対象にしない）で、対象 worktree のパスを引数で明示して呼ぶ（明示しないと呼び出し元の作業ディレクトリをレビューする）。`effort`・`--max-findings` などの引数は、受け入れ基準の行にあればそれを使い、ハーネスは既定値を持たない。
+- (4) verifier の判定：計画の差分で変えた行へのクラッシュ・データ破損・誤った結果の指摘が残れば、その行は `ok: false`。計画の差分の外への指摘と致命的でない指摘は FAIL の根拠にしない。設計・仕様の変更が要る指摘と `/code-review` を実行できなかった時は `ok: true` のまま接頭辞 `人の判断が必要:` で reasons に書く。
 - (5) creator：完了報告の前に同じ範囲で実行し、差分内の致命的な指摘を直して、もう1回だけ実行して確かめる。設計・仕様の変更が要る指摘は「blocked: <質問文>」で返す。
 - (6) run：PASS の verdict の reasons に `人の判断が必要:` で始まる要素があれば done にせず review→blocked にする（question はその要素）。
 

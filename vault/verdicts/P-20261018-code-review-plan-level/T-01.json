@@ -1,0 +1,16 @@
+{
+  "task": "P-20261018-code-review-plan-level/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-18 04:23",
+  "criteria": [
+    {"text": "planner 定義に計画単位のレビュータスクの見出しが1つある：`grep -c '^## 計画単位のレビュータスク' .claude/agents/planner.md` が `1`", "ok": true, "note": "実行コマンド: `grep -c '^## 計画単位のレビュータスク' .claude/agents/planner.md` / 出力: 1（37行目に見出し）"},
+    {"text": "planner 定義に、コードを変更するタスクの判定基準が書かれている：`grep -c '配下でなく、拡張子が' .claude/agents/planner.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '配下でなく、拡張子が' .claude/agents/planner.md` / 出力: 1"},
+    {"text": "planner 定義に、全タスクを `after` に持つ最後のタスクとして足すことが書かれている：`grep -c '全タスクを .after. に持つ最後のタスク' .claude/agents/planner.md` が1以上", "ok": true, "note": "実行コマンド: 同grep / 出力: 1"},
+    {"text": "planner 定義に、計画単位のレビュータスクの受け入れ基準の行と、通常のタスクに `/code-review` の行を入れないことが書かれている：`grep -c 'で計画の差分に致命的な指摘が残っていない' .claude/agents/planner.md` が1以上、かつ `grep -c '通常のタスクの受け入れ基準には' .claude/agents/planner.md` が1以上", "ok": true, "note": "実行コマンド: 2つのgrep -c / 出力: 1 と 1。節の内容も Grep で確認（41-46行にタスク数・成果物・範囲の記述あり）"},
+    {"text": "planner 定義に、計画単位のレビュータスクを1計画7タスクの上限に含めることが書かれている：`grep -c '通常のタスクは6件まで' .claude/agents/planner.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '通常のタスクは6件まで' .claude/agents/planner.md` / 出力: 1。26行目の粒度の箇条にも追記あり"},
+    {"text": "`/plan` の手順5に計画単位のレビュータスクの確認が書かれている：`grep -c '計画単位のレビュータスク' .claude/skills/plan/SKILL.md` が1以上", "ok": true, "note": "実行コマンド: `grep -c '計画単位のレビュータスク' .claude/skills/plan/SKILL.md` / 出力: 1（差分は1行変更）"},
+    {"text": "smoke の `(ref-1)` が通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1。差分は planner.md・plan/SKILL.md・T-01票（進捗）のみで宣言範囲内"}
+  ],
+  "reasons": []
+}

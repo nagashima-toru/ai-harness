@@ -22,8 +22,8 @@ GitHub Issue #214（nagashima-toru/ai-harness）「creator・verifier から /co
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | blocked | 1 | - | verifier の tools に Skill を足し、コードレビューを参照する基準の判定規則を書く | worktree の分岐元が計画ブランチと一致しない。`git -C <worktree> merge-base --is-ancestor 141679eefdf93390c8efa169d5cbcc9e74c6e332 HEAD` の終了コードが 1。worktree の HEAD は 3f1c742（main。計画票・タスク票のコミットを含まない）。セッションの途中で作業ディレクトリを別リポジトリ（spring-batch-ai-coding-samples → ai-harness）に移した後の Agent の isolation: worktree で起きた（Issue #209 と同じ現象）。成果物（.claude/agents/verifier.md）は作成済みだが、タスク票の「進捗」は worktree に無いため未記入 |
-| T-02 | blocked | 1 | - | creator の tools に Skill を足し、完了前のコードレビューの手順を書く | worktree の分岐元が計画ブランチと一致しない。`git -C <worktree> merge-base --is-ancestor 141679eefdf93390c8efa169d5cbcc9e74c6e332 HEAD` の終了コードが 1。worktree の HEAD は 3f1c742（main。計画票・タスク票のコミットを含まない）。セッションの途中で作業ディレクトリを別リポジトリ（spring-batch-ai-coding-samples → ai-harness）に移した後の Agent の isolation: worktree で起きた（Issue #209 と同じ現象）。成果物（.claude/agents/creator.md）は作成済みだが、タスク票の「進捗」は worktree に無いため未記入 |
+| T-01 | todo | 0 | - | verifier の tools に Skill を足し、コードレビューを参照する基準の判定規則を書く | |
+| T-02 | todo | 0 | - | creator の tools に Skill を足し、完了前のコードレビューの手順を書く | |
 | T-03 | todo | 0 | T-01 | run の手順6で、人の判断を求める PASS の verdict を blocked に回す | |
 | T-04 | todo | 0 | T-01,T-02 | smoke に creator・verifier の tools の Skill の検査を足す | |
 | T-05 | todo | 0 | T-01,T-02,T-03 | vault-spec にコードレビューを参照する基準の仕様を書く | |

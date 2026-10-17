@@ -2923,6 +2923,31 @@ expect_eq "(run-skill-5) run 手順7の本文ファイルの節が D-016 の順�
 if ! grep -qF '起点コミット' "$ROOT/.claude/agents/creator.md" "$ROOT/.claude/agents/verifier.md" "$ROOT/.claude/agents/planner.md"; then ag1=ok; else ag1=NG; fi
 expect_eq "(agents-1) creator・verifier・planner の定義に「起点コミット」の語が無い" ok "$ag1"
 
+agtools_check() { # $1=ルート。creator・verifier の定義の frontmatter の tools に Skill が無いファイルの相対パスを1行ずつ出す
+  local rel f line t found
+  for rel in .claude/agents/creator.md .claude/agents/verifier.md; do
+    f="$1/$rel"
+    found=0
+    if [ -f "$f" ]; then
+      line="$(grep -m1 '^tools:' "$f")"
+      line="${line#tools:}"
+      while IFS= read -r t; do
+        t="${t#"${t%%[![:space:]]*}"}"
+        t="${t%"${t##*[![:space:]]}"}"
+        [ "$t" = "Skill" ] && found=1
+      done <<EOF
+$(printf '%s\n' "$line" | tr ',' '\n')
+EOF
+    fi
+    [ "$found" = 1 ] || echo "$rel"
+  done
+}
+expect_eq "(agents-2) creator・verifier の定義の tools に Skill がある" "" "$(agtools_check "$ROOT")"
+mkdir -p "$TMP/agtools/.claude/agents"
+echo 'tools: Read, Grep, Glob, Bash, Write, Edit' > "$TMP/agtools/.claude/agents/creator.md"
+echo 'tools: Read, Grep, Glob, Bash, Write, Skill' > "$TMP/agtools/.claude/agents/verifier.md"
+expect_eq "(agents-3) tools に Skill が無い定義を検査が検出する" ".claude/agents/creator.md" "$(agtools_check "$TMP/agtools")"
+
 # amend_task.py（タスク票の成果物の追加・受け入れ基準の差し替えと log の記録）
 am_run() { # amend_task.py を $TWR で1回実行。AM_RC を設定する
   ( cd "$TWR" && python3 "$ROOT/scripts/amend_task.py" "$@" ) > "$TW_OUT" 2> "$TW_ERR"

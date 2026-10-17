@@ -19,7 +19,7 @@ GitHub Issue #204「planner が受け入れ基準の grep 文字列と「決定�
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | plan_guard に受け入れ基準の grep の文字列と決定済みのバッククォートの食い違いの検査を足す | |
-| T-02 | doing | 1 | T-01 | planner.md と経緯集に、バッククォートを含む文言の基準の書き方を足す | |
+| T-02 | review | 1 | T-01 | planner.md と経緯集に、バッククォートを含む文言の基準の書き方を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

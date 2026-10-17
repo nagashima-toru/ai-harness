@@ -2846,6 +2846,31 @@ tw_rec
 tw_run P-TEST T-01 doing --resume-worktree
 expect_eq "(transition-resume) 07 マージが衝突したら終了コード 5 で計画票が変わらず MERGE_HEAD が残らない" "5 same no" "$TW_RC $TW_PLAN $(tw_mergehead)"
 
+tw_setup todo 0; tw_rec
+tw_run P-TEST T-01 doing --resume-worktree
+TW_PH3="$(sed -n 's/.*plan_head=\([0-9a-f]*\)$/\1/p' "$TW_OUT")"
+tw_run P-TEST T-01 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH3"
+expect_eq "(transition-resume) 08 取り込みのマージコミットだけの worktree は review で新規コミット無しの終了コード 4" "4 1" \
+  "$TW_RC $(tw_row | grep -c '^| T-01 | blocked | 1 |')"
+
+tw_setup todo 0; tw_mod; tw_commit
+echo other > "$TWR/src/other.txt"; git -C "$TWR" add -A; git -C "$TWR" commit -q -m "他タスクの成果物"
+tw_rec
+tw_run P-TEST T-01 doing --resume-worktree
+TW_RC9="$TW_RC"
+TW_P2="$(sed -n 's/.*plan_head=\([0-9a-f]*\)$/\1/p' "$TW_OUT")"
+expect_eq "(transition-resume) 09 待機中に計画ブランチへ入った他タスクのファイルが引き継いだ worktree に入る" "0 yes" \
+  "$TW_RC9 $([ -f "$TWW/src/other.txt" ] && echo yes || echo no)"
+expect_eq "(transition-resume) 10 出力の plan_head から worktree への差分は自タスクのファイルだけ" \
+  "src/ok.txt
+vault/tasks/P-TEST/T-01.md" "$(git -C "$TWR" diff --name-only "$TW_P2" "$TWB")"
+tw_run P-TEST T-01 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_P2"
+TW_RCR="$TW_RC"
+tw_verdict PASS 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_P2"
+expect_eq "(transition-resume) 11 出力の plan_head を使った review と done が終了コード 0 で他タスクのファイルが計画ブランチに残る" "0 0 yes changed" \
+  "$TW_RCR $TW_RC $([ -f "$TWR/src/other.txt" ] && echo yes || echo no) $(cat "$TWR/src/ok.txt" 2>/dev/null)"
+
 # 25 pr_body の件名のパターン
 tw_setup doing 1
 git -C "$TWR" commit -q --allow-empty -m 'P-TEST/T-01,T-02: review→done'

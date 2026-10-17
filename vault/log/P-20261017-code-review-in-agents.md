@@ -9,3 +9,5 @@
 - 2026-10-17 20:09 T-02 blocked→todo 人の指示: /plan unblock P-20261017-code-review-in-agents T-02 --fresh
 - 2026-10-17 20:09 T-01 todo→doing attempt=1
 - 2026-10-17 20:09 T-02 todo→doing attempt=1
+- 2026-10-17 20:12 T-01 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a563f36cf27435898 branch=worktree-agent-a563f36cf27435898 plan_head=a50d3fcac087ceb2b0ed5e88741c470fa68e6e22
+- 2026-10-17 20:12 T-01 doing→review attempt=1 creator=sonnet

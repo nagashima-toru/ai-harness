@@ -1,6 +1,6 @@
 ---
 id: P-20261017-code-review-in-agents
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #214（nagashima-toru/ai-harness）「creator・verifier から /code-review を使えるようにし、差分の外の指摘を判定から外す」を解決する。

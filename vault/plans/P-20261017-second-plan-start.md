@@ -1,6 +1,6 @@
 ---
 id: P-20261017-second-plan-start
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #205 と #206 を解決し、同じセッションで2つ目の /plan を始められるようにする。

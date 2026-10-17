@@ -1,0 +1,16 @@
+{
+  "task": "P-20261017-code-review-in-agents/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-17 20:14",
+  "criteria": [
+    {"text": "`grep -c '^tools: Read, Grep, Glob, Bash, Write, Edit, Skill$' .claude/agents/creator.md` の出力が `1` である", "ok": true, "note": "実行コマンド: 同grep（worktree の .claude/agents/creator.md） / 出力: 1"},
+    {"text": "`grep -c '^## コードレビューを参照する基準がある時$' .claude/agents/creator.md` の出力が `1` である", "ok": true, "note": "実行コマンド: 同grep / 出力: 1。節は手順(24行)の後・受け渡し(42行)の前（Read で確認）"},
+    {"text": "`grep -c 'クラッシュ・データ破損・誤った結果' .claude/agents/creator.md` の出力が `1` である", "ok": true, "note": "実行コマンド: 同grep / 出力: 1"},
+    {"text": "「## コードレビューを参照する基準がある時」節が、決定済みの (1) 対象の行の見分け方 (2) 範囲と呼び方（worktree のパスを引数で明示する） (3) 差分で変えた行への致命的な指摘を直し、直した後にもう1回だけ実行して確かめること (4) 差分の外への指摘は直さないこと (5) 設計・仕様の変更が要る指摘は直さずに「blocked: <質問文>」で返すこと (6) 「進捗」に残すこと の6点をすべて書いている（Read で節を読んで確かめる）", "ok": true, "note": "creator.md の32-40行を Read。項番1〜6が (1)対象の行/(2)git diff --merge-base と worktree 絶対パス明示/(3)直す+もう1回だけ/(4)差分外は直さない/(5)blocked返却/(6)進捗に回数・件数・直したか、をそれぞれ記載"},
+    {"text": "「## 完了前の確認」節に、コードレビューを参照する基準がある時は (3) の確認を済ませたかを問う箇条が1つある（Read で確かめる）", "ok": true, "note": "creator.md 87行に「コードレビューを参照する基準がある時：差分内の致命的な指摘を直し、もう1回の実行で確かめたか」の箇条が1つ"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1` である", "ok": true, "note": "実行コマンド: worktree で smoke.sh を出力保存して同grep / 出力: 1"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: worktree で smoke.sh | tail -1 / 出力: smoke: pass=567 fail=0"}
+  ],
+  "reasons": []
+}

@@ -15,6 +15,9 @@
 draft 計画のタスク票への Write/Edit では、`vault/templates/task.md` の6見出し（目的・入力・成果物・
 受け入れ基準・決定済み・進捗）が欠けていれば止める（`heading_violation`）。
 
+同じく draft 計画のタスク票では、受け入れ基準の grep の文字列が「決定済み」「成果物」の行にそのまま
+当たらず、バッククォートを除くと当たる時も止める（`literal_violation`、Issue #204）。
+
 加えて、1ブランチ1計画の不変条件を検査する：
   (f) approved な計画票が2件以上ある
 
@@ -30,6 +33,7 @@ worktree 委譲：payload["cwd"] が自リポジトリと異なる git worktree 
 import json
 import os
 import re
+import shlex
 import sys
 
 sys.dont_write_bytecode = True
@@ -152,6 +156,145 @@ def granularity_violation(payload, root):
     )
 
 
+CODESPAN_RE = re.compile(r"`([^`\n]+)`")
+GREP_VALUE_OPTS = "efmABCdD"
+BRE_SPECIAL = "[]*^$\\"
+
+
+def _sections(text):
+    """行頭が `## ` の行を見出しとし、見出し（rstrip）→ その節の行のリストの辞書を返す。"""
+    secs, cur = {}, None
+    for line in text.split("\n"):
+        if line.startswith("## "):
+            cur = line.rstrip()
+            secs.setdefault(cur, [])
+        elif cur is not None:
+            secs[cur].append(line)
+    return secs
+
+
+def _grep_patterns(args):
+    """grep の引数（grep の次のトークンから）から、照合の対象にするパターンを返す。(パターン, 固定文字列か) のリスト。"""
+    fixed = extended = False
+    e_pats, positional = [], []
+    i, no_more_opts = 0, False
+    while i < len(args):
+        tok = args[i]
+        i += 1
+        if no_more_opts or not tok.startswith("-") or tok == "-":
+            positional.append(tok)
+        elif tok == "--":
+            no_more_opts = True
+        elif tok.startswith("--"):
+            if tok == "--fixed-strings":
+                fixed = True
+            elif tok in ("--extended-regexp", "--perl-regexp"):
+                extended = True
+        else:
+            j = 1
+            while j < len(tok):
+                c = tok[j]
+                j += 1
+                if c in GREP_VALUE_OPTS:
+                    value = tok[j:]
+                    if not value and i < len(args):
+                        value = args[i]
+                        i += 1
+                    if c == "e":
+                        e_pats.append(value)
+                    break
+                if c == "F":
+                    fixed = True
+                elif c in "EP":
+                    extended = True
+    if extended:
+        return []
+    pats = e_pats if e_pats else positional[:1]
+    return [(p, fixed) for p in pats]
+
+
+def _pattern_regex(pat, fixed):
+    """対象にするパターンを正規表現にして返す。対象外は None。"""
+    if not pat or "`" in pat:
+        return None
+    if fixed:
+        return re.escape(pat)
+    if any(ch in pat for ch in BRE_SPECIAL):
+        return None
+    return ".".join(re.escape(part) for part in pat.split("."))
+
+
+def literal_mismatches(text):
+    """受け入れ基準の grep の文字列のうち、「決定済み」「成果物」の行にそのまま当たらず、
+    バッククォートを除くと当たるものを、出現順のリストで返す（重複は除かない）。純関数。"""
+    secs = _sections(text)
+    targets = secs.get("## 決定済み", []) + secs.get("## 成果物", [])
+    stripped = [t.replace("`", "") for t in targets]
+    result = []
+    for line in secs.get("## 受け入れ基準", []):
+        for span in CODESPAN_RE.findall(line):
+            try:
+                toks = shlex.split(span)
+            except ValueError:
+                continue
+            for k, tok in enumerate(toks):
+                if tok != "grep":
+                    continue
+                args = []
+                for a in toks[k + 1:]:
+                    if a in ("|", "&&", ";"):
+                        break
+                    args.append(a)
+                for pat, fixed in _grep_patterns(args):
+                    rx = _pattern_regex(pat, fixed)
+                    if rx is None:
+                        continue
+                    if any(re.search(rx, t) for t in targets):
+                        continue
+                    if any(re.search(rx, t) for t in stripped):
+                        result.append(pat)
+    return result
+
+
+def literal_violation(payload, root):
+    """draft 計画のタスク票への Write/Edit で、受け入れ基準の grep の文字列がバッククォートの有無だけで
+    「決定済み」「成果物」と食い違っていれば理由文を返す。対象外・問題なしは None。
+
+    fail-open：計画票が無い・読めない・status が取れない・タスク票が読めない場合は None。
+    """
+    if payload.get("tool_name") not in ("Write", "Edit"):
+        return None
+    tool_input = payload.get("tool_input")
+    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+    if not isinstance(file_path, str) or not file_path:
+        return None
+    if os.path.isabs(file_path):
+        rel = os.path.relpath(file_path, os.path.abspath(root))
+    else:
+        rel = os.path.normpath(file_path)
+    m = TASK_PATH_RE.match(rel.replace(os.sep, "/"))
+    if not m:
+        return None
+    plan_id, task_id = m.group(1), m.group(2)
+    _, status = H.plan_id_and_status(os.path.join(root, "vault", "plans", plan_id + ".md"))
+    if status != "draft":
+        return None
+    try:
+        with open(os.path.join(root, rel), encoding="utf-8") as f:
+            text = f.read()
+    except Exception:
+        return None
+    bad = literal_mismatches(text)
+    if not bad:
+        return None
+    pats = "、".join(f"'{p}'" for p in bad)
+    return (
+        f"[plan_guard] {plan_id}/{task_id} の受け入れ基準の grep の文字列が、「決定済み」「成果物」の文言と"
+        f"バッククォートの有無だけで食い違っています（{pats}）。creator が決定済みどおりに書くと当たりません。"
+        f"バッククォートをまたがない部分文字列を選ぶか、バッククォートを . に置き換えたパターン（-F を付けない）にしてください。"
+    )
+
+
 PLAN_PATH_RE = re.compile(r"^vault/plans/([^/]+)\.md$")
 PLAN_ROWS_MAX = 7
 
@@ -218,6 +361,10 @@ def main():
         block(violation)
 
     violation = granularity_violation(payload, root)
+    if violation:
+        block(violation)
+
+    violation = literal_violation(payload, root)
     if violation:
         block(violation)
 

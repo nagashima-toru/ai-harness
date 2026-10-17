@@ -552,6 +552,29 @@ expect "(headings-task) draft・「## 進捗」欠落・Bash → 許可（対象
 rm -f "$TMP/vault/plans/P-TEST.md"
 rm -rf "$TMP/vault/tasks"
 
+# 受け入れ基準の grep の文字列と決定済みのバッククォートの食い違い検査（Issue #204）
+make_task_literal() { # $1=受け入れ基準の1行目（grep を含む箇条）。決定済みに「`{Xxx}JobConfig`。命名は方式設計 §11」を書く
+  mkdir -p "$TMP/vault/tasks/P-TEST"
+  printf '# T-01 テスト\n\n## 目的\n\n## 入力\n\n## 成果物\n- docs/a.md\n\n## 受け入れ基準\n%s\n- 基準2\n- 基準3\n\n## 決定済み\n- 「`{Xxx}JobConfig`。命名は方式設計 §11」と書く\n\n## 進捗\n' "$1" > "$TMP/vault/tasks/P-TEST/T-01.md"
+}
+LIT_MISMATCH='- `grep -c -F '"'"'{Xxx}JobConfig。命名は方式設計 §11'"'"' docs/a.md` が 1'
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+make_task_literal "$LIT_MISMATCH"
+expect "(literal-task) draft・-F の文字列がバッククォートの有無だけで食い違う → ブロック" block "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")" "バッククォートの有無だけで食い違っています"
+make_task_literal '- `grep -c '"'"'.{Xxx}JobConfig.。命名は方式設計 §11'"'"' docs/a.md` が 1'
+expect "(literal-task) draft・バッククォートを . に置き換えたパターン → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_task_literal '- `grep -c -F '"'"'命名は方式設計 §11'"'"' docs/a.md` が 1'
+expect "(literal-task) draft・決定済みにそのまま書かれた文字列 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_task_literal '- `grep -c -F '"'"'OldName'"'"' docs/a.md` が 0'
+expect "(literal-task) draft・決定済みにも成果物にも無い文字列 → 許可" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_task_literal "$LIT_MISMATCH"
+make_plan "P-TEST" "approved" "| T-01 | doing | 1 | - | A | |"
+expect "(literal-task) approved・食い違う票 → 許可（検査しない）" allow "$(run_plan_guard_file Write "$TMP/vault/tasks/P-TEST/T-01.md")"
+make_plan "P-TEST" "draft" "| T-01 | todo | 0 | - | A | |"
+expect "(literal-task) draft・食い違う票・Bash → 許可（対象外）" allow "$(run_plan_guard_file Bash "$TMP/vault/tasks/P-TEST/T-01.md")"
+rm -f "$TMP/vault/plans/P-TEST.md"
+rm -rf "$TMP/vault/tasks"
+
 # 計画票のタスク表行数検査（D-010 フェーズ3）
 make_plan_n() { # $1=planStatus $2=データ行数
   local rows=() i

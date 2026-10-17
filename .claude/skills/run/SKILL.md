@@ -23,6 +23,7 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 | review にする（手順4。収集コミット・新規コミットの判定・差分ゲート・再開情報の記録行を含む） | `python3 scripts/transition.py <計画ID> <id> review --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
 | PASS（手順6。マージ・done・後始末） | `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
 | FAIL（手順6。再試行、上限なら blocked） | `python3 scripts/transition.py <計画ID> <id> doing --worktree <worktree> --branch <branch>` |
+| verifier が人の判断を求めた PASS（手順6。review→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --note "人の判断が必要"` |
 | 中断からの再開・ハング・worktree が無い時の再試行（doing→doing・review→doing） | `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "<補足>"` |
 | 中断・ハング・worktree が無い時の上限での blocked（doing→blocked・review→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "<補足>"` |
 
@@ -118,7 +119,9 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 各タスクについて：
 1. `vault/verdicts/<計画ID>/<id>.json` が存在しない場合、まず対象タスクの worktree のパス（手順3の4で保持したもの）配下の同じ相対パス（`<worktree のパス>/vault/verdicts/<計画ID>/<id>.json`）を確認する。存在すれば `cp <worktree のパス>/vault/verdicts/<計画ID>/<id>.json vault/verdicts/<計画ID>/<id>.json` でメインリポジトリ側へコピーし（log には書かない。コピーした verdict は done のコミットに含まれる）、手順2で通常どおり読む。worktree 側にも見つからない場合は検証未完了として扱い、そのタスクは次のタスクに進まず処理を止める（人に確認する）
 2. `vault/verdicts/<計画ID>/<id>.json`（手順1でコピーした場合はコピー後のファイル）を読み、`result` と `attempt` を確認する。`attempt` が計画票のタスク表の値と一致しない verdict は「無い」ものとして扱い、そのタスクは検証未完了として次のタスクに進まず処理を止める（人に確認する）
-3. `PASS` の場合：次を1回呼ぶ。`PLAN_HEAD` は手順3の1で控えた値（中断からの再開では log の記録行から復元した値。手順2の2）を使う。
+3. `PASS` の場合：まず done を呼ぶ前に、verdict の `reasons` に `人の判断が必要:` で始まる要素が1つでもあるかを確かめる。あれば done を呼ばない。その要素をすべて言い換えずに Write ツールで質問ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書き、次を1回呼ぶ。`--no-model` と `--worktree` は付けない（verifier の判断による遷移で、`--worktree` 付きの blocked は doing からだけ）。
+   `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --note "人の判断が必要"`
+   終了コード0で blocked になり、worktree は残る（人が `/plan unblock` で答えた後、`--resume-worktree` で引き継いで再着手する）。終了コード1は前提を満たさず何も変えていない（標準エラーの理由を添えて人に報告して止める）。どちらの場合も done は呼ばず、0なら次の対象タスクへ進む。接頭辞の付かない要素（判定不能・緩い基準・`対象外（既存コード）:` など）だけなら、今までどおり次を呼ぶ。`PLAN_HEAD` は手順3の1で控えた値（中断からの再開では log の記録行から復元した値。手順2の2）を使う。
    `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>`
    この1回で、PASS の verdict の確認・未コミット分の収集・新規コミットの判定・差分ゲート・計画ブランチへの `--no-ff` マージ・done とそのコミット（verdict を含む）・worktree とブランチの後始末が行われる。コンフリクトは自己判断で解決しない（`.claude/agents/creator.md` の `## git` 節の方針）。transition.py がマージを中止して blocked にする。
 

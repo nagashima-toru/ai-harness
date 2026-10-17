@@ -7,3 +7,5 @@
 - 2026-10-17 19:12 T-02 doing→blocked attempt=1 creator=sonnet
 - 2026-10-17 20:09 T-01 blocked→todo 人の指示: /plan unblock P-20261017-code-review-in-agents T-01 --fresh
 - 2026-10-17 20:09 T-02 blocked→todo 人の指示: /plan unblock P-20261017-code-review-in-agents T-02 --fresh
+- 2026-10-17 20:09 T-01 todo→doing attempt=1
+- 2026-10-17 20:09 T-02 todo→doing attempt=1

@@ -148,7 +148,7 @@ for d in plans tasks verdicts log designs templates rules; do mkdir -p "$DST/vau
 # vault/rules/ 配下は README・各役割ディレクトリの .gitkeep（雛形）だけを複製する。
 # 役割定義の標準ルール6本（RETIRED_RULES）は配らない。ドメイン固有のルール（コーディングルール・
 # 方式設計・テスト観点など）も複製・上書きの対象にしない。
-for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
+for f in tasks/.gitkeep plans/.gitkeep verdicts/.gitkeep log/.gitkeep designs/.gitkeep templates/task.md templates/plan.md templates/rule.md templates/design.md rules/README.md rules/common/.gitkeep rules/creator/.gitkeep rules/verifier/.gitkeep rules/planner/.gitkeep; do
   copy_if_absent "$SRC/vault/$f" "$DST/vault/$f"
 done
 

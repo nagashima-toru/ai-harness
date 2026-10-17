@@ -1,6 +1,6 @@
 ---
 id: P-20261017-resume-worktree-sync
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #208「worktree を引き継いで再開すると、待機中にマージされた他タスクの変更が worktree に入らず、リポジトリ全体を見る基準を古い状態で判定する」を解決する。

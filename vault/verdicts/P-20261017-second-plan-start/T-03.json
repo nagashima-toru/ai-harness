@@ -1,0 +1,15 @@
+{
+  "task": "P-20261017-second-plan-start/T-03",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-17 15:03",
+  "criteria": [
+    {"text": "A 手順2に `git checkout -B` での切り直しがある（確認：`awk '/^## A\\./,/^3\\. /' .claude/skills/plan/SKILL.md | grep -c 'git checkout -B '` が `1` 以上）", "ok": true, "note": "実行コマンド: worktree の .claude/skills/plan/SKILL.md に対し awk|grep -c 'git checkout -B ' / 出力: 1"},
+    {"text": "A 手順2に、内容の取り込み済みの判定と、リモートの push 先ブランチの確認がある（確認：`awk '/^## A\\./,/^3\\. /' .claude/skills/plan/SKILL.md | grep -c 'git merge-tree --write-tree '` と `awk '/^## A\\./,/^3\\. /' .claude/skills/plan/SKILL.md | grep -c 'git ls-remote --heads origin '` がどちらも `1` 以上）", "ok": true, "note": "実行コマンド: 同 awk|grep -c で両方 / 出力: merge-tree --write-tree=1, ls-remote --heads origin=1"},
+    {"text": "A 手順2に、未コミットの変更の確認と、リモートのコミットの祖先の判定がある（確認：`awk '/^## A\\./,/^3\\. /' .claude/skills/plan/SKILL.md | grep -c 'git status --porcelain'` と `awk '/^## A\\./,/^3\\. /' .claude/skills/plan/SKILL.md | grep -c 'git merge-base --is-ancestor '` がどちらも `1` 以上）", "ok": true, "note": "実行コマンド: 同 awk|grep -c で両方 / 出力: status --porcelain=1, merge-base --is-ancestor=1"},
+    {"text": "スカッシュマージの後にリモートの push 先ブランチが残っている時の止まり方の案内があり、従来の止まり方の案内と手順3も残っている（確認：`grep -c 'リモートの push 先ブランチを削除' .claude/skills/plan/SKILL.md` が `1`、`grep -c 'に戻ってから' .claude/skills/plan/SKILL.md` が `1` 以上、`grep -c '^3\\. .git checkout -b work/' .claude/skills/plan/SKILL.md` が `1`）", "ok": true, "note": "実行コマンド: 各 grep -c / 出力: リモートの push 先ブランチを削除=1, に戻ってから=2, ^3. .git checkout -b work/=1"},
+    {"text": "A 手順2を Read で読むと、切り直しの判定は既存の `git fetch origin <ベースブランチ>:<ベースブランチ>` の後に行うと書かれ、(1) `HARNESS_PUSH_BRANCH` が未設定・現在のブランチが `work/` で始まらず push 先でもない (2) 未コミットの変更がある (3) `git merge-tree --write-tree` が失敗するか結果がベースのツリーと違う (4) `git ls-remote` が失敗するかリモートの push 先が残っていてベースの祖先でない (5) `git checkout -B` が失敗する、のどれでも切り直さずに止まると書かれている", "ok": true, "note": "実行コマンド: awk で A 手順2を出力して読んだ / 出力: 切り直し箇条に「既存の fetch の後で判定」あり。(1)〜(3) 不成立は従来案内で停止、(3) の終了コード非0は未取り込み扱い、(4) の ls-remote 失敗と is-ancestor 非0は停止の案内、checkout -B 失敗は停止、と記載あり"},
+    {"text": "smoke の `(ref-1)` が通る（確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`）", "ok": true, "note": "実行コマンド: worktree で `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1"}
+  ],
+  "reasons": []
+}

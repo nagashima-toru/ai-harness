@@ -22,7 +22,7 @@ GitHub Issue #214（nagashima-toru/ai-harness）「creator・verifier から /co
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | verifier の tools に Skill を足し、コードレビューを参照する基準の判定規則を書く | |
+| T-01 | done | 1 | - | verifier の tools に Skill を足し、コードレビューを参照する基準の判定規則を書く | |
 | T-02 | review | 1 | - | creator の tools に Skill を足し、完了前のコードレビューの手順を書く | |
 | T-03 | todo | 0 | T-01 | run の手順6で、人の判断を求める PASS の verdict を blocked に回す | |
 | T-04 | todo | 0 | T-01,T-02 | smoke に creator・verifier の tools の Skill の検査を足す | |

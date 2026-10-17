@@ -427,7 +427,7 @@ def collect_worktree(worktree, plan_id, tid):
 
 
 def count_new_commits(root, plan_head, branch):
-    r = run_git(root, "rev-list", "--count", "%s..%s" % (plan_head, branch))
+    r = run_git(root, "rev-list", "--count", "--no-merges", "%s..%s" % (plan_head, branch))
     try:
         if r.returncode != 0:
             raise ValueError(r.stderr)

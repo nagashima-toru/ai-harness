@@ -1,0 +1,14 @@
+{
+  "task": "P-20261017-second-plan-start/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-17 15:07",
+  "criteria": [
+    {"text": "`docs/vault-spec.md` に切り直しの条件が書かれている（確認：`grep -c 'git checkout -B ' docs/vault-spec.md` が `1`、`grep -c 'git merge-tree --write-tree' docs/vault-spec.md` が `1`）", "ok": true, "note": "worktree で実行 / 出力: checkout -B は 1、merge-tree --write-tree は 1。docs/vault-spec.md 1節の HARNESS_PUSH_BRANCH 段落に条件（設定・work/…か push 先・未コミット無し・取り込み済み・リモートが無いか祖先）が同じ行内に追記されている"},
+    {"text": "`docs/vault-spec.md` に、切り直しが `/plan` だけで `/design` には加えないことが書かれている（確認：`grep -c '手順1 には加えない' docs/vault-spec.md` が `1`）", "ok": true, "note": "実行コマンド: `grep -c '手順1 には加えない' docs/vault-spec.md` / 出力: 1。差分に「この切り直しは `/plan` 手順A-2 だけで行い、`/design` 手順1 には加えない」あり"},
+    {"text": "`docs/runbook.md` の10節に、2つ目の `/plan` での切り直しと、スカッシュマージ後のリモートの push 先ブランチの削除が書かれている（確認：`awk '/^## 10\\./,/^## 困ったとき/' docs/runbook.md | grep -c 'git checkout -B '` が `1`、`awk '/^## 10\\./,/^## 困ったとき/' docs/runbook.md | grep -c 'リモートの push 先ブランチを削除'` が `1`）", "ok": true, "note": "実行コマンド: 両 awk|grep -c / 出力: 1 と 1。10節末尾に箇条が1つ追加されている（git diff で確認）"},
+    {"text": "`docs/vault-spec.md` と `docs/runbook.md` の両方が変更されている（確認：`git diff --merge-base work/p-20261017-second-plan-start --name-only` の出力に `docs/vault-spec.md` と `docs/runbook.md` の行がある）", "ok": true, "note": "実行コマンド: `git diff --merge-base work/p-20261017-second-plan-start --name-only` / 出力: docs/runbook.md, docs/vault-spec.md, vault/tasks/.../T-04.md"},
+    {"text": "smoke の `(ref-1)` が通る（確認：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` が `1`）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1"}
+  ],
+  "reasons": []
+}

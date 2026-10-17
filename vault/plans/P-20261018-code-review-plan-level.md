@@ -1,6 +1,6 @@
 ---
 id: P-20261018-code-review-plan-level
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #214（P-20261017-code-review-in-agents、#216 でマージ済み）の続き。`/code-review` のタスク単位の実行は費用がタスク数に比例して高すぎるので、計画単位に移す。人の決定事項：

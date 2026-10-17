@@ -24,7 +24,7 @@ GitHub Issue #205 と #206 を解決し、同じセッションで2つ目の /pl
 | T-01 | done | 1 | - | install.sh で vault/log/.gitkeep を配り smoke で検査する | |
 | T-02 | done | 1 | - | plan SKILL の承認・解除のログ追記で vault/log/ を作る | |
 | T-03 | done | 1 | T-02 | plan SKILL A 手順2に push 先ブランチの切り直しを足す | |
-| T-04 | todo | 0 | T-03 | vault-spec と runbook に push 先ブランチの切り直しを書く | |
+| T-04 | doing | 1 | T-03 | vault-spec と runbook に push 先ブランチの切り直しを書く | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

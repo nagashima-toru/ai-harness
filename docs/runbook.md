@@ -141,6 +141,7 @@ env HARNESS_PUSH_BRANCH=<指定ブランチ> bash scripts/vcs_finish.sh
 - 値が毎回同じ環境なら、恒久的に `.claude/settings.json` の `env` に書いてもよい。
 - ローカルでは `work/…` を切って作業し、push 先と PR の head だけがその値になる。
 - 指定ブランチのリモートが先に進んでいて push が失敗した時（non-fast-forward）は、スクリプトは force せずに止まる。人が判断する。
+- 1つ目の計画の PR がマージされた後、同じセッションで2つ目の `/plan` を打つと、`/plan` は前の計画の内容がベースブランチに取り込まれていることを確かめて、push 先ブランチを `git checkout -B <push先> <ベースブランチ>` でベースブランチから切り直す（`.claude/skills/plan/SKILL.md` 手順A の2）。スカッシュマージした時は、リモートの push 先ブランチを削除してから `/plan` を打つ（残っていると切り直した後の push が non-fast-forward になるので、`/plan` は止まる）。GitHub ならリポジトリ設定の Automatically delete head branches でマージ後に自動で消せる（設定は人が行う）。
 
 ## 困ったとき
 | 症状 | 見るところ |

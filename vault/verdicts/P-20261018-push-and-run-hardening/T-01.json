@@ -1,0 +1,15 @@
+{
+  "task": "P-20261018-push-and-run-hardening/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-18 10:23",
+  "criteria": [
+    {"text": "smoke に上流あり・先行の検査があり通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (push-9) '` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で smoke.sh を実行し `grep -c '^  ok   (push-9) '` / 出力: 1。do_push は上流を見ずに毎回 push する実装（scripts/vcs_finish.sh の差分で確認）で、検査は目的に合っている"},
+    {"text": "smoke 全体が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` / 出力: smoke: pass=576 fail=0"},
+    {"text": "`do_push` が上流を見ない：`grep -c 'symbolic-full-name' scripts/vcs_finish.sh` の出力が `0`", "ok": true, "note": "実行コマンド: `grep -c 'symbolic-full-name' scripts/vcs_finish.sh` / 出力: 0。差分でも上流の分岐が消え、else で現在のブランチを push していることを確認"},
+    {"text": "古い記述（上流が無い時だけ push する）がリポジトリに残っていない：`grep -rn --exclude-dir=vault --exclude-dir=.git --exclude-dir=worktrees '上流が無' .` の出力が空", "ok": true, "note": "実行コマンド: 指定の grep -rn を worktree 直下で実行 / 出力: 空"},
+    {"text": "`docs/vault-spec.md` に新しい動作が書かれている：`grep -c '未設定なら上流の有無に関係なく毎回現在のブランチ名で push' docs/vault-spec.md` の出力が `1`", "ok": true, "note": "実行コマンド: 指定の grep -c / 出力: 1"},
+    {"text": "文書のパス参照が壊れていない：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: smoke 出力に対し `grep -c '^  ok   (ref-1) '` / 出力: 1"}
+  ],
+  "reasons": []
+}

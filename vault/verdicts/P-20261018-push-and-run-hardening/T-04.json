@@ -1,0 +1,16 @@
+{
+  "task": "P-20261018-push-and-run-hardening/T-04",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-18 10:27",
+  "criteria": [
+    {"text": "`/code-review` で計画の差分に致命的な指摘が残っていない", "ok": true, "note": "実行: code-review スキル（対象 worktree、`git diff --merge-base main`、vault 計画一式を除く）/ 出力: 指摘8件。クラッシュ・データ破損・誤った結果に当たる確定的な指摘は無し。SKILL.md のレート制限節（doing のまま再開すると attempt+1 される矛盾、エラー判定の部分一致、再試行回数がファイルに残らない）は仕様の設計判断が必要なため人の判断扱い。vcs_finish.sh の push -u（常に push）はタスクの意図どおり。残りは軽微（重複記述・テストの前提の書き方）で4件程度"},
+    {"text": "smoke 全体が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree で実行）/ 出力: smoke: pass=576 fail=0"},
+    {"text": "上流あり・先行の push の検査が通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (push-9) '` の出力が `1`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (push-9) '` / 出力: 1"},
+    {"text": "文書のパス参照が壊れていない：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "古い記述（上流が無い時だけ push する）がリポジトリに残っていない：`grep -rn --exclude-dir=vault --exclude-dir=.git --exclude-dir=worktrees '上流が無' .` の出力が空", "ok": true, "note": "実行コマンド: `grep -rn --exclude-dir=vault --exclude-dir=.git --exclude-dir=worktrees '上流が無' .`（worktree で実行）/ 出力: 空"}
+  ],
+  "reasons": [
+    "人の判断が必要: .claude/skills/run/SKILL.md の「Agent 呼び出しがエラーで返った時」節について、/code-review の指摘が3点ある。(1) レート制限時に doing のまま止めると、次回 /run の手順2.2が中断として attempt+1 するので、HARNESS_MAX_ATTEMPTS 回のレート制限で blocked になり得る。(2) 判定語に API error など広い語を含むため、恒久的なエラーも一時エラーとして扱われ、再試行の上限を素通りし得る。(3) verifier エラーの再試行回数（上限2）がメモリ上のカウンタで、再開のたびに0に戻る。再開時の attempt の数え方と再試行回数の記録先（log か否か）を決める必要がある"
+  ]
+}

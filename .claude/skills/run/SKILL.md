@@ -24,8 +24,8 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 | PASS（手順6。マージ・done・後始末） | `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
 | FAIL（手順6。再試行、上限なら blocked） | `python3 scripts/transition.py <計画ID> <id> doing --worktree <worktree> --branch <branch>` |
 | verifier が人の判断を求めた PASS（手順6。review→blocked。計画単位のレビュータスクで起きうる） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --note "人の判断が必要"` |
-| 中断からの再開・ハング・worktree が無い時の再試行（doing→doing・review→doing） | `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "<補足>"` |
-| 中断・ハング・worktree が無い時の上限での blocked（doing→blocked・review→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "<補足>"` |
+| 中断からの再開・ハング・呼び出しエラー・worktree が無い時の再試行（doing→doing・review→doing） | `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "<補足>"` |
+| 中断・ハング・呼び出しエラー・worktree が無い時の上限での blocked（doing→blocked・review→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "<補足>"` |
 
 複数の id の review・done・blocked・doing（`--worktree` 付き）は1回に1 id ずつ、1つの Bash 呼び出しで1回だけ呼び、並行に呼ばない（transition.py がコミットするため）。todo→doing だけは複数 id を1回で呼ぶ。`blocked` の質問文は Write ツールで一時ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書いて `--question-file` で渡す（言い換えずに書き写すため。引用符の問題とガードの誤検知を避けるため）。
 
@@ -112,6 +112,21 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 いずれの場合も、状態の変更は transition.py の呼び出しで行い（log の追記とコミットも transition.py が行う）、補足（`--note`）に「ハング」の語を含める。
 
 **無人実行（cron・CI）の場合**：`python3 scripts/run_unattended.py` を cron・CI から呼ぶ場合は、人が TaskStop で止めるのを待たない。ラッパーが `HARNESS_RUN_TIMEOUT`（既定 3600 秒）でプロセスグループごと止め、終了コード124で終わる。止められた後の復旧は、次回の `/run` が手順2.2（フェーズ6の再開手順：`doing` は中断を1回の試行として attempt+1、`review` は記録行から worktree を復元）で続きから行う。同じ地点で止まり続けても `HARNESS_MAX_ATTEMPTS` で `blocked` になる。ラッパーは vault のファイルに書かない（状態の変更は次回の `/run` が再開手順の中で transition.py で行う）。対話実行（人が `/run` を打つ場合）の運用は上記のとおり変わらない。
+
+## Agent 呼び出しがエラーで返った時（手順3・5）
+手順3（creator）・手順5（verifier）の Agent ツール呼び出しが、応答の無いハングではなく、エラーで即時に返った時の扱い（Issue #207。例：`Agent terminated early due to an API error: ... rate_limit, HTTP 429`）。creator の `model` の指定を受け付けないエラーは手順3の2のとおりに扱い、この節の対象にしない。
+
+エラーの文言に `429`・`rate_limit`・`overloaded`・`529`・`API error` のいずれかを含むものを「レート制限（429）・一時的な API エラー」とし、それ以外を「それ以外のエラー」とする（文言の完全一致には頼らない）。
+
+1. **レート制限（429）・一時的な API エラー**：transition.py を呼ばず、状態を変えない（doing・review のまま）。worktree は破棄しない。新しい Agent 呼び出し（ほかのタスクの creator・verifier を含む）はしない。既に完了報告を受けたほかのタスクは手順4〜6を手順どおり進めてよい。そのうえで、エラーの内容と対象のタスク ID を人に報告して止まり、「レート制限のリセット後に `/run` を実行すれば、手順2.2（doing は中断から再開、review は記録行から worktree を復元して verifier を呼び直す）で再開できる」と案内する。止まる時に stop_gate が「待機中なら問題ありません」の理由でブロックしても、そのままターンを終えてよい。
+2. **それ以外のエラー**：「ハング時の復旧」の1・2と同じく回数を数える。
+   - creator（手順3）：worktree のパスとブランチ名が返っていれば `bash scripts/discard_worktree.sh <worktree のパス> <ブランチ名>` で破棄する。attempt が上限（`HARNESS_MAX_ATTEMPTS`、既定3）未満なら次を呼んで手順3から creator を呼び直す。
+     - `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "creator呼び出しエラーにより再試行"`
+
+     上限に達していれば、質問文（「creator 呼び出しがエラーで返った」とエラーの内容）を Write ツールで一時ファイルに書き、次を呼ぶ。
+     - `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "creator呼び出しエラー"`
+   - verifier（手順5）：worktree は破棄しない。verifier を呼び直してよいが、同一タスクでエラーによる再試行が2回に達したら（attempt とも、ハング再試行回数とも別に数える）、質問文（「verifier 呼び出しがエラーで返った」とエラーの内容と worktree のパス）を一時ファイルに書き、次を呼ぶ（review→blocked）。worktree は残す。
+     - `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --no-model --note "verifier呼び出しエラー"`
 
 ## 6. verdict に従う（逐次処理）
 全 verifier の完了を待った上で、対象タスク（手順5で verifier を呼んだタスク）を1件ずつ、計画票のタスク表の上から並んだ順に**逐次**処理する。transition.py がコミット・マージを行うので、複数タスクが同時に PASS していても並行に呼ばず、1件ずつ完了させてから次のタスクに移る。

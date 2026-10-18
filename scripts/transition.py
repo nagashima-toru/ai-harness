@@ -6,6 +6,7 @@
         [--question <文> | --question-file <パス>] [--note <補足>] [--no-model]
         [--worktree <パス> --branch <ブランチ> --plan-head <sha>]
     python3 scripts/transition.py <計画ID> <id> doing --resume-worktree [--note <補足>]
+    python3 scripts/transition.py <計画ID> <id>[,<id>...] doing|review --no-model --keep-attempt --note <補足>
 
 やること（すべての id の検査を先に済ませ、通った時だけ行う）:
   1. 計画票 vault/plans/<計画ID>.md のタスク表の status・attempt・question を書き換える
@@ -15,6 +16,7 @@
 
 遷移表は todo→doing・doing→doing・doing→review・doing→blocked・review→done・
 review→doing・review→blocked の7つだけ。承認と blocked の解除は扱わない。
+（例外：--keep-attempt の doing→doing・review→review は attempt を変えずに log に1行足すだけ。）
 review→done は、各 id に正しい PASS の verdict があり（_hooklib.done_rows_without_pass）
 attempt が一致する時だけ行い、verdict もコミットに含める。
 doing→review・doing→blocked の行に creator=<model>、review→done・review→doing・
@@ -86,6 +88,12 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
   引き継げない時（記録行が無い・worktree の検証に通らない・マージの衝突）は何も変えず終了コード5で、
   標準出力に `<計画ID>/<id>: 引き継げない（<理由>）` を出す。run はその id を通常の todo→doing に回す。
   状態のコミットに失敗したら計画票・log を戻して終了コード1（worktree 側のマージは取り消さない）。
+
+--keep-attempt（doing→doing・review→review。attempt を変えず log に1行足すだけ。遷移先は
+  doing か review。今の status が遷移先と同じ時だけ行い、違えば終了コード1。--worktree／
+  --branch／--plan-head／--resume-worktree／--question／--question-file とは併用できない＝
+  終了コード2）: レート制限での停止・再開や、verifier のエラーによる再試行の回数を log に残すのに使う。
+  モデル（creator=・verifier=）は付けない。
 
 終了コード:
     0  review／done にした
@@ -204,7 +212,21 @@ def parse_args(argv):
     p.add_argument("--branch", default=None)
     p.add_argument("--plan-head", dest="plan_head", default=None)
     p.add_argument("--resume-worktree", dest="resume_worktree", action="store_true")
+    p.add_argument("--keep-attempt", dest="keep_attempt", action="store_true")
     args = p.parse_args(argv)
+
+    if args.keep_attempt:
+        if args.target not in ("doing", "review"):
+            p.error("--keep-attempt は遷移先 doing・review にだけ対応しています")
+        if (
+            args.worktree is not None
+            or args.branch is not None
+            or args.plan_head is not None
+            or args.resume_worktree
+            or args.question is not None
+            or args.question_file is not None
+        ):
+            p.error("--keep-attempt は --worktree／--branch／--plan-head／--resume-worktree／--question／--question-file と併用できません")
 
     ids = [x.strip() for x in args.ids.split(",")]
     if any(x == "" for x in ids) or len(set(ids)) != len(ids):
@@ -822,14 +844,19 @@ def main(argv):
         row = by_id[tid]
         old = row["status"]
         olds.add(old)
-        if (old, target) not in TRANSITIONS:
+        if args.keep_attempt:
+            if old != target:
+                fail("%s: --keep-attempt は status が %s の時だけ行えます（今は %s）" % (tid, target, old))
+        elif (old, target) not in TRANSITIONS:
             fail("%s: %s→%s は遷移表にありません" % (tid, old, target))
         try:
             cur = int(row["attempt"])
         except ValueError:
             fail("%s: attempt が整数ではありません: %r" % (tid, row["attempt"]))
         cur_attempts[tid] = cur
-        if old == "todo":
+        if args.keep_attempt:
+            new_attempt = cur
+        elif old == "todo":
             for dep in [x.strip() for x in row["after"].split(",")]:
                 if dep in ("", "-"):
                     continue

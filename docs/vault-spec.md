@@ -199,7 +199,7 @@ blocked の解除（`/plan unblock`）はタスクに紐づくので、タスク
 
 run の再開情報（creator が作業した worktree のパス・ブランチ名・その時点の計画ブランチの HEAD）は、次の形で1行追記する：`- <日時> <id> worktree path=<パス> branch=<ブランチ名> plan_head=<sha>`（例：`- 2026-09-30 10:15 T-01 worktree path=/path/to/.claude/worktrees/agent-xxxx branch=worktree-agent-xxxx plan_head=<40桁の sha>`）。`plan_head=` の値は `git rev-parse HEAD` の完全な sha とする。この行は状態遷移ではない（`→` を含まない）補足行で、`→` を含む遷移行以外は状態の集計（`model_stats.py` など）に使わない。creator の完了後に run が transition.py の review・blocked（`--worktree` 付き）を呼ぶと、transition.py が1タスク1行ずつ書く。再開時に参照するのは、その id の最後の記録行とする。`doing` の中断時の再開の補足は `中断から再開` とする。
 
-再開・ハング・worktree が無い時の遷移行は、run が transition.py を `--no-model --note "<補足>"` で呼んで書く。補足は `中断から再開`・`中断が上限に達した`・`worktree が無いため作り直し`・`worktree が無いため`・`creator呼び出しハングにより再試行`・`creator呼び出しハング`・`verifier呼び出しハング` のいずれか。
+再開・ハング・呼び出しエラー・worktree が無い時の遷移行は、run が transition.py を `--no-model --note "<補足>"` で呼んで書く。補足は `中断から再開`・`中断が上限に達した`・`worktree が無いため作り直し`・`worktree が無いため`・`creator呼び出しハングにより再試行`・`creator呼び出しハング`・`verifier呼び出しハング`・`creator呼び出しエラーにより再試行`・`creator呼び出しエラー`・`verifier呼び出しエラー` のいずれか。
 
 verifier が `reasons` に `人の判断が必要:` で始まる要素を書いた PASS を run が blocked にする時の遷移行は `- <日時> <id> review→blocked attempt=<n> verifier=<モデル> 人の判断が必要` とする（run が transition.py を `--note "人の判断が必要"` で呼んで書く）。
 

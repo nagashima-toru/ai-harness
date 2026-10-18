@@ -1,0 +1,16 @@
+{
+  "task": "P-20261018-push-and-run-hardening/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-18 10:23",
+  "criteria": [
+    {"text": "新しい節が「ハング時の復旧」節の直後にある：`grep '^## ' .claude/skills/run/SKILL.md | grep -A1 'ハング時の復旧'` の出力の2行目が `## Agent 呼び出しがエラーで返った時（手順3・5）`", "ok": true, "note": "実行コマンド: worktree で `grep '^## ' .claude/skills/run/SKILL.md | grep -A1 'ハング時の復旧'` / 出力2行目: ## Agent 呼び出しがエラーで返った時（手順3・5）"},
+    {"text": "レート制限・一時的な API エラーでは状態を変えない：`grep -c 'transition.py を呼ばず、状態を変えない（doing・review のまま）' .claude/skills/run/SKILL.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: 1"},
+    {"text": "リセット後の再開の案内がある：`grep -c 'リセット後に ./run. を実行すれば、手順2.2' .claude/skills/run/SKILL.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: 1"},
+    {"text": "creator のエラーの再試行の補足が SKILL と仕様の両方にある：`grep -c 'creator呼び出しエラーにより再試行' .claude/skills/run/SKILL.md docs/vault-spec.md` の出力が `.claude/skills/run/SKILL.md:1` と `docs/vault-spec.md:1` の2行", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: .claude/skills/run/SKILL.md:1 と docs/vault-spec.md:1"},
+    {"text": "verifier のエラーの blocked の補足が SKILL と仕様の両方にある：`grep -c 'verifier呼び出しエラー' .claude/skills/run/SKILL.md docs/vault-spec.md` の出力が `.claude/skills/run/SKILL.md:1` と `docs/vault-spec.md:1` の2行", "ok": true, "note": "実行コマンド: 同 grep -c / 出力: .claude/skills/run/SKILL.md:1 と docs/vault-spec.md:1"},
+    {"text": "文書のパス参照が壊れていない：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: worktree で bash scripts/smoke.sh の出力を保存し grep -c '^  ok   (ref-1) ' / 出力: 1"},
+    {"text": "smoke 全体が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `fail=0` で終わる", "ok": true, "note": "実行コマンド: bash scripts/smoke.sh の最終行 / 出力: smoke: pass=575 fail=0"}
+  ],
+  "reasons": []
+}

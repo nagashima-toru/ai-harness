@@ -1882,6 +1882,8 @@ rm -rf "$PR_DIR"
 echo "== vcs_finish.sh =="
 VF_BIN="$TMP/vf_bin"; VF_REC="$TMP/vf_rec.txt"; VF_REPO="$TMP/vf_repo"
 mkdir -p "$VF_BIN" "$VF_REPO"
+git init -q --bare "$TMP/vf_push.git" >/dev/null 2>&1
+git init -q --bare "$TMP/vf_push2.git" >/dev/null 2>&1
 for vf_cmd in gh glab; do
   printf '#!/usr/bin/env bash\nfor a in "$@"; do printf "%%s\\n" "$a"; done > "%s"\n[ "${1:-}" = api ] && echo https://github.com/o/r/pull/1\nexit 0\n' "$VF_REC" > "$VF_BIN/$vf_cmd"
   chmod +x "$VF_BIN/$vf_cmd"
@@ -1890,7 +1892,8 @@ done
   cd "$VF_REPO" && git init -q -b vfmain . \
     && git -c user.name=smoke -c user.email=smoke@example.com commit -q --allow-empty -m init \
     && git config branch.vfmain.remote . && git config branch.vfmain.merge refs/heads/vfmain \
-    && git remote add origin https://github.com/o/r.git
+    && git remote add origin https://github.com/o/r.git \
+    && git remote set-url --push origin "$TMP/vf_push.git"
 ) >/dev/null 2>&1
 expect_vf() { # $1=name $2=host $3=期待する記録（改行区切り） $4...=vcs_finish.sh への引数
   local name="$1" host="$2" want="$3"
@@ -1917,7 +1920,8 @@ mkdir -p "$VF_REPO2/vault/plans" "$VF_REPO2/vault/verdicts/P-20990101-vf"
     && printf '{"task": "P-20990101-vf/T-01", "attempt": 1, "result": "PASS"}\n' > vault/verdicts/P-20990101-vf/T-01.json \
     && git add -A && git -c user.name=smoke -c user.email=smoke@example.com commit -q -m "P-20990101-vf/T-01: done" \
     && git config branch.work/p-20990101-vf.remote . && git config branch.work/p-20990101-vf.merge refs/heads/work/p-20990101-vf \
-    && git remote add origin https://github.com/o/r.git
+    && git remote add origin https://github.com/o/r.git \
+    && git remote set-url --push origin "$TMP/vf_push2.git"
 ) >/dev/null 2>&1
 vf_body_check() { # $1=name $2=host
   local name="$1" host="$2" ok=1 want5
@@ -2128,6 +2132,15 @@ pb_run github HARNESS_PUSH_BRANCH=ccr-x -- --title T --body B
 vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
 [ "$(pb_bare ccr-x)" = "$(pb_head)" ] && [ "$vf_got" = $'pr\ncreate\n--title\nT\n--body\nB' ] && vf_ok=1 || vf_ok=0
 vf_rest_check "(push-8) github・引数あり・HARNESS_PUSH_BRANCH=ccr-x → ccr-x に push・gh の引数はそのまま" "$vf_ok" "$vf_got"
+
+pb_reset
+pb_run github
+git -C "$PB_WORK" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 && vf_up=1 || vf_up=0
+pb_commit ahead
+pb_run github
+vf_got="$(cat "$VF_REC" 2>/dev/null || true)"
+[ "$vf_up" = 1 ] && [ "$(pb_bare pbmain)" = "$(pb_head)" ] && printf '%s\n' "$vf_got" | grep -qx 'head=pbmain' && vf_ok=1 || vf_ok=0
+vf_rest_check "(push-9) github・引数なし・未設定・上流あり・先行 → 現在のブランチの新しい HEAD が push される" "$vf_ok" "up=$vf_up bare=$(pb_bare pbmain) head=$(pb_head)"
 
 BGTMP="$(smoke_tmpdir)" || abort_tmp
 git -C "$BGTMP" init -q -b main

@@ -15,7 +15,7 @@ GitHub Issue #217・#207・#211（nagashima-toru/ai-harness）をまとめて解
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | review | 1 | - | vcs_finish.sh が上流の有無に関係なく毎回現在のブランチを push する | |
-| T-02 | doing | 1 | - | run SKILL に Agent 呼び出しがエラーで返った時の節がある | |
+| T-02 | review | 1 | - | run SKILL に Agent 呼び出しがエラーで返った時の節がある | |
 | T-03 | doing | 1 | - | planner.md の grep パターンの特殊文字の列挙に # がある | |
 | T-04 | todo | 0 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | |
 

@@ -14,9 +14,9 @@ GitHub Issue #217・#207・#211（nagashima-toru/ai-harness）をまとめて解
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | vcs_finish.sh が上流の有無に関係なく毎回現在のブランチを push する | |
-| T-02 | todo | 0 | - | run SKILL に Agent 呼び出しがエラーで返った時の節がある | |
-| T-03 | todo | 0 | - | planner.md の grep パターンの特殊文字の列挙に # がある | |
+| T-01 | doing | 1 | - | vcs_finish.sh が上流の有無に関係なく毎回現在のブランチを push する | |
+| T-02 | doing | 1 | - | run SKILL に Agent 呼び出しがエラーで返った時の節がある | |
+| T-03 | doing | 1 | - | planner.md の grep パターンの特殊文字の列挙に # がある | |
 | T-04 | todo | 0 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | |
 
 ## 計画の受け入れ基準

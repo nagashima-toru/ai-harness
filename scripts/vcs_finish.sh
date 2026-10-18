@@ -17,7 +17,7 @@
 #   HARNESS_BASE_BRANCH は PR の base（ホスティング無しの案内では取り込み先）。前後の空白を除いて空なら main。
 #   引数ありの経路と GitLab の経路は base を指定しない（gh / glab の既定に任せる）
 #   HARNESS_PR_TITLE は上の経路でだけ使うタイトル。未設定か空なら計画ID、計画が見つからなければ現在のブランチ名
-#   HARNESS_PUSH_BRANCH は push 先のブランチ名。前後の空白を除いて空なら未設定（今までどおり）。
+#   HARNESS_PUSH_BRANCH は push 先のブランチ名。前後の空白を除いて空なら未設定で、上流の有無に関係なく毎回 git push -u origin <現在のブランチ> で push する。
 #   設定時は GitHub・GitLab の経路で、上流の有無に関係なく毎回 git push -u origin HEAD:<値> で push する
 #   （force は使わない。失敗したらその終了コードで終わり、gh / glab は呼ばない）。
 #   PR/MR の head（source branch）にもその値を使う（GitHub の REST は head=<値>、GitLab の引数なしの経路は
@@ -41,19 +41,18 @@ push_branch="${HARNESS_PUSH_BRANCH:-}"
 push_branch="${push_branch#"${push_branch%%[![:space:]]*}"}"
 push_branch="${push_branch%"${push_branch##*[![:space:]]}"}"
 
-# push する。push_branch があれば毎回 HEAD:<値>、無ければ上流が無い時だけ現在のブランチ。失敗したらその終了コードで終わる。
+# push する。push_branch があれば毎回 HEAD:<値>、無ければ上流の有無に関係なく毎回現在のブランチ。失敗したらその終了コードで終わる。
 do_push() {
   local current_branch push_status
   if [ -n "$push_branch" ]; then
-    git push -u origin "HEAD:$push_branch"
+    git push -u origin "HEAD:$push_branch" >&2
     push_status=$?
-    [ "$push_status" -eq 0 ] || exit "$push_status"
-  elif ! git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+  else
     current_branch="$(git rev-parse --abbrev-ref HEAD)"
-    git push -u origin "$current_branch"
+    git push -u origin "$current_branch" >&2
     push_status=$?
-    [ "$push_status" -eq 0 ] || exit "$push_status"
   fi
+  [ "$push_status" -eq 0 ] || exit "$push_status"
 }
 
 # 現在のブランチ（work/<計画IDの英小文字>）に対応する計画票を探し、plan_id と plan_toplevel を設定する。無ければ1を返す。

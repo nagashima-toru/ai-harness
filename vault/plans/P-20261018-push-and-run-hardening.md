@@ -17,7 +17,7 @@ GitHub Issue #217・#207・#211（nagashima-toru/ai-harness）をまとめて解
 | T-01 | done | 1 | - | vcs_finish.sh が上流の有無に関係なく毎回現在のブランチを push する | |
 | T-02 | done | 1 | - | run SKILL に Agent 呼び出しがエラーで返った時の節がある | |
 | T-03 | done | 1 | - | planner.md の grep パターンの特殊文字の列挙に # がある | |
-| T-04 | blocked | 1 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | 人の判断が必要: .claude/skills/run/SKILL.md の「Agent 呼び出しがエラーで返った時」節について、/code-review の指摘が3点ある。(1) レート制限時に doing のまま止めると、次回 /run の手順2.2が中断として attempt+1 するので、HARNESS_MAX_ATTEMPTS 回のレート制限で blocked になり得る。(2) 判定語に API error など広い語を含むため、恒久的なエラーも一時エラーとして扱われ、再試行の上限を素通りし得る。(3) verifier エラーの再試行回数（上限2）がメモリ上のカウンタで、再開のたびに0に戻る。再開時の attempt の数え方と再試行回数の記録先（log か否か）を決める必要がある |
+| T-04 | todo | 0 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

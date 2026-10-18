@@ -12,3 +12,8 @@
 - 2026-10-18 10:25 T-02 review→done attempt=1 verifier=sonnet
 - 2026-10-18 10:25 T-03 review→done attempt=1 verifier=sonnet
 - 2026-10-18 10:25 T-04 todo→doing attempt=1
+- 2026-10-18 10:27 T-04 worktree path=/home/user/ai-harness/.claude/worktrees/agent-a664866f2272f2264 branch=worktree-agent-a664866f2272f2264 plan_head=0d6675c3d0d1f229f45bca4fb1739fc2d31cb586
+- 2026-10-18 10:27 T-04 doing→review attempt=1 creator=sonnet
+- 2026-10-18 10:31 T-04 review→blocked attempt=1 verifier=sonnet 人の判断が必要
+- 2026-10-18 10:47 T-04 amend 成果物追加=scripts/transition.py 基準差し替え=5
+- 2026-10-18 10:47 T-04 blocked→todo 人の指示: /plan unblock P-20261018-push-and-run-hardening T-04

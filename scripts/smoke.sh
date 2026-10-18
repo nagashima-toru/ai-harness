@@ -2907,6 +2907,22 @@ tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_P2"
 expect_eq "(transition-resume) 11 出力の plan_head を使った review と done が終了コード 0 で他タスクのファイルが計画ブランチに残る" "0 0 yes changed" \
   "$TW_RCR $TW_RC $([ -f "$TWR/src/other.txt" ] && echo yes || echo no) $(cat "$TWR/src/ok.txt" 2>/dev/null)"
 
+# --keep-attempt
+tw_setup doing 2; TW_C0="$(git -C "$TWR" rev-list --count HEAD)"
+tw_run P-TEST T-01 doing --no-model --keep-attempt --note "レート制限から再開"
+TW_K1="$TW_RC $(tw_row | grep -c '^| T-01 | doing | 2 |') $(tw_logtail 1) $(( $(git -C "$TWR" rev-list --count HEAD) - TW_C0 ))"
+tw_setup review 2
+tw_run P-TEST T-01 review --no-model --keep-attempt --note "verifier呼び出しエラーにより再試行"
+TW_K2="$TW_RC $(tw_row | grep -c '^| T-01 | review | 2 |') $(tw_logtail 1)"
+tw_setup review 2
+tw_run P-TEST T-01 doing --no-model --keep-attempt --note "x"
+TW_K3="$TW_RC $(tw_row | grep -c '^| T-01 | review | 2 |')"
+tw_run P-TEST T-01 blocked --no-model --keep-attempt --question q
+TW_K4="$TW_RC"
+expect_eq "(tr-keep-1) transition.py --keep-attempt は status・attempt を変えず log に1行足す" \
+  "0 1 T-01 doing→doing attempt=2 レート制限から再開 1|0 1 T-01 review→review attempt=2 verifier呼び出しエラーにより再試行|1 1|2" \
+  "$TW_K1|$TW_K2|$TW_K3|$TW_K4"
+
 # 25 pr_body の件名のパターン
 tw_setup doing 1
 git -C "$TWR" commit -q --allow-empty -m 'P-TEST/T-01,T-02: review→done'

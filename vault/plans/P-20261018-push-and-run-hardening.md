@@ -1,6 +1,6 @@
 ---
 id: P-20261018-push-and-run-hardening
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #217・#207・#211（nagashima-toru/ai-harness）をまとめて解決する。(1) `scripts/vcs_finish.sh` の `do_push` が、`HARNESS_PUSH_BRANCH` が無く上流が設定済みの時にも毎回現在のブランチを push するようにし、smoke に「上流があり先行している時も push される」検査を足す（#217）。(2) `.claude/skills/run/SKILL.md` に、creator・verifier の Agent 呼び出しがエラーで即時に返った時の節を足す（#207）。(3) `.claude/agents/planner.md` の grep パターンの特殊文字の箇条とセルフチェックに `#` を足す（#211）。

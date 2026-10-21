@@ -982,6 +982,50 @@ if [ "$result_e_file" = "True" ] && [ "$result_e_manifest" = "True" ]; then resu
 expect_eq "(e) discard_worktree.sh install先に配置されharness-manifest.jsonのfilesにハッシュ付きで載る" "True" "$result_e"
 rm -rf "$D_E_TARGET"
 
+AWMAIN="$(smoke_tmpdir)" || abort_tmp
+git -C "$AWMAIN" init -q -b main
+git -C "$AWMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m first
+AW_OLD="$(git -C "$AWMAIN" rev-parse HEAD)"
+git -C "$AWMAIN" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m second
+AW_NEW="$(git -C "$AWMAIN" rev-parse HEAD)"
+
+aw_out="$(cd "$AWMAIN" && bash "$ROOT/scripts/add_worktree.sh" "$AW_NEW" 2>/dev/null)"; aw_rc=$?
+aw_path="$(printf '%s' "$aw_out" | sed -n 's/^path=\([^ ]*\) branch=.*/\1/p')"
+aw_branch="$(printf '%s' "$aw_out" | sed -n 's/^path=[^ ]* branch=\([^ ]*\) plan_head=.*/\1/p')"
+aw_head="$(git -C "$aw_path" rev-parse HEAD 2>/dev/null)"
+result_aw1="False"
+if [ "$aw_rc" -eq 0 ] && [ "$(printf '%s\n' "$aw_out" | wc -l)" -eq 1 ] \
+  && printf '%s' "$aw_path" | grep -q '/\.claude/worktrees/agent-' \
+  && case "$aw_branch" in worktree-agent-*) true ;; *) false ;; esac \
+  && [ "$aw_head" = "$AW_NEW" ]; then result_aw1="True"; fi
+expect_eq "(add-wt-1) add_worktree.sh 正常系: 終了コード0で1行を出し、パスが .claude/worktrees/agent- の下・ブランチが worktree-agent- で始まり・worktree の HEAD が指定の sha" "True" "$result_aw1"
+
+( cd "$AWMAIN" && bash "$ROOT/scripts/discard_worktree.sh" "$aw_path" "$aw_branch" ) >/dev/null 2>&1; aw_drc=$?
+result_aw2="False"
+if [ "$aw_drc" -eq 0 ] && [ -n "$aw_path" ] && ! git -C "$AWMAIN" worktree list --porcelain | grep -q "$aw_path"; then result_aw2="True"; fi
+expect_eq "(add-wt-2) add_worktree.sh で作った worktree を discard_worktree.sh が破棄できる" "True" "$result_aw2"
+
+aw3_out="$(cd "$AWMAIN" && bash "$ROOT/scripts/add_worktree.sh" "$AW_OLD" 2>/dev/null)"; aw3_rc=$?
+aw3_path="$(printf '%s' "$aw3_out" | sed -n 's/^path=\([^ ]*\) branch=.*/\1/p')"
+aw3_branch="$(printf '%s' "$aw3_out" | sed -n 's/^path=[^ ]* branch=\([^ ]*\) plan_head=.*/\1/p')"
+result_aw3="False"
+if [ "$aw3_rc" -eq 0 ] && [ -n "$aw3_path" ] && [ "$(git -C "$aw3_path" rev-parse HEAD 2>/dev/null)" = "$AW_OLD" ]; then result_aw3="True"; fi
+expect_eq "(add-wt-3) add_worktree.sh は HEAD より古いコミットを渡すとそのコミットから切る" "True" "$result_aw3"
+[ -n "$aw3_path" ] && git -C "$AWMAIN" worktree remove --force "$aw3_path" >/dev/null 2>&1
+[ -n "$aw3_branch" ] && git -C "$AWMAIN" branch -D "$aw3_branch" >/dev/null 2>&1
+
+aw4_wt_before="$(git -C "$AWMAIN" worktree list --porcelain)"
+aw4_br_before="$(git -C "$AWMAIN" branch --list)"
+( cd "$AWMAIN" && bash "$ROOT/scripts/add_worktree.sh" no-such-ref-xyz ) >/dev/null 2>&1; aw4_rc=$?
+result_aw4="False"
+if [ "$aw4_rc" -eq 1 ] && [ "$aw4_wt_before" = "$(git -C "$AWMAIN" worktree list --porcelain)" ] \
+  && [ "$aw4_br_before" = "$(git -C "$AWMAIN" branch --list)" ]; then result_aw4="True"; fi
+expect_eq "(add-wt-4) add_worktree.sh 拒否系: commit に解決できない引数は終了コード1で worktree もブランチも増えない" "True" "$result_aw4"
+
+( cd "$AWMAIN" && bash "$ROOT/scripts/add_worktree.sh" ) >/dev/null 2>&1; aw5_rc=$?
+expect_eq "(add-wt-5) add_worktree.sh 引数が無い時は終了コード2" "2" "$aw5_rc"
+rm -rf "$AWMAIN"
+
 echo "== install.sh --update =="
 UTMP="$(smoke_tmpdir)" || abort_tmp
 bash "$ROOT/scripts/install.sh" "$UTMP" >/dev/null 2>&1
@@ -3055,6 +3099,16 @@ expect_eq "(amend-task) 05 拒否は終了コード 1 でタスク票・log・�
 expect_eq "(amend-task) 06 成功時のコミットが1つ増え、ファイルがタスク票と log の2つで件名が決まった形" \
   "1 vault/log/P-TEST.md vault/tasks/P-TEST/T-01.md  P-TEST/T-01: amend" \
   "$((AM_N1 - AM_N0)) $AM_FILES $AM_SUBJ"
+tw_setup blocked 1
+am_run P-TEST T-01 --replace-criterion 1 'a | b'
+AM_RC7="$AM_RC"
+expect_eq "(amend-task) 07 --replace-criterion の文の | がそのまま残る" "0 - a | b 0" \
+  "$AM_RC7 $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -m1 '^- ') $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '／')"
+AM_CN0="$(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '^- ')"
+am_run P-TEST T-01 --replace-criterion 1 $'p\nq'
+AM_RC8="$AM_RC"
+expect_eq "(amend-task) 08 --replace-criterion の文の改行は空白1つになり基準の行数が変わらない" "0 - p q $AM_CN0" \
+  "$AM_RC8 $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -m1 '^- ') $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '^- ')"
 
 # --- 主な文書の参照切れの検査 ---
 refcheck() { # $1=ルート。存在しないパスを <文書>:<行>: <パス> で出す

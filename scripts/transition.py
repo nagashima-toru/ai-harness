@@ -645,6 +645,13 @@ def done_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, posit
         now = now_jst()
         note = "計画ブランチを取り込み再検証"
         full_note = (note + " " + args.note_text).strip() if args.note_text else note
+        # 古い PASS を先に消す（消せないまま log を書くと、再開時に古い PASS で done になる）
+        try:
+            os.remove(os.path.join(root, verdict_rel))
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            fail("古い verdict を消せません: %s" % e)
         new_log, _before = log_with_lines(
             log_path,
             [
@@ -655,10 +662,6 @@ def done_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, posit
         commit_files(
             root, [(log_rel, new_log)], "%s/%s: review→review" % (plan_id, tid), [log_rel]
         )
-        try:
-            os.remove(os.path.join(root, verdict_rel))
-        except OSError:
-            pass
         print("%s/%s: review→review attempt=%d 計画ブランチを取り込み再検証 plan_head=%s"
               % (plan_id, tid, cur, head))
         return 6

@@ -2951,6 +2951,41 @@ tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_P2"
 expect_eq "(transition-resume) 11 出力の plan_head を使った review と done が終了コード 0 で他タスクのファイルが計画ブランチに残る" "0 0 yes changed" \
   "$TW_RCR $TW_RC $([ -f "$TWR/src/other.txt" ] && echo yes || echo no) $(cat "$TWR/src/ok.txt" 2>/dev/null)"
 
+# 再検証（他タスクが先に done になってマージ済み）
+tw_other() { # $1=変えるファイル（計画ブランチに別ブランチを --no-ff でマージする）
+  git -C "$TWR" checkout -q -b other-task
+  echo other > "$TWR/$1"; git -C "$TWR" add -A; git -C "$TWR" commit -q -m "他タスクの成果物"
+  git -C "$TWR" checkout -q work/p-test
+  git -C "$TWR" merge -q --no-ff other-task -m "他タスクのマージ"
+  git -C "$TWR" branch -q -D other-task
+}
+tw_setup review 1; tw_mod; tw_commit; tw_other src/other.txt; tw_verdict PASS 1
+TW_HR="$(git -C "$TWR" rev-parse HEAD)"
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-recheck) 01 他タスクのマージ後の done は終了コード 6 で review のまま・他タスクのファイルが worktree にあり verdict が無い" \
+  "6 1 yes no" "$TW_RC $(tw_row | grep -c '^| T-01 | review | 1 |') $([ -f "$TWW/src/other.txt" ] && echo yes || echo no) $([ -e "$TWR/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no)"
+expect_eq "(transition-recheck) 02 log の最後の2行が記録行と再検証の遷移行" \
+  "T-01 worktree path=$TW_RP branch=$TWB plan_head=$TW_HR
+T-01 review→review attempt=1 計画ブランチを取り込み再検証" "$(tw_logtail 2)"
+expect_eq "(transition-recheck) 03 標準出力は1行で plan_head を含む" \
+  "1 P-TEST/T-01: review→review attempt=1 計画ブランチを取り込み再検証 plan_head=$TW_HR" "$TW_OL $(cat "$TW_OUT")"
+tw_verdict PASS 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_HR"
+expect_eq "(transition-recheck) 04 出力の plan_head での done は終了コード 0 で他タスクと自タスクの変更が計画ブランチに入る" \
+  "0 1 yes changed" "$TW_RC $(tw_row | grep -c '^| T-01 | done | 1 |') $([ -f "$TWR/src/other.txt" ] && echo yes || echo no) $(cat "$TWR/src/ok.txt" 2>/dev/null)"
+
+tw_setup review 1; tw_mod; tw_commit; tw_other src/ok.txt; tw_verdict PASS 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-recheck) 05 他タスクと同じファイルを変えていると終了コード 4 で blocked・question に衝突ファイル・MERGE_HEAD が残らず worktree が残る" \
+  "4 1 1 no yes" "$TW_RC $(tw_row | grep -c '^| T-01 | blocked | 1 |') $(tw_row | grep -c 'src/ok.txt') $(tw_mergehead) $([ -d "$TWW" ] && echo yes || echo no)"
+
+tw_setup review 1; tw_mod; tw_commit
+git -C "$TWR" commit -q --allow-empty -m "状態のコミット相当"
+tw_verdict PASS 1
+tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_PH"
+expect_eq "(transition-recheck) 06 計画ブランチ側がマージでないコミットだけなら再検証に回さず終了コード 0 で done" \
+  "0 1" "$TW_RC $(tw_row | grep -c '^| T-01 | done | 1 |')"
+
 # --keep-attempt
 tw_setup doing 2; TW_C0="$(git -C "$TWR" rev-list --count HEAD)"
 tw_run P-TEST T-01 doing --no-model --keep-attempt --note "レート制限から再開"

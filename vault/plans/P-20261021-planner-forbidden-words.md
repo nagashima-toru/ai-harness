@@ -15,7 +15,7 @@ GitHub Issue #224 に対応し、`.claude/agents/planner.md` に「禁止操作�
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | planner.md に確認コマンドの文字列へ禁止操作の語を直接書かない指針を足す | |
+| T-01 | doing | 1 | - | planner.md に確認コマンドの文字列へ禁止操作の語を直接書かない指針を足す | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

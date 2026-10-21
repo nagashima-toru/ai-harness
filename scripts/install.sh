@@ -64,7 +64,7 @@ CLAUDE_FILES=".claude/ai-harness.md .claude/agents/creator.md .claude/agents/pla
 # scripts/ 直下で配るハーネス本体のスクリプト。固定で持ち、配布元が独自に置いたスクリプトは配らない
 # （マニフェストにも記録しない）。ハーネス本体にスクリプトを足したらここにも足す
 # （smoke の (inst-scr) 06 が足し忘れを検出する）。
-SCRIPTS_FILES="scripts/amend_task.py scripts/current_plan.sh scripts/diff_gate.py scripts/discard_worktree.sh scripts/install.sh scripts/merge_claude_md.py scripts/merge_settings_json.py scripts/model_stats.py scripts/plan_record.py scripts/pr_body.py scripts/purge_plan.sh scripts/rules.sh scripts/run_unattended.py scripts/smoke.sh scripts/transition.py scripts/uninstall.sh scripts/unmerge_claude_md.py scripts/unmerge_settings_json.py scripts/usage_stats.py scripts/vcs_finish.sh scripts/verdict_notes.py"
+SCRIPTS_FILES="scripts/amend_task.py scripts/add_worktree.sh scripts/current_plan.sh scripts/diff_gate.py scripts/discard_worktree.sh scripts/install.sh scripts/merge_claude_md.py scripts/merge_settings_json.py scripts/model_stats.py scripts/plan_record.py scripts/pr_body.py scripts/purge_plan.sh scripts/rules.sh scripts/run_unattended.py scripts/smoke.sh scripts/transition.py scripts/uninstall.sh scripts/unmerge_claude_md.py scripts/unmerge_settings_json.py scripts/usage_stats.py scripts/vcs_finish.sh scripts/verdict_notes.py"
 
 # ハーネス本体として配る（＝マニフェストに記録し、--update の対象にする）パスの列挙。
 # 利用者の資産（vault/plans, tasks, verdicts, log, designs の中身、README 以外の

@@ -1,6 +1,6 @@
 ---
 id: P-20261021-run-auto-subscribe-pr
-status: approved
+status: done
 ---
 # ゴール
 run: PR を作ったら subscribe_pr_activity で自動的に監視する（GitHub Issue #222）

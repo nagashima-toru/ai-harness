@@ -114,6 +114,8 @@ done にした計画票は除去のコミットで消えるため計画ブラン
 
 `done` は **PR 作成済み**という意味で、ベースブランチへのマージは含まない。マージは人が行い、エージェントは `scripts/vcs_finish.sh`（内部で GitHub なら PR を、GitLab なら MR を作成する。ホスティング無しなら人へのブランチ引き継ぎ案内を出す）までで、`gh pr merge`/`glab mr merge` は実行しない。これは `.claude/settings.json` の `permissions.deny` で機械的に止める（`Bash(gh pr merge*)`・`Bash(glab mr merge*)`）。
 
+PR の監視：run 手順7の8で、GitHub の PR を作った時に限り、実行環境に `subscribe_pr_activity` ツールがある時だけ作った PR を購読し、マージ・close されたら `unsubscribe_pr_activity` で解除する。ツールが無い時は購読せず、完了報告に「監視は始めていない」と書く。GitLab の MR・ホスティング無し（`none`）の時は対象外。購読後の CI の失敗・レビューコメントへの対応は実行環境の指示に従い、ハーネスは規則を持たない（原則7）。手順の正本は `.claude/skills/run/SKILL.md` 手順7の8。
+
 本文は `ゴール / 分割方針 / タスク一覧 / 計画の受け入れ基準`。このうち「タスク一覧」の表が状態の正本で、次の形にする。
 
 ```markdown

@@ -16,7 +16,7 @@ run: PR を作ったら subscribe_pr_activity で自動的に監視する（GitH
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | review | 1 | - | run 手順7に PR の購読（手順7の8）を足し、完了報告に監視の結果を含める | |
+| T-01 | done | 1 | - | run 手順7に PR の購読（手順7の8）を足し、完了報告に監視の結果を含める | |
 | T-02 | todo | 0 | T-01 | vault-spec と decisions に PR の購読を記録する | |
 
 ## 計画の受け入れ基準

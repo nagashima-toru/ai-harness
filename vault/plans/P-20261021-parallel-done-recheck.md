@@ -1,6 +1,6 @@
 ---
 id: P-20261021-parallel-done-recheck
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #212「通常の並行実行で、先に done になった同じ組の他タスクの変更を含まない状態で、リポジトリ全体を見る基準を判定する」を解決する。同じ PLAN_HEAD から分岐して並行に作ったタスクのうち、先に別のタスクが done になって計画ブランチにマージされた時、後のタスクを計画ブランチの最新を含む worktree で再検証してから done にする。状態遷移（5つ）は増やさない。

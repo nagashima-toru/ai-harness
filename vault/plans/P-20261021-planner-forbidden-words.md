@@ -1,6 +1,6 @@
 ---
 id: P-20261021-planner-forbidden-words
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #224 に対応し、`.claude/agents/planner.md` に「禁止操作が含まれないことを調べる基準では、禁止操作の語（`git push`・`gh pr merge` など）を確認コマンドの文字列に直接書かない。語を分けて連結するか、検査する語をリポジトリ内のファイルから読む形にする」という指針を足す。「## やらないこと」に1項目、「## 書き終えた後の確認」に同じ指針を確かめる1項目を足す。

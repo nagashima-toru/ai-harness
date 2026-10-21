@@ -21,7 +21,7 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 | unblock 後の再着手（手順2。todo→doing。1 id ずつ） | `python3 scripts/transition.py <計画ID> <id> doing --resume-worktree` |
 | creator の blocked の報告・分岐元の不一致（手順3。doing→blocked） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
 | review にする（手順4。収集コミット・新規コミットの判定・差分ゲート・再開情報の記録行を含む） | `python3 scripts/transition.py <計画ID> <id> review --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
-| PASS（手順6。マージ・done・後始末） | `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
+| PASS（手順6。マージ・done・後始末。同じ組の他タスクが先に done なら再検証（終了コード6）） | `python3 scripts/transition.py <計画ID> <id> done --worktree <worktree> --branch <branch> --plan-head <PLAN_HEAD>` |
 | FAIL（手順6。再試行、上限なら blocked） | `python3 scripts/transition.py <計画ID> <id> doing --worktree <worktree> --branch <branch>` |
 | verifier が人の判断を求めた PASS（手順6。review→blocked。計画単位のレビュータスクで起きうる） | `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --note "人の判断が必要"` |
 | 中断からの再開・ハング・呼び出しエラー・worktree が無い時の再試行（doing→doing・review→doing） | `python3 scripts/transition.py <計画ID> <id> doing --no-model --note "<補足>"` |
@@ -40,6 +40,7 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 | 3 | 差し戻した（creator を呼び直す）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直してその id の creator を呼び直す |
 | 4 | blocked にした。標準出力の1行を完了報告に写し、その id を終えて次の対象タスクへ進む（worktree は残っている） |
 | 5 | 引き継げなかった。何も変えていない。その id を通常の着手（複数 id の todo→doing）に回す。記録行の worktree が残っていれば破棄せず、完了報告に `git worktree list` の出力を添えて人に知らせる |
+| 6 | 再検証のため計画ブランチを worktree に取り込んだ。done にしていない（review のまま。verdict は transition.py が消した）。手順6の3の6のとおり verifier を呼び直す |
 
 ## 1. 計画票を見つける
 1. `bash scripts/current_plan.sh` を実行する（frontmatter の `status` が `approved` の計画票の計画 ID を1行1件で出力する）
@@ -154,6 +155,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
    終了コードごとの次の行動：
    - 0：done になった。次の対象タスクへ進む
    - 4：blocked にした（新規コミット無し・宣言外の変更・マージコンフリクトのいずれか。コンフリクトはマージを中止済み）。標準出力の1行を完了報告に写す。worktree は残っている。他の対象タスクの処理は止めず次へ進む
+   - 6：再検証のため計画ブランチを worktree に取り込んだ。done にしていない（status は review のまま、verdict は transition.py が消した）。同じ組の他タスクが先に done になっていて、verifier がその変更を含まない worktree で判定していたため。標準出力の1行を完了報告に写し、標準出力の `plan_head=` の値をその id の `PLAN_HEAD` にする。次のタスクへ進む前に、その id の verifier を手順5と同じ呼び出しで1回呼び直し、完了を待ってから、その id について手順6の1から処理し直す（PASS なら新しい `PLAN_HEAD` で done を呼ぶ。FAIL なら手順6の4）。次のタスクへ進む前に呼び直す理由：先に他のタスクを done にすると、そのマージで再検証がもう1回要るため（手順6は逐次なので、すぐ呼び直せば再検証は1タスクにつき1回で済む）。呼び直しの途中で中断した時は、その id は review の行として手順2の2で扱われる（最後の記録行の `plan_head` が取り込み後の値で、verdict が無いので手順5の verifier から再開する）
    - 1：何もしていない（PASS の verdict が無い・attempt 不一致など）か、マージ済みだが状態のコミットに失敗した。標準エラーの理由を添えて人に報告し、処理を止める
 4. `FAIL` の場合：計画ブランチへはマージしない。次を1回呼ぶ。
    `python3 scripts/transition.py <計画ID> <id> doing --worktree <worktree> --branch <branch>`

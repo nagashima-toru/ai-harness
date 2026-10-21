@@ -21,7 +21,7 @@ GitHub Issue #209 と #220 を1計画で直す。
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
 | T-01 | done | 1 | - | amend_task.py の --replace-criterion が基準の文の縦棒をそのまま残す | |
-| T-02 | review | 1 | - | 起点を明示して worktree を作る scripts/add_worktree.sh を足す | |
+| T-02 | done | 1 | - | 起点を明示して worktree を作る scripts/add_worktree.sh を足す | |
 | T-03 | todo | 0 | T-02 | run 手順3で creator の worktree を add_worktree.sh で作り、3.6 に既知の原因と回避策を書く | |
 | T-04 | todo | 0 | T-02,T-03 | creator.md の受け渡しと git 節を add_worktree.sh の経路に合わせる | |
 | T-05 | todo | 0 | T-02 | vault-spec に add_worktree.sh の仕様を書き decisions に記録する | |

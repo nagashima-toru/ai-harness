@@ -1,0 +1,14 @@
+{
+  "task": "P-20261021-worktree-base-and-criterion-pipe/T-02",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-21 09:03",
+  "criteria": [
+    {"text": "smoke に足した5件の検査が通る：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (add-wt-[1-5]) '` の出力が `5`", "ok": true, "note": "実行コマンド: worktree で smoke.sh の出力を保存し `grep -c '^  ok   (add-wt-[1-5]) '` / 出力: 5"},
+    {"text": "smoke 全体が通る：`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=<n> fail=0` の形（`<n>` は任意）", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1` 相当 / 出力: smoke: pass=582 fail=0"},
+    {"text": "文書のバッククォートのパスがすべて存在する：`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (ref-1) '` の出力が `1`", "ok": true, "note": "実行コマンド: smoke 出力に `grep -c '^  ok   (ref-1) '` / 出力: 1"},
+    {"text": "install.sh が配るスクリプトの一覧に入っている：`grep -c '^SCRIPTS_FILES=.*scripts/add_worktree.sh' scripts/install.sh` の出力が `1`", "ok": true, "note": "実行コマンド: 同左 / 出力: 1"},
+    {"text": "README のスクリプトの表に行がある：`grep -c 'add_worktree.sh. . worktree の作成' README.md` の出力が `1`", "ok": true, "note": "実行コマンド: 同左 / 出力: 1"}
+  ],
+  "reasons": []
+}

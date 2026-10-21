@@ -3055,6 +3055,16 @@ expect_eq "(amend-task) 05 拒否は終了コード 1 でタスク票・log・�
 expect_eq "(amend-task) 06 成功時のコミットが1つ増え、ファイルがタスク票と log の2つで件名が決まった形" \
   "1 vault/log/P-TEST.md vault/tasks/P-TEST/T-01.md  P-TEST/T-01: amend" \
   "$((AM_N1 - AM_N0)) $AM_FILES $AM_SUBJ"
+tw_setup blocked 1
+am_run P-TEST T-01 --replace-criterion 1 'a | b'
+AM_RC7="$AM_RC"
+expect_eq "(amend-task) 07 --replace-criterion の文の | がそのまま残る" "0 - a | b 0" \
+  "$AM_RC7 $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -m1 '^- ') $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '／')"
+AM_CN0="$(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '^- ')"
+am_run P-TEST T-01 --replace-criterion 1 $'p\nq'
+AM_RC8="$AM_RC"
+expect_eq "(amend-task) 08 --replace-criterion の文の改行は空白1つになり基準の行数が変わらない" "0 - p q $AM_CN0" \
+  "$AM_RC8 $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -m1 '^- ') $(sed -n '/^## 受け入れ基準/,/^## 決定済み/p' "$(am_task)" | grep -c '^- ')"
 
 # --- 主な文書の参照切れの検査 ---
 refcheck() { # $1=ルート。存在しないパスを <文書>:<行>: <パス> で出す

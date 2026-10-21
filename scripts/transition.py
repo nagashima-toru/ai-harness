@@ -66,6 +66,13 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
   1. plan_head..branch の新規コミットが無ければ review→blocked（終了コード4）
   2. diff_gate の check で宣言外の変更を調べる（GateError は終了コード1）。違反があれば
      review→blocked（終了コード4。タスク票の「進捗」には書かない）
+  2.5 再検証の判定: メインの作業ツリーで `git rev-list --count --merges --first-parent
+     <plan-head>..HEAD` が1以上（別のタスクが先に done になりマージ済み）なら、マージせず計画
+     ブランチの HEAD H を worktree に取り込む（H が既に祖先なら取り込まない。失敗したら
+     衝突ファイルを取り merge --abort して review→blocked、終了コード4）。成功したら log に
+     記録行（plan_head=H）と review→review の行を書いて log だけをコミットし、verdict を消し、
+     標準出力に `plan_head=<H>` を出して終了コード6（状態は review のまま）。run は verifier を
+     呼び直し、`--plan-head <H>` で done を呼び直す
   3. メインの作業ツリーで `git merge --no-ff <branch> -m "<計画ID>/<id>: マージ"` を行う
   4. 成功したらフェーズ2と同じ review→done（計画票・log・verdict をコミット）をして、
      `git worktree remove --force` と `git branch -d` で後始末する（終了コード0。後始末の
@@ -102,6 +109,7 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
     3  差し戻した（doing→doing／review→doing。creator を呼び直す）
     4  blocked にした
     5  --resume-worktree で worktree を引き継げなかった（何も変えていない）
+    6  再検証のため計画ブランチを worktree に取り込んだ（verifier を呼び直す）
 """
 import sys
 
@@ -623,6 +631,41 @@ def done_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, posit
         text = clean_text("宣言外の変更: %s" % ", ".join(v[0] for v in violations))
         return block(text, text)
 
+    r = run_git(root, "rev-list", "--count", "--merges", "--first-parent", "%s..HEAD" % plan_head)
+    try:
+        if r.returncode != 0:
+            raise ValueError(r.stderr)
+        need_recheck = int(r.stdout.strip()) >= 1
+    except ValueError:
+        fail("計画ブランチのマージ数を数えられません: %s" % r.stderr.strip())
+    if need_recheck:
+        head, problem, pnote = import_plan_head(root, worktree, branch, plan_id, tid)
+        if problem:
+            return block(problem, pnote)
+        now = now_jst()
+        note = "計画ブランチを取り込み再検証"
+        full_note = (note + " " + args.note_text).strip() if args.note_text else note
+        # 古い PASS を先に消す（消せないまま log を書くと、再開時に古い PASS で done になる）
+        try:
+            os.remove(os.path.join(root, verdict_rel))
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            fail("古い verdict を消せません: %s" % e)
+        new_log, _before = log_with_lines(
+            log_path,
+            [
+                worktree_record(now, tid, worktree, branch, head),
+                transition_line(now, tid, "review", "review", cur, None, full_note),
+            ],
+        )
+        commit_files(
+            root, [(log_rel, new_log)], "%s/%s: review→review" % (plan_id, tid), [log_rel]
+        )
+        print("%s/%s: review→review attempt=%d 計画ブランチを取り込み再検証 plan_head=%s"
+              % (plan_id, tid, cur, head))
+        return 6
+
     ok, question, note = merge_branch(root, plan_id, tid, branch)
     if not ok:
         return block(question, note)
@@ -722,6 +765,36 @@ def blocked_with_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, po
     return 4
 
 
+def import_plan_head(root, worktree, branch, plan_id, tid):
+    """計画ブランチの今の HEAD（H）を worktree に取り込む。(H, 問題の文面, 補足) を返す。
+
+    H が既に branch の祖先ならマージしない。失敗したら中止して文面を返す（成功なら None）。
+    """
+    r = run_git(root, "rev-parse", "HEAD")
+    head = r.stdout.strip()
+    if r.returncode != 0 or len(head) != 40:
+        fail("計画ブランチの HEAD を解決できません: %s" % r.stderr.strip())
+    if run_git(root, "merge-base", "--is-ancestor", head, branch).returncode == 0:
+        return head, None, ""
+    r = run_git(
+        worktree, "merge", "--no-ff", head, "-m", "%s/%s: 計画ブランチを取り込み" % (plan_id, tid)
+    )
+    if r.returncode == 0:
+        return head, None, ""
+    err_first = (r.stderr.strip().splitlines() or [""])[0]
+    u = run_git(worktree, "diff", "--name-only", "--diff-filter=U")
+    conflicts = [x for x in u.stdout.splitlines() if x.strip()]
+    gp = run_git(worktree, "rev-parse", "--git-path", "MERGE_HEAD").stdout.strip()
+    if gp:
+        if not os.path.isabs(gp):
+            gp = os.path.join(worktree, gp)
+        if os.path.exists(gp):
+            run_git(worktree, "merge", "--abort")
+    if conflicts:
+        return head, clean_text("計画ブランチの取り込みで衝突したファイル: %s" % ", ".join(conflicts)), "マージコンフリクト"
+    return head, clean_text("計画ブランチの取り込みに失敗した: %s" % err_first), "マージ失敗"
+
+
 RECORD_RE = r"^- \S+ \S+ %s worktree path=(.+) branch=(\S+) plan_head=([0-9a-f]{40})\s*$"
 
 
@@ -751,27 +824,9 @@ def resume_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, position
 
     collect_worktree(worktree, plan_id, tid)
 
-    r = run_git(root, "rev-parse", "HEAD")
-    head = r.stdout.strip()
-    if r.returncode != 0 or len(head) != 40:
-        fail("計画ブランチの HEAD を解決できません: %s" % r.stderr.strip())
-    if run_git(root, "merge-base", "--is-ancestor", head, branch).returncode != 0:
-        r = run_git(
-            worktree, "merge", "--no-ff", head, "-m", "%s/%s: 計画ブランチを取り込み" % (plan_id, tid)
-        )
-        if r.returncode != 0:
-            err_first = (r.stderr.strip().splitlines() or [""])[0]
-            u = run_git(worktree, "diff", "--name-only", "--diff-filter=U")
-            conflicts = [x for x in u.stdout.splitlines() if x.strip()]
-            gp = run_git(worktree, "rev-parse", "--git-path", "MERGE_HEAD").stdout.strip()
-            if gp:
-                if not os.path.isabs(gp):
-                    gp = os.path.join(worktree, gp)
-                if os.path.exists(gp):
-                    run_git(worktree, "merge", "--abort")
-            if conflicts:
-                return cannot(clean_text("計画ブランチの取り込みで衝突したファイル: %s" % ", ".join(conflicts)))
-            return cannot(clean_text("計画ブランチの取り込みに失敗した: %s" % err_first))
+    head, problem, _note = import_plan_head(root, worktree, branch, plan_id, tid)
+    if problem:
+        return cannot(problem)
 
     new_plan = rewrite_rows(plan_lines, positions, [(tid, "todo", "doing", 1)], "")
     note = "worktree を引き継ぎ"

@@ -120,6 +120,7 @@ PR ができたら、人が内容を確認して `gh pr merge` でマージす�
 | `scripts/diff_gate.py` | 差分ゲート |
 | `scripts/amend_task.py` | タスク票の成果物の追加・受け入れ基準の差し替え |
 | `scripts/vcs_finish.sh` | PR 作成 |
+| `scripts/add_worktree.sh` | worktree の作成 |
 | `scripts/discard_worktree.sh` | worktree の破棄 |
 | `scripts/run_unattended.py` | 無人実行のラッパー |
 | `scripts/purge_plan.sh` | 計画一式の除去とマージ済みの一括削除 |

@@ -18,9 +18,9 @@ GitHub Issue #212「通常の並行実行で、先に done になった同じ組
 ## タスク表（状態の正本）
 | id | status | attempt | after | title | question |
 |---|---|---|---|---|---|
-| T-01 | todo | 0 | - | transition.py の done が、同じ組の他タスクのマージ後は計画ブランチを worktree に取り込み終了コード6で再検証に回す | |
-| T-02 | todo | 0 | - | docs/vault-spec.md と docs/decisions.md に done の再検証（終了コード6）を書く | |
-| T-03 | todo | 0 | - | run/SKILL.md に done の終了コード6で verifier を呼び直す手順を書く | |
+| T-01 | doing | 1 | - | transition.py の done が、同じ組の他タスクのマージ後は計画ブランチを worktree に取り込み終了コード6で再検証に回す | |
+| T-02 | doing | 1 | - | docs/vault-spec.md と docs/decisions.md に done の再検証（終了コード6）を書く | |
+| T-03 | doing | 1 | - | run/SKILL.md に done の終了コード6で verifier を呼び直す手順を書く | |
 | T-04 | todo | 0 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | |
 
 ## 計画の受け入れ基準

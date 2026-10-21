@@ -1,6 +1,6 @@
 ---
 id: P-20261021-worktree-base-and-criterion-pipe
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #209 と #220 を1計画で直す。

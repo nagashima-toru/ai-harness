@@ -2951,6 +2951,38 @@ tw_run P-TEST T-01 done --worktree "$TWW" --branch "$TWB" --plan-head "$TW_P2"
 expect_eq "(transition-resume) 11 出力の plan_head を使った review と done が終了コード 0 で他タスクのファイルが計画ブランチに残る" "0 0 yes changed" \
   "$TW_RCR $TW_RC $([ -f "$TWR/src/other.txt" ] && echo yes || echo no) $(cat "$TWR/src/ok.txt" 2>/dev/null)"
 
+# 古い verdict の除去（unblock 後の再着手）
+tw_setup todo 0; tw_verdict PASS 1
+tw_run P-TEST T-01 doing
+expect_eq "(transition-stale-verdict) 01 通常の todo→doing で未追跡の古い PASS の verdict が消える" "0 no" \
+  "$TW_RC $([ -e "$TWR/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no)"
+
+tw_setup todo 0; tw_verdict PASS 1
+git -C "$TWR" add -A; git -C "$TWR" commit -q -m "古い verdict"
+tw_run P-TEST T-01 doing
+expect_eq "(transition-stale-verdict) 02 通常の todo→doing で追跡済みの古い verdict が消え HEAD にも残らない" "0 no 0" \
+  "$TW_RC $([ -e "$TWR/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no) $(git -C "$TWR" ls-tree --name-only HEAD -- vault/verdicts/P-TEST/T-01.json | wc -l | tr -d ' ')"
+
+tw_setup todo 0; tw_rec; tw_mod; tw_verdict PASS 1
+mkdir -p "$TWW/vault/verdicts/P-TEST"; cp "$TWR/vault/verdicts/P-TEST/T-01.json" "$TWW/vault/verdicts/P-TEST/T-01.json"
+tw_run P-TEST T-01 doing --resume-worktree
+TW_SV_PH="$(sed -n 's/.*plan_head=\([0-9a-f]*\)$/\1/p' "$TW_OUT")"
+expect_eq "(transition-stale-verdict) 03 --resume-worktree でメイン側と worktree 側の未追跡の古い verdict が消える" "0 no no" \
+  "$TW_RC $([ -e "$TWR/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no) $([ -e "$TWW/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no)"
+tw_run P-TEST T-01 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_SV_PH"
+expect_eq "(transition-stale-verdict) 04 03 の後の review は差分ゲートの違反が無く終了コード 0" "0" "$TW_RC"
+
+tw_setup todo 0; tw_mod; tw_verdict PASS 1
+git -C "$TWR" add -A; git -C "$TWR" commit -q -m "古い verdict"
+tw_rec
+tw_run P-TEST T-01 doing --resume-worktree
+TW_SV_RC="$TW_RC"
+TW_SV_PH="$(sed -n 's/.*plan_head=\([0-9a-f]*\)$/\1/p' "$TW_OUT")"
+TW_SV_ST="$([ -e "$TWR/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no) $([ -e "$TWW/vault/verdicts/P-TEST/T-01.json" ] && echo yes || echo no)"
+tw_run P-TEST T-01 review --worktree "$TWW" --branch "$TWB" --plan-head "$TW_SV_PH"
+expect_eq "(transition-stale-verdict) 05 計画ブランチで追跡済みの古い verdict は引き継いだ worktree にも残らず review が終了コード 0" "0 no no 0" \
+  "$TW_SV_RC $TW_SV_ST $TW_RC"
+
 # 再検証（他タスクが先に done になってマージ済み）
 tw_other() { # $1=変えるファイル（計画ブランチに別ブランチを --no-ff でマージする）
   git -C "$TWR" checkout -q -b other-task

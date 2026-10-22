@@ -9,6 +9,9 @@
     python3 scripts/transition.py <計画ID> <id>[,<id>...] doing|review --no-model --keep-attempt --note <補足>
 
 やること（すべての id の検査を先に済ませ、通った時だけ行う）:
+  0. todo→doing（--resume-worktree を含む）では、検査を通った後に、その id の古い verdict
+     （vault/verdicts/<計画ID>/<id>.json。unblock 前の blocked の時のもの）をメイン側から除去する。
+     追跡済みなら git rm して、状態のコミットの前に別のコミット（`古い verdict を除去`）にする。
   1. 計画票 vault/plans/<計画ID>.md のタスク表の status・attempt・question を書き換える
   2. vault/log/<計画ID>.md に `- <日時> <id> <旧>→<新> attempt=<n>[ <補足>]` を id の順に追記する
      （日時は UTC+9 固定のスクリプトの実時刻）
@@ -85,6 +88,8 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
   blocked の時に残した worktree を破棄せず引き継ぐ。前提の検査は通常の todo→doing と同じ
   （その行が todo でなければ終了コード1）。引き継ぐ worktree は log のその id の最後の
   `worktree path=… branch=… plan_head=…` の記録行から取る。
+  0. worktree の検証に通った後、収集の前に worktree 側の古い verdict も除去する（追跡済みなら
+     git rm。worktree 側ではコミットせず、次の収集コミットが記録する）。メイン側の除去は取り込みより前
   1. worktree の未コミット分があれば `<計画ID>/<id>: creator 成果物をオーケストレーターが収集` でコミットする
   2. 計画ブランチの今の HEAD を H とし、H が worktree のブランチの祖先でなければ worktree の中で
      `git merge --no-ff H` を行う（衝突・失敗したら merge --abort して終了コード5）
@@ -92,7 +97,7 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
      （モデルは付けない）を追記して、計画票と log だけをコミットする
   成功（終了コード0）の標準出力の `plan_head=<H>` を、run はその id の review・blocked・done の
   `--plan-head` に使う（diff_gate は base と branch の2点比較なので、base は worktree に取り込み済みの H）。
-  引き継げない時（記録行が無い・worktree の検証に通らない・マージの衝突）は何も変えず終了コード5で、
+  引き継げない時（記録行が無い・worktree の検証に通らない・マージの衝突）は、古い verdict の除去のほかは何も変えず終了コード5で、
   標準出力に `<計画ID>/<id>: 引き継げない（<理由>）` を出す。run はその id を通常の todo→doing に回す。
   状態のコミットに失敗したら計画票・log を戻して終了コード1（worktree 側のマージは取り消さない）。
 
@@ -108,7 +113,7 @@ creator.md の frontmatter の model。値の検査はしない。verifier= は�
     2  引数の誤り
     3  差し戻した（doing→doing／review→doing。creator を呼び直す）
     4  blocked にした
-    5  --resume-worktree で worktree を引き継げなかった（何も変えていない）
+    5  --resume-worktree で worktree を引き継げなかった（古い verdict の除去のほかは何も変えていない）
     6  再検証のため計画ブランチを worktree に取り込んだ（verifier を呼び直す）
 """
 import sys
@@ -493,6 +498,45 @@ def discard_worktree(root, worktree, branch):
     return ok
 
 
+def remove_stale_verdict(root, rel):
+    """root の rel の verdict を除去する。追跡済みなら git rm（commit は呼び出し側）。
+
+    追跡済みを除去したら True。失敗したら fail。
+    """
+    tracked = run_git(root, "ls-files", "--error-unmatch", "--", rel).returncode == 0
+    if tracked:
+        r = run_git(root, "rm", "-q", "-f", "--", rel)
+        if r.returncode != 0:
+            fail("古い verdict を git rm できません: %s" % r.stderr.strip())
+    try:
+        os.remove(os.path.join(root, rel))
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        fail("古い verdict を消せません: %s" % e)
+    return tracked
+
+
+def clear_stale_verdicts(root, plan_id, ids):
+    """todo→doing の入口で、ids の古い verdict をメイン側から除去する。
+
+    追跡済みの除去があれば、除去したパスだけを別のコミットにする。
+    """
+    removed = []  # (id, 相対パス)
+    for tid in ids:
+        rel = "vault/verdicts/%s/%s.json" % (plan_id, tid)
+        if remove_stale_verdict(root, rel):
+            removed.append((tid, rel))
+    if removed:
+        r = run_git(
+            root, "commit", "-q", "-m",
+            "%s/%s: 古い verdict を除去" % (plan_id, ",".join(t for t, _ in removed)),
+            "--", *[p for _, p in removed]
+        )
+        if r.returncode != 0:
+            fail("古い verdict の除去のコミットに失敗しました: %s" % r.stderr.strip())
+
+
 def worktree_record(now, tid, path, branch, plan_head):
     return "- %s %s worktree path=%s branch=%s plan_head=%s" % (now, tid, path, branch, plan_head)
 
@@ -822,6 +866,8 @@ def resume_worktree(args, root, plan_id, plan_rel, log_rel, plan_lines, position
     if problem:
         return cannot(problem)
 
+    remove_stale_verdict(worktree, "vault/verdicts/%s/%s.json" % (plan_id, tid))
+
     collect_worktree(worktree, plan_id, tid)
 
     head, problem, _note = import_plan_head(root, worktree, branch, plan_id, tid)
@@ -949,6 +995,9 @@ def main(argv):
             for tid, reason in bad:
                 sys.stderr.write("[transition] %s/%s: %s\n" % (plan_id, tid, reason))
             sys.exit(1)
+
+    if old_all == "todo":
+        clear_stale_verdicts(root, plan_id, args.id_list)
 
     if args.resume_worktree:
         return resume_worktree(

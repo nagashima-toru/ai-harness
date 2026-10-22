@@ -39,7 +39,7 @@ log の日時は transition.py が実時刻で書くので、run は書かない
 | 2 | 引数の誤り。早見表の形と見比べて呼び出しを直す |
 | 3 | 差し戻した（creator を呼び直す）。標準出力の1行を完了報告に写し、手順3の1から `PLAN_HEAD` を取り直してその id の creator を呼び直す |
 | 4 | blocked にした。標準出力の1行を完了報告に写し、その id を終えて次の対象タスクへ進む（worktree は残っている） |
-| 5 | 引き継げなかった。何も変えていない。その id を通常の着手（複数 id の todo→doing）に回す。記録行の worktree が残っていれば破棄せず、完了報告に `git worktree list` の出力を添えて人に知らせる |
+| 5 | 引き継げなかった。古い verdict の除去のほかは何も変えていない。その id を通常の着手（複数 id の todo→doing）に回す。記録行の worktree が残っていれば破棄せず、完了報告に `git worktree list` の出力を添えて人に知らせる |
 | 6 | 再検証のため計画ブランチを worktree に取り込んだ。done にしていない（review のまま。verdict は transition.py が消した）。手順6の3の6のとおり verifier を呼び直す |
 
 ## 1. 計画票を見つける
@@ -144,7 +144,7 @@ blocked ではない完了報告を受けたタスクについて、id ごとに
 全 verifier の完了を待った上で、対象タスク（手順5で verifier を呼んだタスク）を1件ずつ、計画票のタスク表の上から並んだ順に**逐次**処理する。transition.py がコミット・マージを行うので、複数タスクが同時に PASS していても並行に呼ばず、1件ずつ完了させてから次のタスクに移る。
 
 各タスクについて：
-1. `vault/verdicts/<計画ID>/<id>.json` が存在しない場合、まず対象タスクの worktree のパス（手順3の4で保持したもの）配下の同じ相対パス（`<worktree のパス>/vault/verdicts/<計画ID>/<id>.json`）を確認する。存在すれば `cp <worktree のパス>/vault/verdicts/<計画ID>/<id>.json vault/verdicts/<計画ID>/<id>.json` でメインリポジトリ側へコピーし（log には書かない。コピーした verdict は done のコミットに含まれる）、手順2で通常どおり読む。worktree 側にも見つからない場合は検証未完了として扱い、そのタスクは次のタスクに進まず処理を止める（人に確認する）
+1. `vault/verdicts/<計画ID>/<id>.json` が存在しない場合、まず対象タスクの worktree のパス（手順3の4で保持したもの）配下の同じ相対パス（`<worktree のパス>/vault/verdicts/<計画ID>/<id>.json`）を確認する。存在すれば `cp <worktree のパス>/vault/verdicts/<計画ID>/<id>.json vault/verdicts/<計画ID>/<id>.json` でメインリポジトリ側へコピーし（log には書かない。コピーした verdict は done のコミットに含まれる）、手順2で通常どおり読む。worktree 側にも見つからない場合は検証未完了として扱い、そのタスクは次のタスクに進まず処理を止める（人に確認する）。worktree 側の古い verdict は、unblock 後の再着手（`--resume-worktree`）で transition.py が消しているので、コピーするのは再着手の後に書かれた verdict だけになる。
 2. `vault/verdicts/<計画ID>/<id>.json`（手順1でコピーした場合はコピー後のファイル）を読み、`result` と `attempt` を確認する。`attempt` が計画票のタスク表の値と一致しない verdict は「無い」ものとして扱い、そのタスクは検証未完了として次のタスクに進まず処理を止める（人に確認する）
 3. `PASS` の場合：`人の判断が必要:` の要素は、主に計画単位のレビュータスク（`.claude/agents/planner.md` の「計画単位のレビュータスク」節）の verdict に出る。まず done を呼ぶ前に、verdict の `reasons` に `人の判断が必要:` で始まる要素が1つでもあるかを確かめる。あれば done を呼ばない。その要素をすべて言い換えずに Write ツールで質問ファイル（例：`/tmp/<計画ID>-<id>-question.txt`）に書き、次を1回呼ぶ。`--no-model` と `--worktree` は付けない（verifier の判断による遷移で、`--worktree` 付きの blocked は doing からだけ）。
    `python3 scripts/transition.py <計画ID> <id> blocked --question-file <質問ファイル> --note "人の判断が必要"`

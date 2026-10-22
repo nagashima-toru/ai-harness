@@ -47,6 +47,7 @@ argument-hint: [ゴール | unblock <計画ID> <id> [--fresh] [回答]]
    見つかった票のうち、計画票のタスク表で todo の票だけに、同じ回答を「決定済み」に追記する。成果物の追加・基準の差し替えが要るものは、手順3と同じく amend_task.py で直す（基準の番号はその票で数え直す）。追記した票は手順9の git add に名前を指定して含める。todo 以外の票には追記しない（done の票はフックが書き込みを拒否する。doing・review・blocked の票はそれぞれの流れで扱う）
 6. `--fresh` の時だけ、status を todo に戻す前に、`vault/log/<計画ID>.md` のその id の最後の記録行のパスとブランチ名を取り、そのパスが `git worktree list` にあれば `bash scripts/discard_worktree.sh <パス> <ブランチ名>` で破棄する（記録行が無い・パスが無い時は何もしない）。`--fresh` が無い時は何もしない
 7. 計画票の `<id>` の行の status を `todo`、attempt を `0`、question を空にする
+   あわせて、そのタスクの前回の verdict `vault/verdicts/<計画ID>/<id>.json` があれば `git rm -f --ignore-unmatch -- vault/verdicts/<計画ID>/<id>.json` で除去し、無ければ `rm -f` で消す（attempt が 0 に戻るので、残すと再着手の attempt=1 と一致して古い PASS が有効に見える）。手順9のコミットに含まれる（stage 済みになる）
 8. `TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'` で日時を取り、`vault/log/` が無ければ先に `mkdir -p vault/log` で作り、`vault/log/<計画ID>.md` に次の1行を追記する：`- <日時> <id> blocked→todo 人の指示: /plan unblock <計画ID> <id>`。`--fresh` の時は末尾を `/plan unblock <計画ID> <id> --fresh` にする
 9. `git add vault/plans/<計画ID>.md vault/tasks/<計画ID>/<id>.md vault/log/<計画ID>.md` でファイルを名前で指定して stage し、`git commit`（メッセージ例：`<計画ID>: <id> の blocked を解除する`）する。回答が無く、タスク票を変えなかった時は、タスク票を add に含めない。work ブランチ上で行う。`git add .` や `git add -A` は使わない
 10. 解除したことを報告し、worktree を引き継ぐか作り直すか（`--fresh` の有無）も伝え、「`/run` で再開できます」と伝える

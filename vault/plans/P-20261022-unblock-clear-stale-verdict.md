@@ -19,7 +19,7 @@ GitHub Issue #227「unblock 後の再実行で古い PASS の verdict が有効�
 | T-01 | done | 1 | - | 再着手の todo→doing で transition.py が古い verdict をメイン側と worktree 側から除去し、smoke に回帰テストがある | |
 | T-02 | done | 1 | - | docs/vault-spec.md に再着手での古い verdict の除去の仕様が書かれている | |
 | T-03 | done | 1 | T-01,T-02 | plan/SKILL.md の unblock と run/SKILL.md 手順6の1が古い verdict の除去に合っている | |
-| T-04 | todo | 0 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | |
+| T-04 | doing | 1 | T-01,T-02,T-03 | 計画の差分が `/code-review` を通過する | |
 
 ## 計画の受け入れ基準
 - 各タスクに成果物と受け入れ基準が1つずつある

@@ -1,0 +1,14 @@
+{
+  "task": "P-20261022-unblock-clear-stale-verdict/T-01",
+  "attempt": 1,
+  "result": "PASS",
+  "checked_at": "2026-10-22 14:59",
+  "criteria": [
+    {"text": "`bash scripts/smoke.sh 2>&1 | tail -1` の出力が `smoke: pass=<N> fail=0` の形（N は任意の整数）である", "ok": true, "note": "実行コマンド: `bash scripts/smoke.sh 2>&1 | tail -1`（worktree で実行、出力は一旦ファイルに保存） / 出力: smoke: pass=595 fail=0"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (transition-stale-verdict) '` の出力が `5` である（決定済みの5件のテストがすべて ok）", "ok": true, "note": "実行コマンド: 上の smoke 出力に対する `grep -c '^  ok   (transition-stale-verdict) '` / 出力: 5"},
+    {"text": "`bash scripts/smoke.sh 2>&1 | grep -c '^  ok   (transition-resume) '` の出力が `11` である（既存の引き継ぎのテストが壊れていない）", "ok": true, "note": "実行コマンド: 同 smoke 出力に対する `grep -c '^  ok   (transition-resume) '` / 出力: 11"},
+    {"text": "`grep -c '）は何も変えず終了コード' scripts/transition.py` の出力が `0` で、`grep -c '古い verdict の除去のほかは何も変えず終了コード5' scripts/transition.py` の出力が `1` である", "ok": true, "note": "実行コマンド: worktree で両 grep -c を実行 / 出力: 0 と 1"},
+    {"text": "`git diff --merge-base work/p-20261022-unblock-clear-stale-verdict --name-only` の出力に `scripts/transition.py` と `scripts/smoke.sh` が含まれる", "ok": true, "note": "実行コマンド: worktree で `git diff --merge-base work/p-20261022-unblock-clear-stale-verdict --name-only` / 出力: scripts/smoke.sh, scripts/transition.py, vault/tasks/.../T-01.md"}
+  ],
+  "reasons": []
+}

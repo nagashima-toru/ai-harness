@@ -1,6 +1,6 @@
 ---
 id: P-20261022-unblock-clear-stale-verdict
-status: approved
+status: done
 ---
 # ゴール
 GitHub Issue #227「unblock 後の再実行で古い PASS の verdict が有効に見える（attempt が再び一致する）」を直す。`/plan unblock` は attempt を 0 に戻すので、前回の blocked の時の verdict（attempt=1, PASS）が残ると、再着手で review（attempt=1）になった時に新しい verifier の完了前に stop_gate が古い PASS を有効とみなす（誤ブロック・誤って done にする危険）。古い verdict を仕組みで（文書の指示だけに頼らず）除去し、メイン側（未追跡でも追跡済みでも）と worktree 側の両方で、`/run` 手順6の1のコピーで古い PASS が復活しないようにする。あわせて `.claude/skills/plan/SKILL.md` B節・`.claude/skills/run/SKILL.md` 手順6の1・`docs/vault-spec.md` を更新し、`scripts/smoke.sh` に回帰テストを足す。
